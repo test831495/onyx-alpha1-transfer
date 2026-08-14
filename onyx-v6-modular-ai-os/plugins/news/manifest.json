@@ -1,0 +1,30 @@
+{
+  "id": "onyx.news",
+  "name": "News Intelligence",
+  "version": "0.1.0",
+  "description": "News Intelligence plugin scaffold",
+  "runtime": "server",
+  "scopes": [
+    "cloud.read"
+  ],
+  "tools": [
+    {
+      "name": "latest_headlines",
+      "description": "latest headlines",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "approval": "never"
+    },
+    {
+      "name": "topic_brief",
+      "description": "topic brief",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "approval": "never"
+    }
+  ]
+}

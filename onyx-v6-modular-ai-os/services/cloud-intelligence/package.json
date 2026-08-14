@@ -1,0 +1,14 @@
+{
+  "name": "@onyx/cloud-intelligence",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "ONYX cloud orchestration",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@onyx/contracts": "workspace:*",
+    "@onyx/privacy": "workspace:*",
+    "@onyx/plugin-sdk": "workspace:*"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "id": "onyx.microsoft-graph",
+  "name": "Email and Calendar",
+  "version": "0.1.0",
+  "description": "Email and Calendar plugin scaffold",
+  "runtime": "server",
+  "scopes": [
+    "cloud.read",
+    "cloud.write"
+  ],
+  "tools": [
+    {
+      "name": "list_email",
+      "description": "list email",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "approval": "never"
+    },
+    {
+      "name": "send_email",
+      "description": "send email",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "approval": "never"
+    },
+    {
+      "name": "list_events",
+      "description": "list events",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "approval": "never"
+    },
+    {
+      "name": "create_event",
+      "description": "create event",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "approval": "never"
+    }
+  ]
+}

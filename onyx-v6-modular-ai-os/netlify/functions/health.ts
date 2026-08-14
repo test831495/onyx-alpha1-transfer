@@ -1,0 +1,1 @@
+import type{Handler}from'@netlify/functions';export const handler:Handler=async()=>({statusCode:200,headers:{'content-type':'application/json'},body:JSON.stringify({ok:true,service:'onyx-api-gateway',version:'6.0.0-alpha.1',time:new Date().toISOString()})});

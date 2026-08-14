@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "noUncheckedIndexedAccess": true,
+    "baseUrl": ".",
+    "paths": {
+      "@onyx/contracts": [
+        "packages/contracts/src/index.ts"
+      ],
+      "@onyx/core": [
+        "packages/core/src/index.ts"
+      ],
+      "@onyx/plugin-sdk": [
+        "packages/plugin-sdk/src/index.ts"
+      ],
+      "@onyx/privacy": [
+        "packages/privacy/src/index.ts"
+      ],
+      "@onyx/ui": [
+        "packages/ui/src/index.ts"
+      ]
+    }
+  }
+}

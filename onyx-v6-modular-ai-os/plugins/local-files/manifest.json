@@ -1,0 +1,30 @@
+{
+  "id": "onyx.local-files",
+  "name": "Local File Search",
+  "version": "0.1.0",
+  "description": "Local File Search plugin scaffold",
+  "runtime": "browser",
+  "scopes": [
+    "local.read"
+  ],
+  "tools": [
+    {
+      "name": "search_files",
+      "description": "search files",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "approval": "never"
+    },
+    {
+      "name": "read_document",
+      "description": "read document",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "approval": "never"
+    }
+  ]
+}

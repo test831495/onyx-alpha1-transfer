@@ -1,0 +1,1 @@
+import type{CommandEnvelope}from'@onyx/contracts';import{classifyCommand}from'@onyx/privacy';export function authorize(command:CommandEnvelope){const d=classifyCommand(command);if(!d.allowed)throw new Error(d.reason);return d}export function safeEnv(name:string){const value=process.env[name];if(!value)throw new Error(`Missing server credential: ${name}`);return value}

@@ -1,0 +1,30 @@
+{
+  "id": "onyx.social",
+  "name": "Social Intelligence",
+  "version": "0.1.0",
+  "description": "Social Intelligence plugin scaffold",
+  "runtime": "server",
+  "scopes": [
+    "cloud.read"
+  ],
+  "tools": [
+    {
+      "name": "mentions",
+      "description": "mentions",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "approval": "never"
+    },
+    {
+      "name": "sentiment",
+      "description": "sentiment",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "approval": "never"
+    }
+  ]
+}

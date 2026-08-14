@@ -1,0 +1,30 @@
+{
+  "id": "onyx.finance",
+  "name": "Finance Intelligence",
+  "version": "0.1.0",
+  "description": "Finance Intelligence plugin scaffold",
+  "runtime": "server",
+  "scopes": [
+    "cloud.read"
+  ],
+  "tools": [
+    {
+      "name": "market_snapshot",
+      "description": "market snapshot",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "approval": "never"
+    },
+    {
+      "name": "portfolio_summary",
+      "description": "portfolio summary",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "approval": "never"
+    }
+  ]
+}

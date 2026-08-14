@@ -1,0 +1,361 @@
+{
+  "version": "6.0.0-alpha.1",
+  "created": "2026-08-14",
+  "files": [
+    {
+      "path": ".env.example",
+      "bytes": 430,
+      "sha256": "ab941d775b76b5b9aa26aa4cdaa3c69332b11a8a4de781caa32bc2a1ca6c6a85"
+    },
+    {
+      "path": ".gitignore",
+      "bytes": 82,
+      "sha256": "9110952251904e2d49b45ff65ba0550cdd8f6d134f302c10788ecdf3fee0bcbc"
+    },
+    {
+      "path": "README.md",
+      "bytes": 922,
+      "sha256": "89a0995b08af05a09a7967a73b2cfbf8d1030f6f76722c7671c15644a58bd2d3"
+    },
+    {
+      "path": "apps/command-center/index.html",
+      "bytes": 310,
+      "sha256": "68316373ec1e976aac32f08f0c06488a85198c9f2f1cb3cf12c18ae2a193a645"
+    },
+    {
+      "path": "apps/command-center/package.json",
+      "bytes": 737,
+      "sha256": "e3cbf8dc8ba5576f8271d7cf3a89af73a85e78660c6dbd3fea527ef453138ada"
+    },
+    {
+      "path": "apps/command-center/src/App.tsx",
+      "bytes": 2239,
+      "sha256": "89c52cf03802e2591daa709ba0b0493137e415a1ba7c4bd47d54ddaf016606b1"
+    },
+    {
+      "path": "apps/command-center/src/CoreOrb.tsx",
+      "bytes": 569,
+      "sha256": "5ce4f3d4c95393ccf66d4216e3d8189a203dd1c964de68bd6d3b1ee58bfd3956"
+    },
+    {
+      "path": "apps/command-center/src/ModeShell.tsx",
+      "bytes": 1491,
+      "sha256": "4ead4d50c98cc1fb8fe7ab1831bdee00240a702562cb3f1c52d5dd476cead342"
+    },
+    {
+      "path": "apps/command-center/src/data.ts",
+      "bytes": 590,
+      "sha256": "23b19f64065b42b765b530be8a8631f3b1f111ddfc84589caf15778b8ccace93"
+    },
+    {
+      "path": "apps/command-center/src/main.tsx",
+      "bytes": 208,
+      "sha256": "7b8b000a5035cc04915b581a3be45f39533a79e46200e64bb7ac9bd1bb4073a8"
+    },
+    {
+      "path": "apps/command-center/src/styles.css",
+      "bytes": 4156,
+      "sha256": "c6aaf01be71320f4b2f45643a1a9c02a8c5f4a5294cbdc0379bc9a696b85881c"
+    },
+    {
+      "path": "apps/command-center/src/useVoiceRouter.ts",
+      "bytes": 1006,
+      "sha256": "70af77175f863861cf3c8eda47358f21c6ef9046f2fceb937c4c3de5a6c97b56"
+    },
+    {
+      "path": "apps/command-center/tsconfig.json",
+      "bytes": 166,
+      "sha256": "d39847fd55eca36662304299472f2aa01db94c371724a77641792f6d0d151ca9"
+    },
+    {
+      "path": "apps/command-center/vite.config.ts",
+      "bytes": 143,
+      "sha256": "fdb7976fa62fe13de88d5ec76a21d081b6c33661c2b7b611b242db241a48a1d2"
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "bytes": 1447,
+      "sha256": "b501eb4ed3086fb89f5c9cd7ef4a3cf44c31cfa5d048fd42a5acb96fbd5fdc8b"
+    },
+    {
+      "path": "docs/DEVELOPMENT.md",
+      "bytes": 511,
+      "sha256": "a2c62945c8ad93f4e7c1562fd10433be5ace820f3526c9e27e57d182e8239dff"
+    },
+    {
+      "path": "docs/PLUGIN_AUTHORING.md",
+      "bytes": 575,
+      "sha256": "91e393cd95d2fa617d4c543f5e7bf17658de48834ea82a1493c5397bc7d34848"
+    },
+    {
+      "path": "docs/PRIVACY_AND_SECURITY.md",
+      "bytes": 629,
+      "sha256": "7a9cfef95d6d711e50403a6d9f1cf103aeaeaf9622180a489658bbded08a691e"
+    },
+    {
+      "path": "docs/ROADMAP_TO_V6.md",
+      "bytes": 1142,
+      "sha256": "843a123f41685beac3efc2a89eed98af36c453fc31e769cc41f3fc4aa49cad05"
+    },
+    {
+      "path": "docs/adr/0001-dual-intelligence-boundary.md",
+      "bytes": 187,
+      "sha256": "320ebf9e0ff2f1d34e6f9c03e64521b5643230cefcd69557bed3fdfac4675425"
+    },
+    {
+      "path": "docs/adr/0002-plugin-first-capabilities.md",
+      "bytes": 151,
+      "sha256": "e732cfa79f8a2462ed8d573c88db408e95eac04dc4404663c85f76bb06bb5d3b"
+    },
+    {
+      "path": "docs/adr/0003-server-only-secrets.md",
+      "bytes": 142,
+      "sha256": "7143fbafd035f64dc8d3b43b1b435b24ea0449ad9bc46cf3266b4ab4dff34e9d"
+    },
+    {
+      "path": "docs/ui-reference/README.md",
+      "bytes": 287,
+      "sha256": "d6b553f7acc9edb07bf88860faa524dccf0cd1b6b48bc6eb201e2b844f08a0a8"
+    },
+    {
+      "path": "docs/ui-reference/WhatsApp Image 2026-08-14 at 8.56.29 AM.jpeg",
+      "bytes": 206513,
+      "sha256": "93a0fb16418ddd292dfccc289e0299e5a9265037c65fc73a13f71b3f087b5c77"
+    },
+    {
+      "path": "docs/ui-reference/WhatsApp Image 2026-08-14 at 8.56.30 AM.jpeg",
+      "bytes": 165363,
+      "sha256": "c7785e8d5174eba55d4c4c0066fb08a4cb5fc64dfd151290b2699e1c2de62901"
+    },
+    {
+      "path": "legacy/v5.14/README_DEPLOY_AND_TEST.txt",
+      "bytes": 742,
+      "sha256": "5766dd0028199a87466b33b29196fc40add12fde37c5173e4d5fe7bd192617f7"
+    },
+    {
+      "path": "legacy/v5.14/index.html",
+      "bytes": 118954,
+      "sha256": "650eec80f83ad8ab05739a560cf6213c41cd48254dc00b04ab0f9f167d5a2db2"
+    },
+    {
+      "path": "netlify/functions/elevenlabs-token.ts",
+      "bytes": 426,
+      "sha256": "04bca5fce2a30d5c2f5766029da5393e1ac839fc4bc1b1023e7e4cbdd6007277"
+    },
+    {
+      "path": "netlify/functions/gateway.ts",
+      "bytes": 426,
+      "sha256": "8debcffb8df0b3c3ad91a1821629f19142692a928ad6b878a4a8ab9eea331dbf"
+    },
+    {
+      "path": "netlify/functions/health.ts",
+      "bytes": 258,
+      "sha256": "f471f22460ad9d64688ac70a9db20b2cd2c400b5d698b24042bf5b0b26c51d6d"
+    },
+    {
+      "path": "netlify.toml",
+      "bytes": 545,
+      "sha256": "921f4d3eeb6be6358f356a7e7688317b791dc6e0cc7d75d0d783d3753ab3e01d"
+    },
+    {
+      "path": "package.json",
+      "bytes": 389,
+      "sha256": "eae588d65860014201256971d02dff2d453b2e1109c0d3fdae3fa3511b30f7a5"
+    },
+    {
+      "path": "packages/contracts/package.json",
+      "bytes": 119,
+      "sha256": "d77528c3adf2bbedc07414ad192d0de93723181e844ab26976b402534f7a6623"
+    },
+    {
+      "path": "packages/contracts/src/index.ts",
+      "bytes": 2376,
+      "sha256": "2b16b44e3ef1b9c67a3153b13eb5556bc0ea43c912e85ec6806ad07349004f9a"
+    },
+    {
+      "path": "packages/core/package.json",
+      "bytes": 251,
+      "sha256": "f095ebf4dd772acd61e170f9225a89e240027828dd6a6e74d4d27cad0c27483f"
+    },
+    {
+      "path": "packages/core/src/index.ts",
+      "bytes": 1510,
+      "sha256": "c2652ad5804faeb841804bc95a5561b1fe7529d0142d2aabc3f7d83cd23c55a4"
+    },
+    {
+      "path": "packages/plugin-sdk/package.json",
+      "bytes": 182,
+      "sha256": "369ee3271ec5de189ad2c34a11ca9af32186df22d202f07276d7202dbb6943fd"
+    },
+    {
+      "path": "packages/plugin-sdk/src/index.ts",
+      "bytes": 1640,
+      "sha256": "522bb7b4ba53089392ff5350112caaa6a3cde73c4a34ac6274ea8fe809f7bfe1"
+    },
+    {
+      "path": "packages/privacy/package.json",
+      "bytes": 257,
+      "sha256": "e91c4af8bcb1d3a23bb76bcf3110f192dc6a4a59958d2d9796d00683a750e151"
+    },
+    {
+      "path": "packages/privacy/src/index.ts",
+      "bytes": 1653,
+      "sha256": "17f53f3999f2d9ec6d5d822182fff8f67b867ca3ca474f011ef5f779c7172e53"
+    },
+    {
+      "path": "packages/privacy/src/privacy.test.ts",
+      "bytes": 539,
+      "sha256": "d3c9d4e095c113122758fc8b7b25231af69e12600f84a307a144e54f81b199d3"
+    },
+    {
+      "path": "packages/ui/package.json",
+      "bytes": 165,
+      "sha256": "25884d5991ff19cc7fed7bb187c2e60f785049dea10a981d4f549d428533e0f9"
+    },
+    {
+      "path": "packages/ui/src/index.tsx",
+      "bytes": 549,
+      "sha256": "f7cbd7adace910859f391b36bfe9d9d7fffc11076924cfa9dbaee18b62409a6a"
+    },
+    {
+      "path": "plugins/finance/manifest.json",
+      "bytes": 609,
+      "sha256": "697e9c8e0a70ad98321cc95ad098cf08da5bca02139808b93761069bfe864cc6"
+    },
+    {
+      "path": "plugins/finance/src/index.ts",
+      "bytes": 406,
+      "sha256": "4c3619d79ac2947c525ed65b2975d872e804151304b8bdb530a170de40e438b0"
+    },
+    {
+      "path": "plugins/home-assistant/manifest.json",
+      "bytes": 594,
+      "sha256": "1c57a6d946792d00450f118ba69e9e3e1fb4dcced77146473e0e56af3b04204c"
+    },
+    {
+      "path": "plugins/home-assistant/src/index.ts",
+      "bytes": 406,
+      "sha256": "4c3619d79ac2947c525ed65b2975d872e804151304b8bdb530a170de40e438b0"
+    },
+    {
+      "path": "plugins/local-files/manifest.json",
+      "bytes": 594,
+      "sha256": "396370e8f5d9e7614334ee650d724f33396e4b3c95337b73ace43274d7d8903d"
+    },
+    {
+      "path": "plugins/local-files/src/index.ts",
+      "bytes": 406,
+      "sha256": "4c3619d79ac2947c525ed65b2975d872e804151304b8bdb530a170de40e438b0"
+    },
+    {
+      "path": "plugins/microsoft-graph/manifest.json",
+      "bytes": 984,
+      "sha256": "274461f367f4aec9780cf5c3c6bfd52c1add8c4a8580ad16aa96ce5e7ef0fa95"
+    },
+    {
+      "path": "plugins/microsoft-graph/src/index.ts",
+      "bytes": 406,
+      "sha256": "4c3619d79ac2947c525ed65b2975d872e804151304b8bdb530a170de40e438b0"
+    },
+    {
+      "path": "plugins/news/manifest.json",
+      "bytes": 590,
+      "sha256": "143518bbf9c97c5093aeb4ed1351c27da83c5eee0a20ecc20e5872ccb11baaee"
+    },
+    {
+      "path": "plugins/news/src/index.ts",
+      "bytes": 406,
+      "sha256": "4c3619d79ac2947c525ed65b2975d872e804151304b8bdb530a170de40e438b0"
+    },
+    {
+      "path": "plugins/screenshot/manifest.json",
+      "bytes": 609,
+      "sha256": "904e3d407635846d6759f2a325d7333262651d97079ee2ff1eb44d6b9f39921e"
+    },
+    {
+      "path": "plugins/screenshot/src/index.ts",
+      "bytes": 406,
+      "sha256": "4c3619d79ac2947c525ed65b2975d872e804151304b8bdb530a170de40e438b0"
+    },
+    {
+      "path": "plugins/social/manifest.json",
+      "bytes": 576,
+      "sha256": "e214649b9cbb723be07be20801ad2713ed3459bbd4655e3b9a1fe95b3549392e"
+    },
+    {
+      "path": "plugins/social/src/index.ts",
+      "bytes": 406,
+      "sha256": "4c3619d79ac2947c525ed65b2975d872e804151304b8bdb530a170de40e438b0"
+    },
+    {
+      "path": "plugins/system-health/manifest.json",
+      "bytes": 564,
+      "sha256": "71425b01240d96927ec48acba616208f038a4d4cb9dc55d7248be000aaff722b"
+    },
+    {
+      "path": "plugins/system-health/src/index.ts",
+      "bytes": 406,
+      "sha256": "4c3619d79ac2947c525ed65b2975d872e804151304b8bdb530a170de40e438b0"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "bytes": 65,
+      "sha256": "b8f0b44dc6d601d3e89fb6ca7c7502b9da33f3f6b893e4db44af405e6034d1f2"
+    },
+    {
+      "path": "services/api-gateway/package.json",
+      "bytes": 331,
+      "sha256": "4a819466243195965ad6756b63dcc36986fbe997cad5685e76a7178edbb9f0cb"
+    },
+    {
+      "path": "services/api-gateway/src/index.ts",
+      "bytes": 370,
+      "sha256": "238751b399eb3d259184140df5d8f549d9a42c1bc5714298f9c0fa40af5efba0"
+    },
+    {
+      "path": "services/automation-engine/package.json",
+      "bytes": 320,
+      "sha256": "7a41215d6398159dfb13ee46b70e4bbcc9e7c4abb4efa498cf41d8d1433b53cf"
+    },
+    {
+      "path": "services/automation-engine/src/index.ts",
+      "bytes": 465,
+      "sha256": "93bf78ef45fe1d25f83098f42b4ff6411e99cd0291fcd67d2311d9edac87bf92"
+    },
+    {
+      "path": "services/cloud-intelligence/package.json",
+      "bytes": 310,
+      "sha256": "8f9352941f0f94eaf1d68ba6f3eb28cb26cf5a8d4db455df6041ab122d102a74"
+    },
+    {
+      "path": "services/cloud-intelligence/src/index.ts",
+      "bytes": 336,
+      "sha256": "0b04a76842f987a05cb05469f5cfe8aa683ec6919e5e182544916f9aff1bedc5"
+    },
+    {
+      "path": "services/local-intelligence/package.json",
+      "bytes": 310,
+      "sha256": "f2b9b911da6a68ab4dcdb152f18faf402bc211a829e6e3fa0957066e5c5c91e3"
+    },
+    {
+      "path": "services/local-intelligence/src/index.ts",
+      "bytes": 421,
+      "sha256": "e752a8d5d25c6c27c721ddfe13f9c75a72179d5440afae157a516b01651246b6"
+    },
+    {
+      "path": "services/memory-service/package.json",
+      "bytes": 324,
+      "sha256": "6818c92e9de70dd9595ecefa0569c7235767a8bc4fbff0d1859a0acbc13abd72"
+    },
+    {
+      "path": "services/memory-service/src/index.ts",
+      "bytes": 629,
+      "sha256": "eee0d9c3ecafbd74c16fb7aabcb2ee10c67770185b00e82031887da6a16972ea"
+    },
+    {
+      "path": "tsconfig.base.json",
+      "bytes": 777,
+      "sha256": "46fc47934a1280de4419933c21f9bc222c5fd1ee7600d1d2dea95b6fee52f7a8"
+    }
+  ]
+}

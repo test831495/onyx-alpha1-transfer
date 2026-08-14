@@ -1,0 +1,30 @@
+{
+  "id": "onyx.home-assistant",
+  "name": "Smart Home",
+  "version": "0.1.0",
+  "description": "Smart Home plugin scaffold",
+  "runtime": "server",
+  "scopes": [
+    "device.control"
+  ],
+  "tools": [
+    {
+      "name": "list_entities",
+      "description": "list entities",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "approval": "sensitive"
+    },
+    {
+      "name": "call_service",
+      "description": "call service",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "approval": "sensitive"
+    }
+  ]
+}

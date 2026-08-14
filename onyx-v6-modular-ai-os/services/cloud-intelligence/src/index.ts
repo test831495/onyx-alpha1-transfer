@@ -1,0 +1,1 @@
+import type{CommandEnvelope}from'@onyx/contracts';export interface CloudIntelligence{answer(command:CommandEnvelope):AsyncIterable<string>;execute(pluginId:string,tool:string,input:unknown):Promise<unknown>}export const cloudDomains=['finance','business analytics','news','social intelligence','email','calendar','smart home'] as const;

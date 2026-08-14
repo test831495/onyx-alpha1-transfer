@@ -1,0 +1,30 @@
+{
+  "id": "onyx.system-health",
+  "name": "System Health",
+  "version": "0.1.0",
+  "description": "System Health plugin scaffold",
+  "runtime": "browser",
+  "scopes": [
+    "local.read"
+  ],
+  "tools": [
+    {
+      "name": "snapshot",
+      "description": "snapshot",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "approval": "never"
+    },
+    {
+      "name": "watch",
+      "description": "watch",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "approval": "never"
+    }
+  ]
+}

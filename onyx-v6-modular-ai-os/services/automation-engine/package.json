@@ -1,0 +1,14 @@
+{
+  "name": "@onyx/automation-engine",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Event, schedule and voice workflows",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@onyx/contracts": "workspace:*",
+    "@onyx/privacy": "workspace:*",
+    "@onyx/plugin-sdk": "workspace:*"
+  }
+}

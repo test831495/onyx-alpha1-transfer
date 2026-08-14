@@ -1,0 +1,14 @@
+{
+  "name": "@onyx/memory-service",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Local/cloud memory contracts and retention",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@onyx/contracts": "workspace:*",
+    "@onyx/privacy": "workspace:*",
+    "@onyx/plugin-sdk": "workspace:*"
+  }
+}
