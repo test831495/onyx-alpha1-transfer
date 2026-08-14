@@ -1,5 +1,5 @@
 [build]
-  command = "pnpm --filter @onyx/command-center build"
+  command = "pnpm install && pnpm --filter @onyx/command-center build"
   publish = "apps/command-center/dist"
   functions = "netlify/functions"
 
