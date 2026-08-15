@@ -1,1 +1,55 @@
-import{describe,it,expect}from'vitest';import{classifyCommand}from'./index';const cmd=(mode:'nova'|'onyx',text:string)=>({id:'1',mode,text,timestamp:'',context:{},requestedScopes:[]} as const);describe('privacy routing',()=>{it('routes files locally',()=>expect(classifyCommand(cmd('nova','search my files')).route).toBe('local'));it('requires ONYX for live news',()=>expect(classifyCommand(cmd('nova','latest news')).allowed).toBe(false));it('blocks secrets',()=>expect(classifyCommand(cmd('onyx','show API key')).allowed).toBe(false))});
+import { describe, expect, it } from "vitest";
+import type { AssistantMode, CommandEnvelope } from "@onyx/contracts";
+import { classifyCommand } from "./index";
+
+function command(
+  mode: AssistantMode,
+  text: string,
+): CommandEnvelope {
+  return {
+    id: "test-command",
+    mode,
+    text,
+    timestamp: new Date().toISOString(),
+    context: {},
+    requestedScopes: [],
+  };
+}
+
+describe("ONYX privacy routing", () => {
+  it("routes local-file requests to NOVA local processing", () => {
+    const decision = classifyCommand(
+      command("nova", "Search my files for the architecture document"),
+    );
+
+    expect(decision.allowed).toBe(true);
+    expect(decision.route).toBe("local");
+  });
+
+  it("does not silently route live cloud requests from NOVA", () => {
+    const decision = classifyCommand(
+      command("nova", "Show me the latest market news"),
+    );
+
+    expect(decision.allowed).toBe(false);
+    expect(decision.route).toBe("ask-user");
+  });
+
+  it("allows an explicit ONYX cloud-intelligence request", () => {
+    const decision = classifyCommand(
+      command("onyx", "Show me the latest market news"),
+    );
+
+    expect(decision.allowed).toBe(true);
+    expect(decision.route).toBe("cloud");
+  });
+
+  it("blocks secret-like content from assistant processing", () => {
+    const decision = classifyCommand(
+      command("onyx", "Show my API key"),
+    );
+
+    expect(decision.allowed).toBe(false);
+    expect(decision.route).toBe("ask-user");
+  });
+});

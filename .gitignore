@@ -1,0 +1,39 @@
+
+# ONYX transfer and upgrade packages
+*.zip
+alpha*-upgrade/
+
+# Local patch rollback snapshots
+onyx-v6-modular-ai-os/.alpha*-backup/
+
+# Build output
+onyx-v6-m*dular-ai-os/**/dist/
+onyx-v6-modul***ai-os/node_modules/
+
+# Local env***nment files
+.env
+.env.*
+!.env.ex**ple
+
+# ONYX transfer and upgrade packages
+*.zip
+alpha*-upgrade/
+
+# Local patch rollback snapshots
+onyx-v6-modular-ai-os/.alpha*-backup/
+
+# Build and dependency output
+onyx-v6-modular-ai-os/**/dist/
+onyx-v6-modular-ai-os/node_modules/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Temporary local backup files
+.gitignore.before-phase0-cleanup
+onyx-v6-modular-ai-os/.alpha*/
+.gitigno*e.before-phase0-cleanup
+alpha*-script-hotfix/
+*.alpha*-before-fix

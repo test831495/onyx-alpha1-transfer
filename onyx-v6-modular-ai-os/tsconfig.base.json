@@ -17,20 +17,24 @@
     "baseUrl": ".",
     "paths": {
       "@onyx/contracts": [
-        "packages/contracts/src/index.ts"
+        "packages/contracts/src/index"
       ],
       "@onyx/core": [
-        "packages/core/src/index.ts"
+        "packages/core/src/index"
       ],
       "@onyx/plugin-sdk": [
-        "packages/plugin-sdk/src/index.ts"
+        "packages/plugin-sdk/src/index"
       ],
       "@onyx/privacy": [
-        "packages/privacy/src/index.ts"
+        "packages/privacy/src/index"
       ],
       "@onyx/ui": [
-        "packages/ui/src/index.ts"
+        "packages/ui/src/index"
+      ],
+      "@onyx/avatar-runtime": [
+        "packages/avatar-runtime/src/index"
       ]
-    }
+    },
+    "jsx": "react-jsx"
   }
 }

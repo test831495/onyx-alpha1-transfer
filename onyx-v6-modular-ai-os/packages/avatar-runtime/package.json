@@ -1,0 +1,22 @@
+{
+  "name": "@onyx/avatar-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.tsx",
+  "types": "./src/index.tsx",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"Avatar runtime tests pending\""
+  },
+  "peerDependencies": {
+    "react": "^19.1.1"
+  },
+  "dependencies": {
+    "@onyx/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@types/react-dom": "^19"
+  }
+}

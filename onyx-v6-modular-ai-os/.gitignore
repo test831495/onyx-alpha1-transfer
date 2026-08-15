@@ -7,3 +7,9 @@ dist/
 coverage/
 .DS_Store
 *.log
+
+# Temporary upgrade and recovery files
+.alpha2-backup/
+*.before-*
+*.corrupted-backup
+*.zip
