@@ -10,4 +10,4 @@ export class AICore {
  }
  route(text:string){const command:CommandEnvelope={id:crypto.randomUUID(),mode:this.mode,text,timestamp:new Date().toISOString(),context:{},requestedScopes:[]};return{command,decision:classifyCommand(command)}}
 }
-export function modeFromWake(text:string):AssistantMode|null{const t=text.trim().toLowerCase();if(/^(hey\s+)?nova/.test(t))return'nova';if(/^(hey\s+)?onyx/.test(t))return'onyx';return null}
+export function modeFromWake(text:string):AssistantMode|null{const normalized=text.toLowerCase().normalize("NFKD").replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim();const match=normalized.match(/^(?:hey\s+)?(nova|onyx)\b/);return match?.[1]==="nova"?"nova":match?.[1]==="onyx"?"onyx":null;}

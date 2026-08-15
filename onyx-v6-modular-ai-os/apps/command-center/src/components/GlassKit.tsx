@@ -1,0 +1,7 @@
+import type { ReactNode } from "react";
+export function GlassPanel({title,icon,children,className="",panelId,selected=false}:{title:string;icon?:string;children:ReactNode;className?:string;panelId?:string;selected?:boolean}){
+ return <section id={panelId?`panel-${panelId}`:undefined} data-panel-id={panelId} className={`glass-panel-v25 ${selected?"panel-active":""} ${className}`}><header><span>{icon}</span><b>{title}</b>{selected?<em className="selected-chip">SELECTED</em>:<button aria-label={`${title} options`}>•••</button>}</header><div className="glass-body">{children}</div></section>;
+}
+export function MetricBar({label,value,color="cyan"}:{label:string;value:number;color?:"cyan"|"violet"|"mint"|"blue"}){return <div className="metric-bar"><span>{label}</span><b>{value}%</b><i><em className={color} style={{width:`${Math.min(100,Math.max(0,value))}%`}}/></i></div>}
+export function MiniSpark({values,color="cyan"}:{values:number[];color?:"cyan"|"violet"|"mint"}){const max=Math.max(...values,1),min=Math.min(...values,0),range=max-min||1;const points=values.map((v,i)=>`${(i/Math.max(1,values.length-1))*100},${34-((v-min)/range)*28}`).join(" ");return <svg className={`mini-spark ${color}`} viewBox="0 0 100 38" preserveAspectRatio="none"><polyline points={points}/></svg>}
+export function RingMetric({value,label,color="cyan"}:{value:number;label:string;color?:"cyan"|"violet"|"mint"|"blue"}){return <div className={`ring-metric ${color}`} style={{"--value":`${value*3.6}deg`} as React.CSSProperties}><div><b>{value}%</b><small>{label}</small></div></div>}
