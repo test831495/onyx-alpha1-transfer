@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AssistantMode, CoreState } from "@onyx/contracts";
+import type { AssistantMode, CoreState, Intent } from "@onyx/contracts";
+import { createIntelligenceRuntime } from "@onyx/intelligence-runtime";
 import { NovaDashboard } from "./components/NovaDashboard";
 import { OnyxDashboard } from "./components/OnyxDashboard";
 import { HeroCore } from "./components/HeroCore";
@@ -18,8 +19,9 @@ const names: Record<string, string> = {
 };
 
 const unavailableApps = ["youtube", "google chrome", "chrome", "browser", "spotify", "netflix", "instagram"];
+const runtime = createIntelligenceRuntime();
 
-function resolveIntent(raw: string): Panel {
+function resolveLegacyPanel(raw: string): Panel {
   const c = raw.toLowerCase().trim();
   if (!c || /^(call|switch|change|open window|switch window|change window)(\s+to)?$/.test(c)) return null;
   if (c.includes("file")) return "files";
@@ -29,7 +31,7 @@ function resolveIntent(raw: string): Panel {
   if (c.includes("task")) return "tasks";
   if (c.includes("message")) return "messages";
   if (c.includes("setting")) return "settings";
-  if (c.includes("light") || c.includes("music") || c.includes("smart home")) return "smart-home";
+  if (c.includes("light") || c.includes("music") || c.includes("smarthome")) return "smart-home";
   if (c.includes("finance")) return "finance";
   if (c.includes("news")) return "news";
   if (c.includes("automation") || c === "auto") return "automation";
@@ -47,6 +49,11 @@ function unavailableApp(raw: string): string | null {
   return match.replace(/\b\w/g, letter => letter.toUpperCase());
 }
 
+function modulePanel(intent: Intent): Panel {
+  if (intent.kind !== "module.open") return null;
+  return intent.target;
+}
+
 export function App() {
   const touch = matchMedia("(hover: none), (pointer: coarse)").matches;
   const [mode, setMode] = useState<AssistantMode>("nova");
@@ -58,10 +65,12 @@ export function App() {
   const [activePanel, setActivePanel] = useState<Panel>(null);
   const modeRef = useRef(mode);
   const timers = useRef<number[]>([]);
+  const commandSequence = useRef(0);
+  const commandController = useRef<AbortController | null>(null);
 
   useEffect(() => { modeRef.current = mode; }, [mode]);
   const clearTimers = () => { timers.current.forEach(window.clearTimeout); timers.current = []; };
-  useEffect(() => () => clearTimers(), []);
+  useEffect(() => () => { clearTimers(); commandController.current?.abort(); }, []);
 
   const reset = useCallback((assistant: AssistantMode = modeRef.current) => {
     setState("wake-armed");
@@ -93,30 +102,88 @@ export function App() {
     }));
   }, [touch]);
 
-  const rejectCommand = useCallback((raw: string) => {
-    const app = unavailableApp(raw);
+  const showError = useCallback((message: string) => {
     setActivePanel(null);
     setState("error");
-    setCaption(app ? `${app} is not available in Phase 0.` : `Unsupported Phase 0 command: ${raw}`);
+    setCaption(message);
     timers.current.push(window.setTimeout(() => reset(), 4200));
   }, [reset]);
 
-  const dispatch = useCallback((raw: string, targetMode: AssistantMode | null = null) => {
-    const clean = raw.trim();
-    const panel = resolveIntent(clean);
+  const rejectLegacyCommand = useCallback((raw: string) => {
+    const app = unavailableApp(raw);
+    showError(app ? `${app} is not available in Phase 0.` : `Unsupported Phase 0 command: ${raw}`);
+  }, [showError]);
 
+  const dispatchLegacy = useCallback((raw: string, targetMode: AssistantMode | null = null) => {
+    const clean = raw.trim();
+    const panel = resolveLegacyPanel(clean);
     if (targetMode && targetMode !== modeRef.current) {
       activate(targetMode);
       if (panel) timers.current.push(window.setTimeout(() => selectPanel(panel), 240));
-      else if (clean && unavailableApp(clean)) timers.current.push(window.setTimeout(() => rejectCommand(clean), 240));
+      else if (clean && unavailableApp(clean)) timers.current.push(window.setTimeout(() => rejectLegacyCommand(clean), 240));
       return;
     }
-
     if (panel) { selectPanel(panel); return; }
     if (!clean && targetMode) { reset(targetMode); return; }
     if (!clean) { reset(); return; }
-    rejectCommand(clean);
-  }, [activate, rejectCommand, reset, selectPanel]);
+    rejectLegacyCommand(clean);
+  }, [activate, rejectLegacyCommand, reset, selectPanel]);
+
+  const dispatch = useCallback(async (raw: string, targetMode: AssistantMode | null = null) => {
+    const clean = raw.trim();
+    const useLegacy = window.localStorage.getItem("onyx.phase1.runtime") === "legacy";
+    if (useLegacy) { dispatchLegacy(clean, targetMode); return; }
+    if (!clean && !targetMode) { reset(); return; }
+
+    commandController.current?.abort();
+    const controller = new AbortController();
+    commandController.current = controller;
+    const sequence = ++commandSequence.current;
+    setState("thinking");
+    setCaption(`${(targetMode ?? modeRef.current).toUpperCase()} · processing`);
+
+    try {
+      const outcome = await runtime.processInput({
+        text: clean,
+        source: "typed",
+        requestedAssistant: targetMode ?? undefined,
+      }, controller.signal);
+      if (sequence !== commandSequence.current || controller.signal.aborted) return;
+
+      const intent = outcome.intent;
+      if (intent.kind === "assistant.switch") { activate(intent.assistant); return; }
+
+      const desiredAssistant = "assistant" in intent ? intent.assistant : undefined;
+      const panel = modulePanel(intent);
+      if (desiredAssistant && desiredAssistant !== modeRef.current) {
+        activate(desiredAssistant);
+        if (panel) timers.current.push(window.setTimeout(() => selectPanel(panel), 240));
+      } else if (panel) {
+        selectPanel(panel);
+      }
+
+      if (intent.kind === "settings.open") { selectPanel("settings"); return; }
+      if (intent.kind === "document.search") {
+        setActivePanel(null);
+        setState("speaking");
+        setCaption(`Document search prepared for “${intent.query}”. Local index arrives in Alpha 3.1.`);
+        timers.current.push(window.setTimeout(() => reset(), 5200));
+        return;
+      }
+      if (outcome.result.status === "unsupported" || outcome.result.status === "rejected" || outcome.result.status === "failed") {
+        showError(outcome.result.message);
+        return;
+      }
+      if (!panel) {
+        setState("speaking");
+        setCaption(outcome.result.message);
+        timers.current.push(window.setTimeout(() => reset(), 3200));
+      }
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      showError(error instanceof Error ? error.message : "Phase 1 runtime failed.");
+    }
+  }, [activate, dispatchLegacy, reset, selectPanel, showError]);
 
   const voice = useVoiceRouter(dispatch);
   const cycle = () => {
@@ -132,7 +199,7 @@ export function App() {
 
   return <main className={`functional-app phase0-footer-guard mode-${mode} quality-${quality} transition-${phase}`}>
     <header className="functional-header glass-surface">
-      <div className="functional-brand"><strong>{mode.toUpperCase()}</strong><span>● Online</span><small>PHASE 0 FOOTER & COMMAND GUARD · v6 alpha.2.5.11</small></div>
+      <div className="functional-brand"><strong>{mode.toUpperCase()}</strong><span>● Online</span><small>PHASE 1 SAFE RUNTIME ADAPTER · v6 alpha.3.0.2</small></div>
       <div className="assistant-switch"><button className={requested === "nova" ? "active" : ""} onClick={() => activate("nova")}>NOVA</button><button className={requested === "onyx" ? "active" : ""} onClick={() => activate("onyx")}>ONYX</button><button onClick={cycle}>STATE DEMO</button></div>
       <div className="stability-controls"><label>QUALITY <select value={quality} onChange={event => setQuality(event.target.value as "full" | "balanced" | "low")}><option value="full">Full</option><option value="balanced">Balanced</option><option value="low">Low Power</option></select></label><span>{voice.diagnostic}</span></div>
     </header>

@@ -29,6 +29,9 @@ importers:
       '@onyx/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@onyx/intelligence-runtime':
+        specifier: workspace:*
+        version: link:../../packages/intelligence-runtime
       '@onyx/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
