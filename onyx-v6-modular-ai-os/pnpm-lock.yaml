@@ -61,6 +61,12 @@ importers:
         specifier: ^7.1.3
         version: 7.3.6
 
+  packages/action-dispatcher:
+    dependencies:
+      '@onyx/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+
   packages/avatar-runtime:
     dependencies:
       '@onyx/contracts':
@@ -90,6 +96,17 @@ importers:
       '@onyx/privacy':
         specifier: workspace:*
         version: link:../privacy
+
+  packages/intent-engine:
+    dependencies:
+      '@onyx/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@onyx/module-registry':
+        specifier: workspace:*
+        version: link:../module-registry
+
+  packages/module-registry: {}
 
   packages/plugin-sdk:
     dependencies:
