@@ -97,6 +97,21 @@ importers:
         specifier: workspace:*
         version: link:../privacy
 
+  packages/intelligence-runtime:
+    dependencies:
+      '@onyx/action-dispatcher':
+        specifier: workspace:*
+        version: link:../action-dispatcher
+      '@onyx/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@onyx/intent-engine':
+        specifier: workspace:*
+        version: link:../intent-engine
+      '@onyx/module-registry':
+        specifier: workspace:*
+        version: link:../module-registry
+
   packages/intent-engine:
     dependencies:
       '@onyx/contracts':
@@ -106,7 +121,11 @@ importers:
         specifier: workspace:*
         version: link:../module-registry
 
-  packages/module-registry: {}
+  packages/module-registry:
+    dependencies:
+      '@onyx/contracts':
+        specifier: workspace:*
+        version: link:../contracts
 
   packages/plugin-sdk:
     dependencies:
