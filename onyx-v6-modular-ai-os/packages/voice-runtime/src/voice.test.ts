@@ -1,0 +1,1 @@
+import{describe,expect,it}from"vitest";import{defaultVoicePreferences}from"./index";describe("voice defaults",()=>{it("uses safe system fallback",()=>{expect(defaultVoicePreferences.engine).toBe("system");expect(defaultVoicePreferences.enabled).toBe(true);});});

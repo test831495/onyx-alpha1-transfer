@@ -23,6 +23,9 @@ importers:
       '@onyx/avatar-runtime':
         specifier: workspace:*
         version: link:../../packages/avatar-runtime
+      '@onyx/calendar-intelligence':
+        specifier: workspace:*
+        version: link:../../packages/calendar-intelligence
       '@onyx/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -41,6 +44,9 @@ importers:
       '@onyx/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@onyx/voice-runtime':
+        specifier: workspace:*
+        version: link:../../packages/voice-runtime
       '@onyx/workspace-connectors':
         specifier: workspace:*
         version: link:../../packages/workspace-connectors
@@ -91,6 +97,12 @@ importers:
       '@types/react-dom':
         specifier: ^19
         version: 19.2.4(@types/react@19.2.18)
+
+  packages/calendar-intelligence:
+    dependencies:
+      '@onyx/workspace-contracts':
+        specifier: workspace:*
+        version: link:../workspace-contracts
 
   packages/contracts: {}
 
@@ -160,6 +172,8 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.4
         version: 19.2.4(@types/react@19.2.18)
+
+  packages/voice-runtime: {}
 
   packages/workspace-connectors:
     dependencies:
