@@ -1,0 +1,2 @@
+import{describe,expect,it}from"vitest";import{disconnectedWorkspaceSnapshot}from"./workspaceController";
+describe("workspace foundation",()=>{it("declares all providers",()=>expect(disconnectedWorkspaceSnapshot().providers.map(v=>v.provider)).toEqual(["microsoft","google","yahoo"]));it("does not claim future capabilities are enabled",()=>expect(disconnectedWorkspaceSnapshot().providers.flatMap(v=>v.capabilities).filter(v=>v.id!=="profile").every(v=>!v.enabled)).toBe(true));});

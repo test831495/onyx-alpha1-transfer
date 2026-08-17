@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AssistantMode, CoreState, Intent } from "@onyx/contracts";
 import { createIntelligenceRuntime } from "@onyx/intelligence-runtime";
+import type { WorkspaceSnapshot } from "@onyx/workspace-contracts";
+import { WorkspacePanel } from "./components/WorkspacePanel";
+import { connectMicrosoft, disconnectMicrosoft, disconnectedWorkspaceSnapshot, loadWorkspaceSnapshot } from "./workspaceController";
 import { NovaDashboard } from "./components/NovaDashboard";
 import { OnyxDashboard } from "./components/OnyxDashboard";
 import { HeroCore } from "./components/HeroCore";
@@ -8,14 +11,14 @@ import { GlassCommandBar } from "./components/GlassCommandBar";
 import { useVoiceRouter } from "./useVoiceRouter";
 
 const states: CoreState[] = ["wake-armed", "listening", "thinking", "executing", "speaking", "error"];
-type Panel = "home" | "messages" | "settings" | "files" | "calendar" | "weather" | "system-health" | "tasks" | "smart-home" | "business" | "finance" | "news" | "social" | "email" | "automation" | null;
+type Panel = "home" | "messages" | "settings" | "files" | "calendar" | "weather" | "system-health" | "tasks" | "smart-home" | "business" | "finance" | "news" | "social" | "email" | "automation" | "workspace" | null;
 
 const names: Record<string, string> = {
   home: "Home", messages: "Messages", settings: "Settings", files: "Files",
   calendar: "Calendar", weather: "Weather", "system-health": "System Health",
   tasks: "Tasks", "smart-home": "Smart Home", business: "Business Overview",
   finance: "Finance Tracker", news: "News", social: "Social Monitor",
-  email: "Email", automation: "Automation",
+  email: "Email", automation: "Automation", workspace: "Workspace",
 };
 
 const unavailableApps = ["youtube", "google chrome", "chrome", "browser", "spotify", "netflix", "instagram"];
@@ -63,12 +66,16 @@ export function App() {
   const [caption, setCaption] = useState("NOVA is ready.");
   const [quality, setQuality] = useState<"full" | "balanced" | "low">("balanced");
   const [activePanel, setActivePanel] = useState<Panel>(null);
+  const [workspace, setWorkspace] = useState<WorkspaceSnapshot>(() => disconnectedWorkspaceSnapshot());
+  const [workspaceBusy, setWorkspaceBusy] = useState(false);
   const modeRef = useRef(mode);
   const timers = useRef<number[]>([]);
   const commandSequence = useRef(0);
   const commandController = useRef<AbortController | null>(null);
 
   useEffect(() => { modeRef.current = mode; }, [mode]);
+  const refreshWorkspace = useCallback(async () => { setWorkspaceBusy(true); try { setWorkspace(await loadWorkspaceSnapshot()); } finally { setWorkspaceBusy(false); } }, []);
+  useEffect(() => { void refreshWorkspace(); }, [refreshWorkspace]);
   const clearTimers = () => { timers.current.forEach(window.clearTimeout); timers.current = []; };
   useEffect(() => () => { clearTimers(); commandController.current?.abort(); }, []);
 
@@ -131,6 +138,22 @@ export function App() {
 
   const dispatch = useCallback(async (raw: string, targetMode: AssistantMode | null = null) => {
     const clean = raw.trim();
+    const normalized = clean.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+    const profileCommand = ["who am i", "who i am", "show my profile", "my profile", "show account", "my account", "current account", "current user", "logged in user"].includes(normalized);
+    if (/^(open )?workspace( status)?$/.test(normalized) || normalized === "connect workspace" || normalized === "connect microsoft" || profileCommand || normalized === "disconnect workspace" || normalized === "disconnect microsoft") {
+      setActivePanel("workspace");
+      if (normalized.startsWith("connect")) { setWorkspaceBusy(true); try { await connectMicrosoft(); } catch (error) { showError(error instanceof Error ? error.message : "Microsoft sign-in could not start."); setWorkspaceBusy(false); } return; }
+      if (normalized.startsWith("disconnect")) { setWorkspaceBusy(true); try { await disconnectMicrosoft(); } catch (error) { showError(error instanceof Error ? error.message : "Microsoft sign-out could not start."); setWorkspaceBusy(false); } return; }
+      await refreshWorkspace(); setState("speaking"); setCaption(profileCommand ? "Workspace profile status refreshed." : "Workspace status refreshed."); return;
+    }
+    if (/onedrive|sharepoint|unread mail|next meeting|today.?s meetings/.test(normalized)) {
+      setActivePanel("workspace");
+      setState("speaking");
+      const capability = /onedrive|sharepoint/.test(normalized) ? "Cloud document search arrives in Alpha 3.1.3." : /mail/.test(normalized) ? "Mail intelligence arrives in Alpha 3.1.2." : "Calendar intelligence arrives in Alpha 3.1.1.";
+      setCaption(`COMING SOON · ${capability}`);
+      timers.current.push(window.setTimeout(() => reset(), 5200));
+      return;
+    }
     const useLegacy = window.localStorage.getItem("onyx.phase1.runtime") === "legacy";
     if (useLegacy) { dispatchLegacy(clean, targetMode); return; }
     if (!clean && !targetMode) { reset(); return; }
@@ -183,7 +206,7 @@ export function App() {
       if (controller.signal.aborted) return;
       showError(error instanceof Error ? error.message : "Phase 1 runtime failed.");
     }
-  }, [activate, dispatchLegacy, reset, selectPanel, showError]);
+  }, [activate, dispatchLegacy, refreshWorkspace, reset, selectPanel, showError]);
 
   const voice = useVoiceRouter(dispatch);
   const cycle = () => {
@@ -193,19 +216,19 @@ export function App() {
   };
   const closeModule = () => { setActivePanel(null); reset(); };
   const nav = mode === "nova"
-    ? ["Home", "Messages", "Tasks", "Music", "News", "Settings"]
-    : ["Home", "Executive", "Finance", "News", "Email", "Calendar", "Automation"];
+    ? ["Home", "Messages", "Tasks", "News", "Workspace", "Settings"]
+    : ["Home", "Executive", "Finance", "News", "Workspace", "Calendar", "Automation"];
   const activityVisible = state !== "wake-armed" && state !== "idle";
 
   return <main className={`functional-app phase0-footer-guard mode-${mode} quality-${quality} transition-${phase}`}>
     <header className="functional-header glass-surface">
-      <div className="functional-brand"><strong>{mode.toUpperCase()}</strong><span>● Online</span><small>PHASE 1 SAFE RUNTIME ADAPTER · v6 alpha.3.0.2</small></div>
+      <div className="functional-brand"><strong>{mode.toUpperCase()}</strong><span>● Online</span><small>PHASE 1 MICROSOFT WORKSPACE FOUNDATION · v6 alpha.3.1.0a</small></div>
       <div className="assistant-switch"><button className={requested === "nova" ? "active" : ""} onClick={() => activate("nova")}>NOVA</button><button className={requested === "onyx" ? "active" : ""} onClick={() => activate("onyx")}>ONYX</button><button onClick={cycle}>STATE DEMO</button></div>
       <div className="stability-controls"><label>QUALITY <select value={quality} onChange={event => setQuality(event.target.value as "full" | "balanced" | "low")}><option value="full">Full</option><option value="balanced">Balanced</option><option value="low">Low Power</option></select></label><span>{voice.diagnostic}</span></div>
     </header>
     <div className="mode-transition-veil" />
     <div className="module-slot">{activePanel && <aside className="module-drawer glass-surface"><div><small>{mode.toUpperCase()} MODULE</small><b>{names[activePanel]}</b></div><span>SELECTED</span><button onClick={closeModule}>×</button></aside>}</div>
-    <div className="phase0-scroll"><section className="functional-scene">{mode === "nova" ? <NovaDashboard activePanel={activePanel} /> : <OnyxDashboard activePanel={activePanel} />}<HeroCore mode={mode} state={state} onSwitch={() => activate(mode === "nova" ? "onyx" : "nova")} onAction={action => action === "Listen" ? voice.startListening() : dispatch(action)} lowPower={quality === "low"} /></section></div>
+    <div className="phase0-scroll">{activePanel === "workspace" && <WorkspacePanel snapshot={workspace} busy={workspaceBusy} onConnect={() => void connectMicrosoft()} onDisconnect={() => void disconnectMicrosoft()} onRefresh={() => void refreshWorkspace()} />}<section className="functional-scene">{mode === "nova" ? <NovaDashboard activePanel={activePanel === "workspace" ? null : activePanel} /> : <OnyxDashboard activePanel={activePanel} />}<HeroCore mode={mode} state={state} onSwitch={() => activate(mode === "nova" ? "onyx" : "nova")} onAction={action => action === "Listen" ? voice.startListening() : dispatch(action)} lowPower={quality === "low"} /></section></div>
     <div className="bottom-stack">
       {activityVisible && <div className="activity-strip glass-surface"><b>{state.replace("-", " ").toUpperCase()}</b><span>{caption}</span><small>{voice.diagnostic}</small></div>}
       <footer className="functional-footer"><nav className="glass-surface">{nav.map(item => <button key={item} onClick={() => dispatch(item)}>{item}</button>)}</nav><GlassCommandBar mode={mode} state={state} onMic={() => { setState("listening"); setCaption(`${mode.toUpperCase()} · listening`); voice.startListening(); }} onCommand={command => dispatch(command)} /></footer>

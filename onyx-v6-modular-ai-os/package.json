@@ -1,7 +1,7 @@
 {
   "name": "onyx-v6-ai-os",
   "private": true,
-  "version": "6.0.0-alpha.3.0.2",
+  "version": "6.0.0-alpha.3.1.0a",
   "packageManager": "pnpm@10.15.0",
   "scripts": {
     "dev": "pnpm --filter @onyx/command-center dev",
