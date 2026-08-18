@@ -32,6 +32,9 @@ importers:
       '@onyx/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@onyx/identity-runtime':
+        specifier: workspace:*
+        version: link:../../packages/identity-runtime
       '@onyx/intelligence-runtime':
         specifier: workspace:*
         version: link:../../packages/intelligence-runtime
@@ -126,6 +129,15 @@ importers:
       '@onyx/privacy':
         specifier: workspace:*
         version: link:../privacy
+
+  packages/identity-runtime:
+    devDependencies:
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.7
+        version: 3.2.7
 
   packages/intelligence-runtime:
     dependencies:

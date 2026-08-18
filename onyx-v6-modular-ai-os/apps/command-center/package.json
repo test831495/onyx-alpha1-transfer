@@ -26,7 +26,8 @@
     "@onyx/workspace-contracts": "workspace:*",
     "@onyx/workspace-connectors": "workspace:*",
     "@onyx/calendar-intelligence": "workspace:*",
-    "@onyx/voice-runtime": "workspace:*"
+    "@onyx/voice-runtime": "workspace:*",
+    "@onyx/identity-runtime": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19.1.10",
