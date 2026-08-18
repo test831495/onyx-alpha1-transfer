@@ -1,3 +1,5 @@
+import { getAssistantProfile, styleAssistantResponse } from "@onyx/identity-runtime";
+import "./providerHealthBootstrap";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AssistantMode, CoreState, Intent } from "@onyx/contracts";
 import { createIntelligenceRuntime } from "@onyx/intelligence-runtime";
@@ -160,6 +162,7 @@ function isCalendarCommand(normalized: string): boolean {
 export function App() {
   const touch = matchMedia("(hover: none), (pointer: coarse)").matches;
   const [mode, setMode] = useState<AssistantMode>("nova");
+  const identityProfile = getAssistantProfile(mode);
   const [requested, setRequested] = useState<AssistantMode>("nova");
   const [phase, setPhase] = useState<"idle" | "covered" | "revealing">(
     "idle",
@@ -173,7 +176,7 @@ export function App() {
   const [calendarSummary, setCalendarSummary] = useState<CalendarSummary>();
   const [calendarBusy, setCalendarBusy] = useState(false);
   const [voicePreferences, setVoicePreferences] = useState<VoicePreferences>(
-    () => loadVoicePreferences(),
+    () => loadVoicePreferences("nova"),
   );
   const [voiceStatus, setVoiceStatus] = useState("System voice ready.");
   const voiceManager = useRef(new VoiceManager());
@@ -188,6 +191,14 @@ export function App() {
 
   useEffect(() => {
     modeRef.current = mode;
+  }, [mode]);
+
+  useEffect(() => {
+    setCaption(getAssistantProfile(mode).greeting);
+  }, [mode]);
+
+  useEffect(() => {
+    setVoicePreferences(loadVoicePreferences(mode));
   }, [mode]);
 
   const refreshWorkspace = useCallback(async () => {
@@ -358,9 +369,10 @@ export function App() {
           const summary = await loadCalendar(offset);
           setCalendarSummary(summary);
 
-          const spoken = composeCalendarSpeech(
-            summary,
-            voicePreferences.detail,
+          const spoken = styleAssistantResponse(
+            modeRef.current,
+            composeCalendarSpeech(summary, voicePreferences.detail),
+            "calendar",
           );
 
           setCaption(spoken);
@@ -609,8 +621,8 @@ export function App() {
     >
       <header className="functional-header glass-surface">
         <div className="functional-brand">
-          <strong>{mode.toUpperCase()}</strong>
-          <span>● Online</span>
+          <strong>{identityProfile.name}</strong>
+          <span>● Online · {identityProfile.role}</span>
           <small>
             PHASE 1 CALENDAR INTELLIGENCE + MULTI-ENGINE VOICE · v6
             alpha.3.1.1a
@@ -689,10 +701,11 @@ export function App() {
               }}
             />
             <VoiceSettingsPanel
+              assistant={mode}
               value={voicePreferences}
               onChange={(value) => {
                 setVoicePreferences(value);
-                saveVoicePreferences(value);
+                saveVoicePreferences(mode, value);
               }}
               onTest={() => {
                 void voiceManager.current

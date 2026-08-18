@@ -1,6 +1,6 @@
 import { BrowserCacheLocation, InteractionRequiredAuthError, PublicClientApplication, type AccountInfo, type Configuration } from "@azure/msal-browser";
 import type { WorkspaceProviderSnapshot, WorkspaceProfile } from "@onyx/workspace-contracts";
-export interface MicrosoftWorkspaceConfig { clientId?: string; tenantId?: string; redirectUri?: string; }
+export interface MicrosoftWorkspaceConfig { clientId?: string; tenantId?: string; authority?: string; redirectUri?: string; }
 const profileScopes = ["User.Read"];
 const calendarScopes = ["Calendars.Read"];
 const workspaceScopes = [...profileScopes, ...calendarScopes];
@@ -19,7 +19,7 @@ export class MicrosoftWorkspaceConnector {
   get configured() { return Boolean(this.config.clientId && this.config.tenantId); }
   async initialize(): Promise<WorkspaceProviderSnapshot> {
     if (!this.configured) return this.snapshot("unconfigured");
-    const authority = `https://login.microsoftonline.com/${this.config.tenantId}`;
+    const authority = this.config.authority ?? "https://login.microsoftonline.com/common";
     const configuration: Configuration = { auth: { clientId: this.config.clientId!, authority, redirectUri: this.config.redirectUri ?? window.location.origin }, cache: { cacheLocation: BrowserCacheLocation.SessionStorage } };
     this.application = new PublicClientApplication(configuration);
     await this.application.initialize();

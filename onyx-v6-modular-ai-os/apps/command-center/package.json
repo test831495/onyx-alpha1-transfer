@@ -8,7 +8,9 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "predev": "node ../../scripts/generate-provider-health.mjs",
+    "prebuild": "node ../../scripts/generate-provider-health.mjs"
   },
   "dependencies": {
     "@elevenlabs/react": "^1.6.5",
@@ -24,7 +26,8 @@
     "@onyx/workspace-contracts": "workspace:*",
     "@onyx/workspace-connectors": "workspace:*",
     "@onyx/calendar-intelligence": "workspace:*",
-    "@onyx/voice-runtime": "workspace:*"
+    "@onyx/voice-runtime": "workspace:*",
+    "@onyx/identity-runtime": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19.1.10",

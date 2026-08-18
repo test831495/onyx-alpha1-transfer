@@ -13,3 +13,9 @@ coverage/
 *.before-*
 *.corrupted-backup
 *.zip
+.env.local
+.env.*.local
+config/onyx.config.local.json
+credentials.json
+tokens.json
+apps/command-center/public/provider-health.generated.json
