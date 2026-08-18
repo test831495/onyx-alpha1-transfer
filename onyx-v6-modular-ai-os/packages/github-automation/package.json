@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "demo": "tsx src/demo.ts",
-    "read-demo": "tsx src/read-demo.ts"
+    "read-demo": "tsx src/read-demo.ts",
+    "write-demo": "tsx src/write-demo.ts"
   },
   "dependencies": {
     "@onyx/automation-foundation": "workspace:*"
