@@ -1,0 +1,1 @@
+import{createPlan}from"@onyx/automation-foundation";import type{IssueInput}from"./contracts";export const planIssue=(repository:string,payload:IssueInput)=>createPlan({capabilityId:"github.issue.create",repository,payload,approvalRequired:true});

@@ -25,7 +25,7 @@ export interface AutomationCapability {
   enabled: boolean;
 }
 
-export interface AutomationJob {
+export interface AutomationJobSummary {
   id: string;
   capabilityId: string;
   status: AutomationStatus;

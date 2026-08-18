@@ -1,0 +1,2 @@
+const sensitive=/token|secret|password|authorization|api[-_]?key|client[-_]?secret/i;
+export function redact<T>(value:T):T{const visit=(v:unknown,key=""):unknown=>{if(sensitive.test(key))return "[REDACTED]";if(Array.isArray(v))return v.map(x=>visit(x));if(v&&typeof v==="object")return Object.fromEntries(Object.entries(v as Record<string,unknown>).map(([k,x])=>[k,visit(x,k)]));return v};return visit(value) as T}

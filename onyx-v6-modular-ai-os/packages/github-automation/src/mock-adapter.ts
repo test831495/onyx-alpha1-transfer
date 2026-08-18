@@ -1,0 +1,1 @@
+export class MockGitHubReader{constructor(private data={branches:["main","integration/onyx-nova"],issues:[],pullRequests:[]}){}async listBranches(){return[...this.data.branches]}async listIssues(){return[...this.data.issues]}async listPullRequests(){return[...this.data.pullRequests]}}
