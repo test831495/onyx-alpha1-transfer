@@ -1,0 +1,129 @@
+{
+  "$schema": "./schemas/onyx.config.schema.json",
+  "version": "1.0",
+  "environment": "development",
+  "production": {
+    "deploymentAllowed": false,
+    "liveNetlifyUpdatesAllowed": false
+  },
+  "runtime": {
+    "mode": "auto",
+    "timezone": "Asia/Kolkata",
+    "locale": "en-IN"
+  },
+  "providers": {
+    "microsoft": {
+      "enabled": true,
+      "role": "workspace",
+      "publicEnv": [
+        "ONYX_MS_CLIENT_ID",
+        "ONYX_MS_TENANT_ID",
+        "ONYX_MS_REDIRECT_URI"
+      ],
+      "secretEnv": []
+    },
+    "azureSpeech": {
+      "enabled": true,
+      "role": "voice",
+      "publicEnv": [
+        "ONYX_AZURE_SPEECH_REGION",
+        "ONYX_AZURE_SPEECH_ENDPOINT"
+      ],
+      "secretEnv": [
+        "ONYX_AZURE_SPEECH_KEY"
+      ]
+    },
+    "azureAI": {
+      "enabled": true,
+      "role": "cloud-intelligence",
+      "publicEnv": [
+        "ONYX_AZURE_AI_REGION",
+        "ONYX_AZURE_AI_ENDPOINT"
+      ],
+      "secretEnv": [
+        "ONYX_AZURE_AI_KEY"
+      ]
+    },
+    "google": {
+      "enabled": false,
+      "role": "workspace",
+      "publicEnv": [
+        "ONYX_GOOGLE_CLIENT_ID",
+        "ONYX_GOOGLE_REDIRECT_URI"
+      ],
+      "secretEnv": [
+        "ONYX_GOOGLE_CLIENT_SECRET"
+      ]
+    },
+    "gemini": {
+      "enabled": false,
+      "role": "cloud-intelligence",
+      "publicEnv": [
+        "ONYX_GEMINI_DEFAULT_MODEL"
+      ],
+      "secretEnv": [
+        "ONYX_GEMINI_API_KEY"
+      ]
+    },
+    "openai": {
+      "enabled": false,
+      "role": "cloud-intelligence",
+      "publicEnv": [
+        "ONYX_OPENAI_DEFAULT_MODEL"
+      ],
+      "secretEnv": [
+        "ONYX_OPENAI_API_KEY"
+      ]
+    },
+    "elevenLabs": {
+      "enabled": false,
+      "role": "premium-voice",
+      "publicEnv": [
+        "ONYX_ELEVENLABS_VOICE_ID"
+      ],
+      "secretEnv": [
+        "ONYX_ELEVENLABS_API_KEY"
+      ]
+    },
+    "yahoo": {
+      "enabled": false,
+      "role": "workspace",
+      "publicEnv": [
+        "ONYX_YAHOO_CLIENT_ID",
+        "ONYX_YAHOO_REDIRECT_URI"
+      ],
+      "secretEnv": [
+        "ONYX_YAHOO_CLIENT_SECRET"
+      ]
+    },
+    "github": {
+      "enabled": false,
+      "role": "automation",
+      "publicEnv": [
+        "ONYX_GITHUB_REPOSITORY"
+      ],
+      "secretEnv": [
+        "ONYX_GITHUB_AUTOMATION_TOKEN"
+      ]
+    }
+  },
+  "routing": {
+    "voice": [
+      "local",
+      "browser",
+      "azureSpeech",
+      "elevenLabs"
+    ],
+    "cloudAI": [
+      "azureAI",
+      "openai",
+      "gemini"
+    ]
+  },
+  "policies": {
+    "rawTokenLogging": false,
+    "secretsInBrowser": false,
+    "mergeApprovalRequired": true,
+    "productionApprovalRequired": true
+  }
+}

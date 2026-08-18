@@ -8,6 +8,9 @@ const browserOrigin =
 const microsoft = new MicrosoftWorkspaceConnector({
   clientId: import.meta.env.VITE_MS_CLIENT_ID,
   tenantId: import.meta.env.VITE_MS_TENANT_ID,
+  authority:
+    import.meta.env.VITE_MS_AUTHORITY ||
+    "https://login.microsoftonline.com/common",
   redirectUri:
     import.meta.env.VITE_MS_REDIRECT_URI || browserOrigin,
 });

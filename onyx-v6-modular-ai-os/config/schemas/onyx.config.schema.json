@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "version",
+    "environment",
+    "production",
+    "providers",
+    "routing",
+    "policies"
+  ],
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "environment": {
+      "enum": [
+        "development",
+        "test",
+        "production"
+      ]
+    },
+    "production": {
+      "type": "object"
+    },
+    "providers": {
+      "type": "object"
+    },
+    "routing": {
+      "type": "object"
+    },
+    "policies": {
+      "type": "object"
+    }
+  }
+}

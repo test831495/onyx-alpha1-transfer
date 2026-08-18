@@ -104,6 +104,15 @@ importers:
         specifier: workspace:*
         version: link:../workspace-contracts
 
+  packages/configuration-runtime:
+    devDependencies:
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.7
+        version: 3.2.7
+
   packages/contracts: {}
 
   packages/core:
