@@ -1,0 +1,2 @@
+import{spawn}from"node:child_process";import type{CommandResult,CommandRunner}from"./read-only-contracts";
+export class GhCommandRunner implements CommandRunner{run(args:string[]):Promise<CommandResult>{return new Promise((resolve,reject)=>{const child=spawn("gh",args,{stdio:["ignore","pipe","pipe"]});let stdout="",stderr="";child.stdout.on("data",chunk=>stdout+=String(chunk));child.stderr.on("data",chunk=>stderr+=String(chunk));child.on("error",reject);child.on("close",code=>resolve({stdout,stderr,exitCode:code??1}))})}}

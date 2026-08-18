@@ -9,7 +9,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "demo": "tsx src/demo.ts"
+    "demo": "tsx src/demo.ts",
+    "read-demo": "tsx src/read-demo.ts"
   },
   "dependencies": {
     "@onyx/automation-foundation": "workspace:*"
