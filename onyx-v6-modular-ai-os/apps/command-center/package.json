@@ -8,7 +8,9 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "predev": "node ../../scripts/generate-provider-health.mjs",
+    "prebuild": "node ../../scripts/generate-provider-health.mjs"
   },
   "dependencies": {
     "@elevenlabs/react": "^1.6.5",

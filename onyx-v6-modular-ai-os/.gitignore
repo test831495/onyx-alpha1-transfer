@@ -18,3 +18,4 @@ coverage/
 config/onyx.config.local.json
 credentials.json
 tokens.json
+apps/command-center/public/provider-health.generated.json

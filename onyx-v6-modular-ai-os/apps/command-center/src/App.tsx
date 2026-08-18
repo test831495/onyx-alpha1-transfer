@@ -1,3 +1,4 @@
+import "./providerHealthBootstrap";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AssistantMode, CoreState, Intent } from "@onyx/contracts";
 import { createIntelligenceRuntime } from "@onyx/intelligence-runtime";
@@ -173,7 +174,7 @@ export function App() {
   const [calendarSummary, setCalendarSummary] = useState<CalendarSummary>();
   const [calendarBusy, setCalendarBusy] = useState(false);
   const [voicePreferences, setVoicePreferences] = useState<VoicePreferences>(
-    () => loadVoicePreferences(),
+    () => loadVoicePreferences("nova"),
   );
   const [voiceStatus, setVoiceStatus] = useState("System voice ready.");
   const voiceManager = useRef(new VoiceManager());
@@ -188,6 +189,10 @@ export function App() {
 
   useEffect(() => {
     modeRef.current = mode;
+  }, [mode]);
+
+  useEffect(() => {
+    setVoicePreferences(loadVoicePreferences(mode));
   }, [mode]);
 
   const refreshWorkspace = useCallback(async () => {
@@ -689,10 +694,11 @@ export function App() {
               }}
             />
             <VoiceSettingsPanel
+              assistant={mode}
               value={voicePreferences}
               onChange={(value) => {
                 setVoicePreferences(value);
-                saveVoicePreferences(value);
+                saveVoicePreferences(mode, value);
               }}
               onTest={() => {
                 void voiceManager.current
