@@ -175,6 +175,7 @@ export function App() {
   const [activePanel, setActivePanel] = useState<Panel>(null);
   const [calendarSummary, setCalendarSummary] = useState<CalendarSummary>();
   const [calendarBusy, setCalendarBusy] = useState(false);
+  const [calendarMinimized, setCalendarMinimized] = useState(false);
   const [voicePreferences, setVoicePreferences] = useState<VoicePreferences>(
     () => loadVoicePreferences("nova"),
   );
@@ -357,6 +358,7 @@ export function App() {
         commandController.current?.abort();
         voiceManager.current.stop();
         setActivePanel("calendar");
+        setCalendarMinimized(false);
         setCalendarBusy(true);
         setState("thinking");
         setCaption(
@@ -679,7 +681,11 @@ export function App() {
       <div className="phase0-scroll">
         {activePanel === "calendar" && (
           <>
-            <CalendarIntelligencePanel
+            <section className="glass-surface" style={{margin:"1rem",padding:".75rem 1rem",borderRadius:"1rem",display:"flex",justifyContent:"space-between",alignItems:"center",gap:"1rem"}}>
+              <strong>Calendar Intelligence</strong>
+              <div style={{display:"flex",gap:".5rem"}}><button onClick={() => setCalendarMinimized((value) => !value)}>{calendarMinimized ? "Expand" : "Minimize"}</button><button onClick={closeModule}>Close</button></div>
+            </section>
+            {!calendarMinimized && <CalendarIntelligencePanel
               summary={calendarSummary}
               busy={calendarBusy}
               onRefresh={() => void dispatch("Show today meetings")}
@@ -699,23 +705,25 @@ export function App() {
                     ),
                   );
               }}
-            />
+            />}
+          </>
+        )}
+
+        {activePanel === "settings" && (
+          <>
+            <section className="glass-surface" style={{margin:"1rem",padding:"1rem",borderRadius:"1.25rem"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:"1rem"}}>
+                <div><small>ASSISTANT IDENTITY</small><h2 style={{margin:".2rem 0"}}>{identityProfile.name} · {identityProfile.role}</h2></div>
+                <button onClick={closeModule}>Close Settings</button>
+              </div>
+              <p>{identityProfile.description}</p>
+              <p><b>Tone:</b> {identityProfile.tone} · <b>Verbosity:</b> {identityProfile.verbosity} · <b>Execution:</b> {identityProfile.executionBias}</p>
+            </section>
             <VoiceSettingsPanel
               assistant={mode}
               value={voicePreferences}
-              onChange={(value) => {
-                setVoicePreferences(value);
-                saveVoicePreferences(mode, value);
-              }}
-              onTest={() => {
-                void voiceManager.current
-                  .speak("Voice connection test successful.", voicePreferences)
-                  .then((result) =>
-                    setVoiceStatus(
-                      result.message ?? `${result.engine} voice ready.`,
-                    ),
-                  );
-              }}
+              onChange={(value) => { setVoicePreferences(value); saveVoicePreferences(mode, value); }}
+              onTest={() => { void voiceManager.current.speak("This is " + identityProfile.name + ". Voice profile test successful.", voicePreferences).then((result) => setVoiceStatus(result.message ?? result.engine + " voice ready.")); }}
               status={voiceStatus}
             />
           </>
