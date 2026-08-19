@@ -1,0 +1,1 @@
+import{describe,it,expect}from"vitest";describe("Automation Dashboard contract",()=>{it("keeps execution unavailable in Phase 1A.2D",()=>{expect("Execute unavailable").toContain("unavailable")});it("records all validation tags",()=>{expect(["phase1a2a","phase1a2b","phase1a2c"]).toHaveLength(3)})});

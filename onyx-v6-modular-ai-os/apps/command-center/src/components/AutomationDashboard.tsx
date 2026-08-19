@@ -1,0 +1,32 @@
+import { useMemo, useState, type CSSProperties } from "react";
+
+type Tab = "overview"|"approvals"|"evidence"|"audit"|"recovery"|"health";
+type ApprovalState = "awaiting"|"approved"|"rejected";
+type Approval = {id:string;operation:string;repository:string;scopeHash:string;expiresAt:string;state:ApprovalState;mode:"dry-run"|"live-gated"};
+const initialApprovals:Approval[]=[
+ {id:"approval-ux",operation:"github.issue.create",repository:"test831495/onyx-alpha1-transfer",scopeHash:"fnv1a-69610091",expiresAt:"On execution plan refresh",state:"awaiting",mode:"live-gated"},
+ {id:"approval-branch",operation:"github.branch.create",repository:"test831495/onyx-alpha1-transfer",scopeHash:"fnv1a-22bc48b1",expiresAt:"On execution plan refresh",state:"awaiting",mode:"dry-run"}
+];
+const tags=["phase1a2a-dry-run-validated","phase1a2b-read-only-validated","phase1a2c-approval-gated-validated","phase1a2c-live-issue-validated"];
+const evidence=[
+ {title:"Dry-run architecture",result:"Validated",detail:"Issue, branch, and Draft PR plans returned remoteMutationPerformed=false."},
+ {title:"Read-only GitHub integration",result:"Validated",detail:"Repository, branches, issues, PRs, workflows, and rate limits were read with GET-only enforcement."},
+ {title:"Live issue smoke test",result:"Validated",detail:"Issue #4 was created, captured as evidence, verified, and closed. No branch, PR, merge, or deployment occurred."}
+];
+const audit=["Plan generated","Scope hash produced","Approval required","Dry run validated","Read-only GitHub access validated","Approval-gated write policy validated","Issue #4 created","Evidence captured","Issue #4 closed","Recovery tag pushed"];
+const shell:CSSProperties={position:"fixed",inset:"72px 16px 76px",zIndex:12000,background:"rgba(3,12,25,.985)",color:"#e9fbff",border:"1px solid rgba(27,210,239,.55)",borderRadius:20,boxShadow:"0 28px 90px rgba(0,0,0,.62)",overflow:"hidden",display:"grid",gridTemplateRows:"auto auto 1fr"};
+const button:CSSProperties={border:"1px solid rgba(27,210,239,.55)",borderRadius:999,padding:"8px 13px",background:"#071c33",color:"#e9fbff",fontWeight:800,cursor:"pointer"};
+const card:CSSProperties={padding:14,border:"1px solid rgba(148,197,218,.2)",borderRadius:14,background:"rgba(255,255,255,.035)"};
+export function AutomationDashboard(){const[open,setOpen]=useState(false);const[tab,setTab]=useState<Tab>("overview");const[approvals,setApprovals]=useState(initialApprovals);const counts=useMemo(()=>({jobs:3,awaiting:approvals.filter(a=>a.state==="awaiting").length,completed:3,failed:0}),[approvals]);const update=(id:string,state:ApprovalState)=>setApprovals(v=>v.map(a=>a.id===id?{...a,state}:a));return <>
+ <button type="button" style={{...button,position:"fixed",right:112,top:78,zIndex:11999}} onClick={()=>setOpen(true)}>Automation</button>
+ {open&&<section style={shell} aria-label="ONYX Automation Center"><header style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,padding:"16px 18px",borderBottom:"1px solid rgba(148,197,218,.2)"}}><div><small style={{color:"#68d8ef"}}>PHASE 1A.2D</small><h2 style={{margin:"3px 0"}}>ONYX Automation Center</h2><div style={{color:"#9ec6d8",fontSize:13}}>Supervised approvals, evidence, audit, health, and recovery</div></div><button style={button} onClick={()=>setOpen(false)}>Close</button></header>
+ <nav style={{display:"flex",gap:7,padding:"10px 16px",overflowX:"auto",borderBottom:"1px solid rgba(148,197,218,.16)"}}>{(["overview","approvals","evidence","audit","recovery","health"] as Tab[]).map(x=><button key={x} style={{...button,background:tab===x?"#0b7089":"#071c33"}} onClick={()=>setTab(x)}>{x.charAt(0).toUpperCase()+x.slice(1)}</button>)}</nav>
+ <div style={{overflow:"auto",padding:18}}>
+ {tab==="overview"&&<div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:12}}>{Object.entries(counts).map(([k,v])=><article key={k} style={card}><small style={{textTransform:"uppercase",color:"#83b8c8"}}>{k}</small><strong style={{display:"block",fontSize:28,marginTop:5}}>{v}</strong></article>)}</div><article style={{...card,marginTop:14}}><h3>Execution boundary</h3><p>Planning, read-only access, and approval-gated write architecture are available. Execute is intentionally unavailable in this UI release.</p><button style={{...button,opacity:.45,cursor:"not-allowed"}} disabled>Execute unavailable</button></article></div>}
+ {tab==="approvals"&&<div style={{display:"grid",gap:12}}>{approvals.map(a=><article key={a.id} style={card}><div style={{display:"flex",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}><strong>{a.operation}</strong><span>{a.state.toUpperCase()}</span></div><p style={{marginBottom:4}}>{a.repository}</p><small>Scope: {a.scopeHash} · Mode: {a.mode} · Expiry: {a.expiresAt}</small><div style={{display:"flex",gap:8,marginTop:12}}><button style={button} disabled={a.state!=="awaiting"} onClick={()=>update(a.id,"approved")}>Approve locally</button><button style={button} disabled={a.state!=="awaiting"} onClick={()=>update(a.id,"rejected")}>Reject</button><button style={{...button,opacity:.45}} disabled>Execute unavailable</button></div></article>)}</div>}
+ {tab==="evidence"&&<div style={{display:"grid",gap:12}}>{evidence.map(e=><article key={e.title} style={card}><div style={{display:"flex",justifyContent:"space-between",gap:10}}><strong>{e.title}</strong><span style={{color:"#65e6a4"}}>{e.result}</span></div><p>{e.detail}</p></article>)}</div>}
+ {tab==="audit"&&<ol style={{display:"grid",gap:9}}>{audit.map((e,i)=><li key={e} style={card}><b>{String(i+1).padStart(2,"0")}</b> · {e}</li>)}</ol>}
+ {tab==="recovery"&&<div style={{display:"grid",gap:10}}>{tags.map(t=><article key={t} style={card}><strong>{t}</strong><div style={{fontSize:12,color:"#91bdcc",marginTop:4}}>Validated Git recovery checkpoint</div></article>)}</div>}
+ {tab==="health"&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:12}}><Health name="GitHub authentication" state="VALIDATED"/><Health name="Read-only integration" state="VALIDATED"/><Health name="Approval-gated writes" state="VALIDATED"/><Health name="Live issue lifecycle" state="VALIDATED"/><Health name="PR merge" state="BLOCKED"/><Health name="Production deployment" state="BLOCKED"/></div>}
+ </div></section>}</>}
+function Health({name,state}:{name:string;state:string}){return <article style={card}><small>{name}</small><strong style={{display:"block",marginTop:7,color:state==="BLOCKED"?"#f7c56b":"#65e6a4"}}>{state}</strong></article>}

@@ -1,3 +1,4 @@
+import "./automationDashboardBootstrap";
 import { getAssistantProfile, styleAssistantResponse } from "@onyx/identity-runtime";
 import "./providerHealthBootstrap";
 import { useCallback, useEffect, useRef, useState } from "react";
