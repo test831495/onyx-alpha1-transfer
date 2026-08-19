@@ -1,0 +1,5 @@
+export type DashboardJobState="PLANNED"|"AWAITING_SCOPE_APPROVAL"|"APPROVED"|"PRECHECKED"|"BRANCH_READY"|"VALIDATING"|"REPAIRING"|"EVIDENCE_READY"|"AWAITING_DRAFT_PR_APPROVAL"|"DRAFT_PR_CREATED"|"NEEDS_REVIEW"|"FAILED_POLICY"|"CANCELLED";
+export type DashboardAction="VIEW_PLAN"|"APPROVE_SCOPE"|"REJECT_SCOPE"|"VIEW_EVIDENCE"|"APPROVE_DRAFT_PR"|"REJECT_DRAFT_PR"|"RETRY_VALIDATION"|"CANCEL_JOB"|"OPEN_DRAFT_PR";
+export interface DashboardJob{jobId:string;issueNumber:number;title:string;repository:string;state:DashboardJobState;risk:string;scopeHash:string;planId:string;branch?:string;baseCommit?:string;validation:{passed:number;failed:number;total:number};repairAttempts:number;evidenceReady:boolean;draftPr?:{number:number;url:string;draft:true};updatedAt:string;availableActions:DashboardAction[];diagnostics:string[]}
+export interface PipelineEvent{eventId:string;jobId:string;type:string;at:string;payload:Record<string,unknown>}
+export interface DashboardSnapshot{schemaVersion:"1.0";generatedAt:string;jobs:DashboardJob[];counts:Record<DashboardJobState,number>;audit:PipelineEvent[];productionDeployAllowed:false;mergeAllowed:false}
