@@ -1,4 +1,4 @@
-import "./autoListenController";
+import "./voiceRecognitionSupervisor";
 import "./settingsCenterBootstrap";
 import "./automationDashboardBootstrap";
 import { getAssistantProfile, styleAssistantResponse } from "@onyx/identity-runtime";
