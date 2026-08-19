@@ -1,0 +1,2 @@
+# Phase 1A.2E.1 Issue Intake and Automation Plan Builder
+Read-only issue intake produces deterministic, evidence-ready plans. Layers: issue contract, acceptance parser, risk classification, scope hash, file boundary, validation plan, approval matrix, rollback, prohibited-capability policy, tests, and regressions. Every plan starts `AWAITING_SCOPE_APPROVAL`. E.1 performs no branch, commit, PR, merge, deployment, permission, or secret operation. E.2 may create an isolated branch only after Rahul approves the exact scope hash.

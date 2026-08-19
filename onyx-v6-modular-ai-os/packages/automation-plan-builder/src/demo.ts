@@ -1,0 +1,1 @@
+import{buildPlan}from"./index.js";console.log(JSON.stringify(buildPlan({repository:"test831495/onyx-alpha1-transfer",issueNumber:5,title:"Add automation plan preview",body:"- [ ] Parse acceptance criteria\n- [ ] Require scope approval",labels:["automation"],baseBranch:"feature/phase1a2-github-automation-foundation",requestedBy:"Rahul Kumar"}),null,2));
