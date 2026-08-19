@@ -1,0 +1,3 @@
+export interface EvidenceCheck{key:string;label:string;status:"PASS"|"FAIL"|"PENDING";detail:string}
+export interface EvidenceSection{title:string;items:string[]}
+export interface EvidenceReviewModel{schemaVersion:"1.0";issueNumber:number;planId:string;scopeHash:string;repository:string;branch:string;baseCommit:string;state:string;risk:string;validation:EvidenceCheck[];repairs:{count:number;summary:string[]};changedFiles:string[];knownIssues:string[];rollback:string[];governance:{draftOnly:true;mergeAllowed:false;productionDeployAllowed:false;scopeBound:true};audit:{at:string;label:string;detail:string}[];completeness:{score:number;missing:string[]}}
