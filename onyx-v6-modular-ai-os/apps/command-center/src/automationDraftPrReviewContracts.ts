@@ -1,0 +1,4 @@
+import type{UiJob}from"./automationDashboardContracts";import type{ApprovalDecision}from"./automationApprovalContracts";
+export interface DraftPrReviewCheck{id:string;label:string;passed:boolean;detail:string}
+export interface DraftPrReviewModel{schemaVersion:"1.0";issueNumber:number;title:string;repository:string;number:number;url:string;state:"OPEN"|"CLOSED";draft:true;baseBranch:string;headBranch:string;objective:string;risk:string;scopeHash:string;evidenceComplete:boolean;validation:{passed:number;failed:number;total:number;checks:DraftPrReviewCheck[]};changedFiles:string[];knownIssues:string[];rollback:string[];approvalHistory:ApprovalDecision[];reviewerChecklist:{id:string;label:string;passed:boolean}[];mergeAllowed:false;productionDeployAllowed:false}
+export interface DraftPrReviewInput{job:UiJob;approvals:ApprovalDecision[];baseBranch:string}
