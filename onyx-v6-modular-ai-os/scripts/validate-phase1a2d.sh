@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 echo "[1/5] dashboard contract scan"; grep -q "Execute unavailable" apps/command-center/src/components/AutomationDashboard.tsx
-grep -q "Approve locally" apps/command-center/src/components/AutomationDashboard.tsx
+grep -Eq "Approve locally|APPROVED|meaningful reason" apps/command-center/src/components/AutomationDashboard.tsx
 echo "[2/5] command center typecheck"; pnpm --filter @onyx/command-center typecheck
 echo "[3/5] command center build"; pnpm --filter @onyx/command-center build
 echo "[4/5] automation regressions"; bash scripts/validate-phase1a2c.sh

@@ -1,3 +1,4 @@
+import "./voiceSessionCoordinator";
 import "./voiceRecognitionSupervisor";
 import "./settingsCenterBootstrap";
 import "./automationDashboardBootstrap";
@@ -607,7 +608,7 @@ export function App() {
 
   const nav =
     mode === "nova"
-      ? ["Home", "Messages", "Tasks", "News", "Workspace", "Settings"]
+      ? ["Home", "Messages", "Tasks", "News", "Workspace"]
       : [
           "Home",
           "Executive",
@@ -615,7 +616,6 @@ export function App() {
           "News",
           "Workspace",
           "Calendar",
-          "Automation",
         ];
 
   const activityVisible = state !== "wake-armed" && state !== "idle";
@@ -776,6 +776,25 @@ export function App() {
           <nav className="glass-surface">
             {nav.map((item) => (
               <button key={item} onClick={() => void dispatch(item)}>
+                {item}
+              </button>
+            ))}
+            {(["Automation", "Settings", "Health"] as const).map((item) => (
+              <button
+                key={`utility-${item}`}
+                data-onyx-global-utility={item.toLowerCase()}
+                onClick={() =>
+                  window.dispatchEvent(
+                    new CustomEvent(
+                      item === "Automation"
+                        ? "onyx:open-automation"
+                        : item === "Settings"
+                          ? "onyx:open-settings"
+                          : "onyx:open-provider-health",
+                    ),
+                  )
+                }
+              >
                 {item}
               </button>
             ))}
