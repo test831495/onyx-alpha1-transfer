@@ -1,0 +1,4 @@
+export type OrchestrationState="DRAFT_READY"|"AWAITING_EXECUTION_APPROVAL"|"APPROVED_FOR_DRY_RUN"|"DRY_RUN_READY"|"BLOCKED";
+export interface ExecutionApproval{approvedBy:"Rahul Kumar";reason:string;scopeHash:string;approvedAt:string;expiresAt?:string;actions:readonly["BUILD_PLAN","RUN_PREFLIGHT"]}
+export interface SupervisedRun{runId:string;draftId:string;scopeHash:string;state:OrchestrationState;repository:string;baseBranch:string;proposedBranch:string;approval?:ExecutionApproval;plan:{objective:string;allowedPaths:string[];acceptanceCriteria:string[];validationPlan:string[];rollbackPlan:string[]};preflight:{status:"NOT_RUN"|"PASS"|"BLOCKED";checks:{label:string;passed:boolean;detail:string}[]};remoteWritesPerformed:false;branchCreated:false;issueCreated:false;draftPrCreated:false;mergeAllowed:false;productionDeployAllowed:false;createdAt:string;updatedAt:string}
+export interface OrchestrationValidation{allowed:boolean;violations:string[]}
