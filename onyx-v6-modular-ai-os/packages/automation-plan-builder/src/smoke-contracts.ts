@@ -1,0 +1,7 @@
+import type{DashboardSnapshot,PipelineEvent}from"./dashboard-contracts.js";import type{DraftPrPackage}from"./draft-pr-contracts.js";import type{EvidencePackage}from"./validation-contracts.js";
+export type SmokeState="SMOKE_PLANNED"|"SMOKE_RUNNING"|"SMOKE_PASSED"|"SMOKE_FAILED_POLICY"|"SMOKE_NEEDS_REVIEW";
+export interface SmokeIssue{repository:string;issueNumber:number;title:string;body:string;labels:string[];baseBranch:string;requestedBy:string}
+export interface SmokeApproval{approvedBy:string;approvedAt:string;reason:string}
+export interface SmokeInput{issue:SmokeIssue;scopeApproval:SmokeApproval;draftPrApproval:SmokeApproval;allowedFiles:string[];baseCommit:string}
+export interface SmokeAdapters{branch:{branchExists(name:string):Promise<boolean>;createBranch(name:string):Promise<void>};validation:{run(command:string):Promise<{exitCode:number;stdout:string;stderr:string;durationMs:number}>};repair:{propose(failure:unknown,attempt:number):Promise<null>;apply(proposal:never):Promise<{filesChanged:string[]}>};draftPr:{findByIdempotencyKey(key:string):Promise<{number:number;url:string}|null>;createDraft(input:unknown):Promise<{number:number;url:string;draft:boolean}>}}
+export interface SmokeReport{schemaVersion:"1.0";state:SmokeState;issueNumber:number;planId:string;scopeHash:string;branch:string;steps:{name:string;passed:boolean;detail:string}[];evidence:EvidencePackage;draftPrPackage:DraftPrPackage;dashboard:DashboardSnapshot;events:PipelineEvent[];remoteWritesPerformed:false;mergeAllowed:false;productionDeployAllowed:false}
