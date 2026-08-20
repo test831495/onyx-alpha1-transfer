@@ -1,7 +1,11 @@
-import { describe, expect, it, vi } from "vitest";
+import { randomUUID } from "node:crypto";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { rm, writeFile } from "node:fs/promises";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { GitHubApprovalGatedWriteAdapter, InMemoryIdempotencyStore } from "@onyx/github-automation";
 import { createApprovedIssue, requestIssueApproval, type IssueApproval, type IssueBridgeRequest } from "../src/index";
-import { LIVE_BRANCH, LIVE_CONFIRMATION, LIVE_TITLE, runLiveSmoke, type LiveSmokeOptions } from "../src/live-smoke";
+import { LIVE_BRANCH, LIVE_CONFIRMATION, LIVE_TITLE, runLiveSmoke, type LiveSmokeOptions, type LiveSmokePreflight } from "../src/live-smoke";
 
 const run = { runId: "run-1", state: "DRY_RUN_READY", scopeHash: "a".repeat(64), repository: "test831495/onyx-alpha1-transfer", branchCreated: false as const, draftPrCreated: false as const, mergeAllowed: false as const, productionDeployAllowed: false as const };
 const base: IssueBridgeRequest = { run, title: "Implement bridge", body: "Approved issue body", reason: "Approve this exact issue creation scope." };
@@ -75,11 +79,26 @@ class MockLiveRunner {
     this.calls.push(args);
     if (args[0] === "auth") return { stdout: this.authOutput, stderr: "", exitCode: 0 };
     if (args[0] === "repo") return { stdout: "test831495/onyx-alpha1-transfer\n", stderr: "", exitCode: 0 };
-    return this.issueResponse;
+    if (args[0] === "issue") return this.issueResponse;
+    return { stdout: "", stderr: "unexpected command", exitCode: 1 };
   }
 }
 
-const liveOptions = (runner: MockLiveRunner, overrides: Partial<LiveSmokeOptions> = {}): LiveSmokeOptions => ({ env: { PHASE1A4A_LIVE_CONFIRMATION: LIVE_CONFIRMATION }, commandRunner: runner, currentBranch: () => LIVE_BRANCH, isWorktreeClean: () => true, writeEvidence: async () => undefined, now: () => new Date("2026-08-20T18:00:00.000Z"), ...overrides });
+const cleanPreflight: LiveSmokePreflight = { branch: LIVE_BRANCH, authenticated: true, actor: "coolscorpiorahul", repository: "test831495/onyx-alpha1-transfer", worktreeClean: true };
+const evidencePaths: string[] = [];
+const temporaryEvidencePath = () => {
+  const path = join(tmpdir(), `phase1a4a-issue-bridge-${randomUUID()}.json`);
+  evidencePaths.push(path);
+  return path;
+};
+const liveOptions = (runner: MockLiveRunner, overrides: Partial<LiveSmokeOptions> = {}): LiveSmokeOptions => {
+  const evidencePath = temporaryEvidencePath();
+  return { env: { PHASE1A4A_LIVE_CONFIRMATION: LIVE_CONFIRMATION }, commandRunner: runner, preflight: async () => cleanPreflight, writeEvidence: async value => writeFile(evidencePath, JSON.stringify(value), { encoding: "utf8", mode: 0o600 }), now: () => new Date(Date.now() - 1000), ...overrides };
+};
+
+afterEach(async () => {
+  await Promise.all(evidencePaths.splice(0).map(path => rm(path, { force: true })));
+});
 
 describe("Phase 1A.4A live smoke guards", () => {
   it.each([undefined, "WRONG_CONFIRMATION"]) ("rejects %s confirmation", async confirmation => {
@@ -87,15 +106,16 @@ describe("Phase 1A.4A live smoke guards", () => {
   });
 
   it("rejects the wrong repository, actor, and dirty worktree", async () => {
-    await expect(runLiveSmoke(liveOptions(new MockLiveRunner(), { commandRunner: new class extends MockLiveRunner { async run(args: string[]) { const result = await super.run(args); return args[0] === "repo" ? { ...result, stdout: "other/repo" } : result; } }() }))).rejects.toThrow("Repository");
-    await expect(runLiveSmoke(liveOptions(new MockLiveRunner({ stdout: "", stderr: "", exitCode: 0 }, "Logged in to github.com account other-user")))).rejects.toThrow("coolscorpiorahul");
-    await expect(runLiveSmoke(liveOptions(new MockLiveRunner(), { isWorktreeClean: () => false }))).rejects.toThrow("clean");
+    await expect(runLiveSmoke(liveOptions(new MockLiveRunner(), { preflight: async () => ({ ...cleanPreflight, repository: "other/repo" }) }))).rejects.toThrow("Repository");
+    await expect(runLiveSmoke(liveOptions(new MockLiveRunner(), { preflight: async () => ({ ...cleanPreflight, actor: "other-user" }) }))).rejects.toThrow("coolscorpiorahul");
+    await expect(runLiveSmoke(liveOptions(new MockLiveRunner(), { preflight: async () => ({ ...cleanPreflight, worktreeClean: false }) }))).rejects.toThrow("clean");
   });
 
   it("creates one issue, replays idempotently, and redacts evidence", async () => {
     const runner = new MockLiveRunner();
+    const evidencePath = temporaryEvidencePath();
     let evidenceText = "";
-    const evidence = await runLiveSmoke(liveOptions(runner, { writeEvidence: async value => { evidenceText = JSON.stringify(value); } }));
+    const evidence = await runLiveSmoke(liveOptions(runner, { writeEvidence: async value => { evidenceText = JSON.stringify(value); await writeFile(evidencePath, evidenceText, { encoding: "utf8", mode: 0o600 }); } }));
     expect(evidence).toMatchObject({ repository: "test831495/onyx-alpha1-transfer", capability: "CREATE_GITHUB_ISSUE", issueNumber: 77, issueUrl: "https://github.com/test831495/onyx-alpha1-transfer/issues/77", newIssueCount: 1, idempotentReplayStatus: true, branchCreated: false, branchPushed: false, draftPrCreated: false, mergeAllowed: false, productionDeployAllowed: false });
     expect(evidence.firstResult).toMatchObject({ finalState: "ISSUE_CREATED", newIssueCreated: true });
     expect(evidence.replayResult).toMatchObject({ finalState: "ISSUE_CREATED", newIssueCreated: false, idempotentlyReused: true, issueNumber: 77, issueUrl: evidence.issueUrl });

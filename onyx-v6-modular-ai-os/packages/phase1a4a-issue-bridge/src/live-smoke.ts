@@ -38,10 +38,19 @@ No destructive Git operation.`;
 export interface LiveSmokeOptions {
   env?: NodeJS.ProcessEnv;
   commandRunner?: WriteCommandRunner;
+  preflight?: () => Promise<LiveSmokePreflight>;
   currentBranch?: () => string;
   isWorktreeClean?: () => boolean;
   writeEvidence?: (evidence: LiveSmokeEvidence) => Promise<void>;
   now?: () => Date;
+}
+
+export interface LiveSmokePreflight {
+  branch: string;
+  authenticated: boolean;
+  actor: string;
+  repository: string;
+  worktreeClean: boolean;
 }
 
 export interface LiveSmokeEvidence {
@@ -78,20 +87,34 @@ function fixedRequest(now: Date): IssueBridgeRequest {
 
 function gitValue(args: string[]): string { return execFileSync("git", args, { encoding: "utf8" }).trim(); }
 
+async function livePreflight(options: LiveSmokeOptions, runner: WriteCommandRunner): Promise<LiveSmokePreflight> {
+  if (options.preflight) return options.preflight();
+  const branch = (options.currentBranch ?? (() => gitValue(["branch", "--show-current"])))();
+  if (branch !== LIVE_BRANCH) throw new Error(`Current branch must be ${LIVE_BRANCH}.`);
+  const worktreeClean = (options.isWorktreeClean ?? (() => gitValue(["status", "--porcelain"]) === ""))();
+  if (!worktreeClean) throw new Error("Working tree must be clean.");
+  const auth = await runner.run(["auth", "status", "--hostname", "github.com"]);
+  const login = (auth.stdout + "\n" + auth.stderr).match(/Logged in to github\.com account ([A-Za-z0-9-]+)/i)?.[1] ?? "";
+  const repository = await runner.run(["repo", "view", ISSUE_REPOSITORY, "--json", "nameWithOwner", "--jq", ".nameWithOwner"]);
+  return {
+    branch,
+    authenticated: auth.exitCode === 0,
+    actor: login,
+    repository: repository.stdout.trim(),
+    worktreeClean,
+  };
+}
+
 export async function runLiveSmoke(options: LiveSmokeOptions = {}): Promise<LiveSmokeEvidence> {
   const env = options.env ?? process.env;
   if (env.PHASE1A4A_LIVE_CONFIRMATION !== LIVE_CONFIRMATION) throw new Error(`Set PHASE1A4A_LIVE_CONFIRMATION=${LIVE_CONFIRMATION} to authorize exactly one live issue smoke test.`);
   const runner = options.commandRunner ?? new GhWriteCommandRunner();
-  const branch = (options.currentBranch ?? (() => gitValue(["branch", "--show-current"])))();
-  if (branch !== LIVE_BRANCH) throw new Error(`Current branch must be ${LIVE_BRANCH}.`);
-  if (!(options.isWorktreeClean ?? (() => gitValue(["status", "--porcelain"]) === ""))()) throw new Error("Working tree must be clean.");
-
-  const auth = await runner.run(["auth", "status", "--hostname", "github.com"]);
-  if (auth.exitCode !== 0) throw new Error("GitHub CLI authentication is required.");
-  const login = (auth.stdout + "\n" + auth.stderr).match(/Logged in to github\.com account ([A-Za-z0-9-]+)/i)?.[1];
-  if (login !== "coolscorpiorahul") throw new Error("Authenticated GitHub login must be coolscorpiorahul.");
-  const repository = await runner.run(["repo", "view", ISSUE_REPOSITORY, "--json", "nameWithOwner", "--jq", ".nameWithOwner"]);
-  if (repository.exitCode !== 0 || repository.stdout.trim() !== ISSUE_REPOSITORY) throw new Error(`Repository must be ${ISSUE_REPOSITORY}.`);
+  const preflight = await livePreflight(options, runner);
+  if (preflight.branch !== LIVE_BRANCH) throw new Error(`Current branch must be ${LIVE_BRANCH}.`);
+  if (!preflight.worktreeClean) throw new Error("Working tree must be clean.");
+  if (!preflight.authenticated) throw new Error("GitHub CLI authentication is required.");
+  if (preflight.actor !== "coolscorpiorahul") throw new Error("Authenticated GitHub login must be coolscorpiorahul.");
+  if (preflight.repository !== ISSUE_REPOSITORY) throw new Error(`Repository must be ${ISSUE_REPOSITORY}.`);
 
   const now = (options.now ?? (() => new Date()))();
   const request = fixedRequest(now);
