@@ -18,4 +18,5 @@ coverage/
 config/onyx.config.local.json
 credentials.json
 tokens.json
+.phase1a4a-live-smoke-evidence.json
 apps/command-center/public/provider-health.generated.json
