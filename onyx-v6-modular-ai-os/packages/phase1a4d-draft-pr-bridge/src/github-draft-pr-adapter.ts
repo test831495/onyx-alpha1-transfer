@@ -3,7 +3,6 @@ import type { DraftPrAdapter, DraftPrChecks } from "./index.js";
 import {
   DRAFT_PR_BASE_BRANCH,
   DRAFT_PR_HEAD_BRANCH,
-  DRAFT_PR_HEAD_COMMIT,
   DRAFT_PR_ISSUE_NUMBER,
   DRAFT_PR_ISSUE_TITLE,
   DRAFT_PR_REPOSITORY,
@@ -81,6 +80,29 @@ export class GitHubDraftPrAdapter implements DraftPrAdapter, DraftPrChecks {
     return this.currentBranch();
   }
 
+  async localHeadCommit(branch: string): Promise<string> {
+    requireFixed(branch, DRAFT_PR_HEAD_BRANCH, "Local implementation branch");
+    return this.run("git", ["rev-parse", `refs/heads/${branch}`], "Local implementation head lookup");
+  }
+
+  async baseBranchCommit(branch: string): Promise<string> {
+    requireFixed(branch, DRAFT_PR_BASE_BRANCH, "Remote base branch");
+    const result = await this.runCommand("git", ["ls-remote", "--heads", "origin", `refs/heads/${branch}`]);
+    const commit = requireSuccess(result, "Remote base branch lookup").split(/\s+/)[0] ?? "";
+    if (!/^[0-9a-f]{40}$/i.test(commit)) throw new Error("Remote base branch did not resolve to a full SHA.");
+    return commit;
+  }
+
+  async headDiff(baseBranch: string, headBranch: string): Promise<{ identicalCommits: boolean; ahead: boolean; diffNonEmpty: boolean }> {
+    requireFixed(baseBranch, DRAFT_PR_BASE_BRANCH, "Base branch");
+    requireFixed(headBranch, DRAFT_PR_HEAD_BRANCH, "Head branch");
+    const baseCommit = await this.baseBranchCommit(baseBranch);
+    const headCommit = await this.localHeadCommit(headBranch);
+    const ancestor = await this.runCommand("git", ["merge-base", "--is-ancestor", baseCommit, headCommit]);
+    const diff = await this.runCommand("git", ["diff", "--quiet", baseCommit, headCommit]);
+    return { identicalCommits: baseCommit === headCommit, ahead: ancestor.exitCode === 0, diffNonEmpty: diff.exitCode === 1 };
+  }
+
   async remoteBranch(branch: string): Promise<{ exists: boolean; commit?: string }> {
     requireFixed(branch, DRAFT_PR_HEAD_BRANCH, "Remote branch");
     const result = await this.runCommand("git", ["ls-remote", "--heads", "origin", `refs/heads/${DRAFT_PR_HEAD_BRANCH}`]);
@@ -105,7 +127,7 @@ export class GitHubDraftPrAdapter implements DraftPrAdapter, DraftPrChecks {
 
     const result = await this.runCommand("gh", ["pr", "list", "--repo", repository, "--state", "all", "--limit", "200", "--json", "number,url,isDraft,baseRefName,headRefName,headRefOid"]);
     const rows = JSON.parse(result.stdout.trim() || "[]") as Array<{ number: number; url: string; isDraft: boolean; baseRefName: string; headRefName: string; headRefOid: string }>;
-    const match = rows.find(pr => pr.isDraft && pr.baseRefName === baseBranch && pr.headRefName === headBranch && pr.headRefOid === DRAFT_PR_HEAD_COMMIT);
+    const match = rows.find(pr => pr.isDraft && pr.baseRefName === baseBranch && pr.headRefName === headBranch);
     if (!match) return null;
     return {
       number: match.number,
@@ -114,7 +136,7 @@ export class GitHubDraftPrAdapter implements DraftPrAdapter, DraftPrChecks {
       repository,
       baseBranch,
       headBranch,
-      headCommit: DRAFT_PR_HEAD_COMMIT,
+      headCommit: match.headRefOid,
       idempotencyKey: "gh-pr-lookup",
     };
   }
@@ -138,7 +160,8 @@ export class GitHubDraftPrAdapter implements DraftPrAdapter, DraftPrChecks {
     requireFixed(input.repository, DRAFT_PR_REPOSITORY, "Repository");
     requireFixed(input.baseBranch, DRAFT_PR_BASE_BRANCH, "Base branch");
     requireFixed(input.headBranch, DRAFT_PR_HEAD_BRANCH, "Head branch");
-    requireFixed(input.headCommit, DRAFT_PR_HEAD_COMMIT, "Head commit");
+    if (!/^[0-9a-f]{40}$/i.test(input.baseCommit)) throw new Error("Base commit must be a full SHA.");
+    if (!/^[0-9a-f]{40}$/i.test(input.headCommit)) throw new Error("Head commit must be a full SHA.");
     if (!input.draft) throw new Error("Only Draft PR creation is allowed.");
 
     const result = await this.runCommand("gh", [
