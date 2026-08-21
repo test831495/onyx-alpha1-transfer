@@ -1,4 +1,33 @@
 import{useEffect,useState,type CSSProperties}from"react";import{useAutomationDashboard}from"../automationDashboardHook";import type{UiJob,UiTab}from"../automationDashboardContracts";import{AutomationSupervisedOrchestration}from"./AutomationSupervisedOrchestration";import{AutomationNaturalLanguageIntake}from"./AutomationNaturalLanguageIntake";import{AutomationDraftPrReview}from"./AutomationDraftPrReview";import{ApprovalDialog}from"./AutomationApprovalDialog";import{recordApprovalDecision}from"../automationApprovalService";import type{ApprovalAction,ApprovalDecision}from"../automationApprovalContracts";import{AutomationEvidenceViewer}from"./AutomationEvidenceViewer";
+import{useMemo}from"react";import{AutomationRuntimeDashboard}from"./AutomationRuntimeDashboard";import{LocalAutomationRuntimeController}from"../automationRuntimeController";import{buildAutomationRuntimeProjection}from"../automationRuntimeProjection";import type{RuntimeIdentityProjection}from"../automationRuntimeContracts";
+const RUNTIME_LAUNCHER_EVENT="onyx:open-automation-runtime";
+function defaultRuntimeIdentity(runtimeId:string,runtimeSessionId:string,workflowId:string):RuntimeIdentityProjection{return{runtimeId,runtimeSessionId,workflowId,supervisingUserId:"Rahul Kumar",initiatingPresenceMode:"SYSTEM",laneCount:1,promotionLaneActive:false}}
+/**
+ * Phase 1A.7 governed runtime launcher. Extends the existing Automation
+ * Center with a mock or local-simulation-only runtime dashboard; it never
+ * replaces {@link AutomationDashboard}. It never calls GitHub, Git, a
+ * connector, a paid API, a child process, or any shell interface.
+ */
+export function AutomationGovernedRuntimeLauncher(){
+  const[open,setOpen]=useState(false);
+  const[error,setError]=useState<string|null>(null);
+  const[revision,setRevision]=useState(0);
+  const controller=useMemo(()=>new LocalAutomationRuntimeController(),[]);
+  useEffect(()=>{const show=()=>setOpen(true);window.addEventListener(RUNTIME_LAUNCHER_EVENT,show);return()=>window.removeEventListener(RUNTIME_LAUNCHER_EVENT,show)},[]);
+  if(!open)return null;
+  const snapshot=controller.getSnapshot();
+  const projection=buildAutomationRuntimeProjection({snapshot,identity:defaultRuntimeIdentity(snapshot.runtimeId,`p16sess-${snapshot.workflowId}`,snapshot.workflowId)});
+  const runAction=(action:()=>unknown)=>{setError(null);Promise.resolve().then(action).then(()=>setRevision(value=>value+1)).catch((cause:unknown)=>setError(cause instanceof Error?cause.message:"Runtime action failed."))};
+  return <section aria-label="ONYX Automation Center governed runtime dashboard" style={{position:"fixed",inset:18,zIndex:12100,display:"grid",gridTemplateRows:"auto 1fr",background:"linear-gradient(160deg,#061325,#081d34)",color:"#e9fbff",border:"1px solid rgba(105,213,241,.35)",borderRadius:18,boxShadow:"0 22px 80px rgba(0,0,0,.52)",overflow:"hidden"}}>
+    <header style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:14,padding:"14px 18px",borderBottom:"1px solid rgba(140,205,226,.2)",flexWrap:"wrap"}}>
+      <div><small style={{color:"#65d9ef"}}>PHASE 1A.7 · GOVERNED RUNTIME AND AGENT-READY DASHBOARD</small><h2 style={{margin:"3px 0"}}>Automation Center · Governed Runtime</h2></div>
+      <button style={btn} onClick={()=>setOpen(false)}>Close</button>
+    </header>
+    <div style={{overflow:"auto",padding:18}}>
+      <AutomationRuntimeDashboard key={revision} projection={projection} onPause={()=>runAction(()=>controller.pause())} onResume={()=>runAction(()=>controller.resume())} onCancel={()=>runAction(()=>controller.cancel())} onRecover={()=>runAction(()=>controller.recover())} actionError={error}/>
+    </div>
+  </section>;
+}
 const tabs:UiTab[]=["create","execute","overview","queue","approvals","validation","evidence","draft-prs","history"];
 const labels:Record<UiTab,string>={create:"Create",execute:"Execute",overview:"Overview",queue:"Queue",approvals:"Approvals",validation:"Validation",evidence:"Evidence","draft-prs":"Draft PRs",history:"History"};
 const btn:CSSProperties={border:"1px solid rgba(124,211,239,.35)",background:"#071c33",color:"#d9f7ff",padding:"9px 12px",borderRadius:10,cursor:"pointer",fontWeight:700};const card:CSSProperties={border:"1px solid rgba(148,197,218,.22)",background:"rgba(5,23,42,.72)",borderRadius:14,padding:14};
