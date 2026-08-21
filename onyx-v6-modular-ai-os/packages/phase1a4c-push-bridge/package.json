@@ -1,0 +1,17 @@
+{
+  "name": "@onyx/phase1a4c-push-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./live-push": "./src/live-push.ts", "./git-push-adapter": "./src/git-push-adapter.ts" },
+  "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run", "live-push": "tsx src/live-push.ts" },
+  "dependencies": {
+    "@onyx/automation-foundation": "workspace:*",
+    "@onyx/github-automation": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.7"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "@onyx/phase1a4d-draft-pr-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "live-draft-pr": "tsx src/live-draft-pr.ts"
+  },
+  "dependencies": {
+    "@onyx/automation-foundation": "workspace:*",
+    "@onyx/github-automation": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "tsx": "4.20.5",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.7"
+  }
+}
