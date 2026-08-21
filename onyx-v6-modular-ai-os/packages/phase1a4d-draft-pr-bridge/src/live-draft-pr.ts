@@ -14,7 +14,7 @@ import {
   type DraftPrBridgeRequest,
   type DraftPrChecks,
   type DraftPrBridgeResult,
-} from "./index";
+} from "./index.js";
 import { GitHubDraftPrAdapter } from "./github-draft-pr-adapter";
 
 export const LIVE_CONFIRMATION = "APPROVE_PHASE1A4D_SINGLE_DRAFT_PR" as const;

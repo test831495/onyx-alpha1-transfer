@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import type { DraftPrAdapter, DraftPrChecks } from "./index";
+import type { DraftPrAdapter, DraftPrChecks } from "./index.js";
 import {
   DRAFT_PR_BASE_BRANCH,
   DRAFT_PR_HEAD_BRANCH,
@@ -7,7 +7,7 @@ import {
   DRAFT_PR_ISSUE_NUMBER,
   DRAFT_PR_ISSUE_TITLE,
   DRAFT_PR_REPOSITORY,
-} from "./index";
+} from "./index.js";
 
 export interface DraftPrIssue {
   number: number;
