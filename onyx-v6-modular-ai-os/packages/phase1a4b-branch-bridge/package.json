@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run" },
+  "exports": { ".": "./src/index.ts", "./local-smoke": "./src/local-smoke.ts" },
+  "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run", "local-smoke": "node --loader tsx ./src/local-smoke.ts" },
   "dependencies": {
     "@onyx/automation-foundation": "workspace:*",
     "@onyx/github-automation": "workspace:*"

@@ -131,3 +131,178 @@ describe("Phase 1A.4B isolated branch bridge", () => {
     expect(approval.idempotencyKey).toContain("fnv1a-");
   });
 });
+
+describe("Phase 1A.4B local smoke runner focused tests", () => {
+  class LocalSmokeChecks implements BranchChecks {
+    actorName = "coolscorpiorahul";
+    repositoryName = BRANCH_REPOSITORY;
+    issueState: "OPEN" | "CLOSED" = "OPEN";
+    issueNumber = BRANCH_ISSUE_NUMBER;
+    issueTitle = BRANCH_ISSUE_TITLE;
+    clean = true;
+    detached = false;
+    predecessor = VALIDATED_PREDECESSOR_COMMIT;
+    proposed: { exists: boolean; baseCommit?: string } = { exists: false };
+    actor() { return this.actorName; }
+    repository() { return this.repositoryName; }
+    issue() { return Promise.resolve({ number: this.issueNumber, state: this.issueState, title: this.issueTitle }); }
+    worktree() { return Promise.resolve({ clean: this.clean, detached: this.detached }); }
+    baseCommit(branch: string) { return Promise.resolve(branch === BASE_BRANCH ? this.predecessor : "unknown"); }
+    branch() { return Promise.resolve(this.proposed); }
+  }
+
+  class LocalSmokeAdapter implements LocalBranchAdapter {
+    calls = 0;
+    existing = false;
+    failure: string | undefined;
+    async create() {
+      this.calls += 1;
+      if (this.failure) throw new Error(this.failure);
+      if (this.existing) return { created: false, reused: true };
+      this.existing = true;
+      return { created: true, reused: false };
+    }
+  }
+
+  it("creates local branch with first invocation and reuses idempotently", async () => {
+    const checks = new LocalSmokeChecks();
+    const adapter = new LocalSmokeAdapter();
+    const approval = requestBranchApproval(request, new Date());
+    const first = await createApprovedBranch(request, approval, checks, adapter);
+    expect(first).toMatchObject({ branchName: PROPOSED_BRANCH, baseBranch: BASE_BRANCH, baseCommit: VALIDATED_PREDECESSOR_COMMIT, newlyCreated: true, compatibleBranchReused: false, idempotencyResult: "CREATED", finalState: "BRANCH_READY_LOCAL", remoteBranchPushed: false, draftPrCreated: false, mergeAllowed: false, productionDeployAllowed: false });
+
+    checks.proposed = { exists: true, baseCommit: VALIDATED_PREDECESSOR_COMMIT };
+    const second = await createApprovedBranch(request, approval, checks, adapter);
+    expect(second).toMatchObject({ newlyCreated: false, compatibleBranchReused: true, idempotencyResult: "REUSED", finalState: "BRANCH_READY_LOCAL" });
+    expect(adapter.calls).toBe(2);
+  });
+
+  it("rejects wrong actor", async () => {
+    const checks = Object.assign(new LocalSmokeChecks(), { actorName: "other-user" });
+    const adapter = new LocalSmokeAdapter();
+    const approval = requestBranchApproval(request, new Date());
+    await expect(createApprovedBranch(request, approval, checks, adapter)).rejects.toThrow("coolscorpiorahul");
+  });
+
+  it("rejects wrong repository", async () => {
+    const checks = Object.assign(new LocalSmokeChecks(), { repositoryName: "other/repo" });
+    const adapter = new LocalSmokeAdapter();
+    const approval = requestBranchApproval(request, new Date());
+    await expect(createApprovedBranch(request, approval, checks, adapter)).rejects.toThrow("Repository");
+  });
+
+  it("rejects wrong issue number", async () => {
+    const checks = Object.assign(new LocalSmokeChecks(), { issueNumber: 8 });
+    const adapter = new LocalSmokeAdapter();
+    const approval = requestBranchApproval(request, new Date());
+    await expect(createApprovedBranch(request, approval, checks, adapter)).rejects.toThrow("number");
+  });
+
+  it("rejects closed issue", async () => {
+    const checks = Object.assign(new LocalSmokeChecks(), { issueState: "CLOSED" as const });
+    const adapter = new LocalSmokeAdapter();
+    const approval = requestBranchApproval(request, new Date());
+    await expect(createApprovedBranch(request, approval, checks, adapter)).rejects.toThrow("OPEN");
+  });
+
+  it("rejects wrong issue title", async () => {
+    const checks = Object.assign(new LocalSmokeChecks(), { issueTitle: "Wrong Title" });
+    const adapter = new LocalSmokeAdapter();
+    const approval = requestBranchApproval(request, new Date());
+    await expect(createApprovedBranch(request, approval, checks, adapter)).rejects.toThrow("governed input");
+  });
+
+  it("rejects dirty working tree", async () => {
+    const checks = Object.assign(new LocalSmokeChecks(), { clean: false });
+    const adapter = new LocalSmokeAdapter();
+    const approval = requestBranchApproval(request, new Date());
+    await expect(createApprovedBranch(request, approval, checks, adapter)).rejects.toThrow("clean");
+  });
+
+  it("rejects detached HEAD", async () => {
+    const checks = Object.assign(new LocalSmokeChecks(), { detached: true });
+    const adapter = new LocalSmokeAdapter();
+    const approval = requestBranchApproval(request, new Date());
+    await expect(createApprovedBranch(request, approval, checks, adapter)).rejects.toThrow(/detached/i);
+  });
+
+  it("rejects base commit mismatch", async () => {
+    const checks = new LocalSmokeChecks();
+    (checks as any).predecessor = "0".repeat(40);
+    const adapter = new LocalSmokeAdapter();
+    const approval = requestBranchApproval(request, new Date());
+    await expect(createApprovedBranch(request, approval, checks, adapter)).rejects.toThrow("predecessor");
+  });
+
+  it("rejects remote branch already exists", async () => {
+    const checks = new LocalSmokeChecks();
+    checks.proposed = { exists: true, baseCommit: "different-commit" };
+    const adapter = new LocalSmokeAdapter();
+    const approval = requestBranchApproval(request, new Date());
+    await expect(createApprovedBranch(request, approval, checks, adapter)).rejects.toThrow("incompatible");
+  });
+
+  it("classifies adapter failure safely", async () => {
+    const checks = new LocalSmokeChecks();
+    const adapter = new LocalSmokeAdapter();
+    adapter.failure = "provider failed";
+    const approval = requestBranchApproval(request, new Date());
+    const result = await createApprovedBranch(request, approval, checks, adapter);
+    expect(result.finalState).toBe("BRANCH_CREATION_FAILED_SAFE");
+    expect(result.remoteBranchPushed).toBe(false);
+  });
+
+  it("classifies uncertain adapter response safely", async () => {
+    const checks = new LocalSmokeChecks();
+    const adapter = new LocalSmokeAdapter();
+    adapter.failure = "timeout: uncertain response";
+    const approval = requestBranchApproval(request, new Date());
+    const result = await createApprovedBranch(request, approval, checks, adapter);
+    expect(result.finalState).toBe("BRANCH_RECONCILIATION_REQUIRED");
+    expect(result.remoteBranchPushed).toBe(false);
+  });
+
+  it("redacts evidence from tokens and credentials", async () => {
+    const checks = new LocalSmokeChecks();
+    const adapter = new LocalSmokeAdapter();
+    adapter.failure = "token abc123 secret xyz123";
+    const approval = requestBranchApproval(request, new Date());
+    const result = await createApprovedBranch(request, approval, checks, adapter);
+    const evidence = JSON.stringify(result.evidence);
+    // Verify sensitive data is not included in evidence
+    expect(evidence).not.toMatch(/token|secret|password/i);
+    expect(evidence).not.toContain("abc123");
+    expect(evidence).not.toContain("xyz123");
+  });
+
+  it("preserves remote safety flags: no push, no draft PR, no merge, no production", async () => {
+    const checks = new LocalSmokeChecks();
+    const adapter = new LocalSmokeAdapter();
+    const approval = requestBranchApproval(request, new Date());
+    const result = await createApprovedBranch(request, approval, checks, adapter);
+    expect(result.remoteBranchPushed).toBe(false);
+    expect(result.draftPrCreated).toBe(false);
+    expect(result.mergeAllowed).toBe(false);
+    expect(result.productionDeployAllowed).toBe(false);
+  });
+
+  it("handles compatible branch reuse with idempotency", async () => {
+    const checks = new LocalSmokeChecks();
+    checks.proposed = { exists: true, baseCommit: VALIDATED_PREDECESSOR_COMMIT };
+    const adapter = new LocalSmokeAdapter();
+    adapter.existing = true;
+    const approval = requestBranchApproval(request, new Date());
+    const result = await createApprovedBranch(request, approval, checks, adapter);
+    expect(result.newlyCreated).toBe(false);
+    expect(result.compatibleBranchReused).toBe(true);
+    expect(result.idempotencyResult).toBe("REUSED");
+  });
+
+  it("rejects incompatible existing branch", async () => {
+    const checks = new LocalSmokeChecks();
+    checks.proposed = { exists: true, baseCommit: "different-commit" };
+    const adapter = new LocalSmokeAdapter();
+    const approval = requestBranchApproval(request, new Date());
+    await expect(createApprovedBranch(request, approval, checks, adapter)).rejects.toThrow("incompatible");
+  });
+});
