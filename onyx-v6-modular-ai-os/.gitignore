@@ -20,4 +20,5 @@ credentials.json
 tokens.json
 .phase1a4a-live-smoke-evidence.json
 .phase1a4b-local-smoke-evidence.json
+.phase1a4c-live-push-evidence.json
 apps/command-center/public/provider-health.generated.json

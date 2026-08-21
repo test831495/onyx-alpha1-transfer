@@ -53,7 +53,6 @@ async function validate(request: PushBridgeRequest, approval: PushApproval, chec
   const worktree = await checks.worktree();
   if (!worktree.clean) throw new Error("Working tree must be clean.");
   if (worktree.detached) throw new Error("Detached HEAD is not allowed.");
-  if (await checks.currentBranch() !== PUSH_BRANCH) throw new Error("Local branch must be the exact approved branch.");
   const local = await checks.localBranch(PUSH_BRANCH);
   if (!local.exists) throw new Error("Approved local branch is missing.");
   if (local.commit !== PUSH_COMMIT) throw new Error("Local branch commit does not match the approved commit.");

@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run" },
+  "exports": { ".": "./src/index.ts", "./live-push": "./src/live-push.ts", "./git-push-adapter": "./src/git-push-adapter.ts" },
+  "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run", "live-push": "tsx src/live-push.ts" },
   "dependencies": {
     "@onyx/automation-foundation": "workspace:*",
     "@onyx/github-automation": "workspace:*"
