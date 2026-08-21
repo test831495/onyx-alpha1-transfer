@@ -1,0 +1,31 @@
+import { createHash } from "node:crypto";
+
+export const WORKFLOW_CONTRACT_VERSION = "1.0.0" as const;
+export const GOVERNED_REPOSITORY = "test831495/onyx-alpha1-transfer" as const;
+export const GOVERNED_ACTOR = "Rahul Kumar" as const;
+export const EXECUTION_LANE_LIMIT = 1 as const;
+export const DEFAULT_REMOTE_RETRY_BUDGET = 0 as const;
+export const PROHIBITED_OPERATIONS = ["MERGE", "PRODUCTION_DEPLOY", "NETLIFY_UPDATE", "SECRET_CHANGE", "PERMISSION_CHANGE", "BRANCH_PROTECTION_CHANGE", "FORCE_PUSH", "BRANCH_DELETION"] as const;
+export const CAPABILITIES = ["CREATE_GITHUB_ISSUE", "CREATE_ISOLATED_BRANCH", "PUSH_ISOLATED_BRANCH", "RUN_VALIDATION", "GENERATE_EVIDENCE", "CREATE_DRAFT_PR"] as const;
+export const ROLLBACK_CLASSIFICATIONS = ["NO_ROLLBACK_REQUIRED", "COMPENSATING_ACTION_RECOMMENDED", "MANUAL_RECONCILIATION_REQUIRED", "ROLLBACK_PROHIBITED", "ROLLBACK_COMPLETED_POLICY_ONLY"] as const;
+export type Capability = (typeof CAPABILITIES)[number];
+export type RollbackClassification = (typeof ROLLBACK_CLASSIFICATIONS)[number];
+export const REQUIREMENT_IDS = ["P15-CONTRACT-001", "P15-APPROVAL-001", "P15-STATE-001", "P15-CHECKPOINT-001", "P15-RECOVERY-001", "P15-EXECUTOR-001", "P15-EVIDENCE-001", "P15-ROLLBACK-001", "P15-SECURITY-001", "P15-SIMULATION-001"] as const;
+export type RequirementId = (typeof REQUIREMENT_IDS)[number];
+export const WORKFLOW_STATES = ["WORKFLOW_CREATED", "SCOPE_FROZEN", "AWAITING_WORKFLOW_APPROVAL", "WORKFLOW_APPROVED", "PREFLIGHT_IN_PROGRESS", "PREFLIGHT_PASSED", "PREFLIGHT_FAILED_SAFE", "ISSUE_STEP_PENDING", "ISSUE_STEP_IN_PROGRESS", "ISSUE_STEP_COMPLETED", "BRANCH_STEP_PENDING", "BRANCH_STEP_IN_PROGRESS", "BRANCH_STEP_COMPLETED", "PUSH_STEP_PENDING", "PUSH_STEP_IN_PROGRESS", "PUSH_STEP_COMPLETED", "VALIDATION_PENDING", "VALIDATION_IN_PROGRESS", "VALIDATION_PASSED", "VALIDATION_FAILED_SAFE", "EVIDENCE_PENDING", "EVIDENCE_READY", "DRAFT_PR_STEP_PENDING", "DRAFT_PR_STEP_IN_PROGRESS", "DRAFT_PR_STEP_COMPLETED", "WORKFLOW_COMPLETED", "WORKFLOW_PAUSED", "WORKFLOW_FAILED_SAFE", "WORKFLOW_RECONCILIATION_REQUIRED", "WORKFLOW_CANCELLED", "WORKFLOW_ROLLBACK_REQUIRED", "WORKFLOW_ROLLED_BACK"] as const;
+export type WorkflowState = (typeof WORKFLOW_STATES)[number];
+
+export interface WorkflowInput { repository: typeof GOVERNED_REPOSITORY; issue: Record<string, unknown>; branch: Record<string, unknown>; baseBranch: string; headBranch: string; validationPlan: Record<string, unknown>; evidencePlan: Record<string, unknown>; draftPrPlan: Record<string, unknown>; }
+export interface Workflow { workflowId: string; contractVersion: typeof WORKFLOW_CONTRACT_VERSION; repository: typeof GOVERNED_REPOSITORY; scope: WorkflowInput; scopeHash: string; state: WorkflowState; approval?: ApprovalPackage; flags: WorkflowFlags; }
+export interface WorkflowFlags { issueCreated: "governed"; localBranchCreated: "governed"; remoteBranchPushed: "governed"; validationPassed: "governed"; evidenceReady: "governed"; draftPrCreated: "governed"; mergeAllowed: false; productionDeployAllowed: false; forcePushAllowed: false; branchDeletionAllowed: false; }
+export interface ApprovalPackage { approver: typeof GOVERNED_ACTOR; repository: typeof GOVERNED_REPOSITORY; workflowId: string; contractVersion: string; scopeHash: string; orderedCapabilities: readonly Capability[]; capabilityBoundaries: Record<Capability, string>; issue: Record<string, unknown>; branch: Record<string, unknown>; baseBranch: string; headBranch: string; validationPlan: Record<string, unknown>; evidencePlan: Record<string, unknown>; draftPrPlan: Record<string, unknown>; reason: string; issuedAt: string; expiresAt: string; idempotencyKey: string; consumed: boolean; digest: string; }
+export interface StepInput { workflow: Workflow; capability: Capability; input: Record<string, unknown>; attempt: number; }
+export type ProviderClassification = "DETERMINISTIC_SUCCESS" | "COMPATIBLE_REUSE" | "DETERMINISTIC_FAILURE" | "UNCERTAIN_RESULT" | "PROHIBITED_OPERATION";
+export interface ExecutorResult { classification: ProviderClassification; resourceId?: string; resourceUrl?: string; output?: Record<string, unknown>; detail?: string; }
+export interface RollbackPolicyResult { workflowId: string; stepId: string; classification: RollbackClassification; reason: string; recommendedCompensatingActions: string[]; remoteDeletionPermitted: false; forcePushPermitted: false; mergePermitted: false; productionActionPermitted: false; evidenceReferences: string[]; timestamp: string; }
+export interface AcceptanceRequirement { id: RequirementId; contractOrImplementation: string; testFile: string; validationMethod: string; acceptanceStatus: "accepted" | "pending"; }
+export function digest(value: unknown): string { return createHash("sha256").update(stableJson(value)).digest("hex"); }
+export function stableJson(value: unknown): string { if (value === undefined) return "undefined"; if (value === null || typeof value !== "object") return JSON.stringify(value); if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`; return `{${Object.keys(value as Record<string, unknown>).sort().map((key) => `${JSON.stringify(key)}:${stableJson((value as Record<string, unknown>)[key])}`).join(",\n")}}`; }
+export function makeWorkflowId(input: WorkflowInput): string { return `wf-${digest({ contractVersion: WORKFLOW_CONTRACT_VERSION, repository: input.repository, input }).slice(0, 24)}`; }
+export function makeIdempotencyKey(workflowId: string, capability: Capability, inputDigest: string): string { return `${workflowId}:${capability}:${inputDigest}`; }
+export function defaultFlags(): WorkflowFlags { return { issueCreated: "governed", localBranchCreated: "governed", remoteBranchPushed: "governed", validationPassed: "governed", evidenceReady: "governed", draftPrCreated: "governed", mergeAllowed: false, productionDeployAllowed: false, forcePushAllowed: false, branchDeletionAllowed: false }; }

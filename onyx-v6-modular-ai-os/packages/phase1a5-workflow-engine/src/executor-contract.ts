@@ -1,0 +1,4 @@
+import type { ExecutorResult, StepInput } from "./contracts";
+export interface WorkflowExecutor { createGithubIssue(input: StepInput): Promise<ExecutorResult>; createIsolatedBranch(input: StepInput): Promise<ExecutorResult>; pushIsolatedBranch(input: StepInput): Promise<ExecutorResult>; runValidation(input: StepInput): Promise<ExecutorResult>; generateEvidence(input: StepInput): Promise<ExecutorResult>; createDraftPr(input: StepInput): Promise<ExecutorResult>; }
+export function rejectProhibitedOperation(operation: string): never { throw new Error(`Prohibited operation: ${operation}`); }
+export function rejectArbitraryCommand(input: unknown): never { if (typeof input === "string" || (input && typeof input === "object" && ("command" in input || "shell" in input))) throw new Error("Arbitrary commands and shell strings are unavailable."); throw new Error("Unsupported executor input."); }
