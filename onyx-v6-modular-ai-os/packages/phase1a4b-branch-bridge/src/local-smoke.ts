@@ -79,8 +79,8 @@ async function localPreflight(options: LocalSmokeOptions): Promise<LocalSmokePre
   if (session.issue.state !== "OPEN") throw new Error("Issue 7 must be OPEN.");
   if (session.issue.title !== BRANCH_ISSUE_TITLE) throw new Error("Issue title does not match the governed input.");
 
-  const baseCommit = git.baseCommit("feature/phase1a4a-github-issue-bridge");
-  if (baseCommit !== VALIDATED_PREDECESSOR_COMMIT) throw new Error("HEAD must be at the validated predecessor commit.");
+  const baseCommit = git.baseCommit("origin/feature/phase1a4a-github-issue-bridge");
+  if (baseCommit !== VALIDATED_PREDECESSOR_COMMIT) throw new Error("Approved base reference must resolve to the validated predecessor commit.");
 
   const targetExists = git.localBranchExists(LOCAL_TARGET_BRANCH);
   const targetRemote = git.remoteBranchExists(LOCAL_TARGET_BRANCH);
@@ -148,6 +148,7 @@ export async function runLocalSmoke(options: LocalSmokeOptions = {}): Promise<Lo
       productionDeployAllowed: false,
     },
     reason: "Approve the exact single local branch Phase 1A.4B smoke test.",
+    baseCommit: VALIDATED_PREDECESSOR_COMMIT,
     expiresAt: new Date(now.getTime() + 600000).toISOString(),
   };
 

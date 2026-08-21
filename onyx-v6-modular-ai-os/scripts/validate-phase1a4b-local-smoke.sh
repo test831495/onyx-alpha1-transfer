@@ -25,7 +25,7 @@ echo "[3/10] local smoke interfaces"
 for value in 'LocalSmokePreflight' 'LocalSmokeEvidence' 'LocalSmokeOptions' 'runLocalSmoke'; do grep -Fq "$value" "$smoke"; done
 
 echo "[4/10] local smoke validation checks"
-for value in 'current branch must be' 'working tree must be clean' 'HEAD must not be detached' 'GitHub CLI authentication' 'Authenticated GitHub login must be coolscorpiorahul' 'Repository must be' 'Issue.*must be OPEN' 'Issue title does not match' 'HEAD must be at the validated predecessor' 'Target branch must not exist remotely' 'Current branch was changed'; do grep -Eiq "$value" "$smoke"; done
+for value in 'current branch must be' 'working tree must be clean' 'HEAD must not be detached' 'GitHub CLI authentication' 'Authenticated GitHub login must be coolscorpiorahul' 'Repository must be' 'Issue.*must be OPEN' 'Issue title does not match' 'Approved base reference must resolve to the validated predecessor commit' 'Target branch must not exist remotely' 'Current branch was changed'; do grep -Eiq "$value" "$smoke"; done
 
 echo "[5/10] local smoke evidence structure"
 for value in 'repository' 'issueNumber' 'capability' 'scopeHash' 'idempotencyKey' 'approvalIssuedAt' 'approvalExpiry' 'baseBranch' 'baseCommit' 'targetBranch' 'firstResult' 'replayResult' 'newLocalBranchCount' 'idempotentReplayStatus' 'currentBranchUnchanged' 'remoteBranchPushed.*false' 'draftPrCreated.*false' 'mergeAllowed.*false' 'productionDeployAllowed.*false' 'completedAt'; do grep -Eiq "$value" "$smoke"; done

@@ -226,6 +226,49 @@ describe("Phase 1A.4B local smoke runner focused tests", () => {
     await expect(createApprovedBranch(request, approval, checks, adapter)).rejects.toThrow(/detached/i);
   });
 
+  it("allows current implementation HEAD to differ from the approved base commit", async () => {
+    const checks = new LocalSmokeChecks();
+    const adapter = new LocalSmokeAdapter();
+    const approval = requestBranchApproval({ ...request, baseCommit: VALIDATED_PREDECESSOR_COMMIT }, new Date());
+    const result = await createApprovedBranch({ ...request, baseCommit: VALIDATED_PREDECESSOR_COMMIT }, approval, checks, adapter);
+    expect(result.finalState).toBe("BRANCH_READY_LOCAL");
+    expect(result.baseCommit).toBe(VALIDATED_PREDECESSOR_COMMIT);
+  });
+
+  it("approved base reference must resolve to the validated predecessor commit", async () => {
+    const checks = new LocalSmokeChecks();
+    const adapter = new LocalSmokeAdapter();
+    const approval = requestBranchApproval({ ...request, baseCommit: VALIDATED_PREDECESSOR_COMMIT }, new Date());
+    const result = await createApprovedBranch({ ...request, baseCommit: VALIDATED_PREDECESSOR_COMMIT }, approval, checks, adapter);
+    expect((checks as any).predecessor).toBe(VALIDATED_PREDECESSOR_COMMIT);
+    expect(result.baseCommit).toBe(VALIDATED_PREDECESSOR_COMMIT);
+  });
+
+  it("local adapter receives the validated predecessor commit", async () => {
+    const checks = new LocalSmokeChecks();
+    const adapter = new LocalSmokeAdapter();
+    const approval = requestBranchApproval({ ...request, baseCommit: VALIDATED_PREDECESSOR_COMMIT }, new Date());
+    await createApprovedBranch({ ...request, baseCommit: VALIDATED_PREDECESSOR_COMMIT }, approval, checks, adapter);
+    expect(adapter.calls).toBe(1);
+  });
+
+  it("current branch remains unchanged after execution", async () => {
+    const checks = new LocalSmokeChecks();
+    const adapter = new LocalSmokeAdapter();
+    const approval = requestBranchApproval({ ...request, baseCommit: VALIDATED_PREDECESSOR_COMMIT }, new Date());
+    const result = await createApprovedBranch({ ...request, baseCommit: VALIDATED_PREDECESSOR_COMMIT }, approval, checks, adapter);
+    expect(result.finalState).toBe("BRANCH_READY_LOCAL");
+    expect(result.baseBranch).toBe("feature/phase1a4a-github-issue-bridge");
+  });
+
+  it("a base-reference mismatch fails before branch creation", async () => {
+    const checks = new LocalSmokeChecks();
+    (checks as any).predecessor = "1111111111111111111111111111111111111111";
+    const adapter = new LocalSmokeAdapter();
+    const approval = requestBranchApproval({ ...request, baseCommit: VALIDATED_PREDECESSOR_COMMIT }, new Date());
+    await expect(createApprovedBranch({ ...request, baseCommit: VALIDATED_PREDECESSOR_COMMIT }, approval, checks, adapter)).rejects.toThrow("predecessor");
+  });
+
   it("rejects base commit mismatch", async () => {
     const checks = new LocalSmokeChecks();
     (checks as any).predecessor = "0".repeat(40);

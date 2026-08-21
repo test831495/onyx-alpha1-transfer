@@ -70,17 +70,19 @@ if [[ "$issue_title" != "Phase 1A.4A Live Smoke Test" ]]; then
   exit 1
 fi
 
-# Requirement 10: Verify validated predecessor commit and remote base commit
+# Requirement 10: Resolve the approved base reference and validate the predecessor commit
 predecessor_commit="712f3546529f6eff8c37f480c0db61cad56f1b6c"
-current_commit="$(git rev-parse HEAD)"
-if [[ "$current_commit" != "$predecessor_commit" ]]; then
-  echo "ERROR: Current HEAD must be at $predecessor_commit, got $current_commit"
+remote_base_ref="origin/feature/phase1a4a-github-issue-bridge"
+remote_base_commit="$(git rev-parse "$remote_base_ref" 2>/dev/null || echo '')"
+if [[ "$remote_base_commit" != "$predecessor_commit" ]]; then
+  echo "ERROR: Approved base reference $remote_base_ref must resolve to $predecessor_commit, got $remote_base_commit"
   exit 1
 fi
 
-remote_base_commit="$(git rev-parse origin/feature/phase1a4a-github-issue-bridge 2>/dev/null || echo '')"
-if [[ "$remote_base_commit" != "$predecessor_commit" ]]; then
-  echo "ERROR: Remote base commit must be $predecessor_commit, got $remote_base_commit"
+# Current implementation HEAD may differ from the approved predecessor; only the checked-out implementation branch is required.
+current_branch="$(git branch --show-current)"
+if [[ "$current_branch" != "feature/phase1a4b-isolated-branch-bridge" ]]; then
+  echo "ERROR: Current branch must be feature/phase1a4b-isolated-branch-bridge, not $current_branch"
   exit 1
 fi
 

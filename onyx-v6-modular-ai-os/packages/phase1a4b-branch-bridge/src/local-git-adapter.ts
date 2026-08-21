@@ -4,6 +4,7 @@ export const APPROVED_BRANCH_REPO = "test831495/onyx-alpha1-transfer" as const;
 export const APPROVED_CURRENT_BRANCH = "feature/phase1a4b-isolated-branch-bridge" as const;
 export const APPROVED_TARGET_BRANCH = "automation/issue-7-phase1a4b-isolated-branch-smoke" as const;
 export const APPROVED_BASE_BRANCH = "feature/phase1a4a-github-issue-bridge" as const;
+export const APPROVED_BASE_REF = `origin/${APPROVED_BASE_BRANCH}` as const;
 export const APPROVED_BASE_COMMIT = "712f3546529f6eff8c37f480c0db61cad56f1b6c" as const;
 
 export interface LocalGitOperations {
@@ -65,10 +66,10 @@ export class NodeLocalGitAdapter implements LocalGitOperations {
   }
 
   baseCommit(ref: string): string {
-    ensureExact(ref, APPROVED_BASE_BRANCH, "Base branch");
+    ensureExact(ref, APPROVED_BASE_REF, "Base reference");
     const result = runGitResult(["rev-parse", "--verify", ref]);
     if (result.status !== 0) {
-      throw new Error(`Base branch ${ref} is not available.`);
+      throw new Error(`Base reference ${ref} is not available.`);
     }
     return result.stdout.trim();
   }
