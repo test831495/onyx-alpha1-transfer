@@ -275,6 +275,25 @@ importers:
         specifier: ^3.2.7
         version: 3.2.7(@types/node@26.2.0)(tsx@4.23.12)
 
+  packages/phase1a4d-draft-pr-bridge:
+    dependencies:
+      '@onyx/automation-foundation':
+        specifier: workspace:*
+        version: link:../automation-foundation
+      '@onyx/github-automation':
+        specifier: workspace:*
+        version: link:../github-automation
+    devDependencies:
+      '@types/node':
+        specifier: ^26.2.0
+        version: 26.2.0
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.7
+        version: 3.2.7(@types/node@26.2.0)(tsx@4.23.12)
+
   packages/plugin-sdk:
     dependencies:
       '@onyx/contracts':
