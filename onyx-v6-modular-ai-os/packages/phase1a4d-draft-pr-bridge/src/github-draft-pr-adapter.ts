@@ -77,6 +77,10 @@ export class GitHubDraftPrAdapter implements DraftPrAdapter, DraftPrChecks {
     return this.run("git", ["branch", "--show-current"], "Current branch lookup");
   }
 
+  async implementationBranch(): Promise<string> {
+    return this.currentBranch();
+  }
+
   async remoteBranch(branch: string): Promise<{ exists: boolean; commit?: string }> {
     requireFixed(branch, DRAFT_PR_HEAD_BRANCH, "Remote branch");
     const result = await this.runCommand("git", ["ls-remote", "--heads", "origin", `refs/heads/${DRAFT_PR_HEAD_BRANCH}`]);
