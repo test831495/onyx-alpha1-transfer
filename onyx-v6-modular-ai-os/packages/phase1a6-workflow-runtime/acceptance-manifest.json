@@ -1,0 +1,62 @@
+{
+  "P16-CONTRACT": {
+    "implementationIdentifiers": ["RUNTIME_CONTRACT_VERSION", "COMPATIBLE_WORKFLOW_CONTRACT_VERSION", "makeRuntimeId", "makeRuntimeSessionId"],
+    "testFiles": ["packages/phase1a6-workflow-runtime/tests/runtime-host.test.ts"],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P16-RUNTIME": {
+    "implementationIdentifiers": ["RuntimeHost", "RuntimeHostOptions", "RuntimeStepOutcome"],
+    "testFiles": ["packages/phase1a6-workflow-runtime/tests/runtime-host.test.ts"],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P16-REGISTRY": {
+    "implementationIdentifiers": ["AdapterRegistry", "CapabilityAdapter"],
+    "testFiles": ["packages/phase1a6-workflow-runtime/tests/security-boundaries.test.ts"],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P16-SNAPSHOT": {
+    "implementationIdentifiers": ["RuntimeSnapshot", "buildRuntimeSnapshot"],
+    "testFiles": ["packages/phase1a6-workflow-runtime/tests/runtime-host.test.ts"],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P16-STATUS": {
+    "implementationIdentifiers": ["RUNTIME_STATUSES", "projectRuntimeStatus", "assertCompleteStatusProjection"],
+    "testFiles": ["packages/phase1a6-workflow-runtime/tests/runtime-host.test.ts"],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P16-RECOVERY": {
+    "implementationIdentifiers": ["RecoveryHost", "RecoveryResult", "ReconstructedEvidenceEntry"],
+    "testFiles": ["packages/phase1a6-workflow-runtime/tests/recovery-host.test.ts"],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P16-RECONCILIATION": {
+    "implementationIdentifiers": ["createReconciliationHandoff", "ReconciliationHandoff"],
+    "testFiles": ["packages/phase1a6-workflow-runtime/tests/runtime-simulation.test.ts"],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P16-E10": {
+    "implementationIdentifiers": ["convertE10DryRunToRuntimeIntake", "previewRuntimeSnapshotFromE10Intake", "E10RuntimeIntake"],
+    "testFiles": ["packages/phase1a6-workflow-runtime/tests/e10-runtime-adapter.test.ts"],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P16-SECURITY": {
+    "implementationIdentifiers": ["rejectArbitraryRuntimeCommand", "RUNTIME_EXECUTION_LANE_LIMIT", "defaultRuntimeFlags"],
+    "testFiles": ["packages/phase1a6-workflow-runtime/tests/security-boundaries.test.ts"],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P16-SIMULATION": {
+    "implementationIdentifiers": ["runLocalRuntimeSimulation", "buildFrozenApprovedWorkflow", "buildMockRegistry"],
+    "testFiles": ["packages/phase1a6-workflow-runtime/tests/runtime-simulation.test.ts"],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  }
+}

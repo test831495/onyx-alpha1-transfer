@@ -1,0 +1,16 @@
+{
+  "name": "@onyx/phase1a6-workflow-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./local-runtime-simulation": "./src/local-runtime-simulation.ts" },
+  "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run" },
+  "dependencies": {
+    "@onyx/phase1a5-workflow-engine": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.7"
+  }
+}
