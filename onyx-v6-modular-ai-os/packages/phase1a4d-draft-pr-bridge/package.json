@@ -8,7 +8,8 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "live-draft-pr": "tsx src/live-draft-pr.ts"
   },
   "dependencies": {
     "@onyx/automation-foundation": "workspace:*",
@@ -16,6 +17,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
+    "tsx": "4.20.5",
     "typescript": "^5.9.2",
     "vitest": "^3.2.7"
   }

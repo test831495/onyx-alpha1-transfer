@@ -6,4 +6,4 @@ cd "$root"
 
 export PHASE1A4D_LIVE_CONFIRMATION="APPROVE_PHASE1A4D_SINGLE_DRAFT_PR"
 
-node --experimental-strip-types packages/phase1a4d-draft-pr-bridge/src/live-draft-pr.ts
+pnpm --filter @onyx/phase1a4d-draft-pr-bridge live-draft-pr
