@@ -54,6 +54,16 @@ for id in P17-CONTRACT P17-PROJECTION P17-DASHBOARD P17-CONTROLLER P17-IDENTITY 
   grep -Eq "\"$id\"" apps/command-center/src/phase1a7-acceptance-manifest.json
 done
 
+# UI reachability: the governed runtime tab must exist as a stable identifier wired into
+# the existing AutomationDashboard, and the previously orphaned launcher/event must be gone.
+grep -Eq 'GOVERNED_RUNTIME_TAB_ID="governed-runtime"' apps/command-center/src/components/AutomationDashboard.tsx
+grep -Eq 'GovernedRuntimeTab' apps/command-center/src/components/AutomationDashboard.tsx
+grep -Eq 'GOVERNED_RUNTIME_TAB_ID' apps/command-center/src/phase1a7-acceptance-manifest.json
+if grep -RE 'AutomationGovernedRuntimeLauncher|onyx:open-automation-runtime' apps/command-center/src; then
+  echo 'orphaned governed-runtime launcher or event must not remain'
+  exit 1
+fi
+
 # 32-state preservation, reused from Phase 1A.5.
 node - <<'NODE'
 const fs = require('node:fs');
@@ -129,7 +139,9 @@ pnpm --dir apps/command-center exec vitest run \
   src/components/AutomationReconciliationPanel.test.tsx \
   src/components/AutomationRuntimeIdentityPanel.test.tsx \
   src/components/AutomationConnectorScopePanel.test.tsx \
-  src/components/AutomationRuntimeBudgetPanel.test.tsx
+  src/components/AutomationRuntimeBudgetPanel.test.tsx \
+  src/components/AutomationDashboard.test.tsx \
+  src/components/AutomationDashboard.e8a.test.ts
 pnpm --dir apps/command-center exec vitest run src/automationOrchestrationService.e10.test.ts
 pnpm --filter @onyx/phase1a6-workflow-runtime test
 bash -n scripts/validate-phase1a7.sh

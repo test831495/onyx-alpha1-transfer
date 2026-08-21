@@ -22,10 +22,16 @@
   "P17-DASHBOARD": {
     "implementationIdentifiers": [
       "AutomationRuntimeDashboard",
-      "AutomationGovernedRuntimeLauncher",
+      "GOVERNED_RUNTIME_TAB_ID",
+      "GovernedRuntimeTab",
+      "tabs",
+      "labels",
       "buildApprovalReadOnlyProjection"
     ],
-    "testFiles": ["apps/command-center/src/components/AutomationRuntimeDashboard.test.tsx"],
+    "testFiles": [
+      "apps/command-center/src/components/AutomationRuntimeDashboard.test.tsx",
+      "apps/command-center/src/components/AutomationDashboard.test.tsx"
+    ],
     "validationMethod": "vitest",
     "acceptanceStatus": "accepted"
   },
@@ -46,7 +52,8 @@
     ],
     "testFiles": [
       "apps/command-center/src/automationRuntimeProjection.test.ts",
-      "apps/command-center/src/components/AutomationRuntimeIdentityPanel.test.tsx"
+      "apps/command-center/src/components/AutomationRuntimeIdentityPanel.test.tsx",
+      "apps/command-center/src/components/AutomationDashboard.test.tsx"
     ],
     "validationMethod": "vitest",
     "acceptanceStatus": "accepted"
@@ -66,13 +73,19 @@
       "buildRecoveryPanelViewModel",
       "AutomationRecoveryPanel"
     ],
-    "testFiles": ["apps/command-center/src/components/AutomationRecoveryPanel.test.tsx"],
+    "testFiles": [
+      "apps/command-center/src/components/AutomationRecoveryPanel.test.tsx",
+      "apps/command-center/src/components/AutomationDashboard.test.tsx"
+    ],
     "validationMethod": "vitest",
     "acceptanceStatus": "accepted"
   },
   "P17-RECONCILIATION": {
     "implementationIdentifiers": ["AutomationReconciliationPanel"],
-    "testFiles": ["apps/command-center/src/components/AutomationReconciliationPanel.test.tsx"],
+    "testFiles": [
+      "apps/command-center/src/components/AutomationReconciliationPanel.test.tsx",
+      "apps/command-center/src/components/AutomationDashboard.test.tsx"
+    ],
     "validationMethod": "vitest",
     "acceptanceStatus": "accepted"
   },
@@ -81,7 +94,10 @@
       "EvidenceTimelineEntry",
       "AutomationRuntimeEvidenceTimeline"
     ],
-    "testFiles": ["apps/command-center/src/automationRuntimeProjection.test.ts"],
+    "testFiles": [
+      "apps/command-center/src/automationRuntimeProjection.test.ts",
+      "apps/command-center/src/components/AutomationDashboard.test.tsx"
+    ],
     "validationMethod": "vitest",
     "acceptanceStatus": "accepted"
   },
@@ -93,7 +109,8 @@
     ],
     "testFiles": [
       "apps/command-center/src/automationRuntimeProjection.test.ts",
-      "apps/command-center/src/components/AutomationConnectorScopePanel.test.tsx"
+      "apps/command-center/src/components/AutomationConnectorScopePanel.test.tsx",
+      "apps/command-center/src/components/AutomationDashboard.test.tsx"
     ],
     "validationMethod": "vitest",
     "acceptanceStatus": "accepted"
@@ -104,7 +121,10 @@
       "BUDGET_STATUSES",
       "AutomationRuntimeBudgetPanel"
     ],
-    "testFiles": ["apps/command-center/src/components/AutomationRuntimeBudgetPanel.test.tsx"],
+    "testFiles": [
+      "apps/command-center/src/components/AutomationRuntimeBudgetPanel.test.tsx",
+      "apps/command-center/src/components/AutomationDashboard.test.tsx"
+    ],
     "validationMethod": "vitest",
     "acceptanceStatus": "accepted"
   },
@@ -114,7 +134,10 @@
       "SEQUENTIAL_ONLY_OPERATIONS",
       "RUNTIME_FIXTURE_IDS"
     ],
-    "testFiles": ["apps/command-center/src/automationRuntimeProjection.test.ts"],
+    "testFiles": [
+      "apps/command-center/src/automationRuntimeProjection.test.ts",
+      "apps/command-center/src/components/AutomationDashboard.test.tsx"
+    ],
     "validationMethod": "vitest",
     "acceptanceStatus": "accepted"
   },
@@ -125,7 +148,8 @@
     ],
     "testFiles": [
       "apps/command-center/src/automationRuntimeController.test.ts",
-      "apps/command-center/src/automationRuntimeProjection.test.ts"
+      "apps/command-center/src/automationRuntimeProjection.test.ts",
+      "apps/command-center/src/components/AutomationDashboard.test.tsx"
     ],
     "validationMethod": "vitest",
     "acceptanceStatus": "accepted"

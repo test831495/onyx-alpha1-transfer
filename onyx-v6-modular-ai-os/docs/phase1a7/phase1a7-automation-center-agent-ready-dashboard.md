@@ -41,12 +41,45 @@ apps/command-center/src/
     AutomationRuntimeBudgetPanel.tsx      budget and model-routing panel
 ```
 
-`AutomationDashboard.tsx` gains one additive export,
-`AutomationGovernedRuntimeLauncher`, which renders the new dashboard in its
-own overlay (opened by the `onyx:open-automation-runtime` window event,
-mirroring the existing `onyx:open-automation` pattern). The existing
-`AutomationDashboard` export, its tabs, and every existing panel are
-unchanged.
+`AutomationDashboard.tsx` gains one new stable, additive tab identifier,
+`GOVERNED_RUNTIME_TAB_ID` (`"governed-runtime"`, labeled "Governed Runtime"),
+rendered via the exported, stateless `GovernedRuntimeTab` component. The
+existing `AutomationDashboard` entry point, its original nine tabs, and every
+existing panel (approval dialog, evidence viewer, Draft PR review) are
+unchanged and remain reachable exactly as before.
+
+### Navigation path (user-reachable)
+
+```
+Automation Center                          (opened by the existing "Automation" footer button)
+  -> "Governed Runtime" tab                (GOVERNED_RUNTIME_TAB_ID, in the existing tab bar)
+    -> GovernedRuntimeTab                  (stateless tab-content component, exported for testing)
+      -> AutomationRuntimeDashboard        (the existing, unmodified Phase 1A.7 runtime dashboard)
+        -> AutomationRuntimeIdentityPanel
+        -> AutomationConnectorScopePanel
+        -> AutomationRuntimeBudgetPanel
+        -> AutomationRuntimeEvidenceTimeline (when evidence entries are supplied)
+        -> AutomationRecoveryPanel           (when a recovery view model is supplied)
+        -> AutomationReconciliationPanel
+```
+
+A user opens the Automation Center with the existing "Automation" footer
+button (unchanged), selects the "Governed Runtime" tab from the existing tab
+bar, and immediately sees the mock-only runtime dashboard rendered against a
+deterministic fixture (defaulting to `RUNNING_BRANCH_STEP`, selectable via an
+in-tab scenario picker that lists every `RUNTIME_FIXTURE_IDS` value,
+including `ONYX_INITIATED`, `NOVA_INITIATED`, and `COUNCIL_INITIATED`). No
+manual import or source change is required.
+
+`GovernedRuntimeTab` is deliberately stateless (fixture selection is lifted
+into `AutomationDashboard`'s existing state) so it can be invoked directly in
+tests without a DOM renderer, proving the render chain down to
+`AutomationRuntimeDashboard` without relying on human-readable test titles.
+
+The previously orphaned `AutomationGovernedRuntimeLauncher` export and its
+unreachable `onyx:open-automation-runtime` event trigger have been removed;
+nothing referenced them once the tab was wired in, so no second, unreachable
+navigation path remains.
 
 ## Contract binding
 

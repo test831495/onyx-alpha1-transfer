@@ -57,8 +57,29 @@ and `buildRuntimeFixtures()`, which builds every fixture from a single fixed
 clock (`2026-01-01T00:00:00.000Z`) using `buildRuntimeSnapshot` directly. No
 fixture ever reads the current clock.
 
+## Navigation and reachability
+
+`AutomationDashboard.tsx` exports the stable tab identifier
+`GOVERNED_RUNTIME_TAB_ID` (`"governed-runtime"`) and the stateless
+`GovernedRuntimeTab` component. The actual, user-reachable navigation path is:
+
+```
+Automation Center -> "Governed Runtime" tab (GOVERNED_RUNTIME_TAB_ID) -> AutomationRuntimeDashboard
+```
+
+`GovernedRuntimeTab` selects a fixture from `runtimeFixtures` (built once from
+`buildRuntimeFixtures()`) and renders the unmodified `AutomationRuntimeDashboard`
+with that fixture's projection, an inline recovery view model, and evidence
+entries derived only from already-existing projection fields — it never
+duplicates runtime projection or controller logic. See
+[phase1a7-automation-center-agent-ready-dashboard.md](./phase1a7-automation-center-agent-ready-dashboard.md#navigation-path-user-reachable)
+for the full render chain.
+
 ## Acceptance manifest
 
 `apps/command-center/src/phase1a7-acceptance-manifest.json` maps every
 `P17-*` ID to its stable exported implementation identifiers, its test
 file(s), a validation method (`"vitest"`), and an acceptance status.
+`P17-DASHBOARD` explicitly includes `GOVERNED_RUNTIME_TAB_ID`, `GovernedRuntimeTab`,
+`tabs`, and `labels` so UI reachability is verified through stable
+identifiers, never guessed human-readable test titles.

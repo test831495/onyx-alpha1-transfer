@@ -118,4 +118,77 @@ describe("AutomationRuntimeDashboard", () => {
     expect(text).toContain("READ-ONLY, NO SUBMISSION");
     expect(text).toContain("Consumed: NO");
   });
+
+  it("exposes identity, connector scope, and budget panels by stable aria-label", () => {
+    const projection = buildRuntimeFixtures().CONNECTOR_ISOLATED_PROJECTION;
+    const element = AutomationRuntimeDashboard({ projection });
+    const labels = [
+      "Automation runtime identity panel",
+      "Automation runtime connector scope panel",
+      "Automation runtime budget panel",
+      "Automation runtime reconciliation panel",
+    ];
+    for (const label of labels) {
+      expect(findAll(element, (item) => item.props["aria-label"] === label)).toHaveLength(1);
+    }
+  });
+
+  it("exposes recovery content only when a recovery view model is supplied", () => {
+    const projection = buildRuntimeFixtures().RUNNING_BRANCH_STEP;
+    const withoutRecovery = AutomationRuntimeDashboard({ projection });
+    expect(findAll(withoutRecovery, (item) => item.props["aria-label"] === "Automation runtime recovery panel")).toHaveLength(0);
+
+    const recovery = {
+      lastTrustedCheckpointDigest: projection.latestCheckpointDigest,
+      checkpointCount: projection.checkpointCount,
+      targetState: projection.currentState,
+      firstIncompleteCapability: projection.pendingCapabilities[0] ?? null,
+      recoveryAvailable: projection.recoveryAvailable,
+      blockedReason: null,
+      scopeVerified: true,
+      approvalVerified: true,
+      checkpointChainVerified: true,
+      repositoryVerified: true,
+    };
+    const withRecovery = AutomationRuntimeDashboard({ projection, recovery });
+    expect(findAll(withRecovery, (item) => item.props["aria-label"] === "Automation runtime recovery panel")).toHaveLength(1);
+  });
+
+  it("exposes an evidence timeline only when evidence entries are supplied", () => {
+    const projection = buildRuntimeFixtures().EVIDENCE_READY;
+    const withoutEvidence = AutomationRuntimeDashboard({ projection });
+    expect(findAll(withoutEvidence, (item) => item.props["aria-label"] === "Automation runtime evidence timeline")).toHaveLength(0);
+
+    const evidenceEntries = [
+      {
+        sequence: projection.latestEvidenceSequence ?? 1,
+        stateTransition: projection.currentState,
+        stepId: projection.currentCapability ?? "GENERATE_EVIDENCE",
+        providerClassification: "DETERMINISTIC_SUCCESS",
+        resourceReferences: [],
+        checkpointDigest: projection.latestCheckpointDigest ?? "",
+        redactedDetail: "Deterministic local-simulation evidence summary.",
+        timestamp: projection.updatedAt,
+      },
+    ];
+    const withEvidence = AutomationRuntimeDashboard({ projection, evidenceEntries });
+    expect(findAll(withEvidence, (item) => item.props["aria-label"] === "Automation runtime evidence timeline")).toHaveLength(1);
+  });
+
+  it("renders distinct ONYX, NOVA, and ONYX_NOVA_COUNCIL presence-mode fixtures", () => {
+    const fixtures = buildRuntimeFixtures();
+    expect(renderToText(AutomationRuntimeDashboard({ projection: fixtures.ONYX_INITIATED }))).toContain("ONYX");
+    expect(renderToText(AutomationRuntimeDashboard({ projection: fixtures.NOVA_INITIATED }))).toContain("NOVA");
+    expect(renderToText(AutomationRuntimeDashboard({ projection: fixtures.COUNCIL_INITIATED }))).toContain("ONYX_NOVA_COUNCIL");
+  });
+
+  it("exposes no live GitHub, connector, or paid-service action and no scheduler control", () => {
+    const projection = buildRuntimeFixtures().FUTURE_LANE_PROJECTION;
+    const element = AutomationRuntimeDashboard({ projection }) as unknown as Record<string, unknown>;
+    expect(element).not.toHaveProperty("scheduleTask");
+    expect(element).not.toHaveProperty("leaseTask");
+    const buttons = findAll(element, (item) => item.type === "button");
+    const buttonLabels = buttons.map((button) => button.props.children);
+    expect(buttonLabels).toEqual(["Pause", "Resume", "Cancel", "Recover"]);
+  });
 });
