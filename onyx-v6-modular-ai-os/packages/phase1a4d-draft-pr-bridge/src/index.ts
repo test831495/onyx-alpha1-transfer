@@ -7,11 +7,10 @@ export const DRAFT_PR_REPOSITORY = "test831495/onyx-alpha1-transfer" as const;
 export const DRAFT_PR_ISSUE_NUMBER = 7 as const;
 export const DRAFT_PR_ISSUE_TITLE = "Phase 1A.4A Live Smoke Test" as const;
 export const DRAFT_PR_BASE_BRANCH = "feature/phase1a4a-github-issue-bridge" as const;
-export const DRAFT_PR_HEAD_BRANCH = "automation/issue-7-phase1a4b-isolated-branch-smoke" as const;
-export const DRAFT_PR_HEAD_COMMIT = "712f3546529f6eff8c37f480c0db61cad56f1b6c" as const;
-export const DRAFT_PR_TITLE = "Phase 1A.4A Live Smoke Test Draft PR" as const;
+export const DRAFT_PR_HEAD_BRANCH = "feature/phase1a4d-draft-pr-bridge" as const;
+export const DRAFT_PR_TITLE = "Phase 1A.4D Live Draft PR Smoke Test" as const;
 export const DRAFT_PR_BODY = `## Purpose
-Create a mock Draft PR for Issue 7 after exact governance checks and approval.
+Create a Draft PR for Issue 7 after exact governance checks and approval.
 
 ## Issue
 - Issue: #7
@@ -19,29 +18,30 @@ Create a mock Draft PR for Issue 7 after exact governance checks and approval.
 
 ## Scope and validation
 - Base branch: feature/phase1a4a-github-issue-bridge
-- Head branch: automation/issue-7-phase1a4b-isolated-branch-smoke
-- Head commit: 712f3546529f6eff8c37f480c0db61cad56f1b6c
-- Security impact: none beyond read-only validation and the Draft PR creation request
-- Cost impact: minimal mock adapter cost
-- Provider impact: GitHub automation remains read-only; no live write occurs
+- Head branch: feature/phase1a4d-draft-pr-bridge
+- Head commit: resolved from the governed implementation branch at execution time
+- Security impact: no secret or credential material is included
+- Cost impact: no production deployment or merge action is permitted
+- Provider impact: GitHub automation remains bounded to the exact Draft PR creation request
 
 ## Known limitations
-- This is a mock-only Draft PR bridge.
+- This is a bounded mock-only Draft PR bridge unless the guarded live runner is explicitly authorized.
 - Merge and production deployment remain prohibited.
 
 ## Rollback
 - Stop before adapter invocation if a rule is violated.
-- Keep the branch and issue intact.
+- Keep the issue and branch state unchanged.
 
 ## Reviewer checklist
 - [ ] Issue 7 remains OPEN and unchanged
+- [ ] The exact repository, base branch, head branch, and head commit are preserved
 - [ ] Scope hash and evidence digest match the approval
 - [ ] Draft-only and merge-blocked constraints are respected
 - [ ] No credentials or secrets are included
-- [ ] The action is safely bounded to a mock adapter only
+- [ ] The action is safely bounded to the exact Draft PR flow
 
 ## Governance boundaries
-This request is intentionally Draft-only. Merge and production deployment remain unavailable.` as const;
+This request is intentionally Draft-only. Merge, production deployment, and arbitrary repository mutation remain unavailable.` as const;
 
 export type DraftPrBridgeState = "AWAITING_DRAFT_PR_APPROVAL" | "APPROVED_FOR_DRAFT_PR_CREATION" | "DRAFT_PR_CREATION_IN_PROGRESS" | "DRAFT_PR_CREATED" | "DRAFT_PR_CREATION_FAILED_SAFE" | "DRAFT_PR_RECONCILIATION_REQUIRED";
 
@@ -66,7 +66,8 @@ export interface DraftPrApproval extends ApprovalRecord {
   repository: typeof DRAFT_PR_REPOSITORY;
   baseBranch: typeof DRAFT_PR_BASE_BRANCH;
   headBranch: typeof DRAFT_PR_HEAD_BRANCH;
-  headCommit: typeof DRAFT_PR_HEAD_COMMIT;
+  baseCommit: string;
+  headCommit: string;
   evidenceDigest: string;
   title: string;
   body: string;
@@ -78,6 +79,7 @@ export interface DraftPrBridgeRequest {
   reason: string;
   baseBranch?: string;
   headBranch?: string;
+  baseCommit?: string;
   headCommit?: string;
   evidenceDigest?: string;
   title?: string;
@@ -91,6 +93,9 @@ export interface DraftPrChecks {
   issue(): Promise<{ number: number; state: "OPEN" | "CLOSED"; title: string }>;
   worktree(): Promise<{ clean: boolean; detached: boolean }>;
   remoteBranch(branch: string): Promise<{ exists: boolean; commit?: string }>;
+  baseBranchCommit?(branch: string): Promise<string> | string;
+  localHeadCommit?(branch: string): Promise<string> | string;
+  headDiff?(baseBranch: string, headBranch: string): Promise<{ identicalCommits: boolean; ahead: boolean; diffNonEmpty: boolean }>;
 }
 
 export interface DraftPrAdapter {
@@ -107,6 +112,7 @@ export interface DraftPrAdapter {
   createDraft(input: {
     repository: string;
     baseBranch: string;
+    baseCommit: string;
     headBranch: string;
     headCommit: string;
     title: string;
@@ -127,7 +133,8 @@ export interface DraftPrBridgeResult {
   issueNumber: typeof DRAFT_PR_ISSUE_NUMBER;
   baseBranch: typeof DRAFT_PR_BASE_BRANCH;
   headBranch: typeof DRAFT_PR_HEAD_BRANCH;
-  headCommit: typeof DRAFT_PR_HEAD_COMMIT;
+  baseCommit: string;
+  headCommit: string;
   prNumber?: number;
   prUrl?: string;
   newlyCreated: boolean;
@@ -159,7 +166,8 @@ function scope(request: DraftPrBridgeRequest) {
     issueNumber: DRAFT_PR_ISSUE_NUMBER,
     baseBranch: DRAFT_PR_BASE_BRANCH,
     headBranch: DRAFT_PR_HEAD_BRANCH,
-    headCommit: DRAFT_PR_HEAD_COMMIT,
+    baseCommit: request.baseCommit ?? "",
+    headCommit: request.headCommit ?? "",
     evidenceDigest: spec.evidenceDigest,
     title: spec.title,
     body: spec.body,
@@ -183,6 +191,7 @@ export function requestDraftPrApproval(
   if (request.run.state !== "DRY_RUN_READY") throw new Error("E.10 run must be DRY_RUN_READY before Draft PR approval.");
   if (request.run.repository !== DRAFT_PR_REPOSITORY) throw new Error("Repository must be test831495/onyx-alpha1-transfer.");
   if (request.reason.trim().length < 12) throw new Error("Draft PR approval reason must contain at least 12 characters.");
+  if (!request.baseCommit || !request.headCommit) throw new Error("Resolved base and head commits are required before approval.");
 
   const spec = {
     evidenceDigest: packageInfo.evidenceDigest ?? request.evidenceDigest ?? "abc123",
@@ -197,7 +206,8 @@ export function requestDraftPrApproval(
     issueNumber: DRAFT_PR_ISSUE_NUMBER,
     baseBranch: DRAFT_PR_BASE_BRANCH,
     headBranch: DRAFT_PR_HEAD_BRANCH,
-    headCommit: DRAFT_PR_HEAD_COMMIT,
+    baseCommit: request.baseCommit,
+    headCommit: request.headCommit,
     evidenceDigest: spec.evidenceDigest,
     title: spec.title,
     body: spec.body,
@@ -218,7 +228,8 @@ export function requestDraftPrApproval(
     repository: DRAFT_PR_REPOSITORY,
     baseBranch: DRAFT_PR_BASE_BRANCH,
     headBranch: DRAFT_PR_HEAD_BRANCH,
-    headCommit: DRAFT_PR_HEAD_COMMIT,
+    baseCommit: request.baseCommit,
+    headCommit: request.headCommit,
     evidenceDigest: spec.evidenceDigest,
     title: spec.title,
     body: spec.body,
@@ -255,10 +266,11 @@ async function validate(
   }
   if (request.baseBranch !== undefined && request.baseBranch !== DRAFT_PR_BASE_BRANCH) throw new Error("Wrong base branch: only the exact base branch is allowed.");
   if (request.headBranch !== undefined && request.headBranch !== DRAFT_PR_HEAD_BRANCH) throw new Error("Wrong head branch: only the exact head branch is allowed.");
-  if (request.headCommit !== undefined && request.headCommit !== DRAFT_PR_HEAD_COMMIT) throw new Error("Wrong head commit: only the exact head commit is allowed.");
+  if (!request.baseCommit || !request.headCommit) throw new Error("Resolved base and head commits are required.");
   if (approval.baseBranch !== DRAFT_PR_BASE_BRANCH) throw new Error("Wrong base branch: only the exact base branch is allowed.");
   if (approval.headBranch !== DRAFT_PR_HEAD_BRANCH) throw new Error("Wrong head branch: only the exact head branch is allowed.");
-  if (approval.headCommit !== DRAFT_PR_HEAD_COMMIT) throw new Error("Wrong head commit: only the exact head commit is allowed.");
+  if (approval.baseCommit !== request.baseCommit) throw new Error("Approval base commit does not match the resolved base commit.");
+  if (approval.headCommit !== request.headCommit) throw new Error("Approval head commit does not match the resolved head commit.");
   if (request.draft === false) throw new Error("Only Draft PR creation is allowed.");
   if (approval.draft !== true) throw new Error("Draft PR request must be Draft-only.");
   if (["main", "integration/onyx-nova"].includes(DRAFT_PR_HEAD_BRANCH)) throw new Error("Protected head branch is not allowed.");
@@ -276,9 +288,21 @@ async function validate(
   if (!worktree.clean) throw new Error("Working tree must be clean.");
   if (worktree.detached) throw new Error("Detached HEAD is not allowed.");
 
+  const localHeadCommit = checks.localHeadCommit ? await checks.localHeadCommit(DRAFT_PR_HEAD_BRANCH) : undefined;
+  if (localHeadCommit !== request.headCommit) throw new Error("Local implementation head must resolve exactly to the approved commit.");
+
   const remote = await checks.remoteBranch(DRAFT_PR_HEAD_BRANCH);
-  if (!remote.exists) throw new Error("missing remote head branch");
-  if (remote.commit !== DRAFT_PR_HEAD_COMMIT) throw new Error("incompatible remote head branch");
+  if (!remote.exists) throw new Error("Missing remote head branch.");
+  if (remote.commit !== request.headCommit) throw new Error("Remote head branch must resolve exactly to the approved commit.");
+
+  if (!checks.baseBranchCommit) throw new Error("Resolved remote base commit check is required.");
+  const baseCommit = await checks.baseBranchCommit(DRAFT_PR_BASE_BRANCH);
+  if (baseCommit !== request.baseCommit) throw new Error("Remote base branch must resolve exactly to the approved commit.");
+
+  const diff = checks.headDiff ? await checks.headDiff(DRAFT_PR_BASE_BRANCH, DRAFT_PR_HEAD_BRANCH) : undefined;
+  if (diff?.identicalCommits) throw new Error("Identical base and head commits are not allowed.");
+  if (diff && !diff.ahead) throw new Error("Implementation head must be ahead of the base branch.");
+  if (diff && !diff.diffNonEmpty) throw new Error("Draft PR diff between base and head must be non-empty.");
 
   return remote;
 }
@@ -303,7 +327,7 @@ export async function createApprovedDraftPr(
       existing.repository !== DRAFT_PR_REPOSITORY ||
       existing.baseBranch !== DRAFT_PR_BASE_BRANCH ||
       existing.headBranch !== DRAFT_PR_HEAD_BRANCH ||
-      existing.headCommit !== DRAFT_PR_HEAD_COMMIT ||
+      existing.headCommit !== request.headCommit ||
       existing.idempotencyKey !== approval.idempotencyKey
     ) {
       throw new Error("Existing pull request is incompatible with the approved Draft PR request.");
@@ -313,7 +337,8 @@ export async function createApprovedDraftPr(
       issueNumber: DRAFT_PR_ISSUE_NUMBER,
       baseBranch: DRAFT_PR_BASE_BRANCH,
       headBranch: DRAFT_PR_HEAD_BRANCH,
-      headCommit: DRAFT_PR_HEAD_COMMIT,
+      baseCommit: request.baseCommit!,
+      headCommit: request.headCommit!,
       prNumber: existing.number,
       prUrl: existing.url,
       newlyCreated: false,
@@ -337,7 +362,8 @@ export async function createApprovedDraftPr(
       repository: DRAFT_PR_REPOSITORY,
       baseBranch: DRAFT_PR_BASE_BRANCH,
       headBranch: DRAFT_PR_HEAD_BRANCH,
-      headCommit: DRAFT_PR_HEAD_COMMIT,
+      baseCommit: request.baseCommit!,
+      headCommit: request.headCommit!,
       title: spec.title,
       body: spec.body,
       draft: true,
@@ -350,7 +376,8 @@ export async function createApprovedDraftPr(
         issueNumber: DRAFT_PR_ISSUE_NUMBER,
         baseBranch: DRAFT_PR_BASE_BRANCH,
         headBranch: DRAFT_PR_HEAD_BRANCH,
-        headCommit: DRAFT_PR_HEAD_COMMIT,
+        baseCommit: request.baseCommit!,
+        headCommit: request.headCommit!,
         prNumber: result.number,
         prUrl: result.url,
         newlyCreated: false,
@@ -373,7 +400,8 @@ export async function createApprovedDraftPr(
       issueNumber: DRAFT_PR_ISSUE_NUMBER,
       baseBranch: DRAFT_PR_BASE_BRANCH,
       headBranch: DRAFT_PR_HEAD_BRANCH,
-      headCommit: DRAFT_PR_HEAD_COMMIT,
+      baseCommit: request.baseCommit!,
+      headCommit: request.headCommit!,
       prNumber: result.number,
       prUrl: result.url,
       newlyCreated: true,
@@ -395,7 +423,8 @@ export async function createApprovedDraftPr(
       issueNumber: DRAFT_PR_ISSUE_NUMBER,
       baseBranch: DRAFT_PR_BASE_BRANCH,
       headBranch: DRAFT_PR_HEAD_BRANCH,
-      headCommit: DRAFT_PR_HEAD_COMMIT,
+      baseCommit: request.baseCommit!,
+      headCommit: request.headCommit!,
       newlyCreated: false,
       compatibleDraftPrReuse: false,
       idempotencyResult: uncertain ? "RECONCILIATION_REQUIRED" : "FAILED",

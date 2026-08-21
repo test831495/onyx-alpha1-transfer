@@ -8,7 +8,7 @@ src="packages/phase1a4d-draft-pr-bridge/src"
 
 for file in "$src/live-draft-pr.ts" "$src/github-draft-pr-adapter.ts" scripts/run-phase1a4d-live-draft-pr.sh scripts/validate-phase1a4d-live-draft-pr.sh docs/phase1a4/phase1a4d-live-draft-pr-runner.md; do test -f "$file"; done
 
-for value in PHASE1A4D_LIVE_CONFIRMATION APPROVE_PHASE1A4D_SINGLE_DRAFT_PR coolscorpiorahul test831495/onyx-alpha1-transfer Issue 7 Phase 1A.4A Live Smoke Test feature/phase1a4d-draft-pr-bridge automation/issue-7-phase1a4b-isolated-branch-smoke 712f3546529f6eff8c37f480c0db61cad56f1b6c; do grep -RFiq "$value" "$src" scripts/run-phase1a4d-live-draft-pr.sh; done
+for value in PHASE1A4D_LIVE_CONFIRMATION APPROVE_PHASE1A4D_SINGLE_DRAFT_PR coolscorpiorahul test831495/onyx-alpha1-transfer Issue 7 Phase 1A.4A Live Smoke Test feature/phase1a4d-draft-pr-bridge baseCommit headCommit; do grep -RFiq "$value" "$src" scripts/run-phase1a4d-live-draft-pr.sh; done
 
 grep -Fq 'missing confirmation' packages/phase1a4d-draft-pr-bridge/tests/live-draft-pr.test.ts
 grep -Fq 'wrong confirmation' packages/phase1a4d-draft-pr-bridge/tests/live-draft-pr.test.ts
@@ -22,6 +22,12 @@ grep -Fq 'dirty worktree' packages/phase1a4d-draft-pr-bridge/tests/live-draft-pr
 grep -Fq 'detached HEAD' packages/phase1a4d-draft-pr-bridge/tests/live-draft-pr.test.ts
 grep -Fq 'missing remote head' packages/phase1a4d-draft-pr-bridge/tests/live-draft-pr.test.ts
 grep -Fq 'wrong remote head commit' packages/phase1a4d-draft-pr-bridge/tests/live-draft-pr.test.ts
+grep -Fq 'unpushed local head' packages/phase1a4d-draft-pr-bridge/tests/live-draft-pr.test.ts
+grep -Fq 'head does not differ from base' packages/phase1a4d-draft-pr-bridge/tests/live-draft-pr.test.ts
+grep -Fq 'head is not ahead of base' packages/phase1a4d-draft-pr-bridge/tests/live-draft-pr.test.ts
+grep -Fq 'base-to-head diff is empty' packages/phase1a4d-draft-pr-bridge/tests/live-draft-pr.test.ts
+grep -Fq 'moves after approval' packages/phase1a4d-draft-pr-bridge/tests/live-draft-pr.test.ts
+grep -Fq 'old approval for a changed SHA' packages/phase1a4d-draft-pr-bridge/tests/live-draft-pr.test.ts
 grep -Fq 'wrong base branch' packages/phase1a4d-draft-pr-bridge/tests/live-draft-pr.test.ts
 grep -Fq 'wrong head branch' packages/phase1a4d-draft-pr-bridge/tests/live-draft-pr.test.ts
 grep -Fq 'identical base and head' packages/phase1a4d-draft-pr-bridge/tests/live-draft-pr.test.ts

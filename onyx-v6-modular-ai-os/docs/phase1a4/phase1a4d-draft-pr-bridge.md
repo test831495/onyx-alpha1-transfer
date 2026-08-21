@@ -16,8 +16,8 @@ This bridge enforces a single approval-gated Draft PR creation flow for Issue 7.
 - Repository: test831495/onyx-alpha1-transfer
 - Issue: #7, OPEN, "Phase 1A.4A Live Smoke Test"
 - Base branch: feature/phase1a4a-github-issue-bridge
-- Head branch: automation/issue-7-phase1a4b-isolated-branch-smoke
-- Head commit: 712f3546529f6eff8c37f480c0db61cad56f1b6c
+- Head branch: feature/phase1a4d-draft-pr-bridge
+- Head commit: resolved from the local and remote implementation branch at execution time
 - Approval authority: Rahul Kumar
 - Hosted evidence digest and idempotency key are bound to the exact deterministic package
 

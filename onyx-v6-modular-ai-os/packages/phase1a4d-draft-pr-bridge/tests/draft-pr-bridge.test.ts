@@ -4,7 +4,6 @@ import {
   DRAFT_PR_BODY,
   DRAFT_PR_CAPABILITY,
   DRAFT_PR_HEAD_BRANCH,
-  DRAFT_PR_HEAD_COMMIT,
   DRAFT_PR_ISSUE_NUMBER,
   DRAFT_PR_ISSUE_TITLE,
   DRAFT_PR_REPOSITORY,
@@ -17,10 +16,15 @@ import {
   type DraftPrChecks,
 } from "../src/index";
 
+const TEST_BASE_COMMIT = "1111111111111111111111111111111111111111";
+const TEST_HEAD_COMMIT = "2222222222222222222222222222222222222222";
+
 const request: DraftPrBridgeRequest = {
   run: { runId: "run-7", state: "DRY_RUN_READY", scopeHash: "draft-pr-scope", repository: DRAFT_PR_REPOSITORY, branchCreated: false, draftPrCreated: false, mergeAllowed: false, productionDeployAllowed: false },
   reason: "Approve the isolated draft PR creation for Issue 7.",
   evidenceDigest: "abc123",
+  baseCommit: TEST_BASE_COMMIT,
+  headCommit: TEST_HEAD_COMMIT,
   title: DRAFT_PR_TITLE,
   body: DRAFT_PR_BODY,
 };
@@ -34,12 +38,18 @@ class MockChecks implements DraftPrChecks {
   clean = true;
   detached = false;
   remoteExists = true;
-  remoteCommit: string | undefined = DRAFT_PR_HEAD_COMMIT;
+  remoteCommit: string | undefined = TEST_HEAD_COMMIT;
+  localHeadCommitValue = TEST_HEAD_COMMIT;
+  baseCommitValue = TEST_BASE_COMMIT;
+  diff = { identicalCommits: false, ahead: true, diffNonEmpty: true };
   actor() { return this.actorName; }
   repository() { return this.repositoryName; }
   issue() { return Promise.resolve({ number: this.issueNumber, state: this.issueState, title: this.issueTitle }); }
   worktree() { return Promise.resolve({ clean: this.clean, detached: this.detached }); }
   remoteBranch() { return Promise.resolve({ exists: this.remoteExists, commit: this.remoteCommit }); }
+  localHeadCommit() { return this.localHeadCommitValue; }
+  headDiff() { return Promise.resolve(this.diff); }
+  baseBranchCommit() { return this.baseCommitValue; }
 }
 
 class MockAdapter implements DraftPrAdapter {
@@ -53,7 +63,7 @@ class MockAdapter implements DraftPrAdapter {
     if (this.failure) throw new Error(this.failure);
     if (this.uncertain) return { number: 99, url: "https://example.com/pull/99", draft: true, uncertain: true } as any;
     if (this.existing) return { number: this.existing.number, url: this.existing.url, draft: true };
-    this.existing = { number: 101, url: "https://example.com/pull/101", draft: true, repository: DRAFT_PR_REPOSITORY, baseBranch: DRAFT_PR_BASE_BRANCH, headBranch: DRAFT_PR_HEAD_BRANCH, headCommit: DRAFT_PR_HEAD_COMMIT, idempotencyKey: "mock-key" };
+    this.existing = { number: 101, url: "https://example.com/pull/101", draft: true, repository: DRAFT_PR_REPOSITORY, baseBranch: DRAFT_PR_BASE_BRANCH, headBranch: DRAFT_PR_HEAD_BRANCH, headCommit: TEST_HEAD_COMMIT, idempotencyKey: "mock-key" };
     return { number: 101, url: "https://example.com/pull/101", draft: true };
   }
 }
@@ -64,7 +74,7 @@ const execute = (checks = new MockChecks(), adapter = new MockAdapter(), approva
 describe("Phase 1A.4D approval-gated draft PR bridge", () => {
   it("creates an approved mock Draft PR and preserves safety flags", async () => {
     const result = await execute();
-    expect(result).toMatchObject({ repository: DRAFT_PR_REPOSITORY, issueNumber: 7, baseBranch: DRAFT_PR_BASE_BRANCH, headBranch: DRAFT_PR_HEAD_BRANCH, headCommit: DRAFT_PR_HEAD_COMMIT, newlyCreated: true, compatibleDraftPrReuse: false, idempotencyResult: "CREATED", finalState: "DRAFT_PR_CREATED", draft: true, mergeAllowed: false, productionDeployAllowed: false, branchDeleted: false, forcePushUsed: false });
+    expect(result).toMatchObject({ repository: DRAFT_PR_REPOSITORY, issueNumber: 7, baseBranch: DRAFT_PR_BASE_BRANCH, headBranch: DRAFT_PR_HEAD_BRANCH, headCommit: TEST_HEAD_COMMIT, newlyCreated: true, compatibleDraftPrReuse: false, idempotencyResult: "CREATED", finalState: "DRAFT_PR_CREATED", draft: true, mergeAllowed: false, productionDeployAllowed: false, branchDeleted: false, forcePushUsed: false });
   });
 
   it("rejects missing approval", async () => {
@@ -84,9 +94,9 @@ describe("Phase 1A.4D approval-gated draft PR bridge", () => {
     ["evidence-digest mismatch", { evidenceDigest: "wrong" }, {}, "evidence digest"],
     ["wrong base branch", { baseBranch: "main" as never }, {}, "exact base branch"],
     ["wrong head branch", { headBranch: "main" as never }, {}, "exact head branch"],
-    ["wrong head commit", { headCommit: "deadbeef" as never }, {}, "exact head commit"],
-    ["missing remote head", {}, { remoteExists: false }, "missing remote head"],
-    ["incompatible remote head", {}, { remoteCommit: "deadbeef" as never }, "incompatible remote head"],
+    ["wrong head commit", { headCommit: "deadbeef" as never }, {}, /head commit/],
+    ["missing remote head", {}, { remoteExists: false }, /missing remote head/i],
+    ["incompatible remote head", {}, { remoteCommit: "deadbeef" as never }, /exactly to the approved commit/i],
     ["non-Draft request", { draft: false as never }, {}, "Draft"],
     ["identical base and head", { baseBranch: DRAFT_PR_HEAD_BRANCH as never }, {}, "identical"],
     ["dirty worktree", {}, { clean: false }, "clean"],
@@ -105,8 +115,8 @@ describe("Phase 1A.4D approval-gated draft PR bridge", () => {
     const approval = approved();
     const first = await execute(checks, adapter, approval);
     checks.remoteExists = true;
-    checks.remoteCommit = DRAFT_PR_HEAD_COMMIT;
-    adapter.existing = { number: 11, url: "https://example.com/pull/11", draft: true, repository: DRAFT_PR_REPOSITORY, baseBranch: DRAFT_PR_BASE_BRANCH, headBranch: DRAFT_PR_HEAD_BRANCH, headCommit: DRAFT_PR_HEAD_COMMIT, idempotencyKey: approval.idempotencyKey };
+    checks.remoteCommit = TEST_HEAD_COMMIT;
+    adapter.existing = { number: 11, url: "https://example.com/pull/11", draft: true, repository: DRAFT_PR_REPOSITORY, baseBranch: DRAFT_PR_BASE_BRANCH, headBranch: DRAFT_PR_HEAD_BRANCH, headCommit: TEST_HEAD_COMMIT, idempotencyKey: approval.idempotencyKey };
     const second = await execute(checks, adapter, approval);
     expect(first.newlyCreated).toBe(true);
     expect(second).toMatchObject({ newlyCreated: false, compatibleDraftPrReuse: true, idempotencyResult: "REUSED", finalState: "DRAFT_PR_CREATED" });
@@ -115,7 +125,7 @@ describe("Phase 1A.4D approval-gated draft PR bridge", () => {
 
   it("rejects incompatible or non-Draft existing PRs", async () => {
     const adapter = new MockAdapter();
-    adapter.existing = { number: 11, url: "https://example.com/pull/11", draft: false, repository: DRAFT_PR_REPOSITORY, baseBranch: DRAFT_PR_BASE_BRANCH, headBranch: DRAFT_PR_HEAD_BRANCH, headCommit: DRAFT_PR_HEAD_COMMIT, idempotencyKey: "other" };
+    adapter.existing = { number: 11, url: "https://example.com/pull/11", draft: false, repository: DRAFT_PR_REPOSITORY, baseBranch: DRAFT_PR_BASE_BRANCH, headBranch: DRAFT_PR_HEAD_BRANCH, headCommit: TEST_HEAD_COMMIT, idempotencyKey: "other" };
     await expect(execute(new MockChecks(), adapter)).rejects.toThrow("Draft");
   });
 

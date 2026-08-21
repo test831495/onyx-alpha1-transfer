@@ -5,7 +5,6 @@ import {
   DRAFT_PR_BASE_BRANCH,
   DRAFT_PR_CAPABILITY,
   DRAFT_PR_HEAD_BRANCH,
-  DRAFT_PR_HEAD_COMMIT,
   DRAFT_PR_ISSUE_NUMBER,
   DRAFT_PR_ISSUE_TITLE,
   DRAFT_PR_REPOSITORY,
@@ -19,10 +18,15 @@ import {
 } from "../src/index";
 import { IMPLEMENTATION_BRANCH, LIVE_CONFIRMATION, runLiveDraftPr } from "../src/live-draft-pr";
 
+const TEST_BASE_COMMIT = "1111111111111111111111111111111111111111";
+const TEST_HEAD_COMMIT = "2222222222222222222222222222222222222222";
+
 const request: DraftPrBridgeRequest = {
   run: { runId: "run-live-7", state: "DRY_RUN_READY", scopeHash: "draft-pr-live-scope", repository: DRAFT_PR_REPOSITORY, branchCreated: false, draftPrCreated: false, mergeAllowed: false, productionDeployAllowed: false },
   reason: "Approve the exact single Phase 1A.4D Draft PR creation.",
   evidenceDigest: "sha256:phase1a4d-live-draft-pr-evidence",
+  baseCommit: TEST_BASE_COMMIT,
+  headCommit: TEST_HEAD_COMMIT,
   title: "Phase 1A.4D Live Draft PR Smoke Test",
   body: "Purpose\nIssue 7\nExact scope hash\nExact evidence digest\nBase branch\nHead branch\nHead commit\nValidation evidence\nSecurity impact\nCost impact\nProvider impact\nKnown limitations\nRollback instructions\nReviewer checklist\nGovernance boundaries",
   draft: true,
@@ -37,13 +41,20 @@ class LiveMockChecks implements DraftPrChecks {
   clean = true;
   detached = false;
   remoteExists = true;
-  remoteCommit = DRAFT_PR_HEAD_COMMIT;
+  remoteCommit = TEST_HEAD_COMMIT;
+  remoteCommits: string[] | undefined;
+  localHeadCommitValue = TEST_HEAD_COMMIT;
+  baseCommitValue = TEST_BASE_COMMIT;
+  diff = { identicalCommits: false, ahead: true, diffNonEmpty: true };
   implementation = IMPLEMENTATION_BRANCH;
   actor() { return this.actorName; }
   repository() { return this.repositoryName; }
   issue() { return Promise.resolve({ number: this.issueNumber, state: this.issueState, title: this.issueTitle }); }
   worktree() { return Promise.resolve({ clean: this.clean, detached: this.detached }); }
-  remoteBranch() { return Promise.resolve({ exists: this.remoteExists, commit: this.remoteCommit }); }
+  remoteBranch() { return Promise.resolve({ exists: this.remoteExists, commit: this.remoteCommits?.shift() ?? this.remoteCommit }); }
+  localHeadCommit() { return this.localHeadCommitValue; }
+  headDiff() { return Promise.resolve(this.diff); }
+  baseBranchCommit() { return this.baseCommitValue; }
   implementationBranch() { return this.implementation; }
   githubAuthenticated() { return true; }
 }
@@ -58,7 +69,7 @@ class LiveMockAdapter implements DraftPrAdapter {
   async findByRepositoryBaseHead(repository: string, baseBranch: string, headBranch: string) {
     if (!this.existing) return null;
     if (repository !== DRAFT_PR_REPOSITORY || baseBranch !== DRAFT_PR_BASE_BRANCH || headBranch !== DRAFT_PR_HEAD_BRANCH) return null;
-    return { ...this.existing, repository, baseBranch, headBranch, headCommit: DRAFT_PR_HEAD_COMMIT };
+    return { ...this.existing, repository, baseBranch, headBranch, headCommit: this.existing.headCommit };
   }
   async createDraft(input: Parameters<DraftPrAdapter["createDraft"]>[0]) {
     this.calls += 1;
@@ -110,6 +121,10 @@ describe("Phase 1A.4D.1 guarded live Draft PR runner", () => {
     ["detached HEAD", { detached: true }, "Detached"],
     ["missing remote head", { remoteExists: false }, "Missing remote head branch"],
     ["wrong remote head commit", { remoteCommit: "deadbeef" as never }, /remote head/i],
+    ["unpushed local head", { localHeadCommitValue: "3333333333333333333333333333333333333333" }, /unpushed/i],
+    ["head does not differ from base", { baseCommitValue: TEST_HEAD_COMMIT }, /differ from base/i],
+    ["head is not ahead of base", { diff: { identicalCommits: false, ahead: false, diffNonEmpty: true } }, /ahead of base/i],
+    ["base-to-head diff is empty", { diff: { identicalCommits: false, ahead: true, diffNonEmpty: false } }, /diff.*non-empty/i],
   ] as const)("rejects %s", async (_label, changes, message) => {
     const checks = Object.assign(new LiveMockChecks(), changes);
     await expect(liveExecute(checks, new LiveMockAdapter(), { PHASE1A4D_LIVE_CONFIRMATION: LIVE_CONFIRMATION })).rejects.toThrow(message);
@@ -139,7 +154,7 @@ describe("Phase 1A.4D.1 guarded live Draft PR runner", () => {
   it("detects existing incompatible pull request and existing non-Draft pull request", async () => {
     const checks = new LiveMockChecks();
     const adapter = new LiveMockAdapter();
-    adapter.existing = { number: 12, url: "https://example.com/pull/12", draft: false, repository: DRAFT_PR_REPOSITORY, baseBranch: DRAFT_PR_BASE_BRANCH, headBranch: DRAFT_PR_HEAD_BRANCH, headCommit: DRAFT_PR_HEAD_COMMIT, idempotencyKey: "existing" };
+    adapter.existing = { number: 12, url: "https://example.com/pull/12", draft: false, repository: DRAFT_PR_REPOSITORY, baseBranch: DRAFT_PR_BASE_BRANCH, headBranch: DRAFT_PR_HEAD_BRANCH, headCommit: TEST_HEAD_COMMIT, idempotencyKey: "existing" };
     await expect(liveExecute(checks, adapter)).rejects.toThrow(/incompatible/i);
   });
 
@@ -151,7 +166,7 @@ describe("Phase 1A.4D.1 guarded live Draft PR runner", () => {
       capability: DRAFT_PR_CAPABILITY,
       baseBranch: DRAFT_PR_BASE_BRANCH,
       headBranch: DRAFT_PR_HEAD_BRANCH,
-      headCommit: DRAFT_PR_HEAD_COMMIT,
+      headCommit: TEST_HEAD_COMMIT,
       draftPrNumber: 101,
       draftPrUrl: "https://example.com/pull/101",
       newDraftPrCount: 1,
@@ -164,6 +179,28 @@ describe("Phase 1A.4D.1 guarded live Draft PR runner", () => {
       firstResult: { finalState: "DRAFT_PR_CREATED", newlyCreated: true, prNumber: 101, prUrl: "https://example.com/pull/101", draft: true, mergeAllowed: false, productionDeployAllowed: false },
       replayResult: { finalState: "DRAFT_PR_CREATED", newlyCreated: false, compatibleDraftPrReuse: true, idempotencyResult: "REUSED", prNumber: 101, prUrl: "https://example.com/pull/101", draft: true, mergeAllowed: false, productionDeployAllowed: false },
     });
+  });
+
+  it("requires local and remote implementation heads to be equal", async () => {
+    const checks = new LiveMockChecks();
+    checks.remoteCommit = "3333333333333333333333333333333333333333";
+    await expect(liveExecute(checks)).rejects.toThrow(/unpushed/i);
+  });
+
+  it("rejects an implementation head that moves after approval", async () => {
+    const checks = new LiveMockChecks();
+    checks.remoteCommits = [TEST_HEAD_COMMIT, "3333333333333333333333333333333333333333"];
+    await expect(liveExecute(checks)).rejects.toThrow(/changed after approval/i);
+  });
+
+  it("binds the approval to the runtime-resolved head and rejects an old approval for a changed SHA", async () => {
+    const checks = new LiveMockChecks();
+    const adapter = new LiveMockAdapter();
+    const approval = approve();
+    const changedRequest = { ...request, headCommit: "3333333333333333333333333333333333333333" };
+    await expect(executeBridge(checks, adapter, approval, changedRequest)).rejects.toThrow(/scope hash|head commit/i);
+    const result = await executeBridge(checks, adapter, approval);
+    expect(result.headCommit).toBe(TEST_HEAD_COMMIT);
   });
 
   it("rejects scope mismatch", async () => {

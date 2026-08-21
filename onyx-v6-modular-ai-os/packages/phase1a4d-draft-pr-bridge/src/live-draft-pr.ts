@@ -4,7 +4,6 @@ import {
   DRAFT_PR_BASE_BRANCH,
   DRAFT_PR_CAPABILITY,
   DRAFT_PR_HEAD_BRANCH,
-  DRAFT_PR_HEAD_COMMIT,
   DRAFT_PR_ISSUE_NUMBER,
   DRAFT_PR_REPOSITORY,
   DRAFT_PR_TITLE,
@@ -58,6 +57,7 @@ export interface LiveDraftPrOptions {
     createDraft: (input: {
       repository: string;
       baseBranch: string;
+      baseCommit: string;
       headBranch: string;
       headCommit: string;
       title: string;
@@ -71,7 +71,12 @@ export interface LiveDraftPrOptions {
   writeEvidence?: (path: string, value: LiveDraftPrEvidence) => Promise<void>;
 }
 
-function fixedRequest(now: Date): DraftPrBridgeRequest {
+interface ResolvedRefs {
+  baseCommit: string;
+  headCommit: string;
+}
+
+function fixedRequest(now: Date, refs: ResolvedRefs): DraftPrBridgeRequest {
   const body = `## Purpose
 Create exactly one Draft PR for Issue 7 after exact governance checks and approval.
 
@@ -80,7 +85,7 @@ Create exactly one Draft PR for Issue 7 after exact governance checks and approv
 - Title: Phase 1A.4A Live Smoke Test
 
 ## Exact scope hash
-- Scope hash: ${DRAFT_PR_CAPABILITY}:${DRAFT_PR_REPOSITORY}:${DRAFT_PR_ISSUE_NUMBER}:${DRAFT_PR_BASE_BRANCH}:${DRAFT_PR_HEAD_BRANCH}:${DRAFT_PR_HEAD_COMMIT}
+- Scope hash: ${DRAFT_PR_CAPABILITY}:${DRAFT_PR_REPOSITORY}:${DRAFT_PR_ISSUE_NUMBER}:${DRAFT_PR_BASE_BRANCH}:${DRAFT_PR_HEAD_BRANCH}:${refs.baseCommit}:${refs.headCommit}
 
 ## Exact evidence digest
 - Evidence digest: sha256:phase1a4d-live-draft-pr-evidence
@@ -92,7 +97,7 @@ Create exactly one Draft PR for Issue 7 after exact governance checks and approv
 - ${DRAFT_PR_HEAD_BRANCH}
 
 ## Head commit
-- ${DRAFT_PR_HEAD_COMMIT}
+- ${refs.headCommit}
 
 ## Validation evidence
 - Implementation branch: ${IMPLEMENTATION_BRANCH}
@@ -126,13 +131,13 @@ Create exactly one Draft PR for Issue 7 after exact governance checks and approv
 - [ ] No tokens, credentials, or secrets are exposed.
 
 ## Governance boundaries
-This runner is strictly limited to the exact Draft PR creation capability. Merge, promotion, force push, branch deletion, and deployment remain prohibited.`;
+This runner is strictly limited to the exact Draft PR creation capability. Merge, promotion, forced updates, branch removal, and deployment remain prohibited.`;
 
   return {
     run: {
       runId: `phase1a4d-live-draft-pr-${now.getTime()}`,
       state: "DRY_RUN_READY",
-      scopeHash: `${DRAFT_PR_CAPABILITY}:${DRAFT_PR_REPOSITORY}:${DRAFT_PR_ISSUE_NUMBER}:${DRAFT_PR_BASE_BRANCH}:${DRAFT_PR_HEAD_BRANCH}:${DRAFT_PR_HEAD_COMMIT}`,
+      scopeHash: `${DRAFT_PR_CAPABILITY}:${DRAFT_PR_REPOSITORY}:${DRAFT_PR_ISSUE_NUMBER}:${DRAFT_PR_BASE_BRANCH}:${DRAFT_PR_HEAD_BRANCH}:${refs.baseCommit}:${refs.headCommit}`,
       repository: DRAFT_PR_REPOSITORY,
       branchCreated: false,
       draftPrCreated: false,
@@ -140,6 +145,8 @@ This runner is strictly limited to the exact Draft PR creation capability. Merge
       productionDeployAllowed: false,
     },
     reason: LIVE_REASON,
+    baseCommit: refs.baseCommit,
+    headCommit: refs.headCommit,
     evidenceDigest: "sha256:phase1a4d-live-draft-pr-evidence",
     title: "Phase 1A.4D Live Draft PR Smoke Test",
     body,
@@ -151,7 +158,7 @@ function requireEqual(actual: string, expected: string, label: string): void {
   if (actual !== expected) throw new Error(`${label} must be ${expected}.`);
 }
 
-async function preflight(options: LiveDraftPrOptions, checks: DraftPrChecks & { implementationBranch?: () => Promise<string> | string; githubAuthenticated?: () => Promise<boolean> | boolean; repository?: () => Promise<string> | string; actor?: () => Promise<string> | string; issue?: () => Promise<{ number: number; state: "OPEN" | "CLOSED"; title: string }>; worktree?: () => Promise<{ clean: boolean; detached: boolean }>; remoteBranch?: (branch: string) => Promise<{ exists: boolean; commit?: string }>; }): Promise<void> {
+async function preflight(options: LiveDraftPrOptions, checks: DraftPrChecks & { implementationBranch?: () => Promise<string> | string; githubAuthenticated?: () => Promise<boolean> | boolean; repository?: () => Promise<string> | string; actor?: () => Promise<string> | string; issue?: () => Promise<{ number: number; state: "OPEN" | "CLOSED"; title: string }>; worktree?: () => Promise<{ clean: boolean; detached: boolean }>; remoteBranch?: (branch: string) => Promise<{ exists: boolean; commit?: string }>; }): Promise<ResolvedRefs> {
   if (!checks) throw new Error("Live Draft PR checks are required.");
   if (checks.githubAuthenticated && !(await checks.githubAuthenticated())) throw new Error("GitHub CLI authentication is required.");
   const implementationBranch = checks.implementationBranch ? await checks.implementationBranch() : "";
@@ -165,10 +172,23 @@ async function preflight(options: LiveDraftPrOptions, checks: DraftPrChecks & { 
   if (issue.number !== DRAFT_PR_ISSUE_NUMBER || issue.state !== "OPEN" || issue.title !== "Phase 1A.4A Live Smoke Test") {
     throw new Error("Issue 7 must be OPEN with the governed title.");
   }
+  if (!checks.localHeadCommit) throw new Error("Local implementation head resolution is required.");
+  if (!checks.baseBranchCommit) throw new Error("Remote base commit resolution is required.");
+  if (!checks.headDiff) throw new Error("Base-to-head diff resolution is required.");
+  const localHead = await checks.localHeadCommit(DRAFT_PR_HEAD_BRANCH);
   const remote = await checks.remoteBranch(DRAFT_PR_HEAD_BRANCH);
   if (!remote.exists) throw new Error("Missing remote head branch.");
-  if (remote.commit !== DRAFT_PR_HEAD_COMMIT) throw new Error("Remote head branch must resolve exactly to the approved commit.");
+  if (!remote.commit || !/^[0-9a-f]{40}$/i.test(remote.commit)) throw new Error("Remote head branch must resolve to a full SHA.");
+  if (!/^[0-9a-f]{40}$/i.test(localHead)) throw new Error("Local implementation head must resolve to a full SHA.");
+  if (localHead !== remote.commit) throw new Error("Local implementation head has unpushed commits.");
+  const baseCommit = await checks.baseBranchCommit(DRAFT_PR_BASE_BRANCH);
+  if (!/^[0-9a-f]{40}$/i.test(baseCommit)) throw new Error("Remote base branch must resolve to a full SHA.");
+  const diff = await checks.headDiff(DRAFT_PR_BASE_BRANCH, DRAFT_PR_HEAD_BRANCH);
   if (String(DRAFT_PR_BASE_BRANCH) === String(DRAFT_PR_HEAD_BRANCH)) throw new Error("Identical base and head branches are not allowed.");
+  if (remote.commit === baseCommit || diff.identicalCommits) throw new Error("Head commit must differ from base commit.");
+  if (!diff.ahead) throw new Error("Head must be ahead of base.");
+  if (!diff.diffNonEmpty) throw new Error("Base-to-head diff must be non-empty.");
+  return { baseCommit, headCommit: remote.commit };
 }
 
 export async function runLiveDraftPr(options: LiveDraftPrOptions = {}): Promise<LiveDraftPrEvidence> {
@@ -179,7 +199,7 @@ export async function runLiveDraftPr(options: LiveDraftPrOptions = {}): Promise<
 
   const adapter = options.adapter ?? new GitHubDraftPrAdapter();
   const checks = options.checks ?? (adapter as unknown as DraftPrChecks & { implementationBranch?: () => Promise<string> | string; githubAuthenticated?: () => Promise<boolean> | boolean });
-  await preflight(options, checks);
+  const refs = await preflight(options, checks);
 
   const existing = ("findByRepositoryBaseHead" in adapter && typeof adapter.findByRepositoryBaseHead === "function")
     ? await adapter.findByRepositoryBaseHead(DRAFT_PR_REPOSITORY, DRAFT_PR_BASE_BRANCH, DRAFT_PR_HEAD_BRANCH)
@@ -189,8 +209,12 @@ export async function runLiveDraftPr(options: LiveDraftPrOptions = {}): Promise<
   }
 
   const now = (options.now ?? (() => new Date()))();
-  const request = fixedRequest(now);
+  const request = fixedRequest(now, refs);
   const approval = requestDraftPrApproval(request, now);
+  const remoteBeforeCreate = await checks.remoteBranch(DRAFT_PR_HEAD_BRANCH);
+  if (!remoteBeforeCreate.exists || remoteBeforeCreate.commit !== approval.headCommit) {
+    throw new Error("Remote implementation head changed after approval creation.");
+  }
   const firstResult = await createApprovedDraftPr(request, approval, checks, adapter, now.getTime());
   if (firstResult.finalState !== "DRAFT_PR_CREATED" || !firstResult.newlyCreated || !firstResult.prNumber || !firstResult.prUrl || firstResult.draft !== true) {
     throw new Error(`Live Draft PR stopped after first result: ${firstResult.finalState}.`);
@@ -212,7 +236,7 @@ export async function runLiveDraftPr(options: LiveDraftPrOptions = {}): Promise<
     approvalExpiry: approval.expiresAt,
     baseBranch: DRAFT_PR_BASE_BRANCH,
     headBranch: DRAFT_PR_HEAD_BRANCH,
-    headCommit: DRAFT_PR_HEAD_COMMIT,
+    headCommit: refs.headCommit,
     draftPrTitle: request.title ?? "Phase 1A.4D Live Draft PR Smoke Test",
     firstResult,
     replayResult,
