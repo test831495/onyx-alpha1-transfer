@@ -6,7 +6,7 @@ import { runProviderHealthSmoke } from "./provider-health-smoke.mjs";
  */
 function createMockDeps() {
   const dirStack = [];
-  
+
   return {
     createTempDir: vi.fn(async () => {
       const dir = `/tmp/test-onyx-health-${Date.now()}-${Math.random()}`;
@@ -33,9 +33,9 @@ function createMockDeps() {
 describe("provider-health-smoke production cleanup behavior", () => {
   it("removes the actual temporary directory on success", async () => {
     const deps = createMockDeps();
-    
+
     await runProviderHealthSmoke(deps);
-    
+
     expect(deps.createTempDir).toHaveBeenCalledTimes(1);
     expect(deps.removeDir).toHaveBeenCalledTimes(1);
     expect(deps.dirStack.length).toBe(0);
@@ -48,9 +48,9 @@ describe("provider-health-smoke production cleanup behavior", () => {
       stderr: "Generator failed",
       stdout: ""
     });
-    
+
     await expect(runProviderHealthSmoke(deps)).rejects.toThrow("Generator failed");
-    
+
     expect(deps.createTempDir).toHaveBeenCalledTimes(1);
     expect(deps.removeDir).toHaveBeenCalledTimes(1);
     expect(deps.dirStack.length).toBe(0);
@@ -64,9 +64,9 @@ describe("provider-health-smoke production cleanup behavior", () => {
       production: { deploymentAllowed: false, liveNetlifyUpdatesAllowed: false },
       secret: secret
     }));
-    
+
     await expect(runProviderHealthSmoke(deps)).rejects.toThrow("exposed a secret");
-    
+
     expect(deps.createTempDir).toHaveBeenCalledTimes(1);
     expect(deps.removeDir).toHaveBeenCalledTimes(1);
     expect(deps.dirStack.length).toBe(0);
@@ -75,9 +75,9 @@ describe("provider-health-smoke production cleanup behavior", () => {
   it("removes the actual temporary directory when JSON parsing fails", async () => {
     const deps = createMockDeps();
     deps.readOutput.mockResolvedValue("invalid json {");
-    
+
     await expect(runProviderHealthSmoke(deps)).rejects.toThrow();
-    
+
     expect(deps.createTempDir).toHaveBeenCalledTimes(1);
     expect(deps.removeDir).toHaveBeenCalledTimes(1);
     expect(deps.dirStack.length).toBe(0);
@@ -89,9 +89,9 @@ describe("provider-health-smoke production cleanup behavior", () => {
       // Missing providers array
       production: { deploymentAllowed: false, liveNetlifyUpdatesAllowed: false }
     }));
-    
+
     await expect(runProviderHealthSmoke(deps)).rejects.toThrow("no providers array");
-    
+
     expect(deps.createTempDir).toHaveBeenCalledTimes(1);
     expect(deps.removeDir).toHaveBeenCalledTimes(1);
     expect(deps.dirStack.length).toBe(0);
@@ -104,9 +104,9 @@ describe("provider-health-smoke production cleanup behavior", () => {
       providers: [],
       production: { deploymentAllowed: true, liveNetlifyUpdatesAllowed: false }
     }));
-    
+
     const error = await expect(runProviderHealthSmoke(deps)).rejects.toThrow(expectedMessage);
-    
+
     expect(deps.removeDir).toHaveBeenCalledTimes(1);
     expect(error).toBeTruthy();
   });
@@ -114,19 +114,19 @@ describe("provider-health-smoke production cleanup behavior", () => {
   it("exposes cleanup failure context safely when both primary and cleanup fail", async () => {
     const deps = createMockDeps();
     const primaryFailure = "Validation failed";
-    
+
     deps.readOutput.mockResolvedValue("invalid");
     deps.removeDir.mockRejectedValue(new Error("Cleanup failed"));
-    
+
     const originalConsoleError = console.error;
     const consoleErrorCalls = [];
     console.error = (...args) => consoleErrorCalls.push(args);
-    
+
     try {
       await expect(runProviderHealthSmoke(deps)).rejects.toThrow();
-      
+
       expect(deps.removeDir).toHaveBeenCalledTimes(1);
-      expect(consoleErrorCalls.some(call => 
+      expect(consoleErrorCalls.some(call =>
         call.some(arg => typeof arg === 'string' && arg.includes("Cleanup failed"))
       )).toBe(true);
     } finally {
@@ -136,18 +136,18 @@ describe("provider-health-smoke production cleanup behavior", () => {
 
   it("maintains successful script behavior and PASS messages", async () => {
     const deps = createMockDeps();
-    
+
     const originalConsoleLog = console.log;
     const consoleLogs = [];
     console.log = (...args) => consoleLogs.push(args);
-    
+
     try {
       await runProviderHealthSmoke(deps);
-      
+
       expect(consoleLogs.some(call =>
         call.some(arg => arg?.includes("[PASS]"))
       )).toBe(true);
-      
+
       expect(consoleLogs.length).toBe(3);
     } finally {
       console.log = originalConsoleLog;
@@ -156,12 +156,12 @@ describe("provider-health-smoke production cleanup behavior", () => {
 
   it("exercises production cleanup on rapid sequential validations", async () => {
     const deps = createMockDeps();
-    
+
     // Run multiple validations sequentially
     for (let i = 0; i < 3; i++) {
       await runProviderHealthSmoke(deps);
     }
-    
+
     expect(deps.createTempDir).toHaveBeenCalledTimes(3);
     expect(deps.removeDir).toHaveBeenCalledTimes(3);
     expect(deps.dirStack.length).toBe(0);
@@ -170,19 +170,18 @@ describe("provider-health-smoke production cleanup behavior", () => {
   it("correctly orders cleanup relative to validation failure", async () => {
     const deps = createMockDeps();
     const callOrder = [];
-    
+
     deps.runGenerator = vi.fn((output) => {
       callOrder.push("runGenerator");
       return { status: 1, stderr: "Generator failed", stdout: "" };
     });
-    
+
     deps.removeDir = vi.fn(async (path) => {
       callOrder.push("removeDir");
     });
-    
+
     await expect(runProviderHealthSmoke(deps)).rejects.toThrow();
-    
+
     expect(callOrder).toEqual(["runGenerator", "removeDir"]);
   });
 });
-

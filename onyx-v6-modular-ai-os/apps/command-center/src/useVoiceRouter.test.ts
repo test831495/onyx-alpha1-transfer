@@ -61,7 +61,7 @@ describe("DiagnosticResetTimer timer lifecycle", () => {
 
     expect(timer.isPending()).toBe(true);
     expect(timer.getHandle()).not.toBeNull();
-    
+
     vi.advanceTimersByTime(1500);
     expect(callback).toHaveBeenCalledTimes(1);
     expect(timer.isPending()).toBe(false);
@@ -73,7 +73,7 @@ describe("DiagnosticResetTimer timer lifecycle", () => {
 
     timer.schedule(callback, 1500);
     const handle = timer.getHandle();
-    
+
     expect(handle).not.toBeNull();
     expect(handle).toBeDefined();
   });
@@ -165,7 +165,7 @@ describe("DiagnosticResetTimer timer lifecycle", () => {
     }
 
     vi.advanceTimersByTime(1500);
-    
+
     // Only the last scheduled callback should fire
     expect(callback).toHaveBeenCalledTimes(1);
   });
