@@ -1,9 +1,9 @@
 # Phase 1A.11 Wave B1 Test Evidence
 
-**Version:** 0.1.0
+**Version:** 0.2.0
 **Date:** 2026-08-23
 **Owner:** Rahul
-**Status:** Focused and workspace validation recorded; awaiting Rahul review
+**Status:** Review remediation completed; focused and workspace validation recorded
 **Intended audience:** Rahul and reviewers
 
 ## Purpose
@@ -16,7 +16,7 @@ The local checks demonstrate one canonical owner, deny-by-default behavior, isol
 
 ## Current Implementation
 
-The test file `packages/phase1a11-household-identity-runtime/tests/identity-runtime.test.ts` contains 9 deterministic tests. Fixtures contain no credentials, production identifiers, secrets, tokens, or session secrets.
+The test file `packages/phase1a11-household-identity-runtime/tests/identity-runtime.test.ts` contains 14 deterministic tests: 9 original tests plus 5 new timestamp-validation tests. Fixtures contain no credentials, production identifiers, secrets, tokens, or session secrets.
 
 ## Friendly Default Experience
 
@@ -37,12 +37,12 @@ Verified:
 - Wave A typecheck: PASS
 - Wave A tests: PASS, 1 test file and 10 tests
 - Wave B1 typecheck: PASS
-- Wave B1 tests: PASS, 1 test file and 9 tests
+- Wave B1 tests: PASS, 1 test file and 14 tests
 - Wave A registry count: PASS, 78 unique IDs
 
 Additional verified results:
 
-- Workspace-filtered Wave B1 typecheck and tests: PASS; Wave A 10 tests and Wave B1 9 tests
+- Workspace-filtered Wave B1 typecheck and tests: PASS; Wave A 10 tests and Wave B1 14 tests
 - Acceptance mapping: PASS; 78 unique predecessor IDs, no new ID
 - Export surface: PASS; model, catalog, authorization, labels, and fixtures exported
 - Secret-display scan: PASS; no secret patterns in Wave B1 source or tests
@@ -51,6 +51,32 @@ Additional verified results:
 - Workspace-wide `pnpm -r typecheck`: PASS; 35 of 36 workspace projects typechecked
 
 The separate non-failing bundle-size warning remains a known baseline limitation.
+
+## Review Remediation (Commit 5c102e2)
+
+GitHub Copilot review feedback on PR #12 identified seven findings. All were corrected and PR review conversations were resolved:
+
+**Timestamp Validation Hardening:**
+- Malformed current time in expiration validation now fails closed with `INVALID_VALIDATION_TIME`
+- Malformed membership expiration dates now fail closed with `INVALID_MEMBERSHIP_EXPIRATION`
+- Valid past expiration continues to deny access
+- Valid future expiration remains eligible for continued evaluation
+- Omitted membership expiration remains supported
+- Three new tests verify malformed dates deny; two new tests verify valid expiration dates behave correctly
+
+**Constant Reuse and Type Safety:**
+- Shared `RAHUL_CANONICAL_ACCOUNT` constant is now used in authorization evaluation
+- Target account and household identifiers use `AccountId` and `HouseholdId` types
+- Unknown `requestedPermission` remains accepted at the untrusted input boundary and denied unless catalog-validated
+
+**Compile-Time Checked Catalogs:**
+- Permission catalog literals are now compile-time checked using `as const` + `satisfies`
+- Invalid permission IDs fail TypeScript compilation; runtime unknown permissions are still denied
+
+**Maintainability Improvements:**
+- Fixture account-prefix handling no longer relies on `slice(8)`; uses named `ACCOUNT_ID_PREFIX` constant
+- Unused `householdId` import removed from test file
+- Presentation-label registry formatted with one key-value pair per line
 
 ## Baseline and Change Record
 

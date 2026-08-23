@@ -1,9 +1,9 @@
 # Phase 1A.11 Wave B1 Known Limitations
 
-**Version:** 0.1.0
+**Version:** 0.2.0
 **Date:** 2026-08-23
 **Owner:** Rahul
-**Status:** Not a production-readiness claim; awaiting Rahul review
+**Status:** Review remediation completed; awaiting Rahul review
 **Intended audience:** Rahul, security reviewers, and future Wave B maintainers
 
 ## Purpose
@@ -32,7 +32,7 @@ The package has no database, session store, authentication provider, connector, 
 
 ## Validation Commands and Actual Results
 
-Verified: Wave A typecheck PASS; Wave A tests PASS with 10 tests; Wave B1 typecheck PASS; Wave B1 tests PASS with 9 tests; filtered checks, scans, diff check, and workspace-wide typecheck PASS. No unsupported runtime claim is marked PASS.
+Verified: Wave A typecheck PASS; Wave A tests PASS with 10 tests; Wave B1 typecheck PASS; Wave B1 tests PASS with 14 tests; filtered checks, scans, diff check, and workspace-wide typecheck PASS. No unsupported runtime claim is marked PASS.
 
 ## Failure Behavior
 
@@ -44,7 +44,15 @@ Refresh local facts or ask Rahul. Rollback removes the Wave B1 package, four Wav
 
 ## Known Limitations
 
-`COMMAND-CENTER-REGRESSION-01` and the separate non-failing bundle-size warning remain outside this task and are not repaired. No production-readiness, authentication-provider, database, or persistent-session claim is made.
+`COMMAND-CENTER-REGRESSION-01` and the separate non-failing bundle-size warning remain outside this task and are not repaired.
+
+No production-readiness, authentication-provider, database, connector, Council-runtime, Project Journey retrieval, or persistent-session claim is made.
+
+Timestamp validation is deterministic and local. All malformed dates now fail closed as of commit 5c102e2:
+
+- Malformed validation time is rejected with technical reason `INVALID_VALIDATION_TIME`
+- Malformed membership expiration is rejected with technical reason `INVALID_MEMBERSHIP_EXPIRATION`
+- This hardening applies only to local deterministic checks; no external validation provider exists
 
 ## Acceptance References
 
