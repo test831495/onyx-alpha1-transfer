@@ -3,9 +3,30 @@ import type { PermissionId, RoleId } from "./model";
 export interface PermissionDefinition { id: PermissionId; label: string; ownerOnly?: boolean; sensitive?: boolean; }
 export interface RoleDefinition { id: RoleId; label: string; description: string; allowedPermissions: PermissionId[]; prohibitedPermissions: PermissionId[]; technicalInformationEligible: boolean; projectJourneyEligibility: "detailed" | "basic" | "none"; risk: "critical" | "high" | "moderate" | "low"; }
 
-export const PERMISSIONS: PermissionDefinition[] = [
-  ["OWN_PROFILE_READ", "View your profile"], ["OWN_PROFILE_UPDATE", "Update your profile"], ["OWN_CHARACTER_PREFERENCES", "Manage your character preferences"], ["OWN_CONVERSATION_ACCESS", "View your conversations"], ["OWN_MEMORY_ACCESS", "View your memory"], ["OWN_APPROVED_CONNECTOR_METADATA", "View approved connector details"], ["SHARED_HOUSEHOLD_RESOURCE_READ", "View shared household resources"], ["ROUTINE_HOUSEHOLD_SUPPORT", "Provide routine household support"], ["HOUSEHOLD_SETTINGS_MANAGEMENT", "Manage household settings"], ["DETAILED_PROJECT_JOURNEY_ACCESS", "View Detailed Project History"], ["BASIC_PROJECT_INFORMATION_ACCESS", "View Project Overview"], ["TECHNICAL_INFORMATION_ACCESS", "View Technical Information"], ["COUNCIL_CONTRIBUTION_REQUEST", "Request a Council contribution"], ["COUNCIL_CONTRIBUTION_RESPONSE", "Respond to a Council contribution"], ["OWNER_OVERSIGHT_METADATA", "View owner oversight metadata"], ["PROTECTED_OWNER_INSPECTION", "Inspect protected owner information"], ["BREAK_GLASS_REQUEST", "Request emergency review"], ["ROLE_ASSIGNMENT", "Assign roles"], ["PERMISSION_ASSIGNMENT", "Assign permissions"], ["AUDIT_METADATA_ACCESS", "View audit metadata"]
-].map(([id, label]) => ({ id: id as PermissionId, label: label ?? "" }));
+const PERMISSION_ENTRIES = [
+  ["OWN_PROFILE_READ", "View your profile"] as const,
+  ["OWN_PROFILE_UPDATE", "Update your profile"] as const,
+  ["OWN_CHARACTER_PREFERENCES", "Manage your character preferences"] as const,
+  ["OWN_CONVERSATION_ACCESS", "View your conversations"] as const,
+  ["OWN_MEMORY_ACCESS", "View your memory"] as const,
+  ["OWN_APPROVED_CONNECTOR_METADATA", "View approved connector details"] as const,
+  ["SHARED_HOUSEHOLD_RESOURCE_READ", "View shared household resources"] as const,
+  ["ROUTINE_HOUSEHOLD_SUPPORT", "Provide routine household support"] as const,
+  ["HOUSEHOLD_SETTINGS_MANAGEMENT", "Manage household settings"] as const,
+  ["DETAILED_PROJECT_JOURNEY_ACCESS", "View Detailed Project History"] as const,
+  ["BASIC_PROJECT_INFORMATION_ACCESS", "View Project Overview"] as const,
+  ["TECHNICAL_INFORMATION_ACCESS", "View Technical Information"] as const,
+  ["COUNCIL_CONTRIBUTION_REQUEST", "Request a Council contribution"] as const,
+  ["COUNCIL_CONTRIBUTION_RESPONSE", "Respond to a Council contribution"] as const,
+  ["OWNER_OVERSIGHT_METADATA", "View owner oversight metadata"] as const,
+  ["PROTECTED_OWNER_INSPECTION", "Inspect protected owner information"] as const,
+  ["BREAK_GLASS_REQUEST", "Request emergency review"] as const,
+  ["ROLE_ASSIGNMENT", "Assign roles"] as const,
+  ["PERMISSION_ASSIGNMENT", "Assign permissions"] as const,
+  ["AUDIT_METADATA_ACCESS", "View audit metadata"] as const,
+] satisfies ReadonlyArray<readonly [PermissionId, string]>;
+
+export const PERMISSIONS: PermissionDefinition[] = PERMISSION_ENTRIES.map(([id, label]) => ({ id, label }));
 export const PERMISSION_IDS = new Set(PERMISSIONS.map((permission) => permission.id));
 const own: PermissionId[] = ["OWN_PROFILE_READ", "OWN_PROFILE_UPDATE", "OWN_CHARACTER_PREFERENCES", "OWN_CONVERSATION_ACCESS", "OWN_MEMORY_ACCESS", "OWN_APPROVED_CONNECTOR_METADATA", "SHARED_HOUSEHOLD_RESOURCE_READ", "ROUTINE_HOUSEHOLD_SUPPORT", "BASIC_PROJECT_INFORMATION_ACCESS", "COUNCIL_CONTRIBUTION_REQUEST", "COUNCIL_CONTRIBUTION_RESPONSE"];
 const owner: PermissionId[] = [...own, "HOUSEHOLD_SETTINGS_MANAGEMENT", "DETAILED_PROJECT_JOURNEY_ACCESS", "TECHNICAL_INFORMATION_ACCESS", "OWNER_OVERSIGHT_METADATA", "PROTECTED_OWNER_INSPECTION", "BREAK_GLASS_REQUEST", "ROLE_ASSIGNMENT", "PERMISSION_ASSIGNMENT", "AUDIT_METADATA_ACCESS"];

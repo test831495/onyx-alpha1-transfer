@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { baseAuthorizationInput, accounts, identities, membership, householdId } from "../src/fixtures";
+import { baseAuthorizationInput, accounts, identities, membership } from "../src/fixtures";
 import { evaluateAuthorization } from "../src/authorization";
 import { CANONICAL_OWNER_BINDING, CURRENT_PERMISSION_CATALOG_VERSION, CURRENT_POLICY_VERSION, CURRENT_ROLE_VERSION, RAHUL_CANONICAL_ACCOUNT, validateCanonicalOwner, validateIdentity, validateRoleAssignment } from "../src/model";
 import { friendlyLabel } from "../src/labels";
@@ -22,6 +22,24 @@ describe("Wave B1 identity foundation", () => {
     expect(validateIdentity({ ...identities.rahul, membership: membership(accounts.rahul, "GUEST", { status: "expired" }) }, baseAuthorizationInput.currentTime!).valid).toBe(false);
     expect(validateIdentity({ ...identities.rahul, membership: { ...identities.rahul.membership, householdId: "household_other" } }, baseAuthorizationInput.currentTime!).valid).toBe(false);
     expect(validateIdentity({ ...identities.rahul, membership: { ...identities.rahul.membership, accountId: "account_other" } }, baseAuthorizationInput.currentTime!).valid).toBe(false);
+  });
+  it("denies malformed current time in expiration validation", () => {
+    expect(validateIdentity(identities.rahul, "not-a-date").valid).toBe(false);
+    expect(validateIdentity(identities.rahul, "not-a-date").technicalReason).toBe("INVALID_VALIDATION_TIME");
+  });
+  it("denies malformed membership expiration dates", () => {
+    expect(validateIdentity({ ...identities.rahul, membership: membership(accounts.rahul, "PRIMARY_OWNER", { expiresAt: "not-a-date" }) }, baseAuthorizationInput.currentTime!).valid).toBe(false);
+    expect(validateIdentity({ ...identities.rahul, membership: membership(accounts.rahul, "PRIMARY_OWNER", { expiresAt: "not-a-date" }) }, baseAuthorizationInput.currentTime!).technicalReason).toBe("INVALID_MEMBERSHIP_EXPIRATION");
+  });
+  it("denies expired memberships with valid past expiration", () => {
+    expect(validateIdentity({ ...identities.rahul, membership: membership(accounts.rahul, "PRIMARY_OWNER", { expiresAt: "2020-01-01T00:00:00.000Z" }) }, baseAuthorizationInput.currentTime!).valid).toBe(false);
+    expect(validateIdentity({ ...identities.rahul, membership: membership(accounts.rahul, "PRIMARY_OWNER", { expiresAt: "2020-01-01T00:00:00.000Z" }) }, baseAuthorizationInput.currentTime!).technicalReason).toBe("MEMBERSHIP_EXPIRED");
+  });
+  it("allows memberships with valid future expiration", () => {
+    expect(validateIdentity({ ...identities.rahul, membership: membership(accounts.rahul, "PRIMARY_OWNER", { expiresAt: "2099-12-31T23:59:59.000Z" }) }, baseAuthorizationInput.currentTime!).valid).toBe(true);
+  });
+  it("allows omitted membership expiration", () => {
+    expect(validateIdentity({ ...identities.rahul, membership: membership(accounts.rahul, "PRIMARY_OWNER") }, baseAuthorizationInput.currentTime!).valid).toBe(true);
   });
   it("denies missing, unknown, prohibited, empty, and stale permissions", () => {
     expect(decision({ requestedPermission: undefined }).allowed).toBe(false);

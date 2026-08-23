@@ -46,7 +46,13 @@ export function validateIdentity(context: HouseholdIdentityContext, now: string)
   if (!knownRoles.has(membership.roleId) || !["active", "pending", "suspended", "disabled", "expired"].includes(account.status)) return invalid("This identity cannot be verified.", "UNKNOWN_IDENTITY_STATE");
   if (account.status !== "active") return invalid("This account is temporarily unavailable.", `ACCOUNT_${account.status.toUpperCase()}`);
   if (membership.status !== "active") return invalid("This membership is not active.", `MEMBERSHIP_${membership.status.toUpperCase()}`);
-  if (membership.expiresAt && new Date(membership.expiresAt).getTime() <= new Date(now).getTime()) return invalid("This membership has expired.", "MEMBERSHIP_EXPIRED");
+  const currentTimeMs = new Date(now).getTime();
+  if (Number.isNaN(currentTimeMs)) return invalid("This identity cannot be verified.", "INVALID_VALIDATION_TIME");
+  if (membership.expiresAt) {
+    const expirationMs = new Date(membership.expiresAt).getTime();
+    if (Number.isNaN(expirationMs)) return invalid("This membership has expired.", "INVALID_MEMBERSHIP_EXPIRATION");
+    if (expirationMs <= currentTimeMs) return invalid("This membership has expired.", "MEMBERSHIP_EXPIRED");
+  }
   if (membership.roleVersion !== CURRENT_ROLE_VERSION) return invalid("This identity uses an outdated role definition.", "STALE_ROLE_VERSION");
   return { valid: true, reason: "Identity is active.", technicalReason: "IDENTITY_VALID" };
 }
