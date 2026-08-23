@@ -1,0 +1,10 @@
+import { PHASE1A9_TASK_REFERENCE_CONTRACT_VERSION } from "../shared/versions";
+import { type OperationClass, type ParallelSafetyClass, type RiskClass, assertOperationClass, assertParallelSafetyClass, assertRiskClass } from "./classification-mapping";
+export const SCHEDULER_ELIGIBILITY = ["UNASSESSED", "REFERENCE_VALID", "REFERENCE_INVALID", "REQUIRES_APPROVAL", "REQUIRES_FRESH_APPROVAL", "REQUIRES_RECONCILIATION", "PROHIBITED"] as const;
+export type SchedulerEligibility = (typeof SCHEDULER_ELIGIBILITY)[number];
+export interface SchedulableTaskReference { schedulerTaskReferenceId: string; taskId: string; workflowId: string; runtimeId: string; runtimeSessionId: string; agentIdentityId: string; capabilityDeclarationId: string; operationClass: OperationClass; parallelSafetyClass: ParallelSafetyClass; riskClass: RiskClass; dependencyGraphId: string; resourceScopeIds: readonly string[]; permissionProfileId: string; memoryAccessProfileId: string; connectorScopeIds: readonly string[]; contextPackageId: string; tokenBudgetId: string; costBudgetId: string; approvalId?: string; scopeHash: string; checkpointDigest: string; promotionRequired: boolean; schedulerEligibility: SchedulerEligibility; denialReasons: readonly string[]; createdAt: string; expiresAt: string; contractVersion: string; evidenceReferences: readonly string[]; }
+export function assertSchedulableTaskReference(reference: SchedulableTaskReference): void {
+  assertOperationClass(reference.operationClass); assertParallelSafetyClass(reference.parallelSafetyClass); assertRiskClass(reference.riskClass);
+  if (reference.contractVersion !== PHASE1A9_TASK_REFERENCE_CONTRACT_VERSION || !reference.taskId || !reference.workflowId || !reference.scopeHash || !reference.checkpointDigest) throw new Error("Invalid schedulable task reference.");
+  if (["READY", "DISPATCHED", "RUNNING", "EXECUTING"].includes(reference.schedulerEligibility)) throw new Error("Wave 1 has no execution eligibility states.");
+}

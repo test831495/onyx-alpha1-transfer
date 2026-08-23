@@ -1,6 +1,6 @@
 {
   "name": "@onyx/command-center",
-  "version": "6.0.0-alpha.2.5.11",
+  "version": "6.0.0-alpha.3.1.1b",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,7 +8,9 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "predev": "node ../../scripts/generate-provider-health.mjs",
+    "prebuild": "node ../../scripts/generate-provider-health.mjs"
   },
   "dependencies": {
     "@elevenlabs/react": "^1.6.5",
@@ -19,13 +21,21 @@
     "@onyx/privacy": "workspace:*",
     "@onyx/ui": "workspace:*",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "@onyx/intelligence-runtime": "workspace:*",
+    "@onyx/workspace-contracts": "workspace:*",
+    "@onyx/workspace-connectors": "workspace:*",
+    "@onyx/calendar-intelligence": "workspace:*",
+    "@onyx/voice-runtime": "workspace:*",
+    "@onyx/identity-runtime": "workspace:*",
+    "@onyx/phase1a6-workflow-runtime": "workspace:*",
+    "@onyx/phase1a9-governed-scheduler": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^5.0.2",
-    "vite": "^7.1.3",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vite": "^7.1.3"
   }
 }

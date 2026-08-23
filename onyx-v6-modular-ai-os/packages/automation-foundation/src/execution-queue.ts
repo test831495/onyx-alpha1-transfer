@@ -1,0 +1,1 @@
+export class ExecutionQueue{private ids:string[]=[];enqueue(id:string){if(!this.ids.includes(id))this.ids.push(id)}dequeue(){return this.ids.shift()}peek(){return this.ids[0]}list(){return [...this.ids]}get size(){return this.ids.length}}

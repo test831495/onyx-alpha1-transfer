@@ -1,0 +1,70 @@
+section[aria-label="ONYX Automation Center"] {
+  inset: 4vh 2vw !important;
+  max-width: 96vw;
+  max-height: 92vh;
+  min-height: 0;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+section[aria-label="ONYX Automation Center"] > header,
+section[aria-label="ONYX Automation Center"] > details,
+section[aria-label="ONYX Automation Center"] > nav {
+  flex: 0 0 auto !important;
+}
+
+section[aria-label="ONYX Automation Center"] > header {
+  position: relative;
+  z-index: 2;
+}
+
+section[aria-label="ONYX Automation Center"] > nav {
+  align-items: flex-start !important;
+  flex-wrap: wrap;
+  min-height: 0;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+section[aria-label="ONYX Automation Center"] > nav > button {
+  flex: 0 0 auto !important;
+  min-height: 44px;
+}
+
+section[aria-label="ONYX Automation Center"] > nav + div {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  align-content: start;
+}
+
+section[aria-label="ONYX Automation Center"] button:focus-visible,
+section[aria-label="ONYX Automation Center"] summary:focus-visible,
+section[aria-label="ONYX Automation Center"] select:focus-visible {
+  outline: 3px solid #ffd166;
+  outline-offset: 2px;
+}
+
+@media (max-width: 700px) {
+  section[aria-label="ONYX Automation Center"] {
+    inset: 0 !important;
+    max-width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  section[aria-label="ONYX Automation Center"] > header {
+    align-items: flex-start;
+  }
+
+  section[aria-label="ONYX Automation Center"] > header > div:last-child {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  section[aria-label="ONYX Automation Center"] > nav {
+    flex-wrap: nowrap;
+  }
+}

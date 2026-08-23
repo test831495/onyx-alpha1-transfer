@@ -1,0 +1,3 @@
+import type { AutomationJob } from "./job";
+export interface EvidencePackage{jobId:string;capabilityId:string;scopeHash:string;dryRun:boolean;remoteMutationPerformed:false;policyDecision:string;validations:AutomationJob["validations"];checkpoint?:AutomationJob["checkpoint"];auditIds:string[]}
+export function buildEvidence(job:AutomationJob,policyDecision:string):EvidencePackage{return{jobId:job.id,capabilityId:job.plan.capabilityId,scopeHash:job.plan.scopeHash,dryRun:job.plan.dryRun,remoteMutationPerformed:false,policyDecision,validations:job.validations,checkpoint:job.checkpoint,auditIds:[...job.auditIds]}}

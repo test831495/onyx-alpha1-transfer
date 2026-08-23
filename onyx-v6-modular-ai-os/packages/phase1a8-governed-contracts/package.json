@@ -1,0 +1,24 @@
+{
+  "name": "@onyx/phase1a8-governed-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./shared": "./src/shared/index.ts",
+    "./local-simulation": "./src/local-simulation/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@onyx/phase1a5-workflow-engine": "workspace:*",
+    "@onyx/phase1a6-workflow-runtime": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.7"
+  }
+}

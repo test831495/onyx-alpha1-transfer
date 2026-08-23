@@ -1,0 +1,6 @@
+const protectedBranches=new Set(["main","integration/onyx-nova"]);
+const allowedCommandPatterns=[/^git status --short$/, /^git branch --show-current$/, /^git rev-parse --short HEAD$/, /^git switch -c automation\/issue-[a-z0-9-]+$/, /^pnpm --filter @[a-z0-9/-]+ (test|typecheck|build)$/, /^git diff --check$/];
+const prohibitedFragments=["gh pr merge","netlify deploy","git push origin main","git push origin integration/onyx-nova","printenv","env |","cat .env","rm -rf","git reset --hard","git clean -fd","chmod 777"];
+export function isProtectedBranch(branch:string){return protectedBranches.has(branch)}
+export function validateCommand(command:string){if(prohibitedFragments.some(x=>command.includes(x)))return{allowed:false,reason:`Prohibited command fragment: ${command}`};if(!allowedCommandPatterns.some(x=>x.test(command)))return{allowed:false,reason:`Command is not allowlisted: ${command}`};return{allowed:true}}
+export function validateFileBoundary(path:string,allowed:string[]){const safe=!path.includes("..")&&!path.startsWith("/")&&!/^(main|integration\/onyx-nova)$/.test(path);const matched=allowed.some(prefix=>path===prefix||path.startsWith(prefix.endsWith("/")?prefix:`${prefix}/`));return safe&&matched}

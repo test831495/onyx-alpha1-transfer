@@ -1,0 +1,1 @@
+import React from"react";import{createRoot}from"react-dom/client";import{SettingsCenter}from"./components/SettingsCenter";if(typeof document!=="undefined"){const id="onyx-settings-center-root";let n=document.getElementById(id);if(!n){n=document.createElement("div");n.id=id;document.body.appendChild(n)}createRoot(n).render(<React.StrictMode><SettingsCenter/></React.StrictMode>)}

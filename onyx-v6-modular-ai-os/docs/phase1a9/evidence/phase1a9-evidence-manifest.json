@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0.0",
+  "scope": "local validation only",
+  "generatedState": "deterministic repository evidence",
+  "provenance": "working-tree validation at sealed Phase 1A.8 HEAD",
+  "artifacts": ["phase1a9-test-results.json", "phase1a9-simulations.json", "phase1a9-failure-matrix.json", "phase1a9-cost-budget.json", "phase1a9-security-scan.txt", "phase1a9-accessibility.md", "phase1a9-known-issues.md", "phase1a9-change-manifest.md", "phase1a9-recovery-resume.txt", "phase1a9-release-recommendation.md"],
+  "secretsPersisted": false,
+  "productionExecution": false,
+  "remoteMutation": false,
+  "gitClosure": false,
+  "registeredDefinitions": 14,
+  "generatedEvidenceFiles": 11,
+  "completeEvidenceDefinitions": 13,
+  "incompleteEvidenceDefinitions": 1,
+  "incompleteEvidence": ["phase1a9-runtime.ndjson: no runtime execution is permitted in Wave 5B"],
+  "t30": {"status": "EXECUTABLE", "implementationWave": "WAVE_5B", "result": "PASS"},
+  "acceptance": {"accepted": 0, "pending": 22, "blocked": 0, "reconciliationRequired": 0}
+}

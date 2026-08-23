@@ -1,0 +1,5 @@
+# Phase 1A.2E.5 Live Automation Dashboard Job Integration Foundation
+
+Adds a real event-backed dashboard domain model for E.1 through E.4 pipeline jobs. The projector converts pipeline events into job cards, counts, validation progress, repair attempts, evidence readiness, Draft PR state, diagnostics, and state-appropriate actions. Sensitive actions require Rahul Kumar and a meaningful reason. The memory event store is deterministic and idempotent for validation; a persistent adapter can be added later.
+
+This package provides the live data/service foundation. It deliberately does not modify the visually pending Automation Center UI in this package, avoiding another unvalidated UI patch while Codespaces forwarding remains unreliable. E.6 will connect this service to a controlled end-to-end smoke test and, after visual access is restored, the UI adapter can consume DashboardSnapshot without changing pipeline governance. Merge and production deployment remain unavailable.

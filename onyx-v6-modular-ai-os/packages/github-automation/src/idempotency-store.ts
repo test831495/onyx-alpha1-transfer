@@ -1,0 +1,1 @@
+export interface IdempotencyStore{has(key:string):boolean;record(key:string,value:string):void;get(key:string):string|undefined}export class InMemoryIdempotencyStore implements IdempotencyStore{private values=new Map<string,string>();has(k:string){return this.values.has(k)}record(k:string,v:string){this.values.set(k,v)}get(k:string){return this.values.get(k)}}

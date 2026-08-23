@@ -1,0 +1,17 @@
+repository=/workspaces/onyx-alpha1-transfer/onyx-v6-modular-ai-os
+branch=feature/phase1a9-governed-bounded-scheduler
+HEAD=ee20f8aa5a82720f0b03b49a55e1f390c97c6f84
+predecessor_tag=phase1a8-governed-multiagent-memory-context-contracts-local-validated
+working_tree=approved accumulated Wave 4B and Phase 1A.9 scope; uncommitted
+staged_file_count=0
+scheduler_baseline=31 test files; 325 tests; typecheck PASS
+validator=focused validator tests PASS; complete closure pending bounded predecessor evidence
+simulation=7 Phase 1A.9 scenarios PASS; 4 faults; replay PASS
+acceptance_counts=accepted 1; pending 21; blocked 0; reconciliation_required 0
+accepted_ids=P19-REGRESSION
+pending_ids=P19-CONTRACT,P19-STATES,P19-LANES,P19-DEPS,P19-LEASE,P19-HEARTBEAT,P19-LOCK,P19-CHECKPOINT,P19-CANCEL,P19-JOIN,P19-BUDGET,P19-RECOVERY,P19-PROMOTION,P19-EVIDENCE,P19-UX,P19-SECURITY,P19-SIMULATION,P19-MEMORY,P19-COUNCIL,P19-DRAFT,P19-CONNECTOR
+known_issues=COMMAND-CENTER-REGRESSION-01
+frozen_configuration=schedulerEnabled=false; activeLaneStage=S0_SINGLE; runtime=1; promotion=1; promotionExecutable=false; all safety fields=false
+next_required_step=Wave 5C Git provenance and closure after pending technical evidence is resolved
+wave5c_entry=all required gates pass, T01-T40 and predecessor evidence close, evidence manifest is complete, and recommendation is READY_FOR_WAVE_5C_GIT_CLOSURE
+prohibited=Git closure, remote mutation, deployment, scheduler activation, promotion, live connectors, live memory, paid actions

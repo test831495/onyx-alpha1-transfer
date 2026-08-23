@@ -14,3 +14,8 @@ export interface WorkflowStep { pluginId:string; tool:string; input:Record<strin
 export interface PrivacyDecision { allowed:boolean; reason:string; route:'local'|'cloud'|'ask-user'; redactions:string[] }
 export interface SystemSnapshot { cpu:number; memory:number; storage:number; network:number; online:boolean; wakeArmed:boolean; activeMode:AssistantMode; coreState:CoreState }
 export interface ExecutiveSnapshot { revenue:number; activeProjects:number; clients:number; tasksCompleted:number; portfolio:number; news:string[]; calendar:{time:string;title:string}[] }
+export * from "./assistant";
+export * from "./input";
+export * from "./module";
+export * from "./intent";
+export * from "./action";

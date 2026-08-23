@@ -13,3 +13,15 @@ coverage/
 *.before-*
 *.corrupted-backup
 *.zip
+.env.local
+.env.*.local
+config/onyx.config.local.json
+credentials.json
+tokens.json
+.phase1a4a-live-smoke-evidence.json
+.phase1a4b-local-smoke-evidence.json
+.phase1a4c-live-push-evidence.json
+.phase1a4d-live-draft-pr-evidence.json
+.phase1a5-checkpoints/
+.phase1a5-evidence/
+apps/command-center/public/provider-health.generated.json

@@ -1,0 +1,1 @@
+{"extends":"../../tsconfig.base.json","compilerOptions":{"target":"ES2022","module":"ESNext","moduleResolution":"Bundler","lib":["ES2022","DOM"],"rootDir":"../../packages","noEmit":true},"include":["src","../contracts/src","../module-registry/src","../intent-engine/src","../action-dispatcher/src"]}

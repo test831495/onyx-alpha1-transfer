@@ -1,0 +1,62 @@
+{
+  "P15-CONTRACT-001": {
+    "contractOrImplementation": "WorkflowContract",
+    "testFile": "packages/phase1a5-workflow-engine/tests/workflow-engine.test.ts",
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P15-APPROVAL-001": {
+    "contractOrImplementation": "ApprovalPackage",
+    "testFile": "packages/phase1a5-workflow-engine/tests/workflow-engine.test.ts",
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P15-STATE-001": {
+    "contractOrImplementation": "StateMachine",
+    "testFile": "packages/phase1a5-workflow-engine/tests/workflow-engine.test.ts",
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P15-CHECKPOINT-001": {
+    "contractOrImplementation": "CheckpointStore",
+    "testFile": "packages/phase1a5-workflow-engine/tests/recovery-engine.test.ts",
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P15-RECOVERY-001": {
+    "contractOrImplementation": "RecoveryEngine",
+    "testFile": "packages/phase1a5-workflow-engine/tests/recovery-engine.test.ts",
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P15-EXECUTOR-001": {
+    "contractOrImplementation": "WorkflowExecutor",
+    "testFile": "packages/phase1a5-workflow-engine/tests/security-boundaries.test.ts",
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P15-EVIDENCE-001": {
+    "contractOrImplementation": "EvidenceTimeline",
+    "testFile": "packages/phase1a5-workflow-engine/tests/security-boundaries.test.ts",
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P15-ROLLBACK-001": {
+    "contractOrImplementation": "RollbackPolicyResult",
+    "testFile": "packages/phase1a5-workflow-engine/tests/workflow-engine.test.ts",
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P15-SECURITY-001": {
+    "contractOrImplementation": "ExecutorContract",
+    "testFile": "packages/phase1a5-workflow-engine/tests/security-boundaries.test.ts",
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P15-SIMULATION-001": {
+    "contractOrImplementation": "LocalSimulation",
+    "testFile": "packages/phase1a5-workflow-engine/tests/workflow-engine.test.ts",
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  }
+}

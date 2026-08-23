@@ -1,0 +1,25 @@
+{
+  "name": "@onyx/github-automation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "demo": "tsx src/demo.ts",
+    "read-demo": "tsx src/read-demo.ts",
+    "write-demo": "tsx src/write-demo.ts"
+  },
+  "dependencies": {
+    "@onyx/automation-foundation": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.7"
+  }
+}

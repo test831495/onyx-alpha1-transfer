@@ -1,0 +1,13 @@
+{
+  "name": "@onyx/phase1a5-workflow-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./browser": "./src/browser.ts", "./local-simulation": "./src/local-simulation.ts" },
+  "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run" },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.7"
+  }
+}

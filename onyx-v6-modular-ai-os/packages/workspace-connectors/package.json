@@ -1,0 +1,1 @@
+{"name":"@onyx/workspace-connectors","version":"0.1.0","private":true,"type":"module","exports":{".":"./src/index.ts"},"scripts":{"typecheck":"tsc --noEmit","test":"vitest run"},"dependencies":{"@azure/msal-browser":"^4.25.0","@onyx/workspace-contracts":"workspace:*"}}

@@ -1,0 +1,85 @@
+.overflow-indicator {
+  position: relative;
+  width: max-content;
+  max-width: min(100%, 360px);
+  padding: 0.35rem 0.55rem;
+  background: rgba(100, 150, 200, 0.1);
+  border: 1px solid rgba(100, 150, 200, 0.3);
+  border-radius: 8px;
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  text-align: center;
+}
+
+.overflow-indicator__content {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.overflow-indicator__label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-primary, #333);
+}
+
+.overflow-indicator__pagination {
+  font-size: 0.7rem;
+  color: var(--text-secondary, #666);
+}
+
+.overflow-indicator__controls {
+  display: flex;
+  gap: 0.3rem;
+  justify-content: center;
+}
+
+.overflow-indicator__button {
+  padding: 0.25rem 0.45rem;
+  font-size: 0.7rem;
+  background: var(--button-bg, #4a90e2);
+  color: var(--button-text, #fff);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.overflow-indicator__button:hover:not(:disabled) {
+  background: var(--button-hover-bg, #357abd);
+}
+
+.overflow-indicator__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.overflow-indicator__button--prev::before {
+  content: "← ";
+}
+
+.overflow-indicator__button--next::after {
+  content: " →";
+}
+
+.overflow-navigation-region {
+  position: absolute;
+  z-index: 12;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  pointer-events: auto;
+}
+
+@media (max-width: 760px) {
+  .overflow-navigation-region {
+    position: relative;
+    left: auto;
+    bottom: auto;
+    transform: none;
+    display: flex;
+    justify-content: center;
+    margin: 4px auto;
+  }
+}

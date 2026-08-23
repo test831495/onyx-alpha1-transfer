@@ -1,0 +1,157 @@
+{
+  "P17-CONTRACT": {
+    "implementationIdentifiers": [
+      "AUTOMATION_RUNTIME_UI_CONTRACT_VERSION",
+      "AUTOMATION_RUNTIME_UI_COMPATIBLE_RUNTIME_CONTRACT_VERSION",
+      "P17_ACCEPTANCE_IDS"
+    ],
+    "testFiles": ["apps/command-center/src/automationRuntimeProjection.test.ts"],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P17-PROJECTION": {
+    "implementationIdentifiers": [
+      "AutomationRuntimeProjection",
+      "buildAutomationRuntimeProjection",
+      "redactSharedTaskReferences"
+    ],
+    "testFiles": ["apps/command-center/src/automationRuntimeProjection.test.ts"],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P17-DASHBOARD": {
+    "implementationIdentifiers": [
+      "AutomationRuntimeDashboard",
+      "GOVERNED_RUNTIME_TAB_ID",
+      "GovernedRuntimeTab",
+      "tabs",
+      "labels",
+      "buildApprovalReadOnlyProjection"
+    ],
+    "testFiles": [
+      "apps/command-center/src/components/AutomationRuntimeDashboard.test.tsx",
+      "apps/command-center/src/components/AutomationDashboard.test.tsx"
+    ],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P17-CONTROLLER": {
+    "implementationIdentifiers": [
+      "AutomationRuntimeController",
+      "LocalAutomationRuntimeController"
+    ],
+    "testFiles": ["apps/command-center/src/automationRuntimeController.test.ts"],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P17-IDENTITY": {
+    "implementationIdentifiers": [
+      "RuntimeIdentityProjection",
+      "PRESENCE_MODES",
+      "AutomationRuntimeIdentityPanel"
+    ],
+    "testFiles": [
+      "apps/command-center/src/automationRuntimeProjection.test.ts",
+      "apps/command-center/src/components/AutomationRuntimeIdentityPanel.test.tsx",
+      "apps/command-center/src/components/AutomationDashboard.test.tsx"
+    ],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P17-APPROVAL": {
+    "implementationIdentifiers": [
+      "ApprovalReadOnlyProjection",
+      "buildApprovalReadOnlyProjection"
+    ],
+    "testFiles": ["apps/command-center/src/components/AutomationRuntimeDashboard.test.tsx"],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P17-RECOVERY": {
+    "implementationIdentifiers": [
+      "RecoveryPanelViewModel",
+      "buildRecoveryPanelViewModel",
+      "AutomationRecoveryPanel"
+    ],
+    "testFiles": [
+      "apps/command-center/src/components/AutomationRecoveryPanel.test.tsx",
+      "apps/command-center/src/components/AutomationDashboard.test.tsx"
+    ],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P17-RECONCILIATION": {
+    "implementationIdentifiers": ["AutomationReconciliationPanel"],
+    "testFiles": [
+      "apps/command-center/src/components/AutomationReconciliationPanel.test.tsx",
+      "apps/command-center/src/components/AutomationDashboard.test.tsx"
+    ],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P17-EVIDENCE": {
+    "implementationIdentifiers": [
+      "EvidenceTimelineEntry",
+      "AutomationRuntimeEvidenceTimeline"
+    ],
+    "testFiles": [
+      "apps/command-center/src/automationRuntimeProjection.test.ts",
+      "apps/command-center/src/components/AutomationDashboard.test.tsx"
+    ],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P17-CONNECTOR": {
+    "implementationIdentifiers": [
+      "CONNECTOR_PROVIDERS",
+      "ConnectorScopeProjection",
+      "AutomationConnectorScopePanel"
+    ],
+    "testFiles": [
+      "apps/command-center/src/automationRuntimeProjection.test.ts",
+      "apps/command-center/src/components/AutomationConnectorScopePanel.test.tsx",
+      "apps/command-center/src/components/AutomationDashboard.test.tsx"
+    ],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P17-BUDGET": {
+    "implementationIdentifiers": [
+      "RuntimeBudgetProjection",
+      "BUDGET_STATUSES",
+      "AutomationRuntimeBudgetPanel"
+    ],
+    "testFiles": [
+      "apps/command-center/src/components/AutomationRuntimeBudgetPanel.test.tsx",
+      "apps/command-center/src/components/AutomationDashboard.test.tsx"
+    ],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P17-MULTIAGENT": {
+    "implementationIdentifiers": [
+      "PARALLEL_SAFE_OPERATIONS",
+      "SEQUENTIAL_ONLY_OPERATIONS",
+      "RUNTIME_FIXTURE_IDS"
+    ],
+    "testFiles": [
+      "apps/command-center/src/automationRuntimeProjection.test.ts",
+      "apps/command-center/src/components/AutomationDashboard.test.tsx"
+    ],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  },
+  "P17-SECURITY": {
+    "implementationIdentifiers": [
+      "LocalAutomationRuntimeController",
+      "defaultRuntimePermissionSummary"
+    ],
+    "testFiles": [
+      "apps/command-center/src/automationRuntimeController.test.ts",
+      "apps/command-center/src/automationRuntimeProjection.test.ts",
+      "apps/command-center/src/components/AutomationDashboard.test.tsx"
+    ],
+    "validationMethod": "vitest",
+    "acceptanceStatus": "accepted"
+  }
+}

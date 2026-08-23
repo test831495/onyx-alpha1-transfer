@@ -1,0 +1,4 @@
+import type{DashboardSnapshot,PipelineEvent}from"./dashboard-contracts.js";import{projectSnapshot}from"./dashboard-projector.js";
+export interface EventStore{append(event:PipelineEvent):Promise<void>;readAll():Promise<PipelineEvent[]>;readJob(jobId:string):Promise<PipelineEvent[]>}
+export class MemoryEventStore implements EventStore{private events:PipelineEvent[]=[];async append(e:PipelineEvent){if(this.events.some(x=>x.eventId===e.eventId))return;this.events.push(structuredClone(e))}async readAll(){return structuredClone(this.events)}async readJob(jobId:string){return structuredClone(this.events.filter(e=>e.jobId===jobId))}}
+export class DashboardService{constructor(private store:EventStore){}async record(e:PipelineEvent){await this.store.append(e)}async snapshot(now=new Date()):Promise<DashboardSnapshot>{return projectSnapshot(await this.store.readAll(),now)}}
