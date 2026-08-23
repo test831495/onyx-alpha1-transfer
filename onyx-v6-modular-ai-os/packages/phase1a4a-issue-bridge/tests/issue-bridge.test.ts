@@ -4,10 +4,10 @@ import { join } from "node:path";
 import { rm, writeFile } from "node:fs/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GitHubApprovalGatedWriteAdapter, InMemoryIdempotencyStore } from "@onyx/github-automation";
-import { createApprovedIssue, requestIssueApproval, type IssueApproval, type IssueBridgeRequest } from "../src/index";
+import { createApprovedIssue, issueScopeHash, requestIssueApproval, type IssueApproval, type IssueBridgeRequest } from "../src/index";
 import { LIVE_BRANCH, LIVE_CONFIRMATION, LIVE_TITLE, runLiveSmoke, type LiveSmokeOptions, type LiveSmokePreflight } from "../src/live-smoke";
 
-const run = { runId: "run-1", state: "DRY_RUN_READY", scopeHash: "a".repeat(64), repository: "test831495/onyx-alpha1-transfer", branchCreated: false as const, draftPrCreated: false as const, mergeAllowed: false as const, productionDeployAllowed: false as const };
+const run = { runId: "run-1", state: "DRY_RUN_READY", scopeHash: issueScopeHash("Implement bridge", "Approved issue body"), repository: "test831495/onyx-alpha1-transfer", branchCreated: false as const, draftPrCreated: false as const, mergeAllowed: false as const, productionDeployAllowed: false as const };
 const base: IssueBridgeRequest = { run, title: "Implement bridge", body: "Approved issue body", reason: "Approve this exact issue creation scope." };
 const writer = (response = { stdout: "https://github.com/test831495/onyx-alpha1-transfer/issues/42", stderr: "", exitCode: 0 }) => {
   const runner = { run: vi.fn().mockResolvedValue(response) };

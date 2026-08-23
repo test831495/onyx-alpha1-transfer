@@ -127,8 +127,8 @@ describe("Phase 1A.4B isolated branch bridge", () => {
     expect(approval).toMatchObject({ approver: "Rahul Kumar", capability: BRANCH_CAPABILITY, issueNumber: 7, repository: BRANCH_REPOSITORY, baseBranch: BASE_BRANCH, proposedBranch: PROPOSED_BRANCH, consumed: false, reason: request.reason });
     expect(approval.approvedAt).toBe("2026-01-01T00:00:00.000Z");
     expect(approval.expiresAt).toBe("2026-01-01T00:15:00.000Z");
-    expect(approval.scopeHash).toContain("fnv1a-");
-    expect(approval.idempotencyKey).toContain("fnv1a-");
+    expect(approval.scopeHash).toMatch(/^sha256-v1-[0-9a-f]{64}$/);
+    expect(approval.idempotencyKey).toMatch(/^sha256-v1-[0-9a-f]{64}$/);
   });
 });
 

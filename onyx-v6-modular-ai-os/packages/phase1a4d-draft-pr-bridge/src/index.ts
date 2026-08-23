@@ -1,5 +1,5 @@
 import type { ApprovalRecord } from "@onyx/automation-foundation";
-import { createScopeHash } from "@onyx/automation-foundation";
+import { createScopeHash, isCurrentScopeHash } from "@onyx/automation-foundation";
 import { idempotencyKey } from "@onyx/github-automation";
 
 export const DRAFT_PR_CAPABILITY = "CREATE_DRAFT_PR" as const;
@@ -274,12 +274,14 @@ async function validate(
   if (request.draft === false) throw new Error("Only Draft PR creation is allowed.");
   if (approval.draft !== true) throw new Error("Draft PR request must be Draft-only.");
   if (["main", "integration/onyx-nova"].includes(DRAFT_PR_HEAD_BRANCH)) throw new Error("Protected head branch is not allowed.");
+  if (!isCurrentScopeHash(approval.scopeHash)) throw new Error("Draft PR approval uses an unsupported scope hash version.");
   if (approval.scopeHash !== createScopeHash(scope(request))) throw new Error("Draft PR approval scope hash mismatch.");
   if (approval.evidenceDigest !== (request.evidenceDigest ?? exactDraftSpec(request).evidenceDigest)) throw new Error("Draft PR approval evidence digest mismatch.");
   if (approval.title !== (request.title ?? DRAFT_PR_TITLE) || approval.body !== (request.body ?? DRAFT_PR_BODY)) {
     throw new Error("Draft PR approval title and body do not match the approved package.");
   }
   if (approval.expiresAt && Date.parse(approval.expiresAt) <= now) throw new Error("Draft PR approval has expired.");
+  if (!isCurrentScopeHash(approval.idempotencyKey)) throw new Error("Draft PR idempotency key uses an unsupported scope hash version.");
   if (approval.idempotencyKey !== idempotencyKey(DRAFT_PR_REPOSITORY, DRAFT_PR_CAPABILITY, scope(request))) {
     throw new Error("Draft PR idempotency key does not match the approved request.");
   }

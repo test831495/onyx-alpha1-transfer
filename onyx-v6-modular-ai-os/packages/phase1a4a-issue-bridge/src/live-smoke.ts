@@ -1,8 +1,7 @@
-import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { writeFile } from "node:fs/promises";
 import { GitHubApprovalGatedWriteAdapter, GhWriteCommandRunner, InMemoryIdempotencyStore, type WriteCommandRunner } from "@onyx/github-automation";
-import { createApprovedIssue, ISSUE_CAPABILITY, ISSUE_REPOSITORY, requestIssueApproval, type IssueBridgeRequest, type IssueBridgeResult } from "./index";
+import { createApprovedIssue, ISSUE_CAPABILITY, ISSUE_REPOSITORY, issueScopeHash, requestIssueApproval, type IssueBridgeRequest, type IssueBridgeResult } from "./index";
 
 export const LIVE_CONFIRMATION = "APPROVE_PHASE1A4A_SINGLE_ISSUE_SMOKE";
 export const LIVE_BRANCH = "feature/phase1a4a-github-issue-bridge";
@@ -75,7 +74,7 @@ export interface LiveSmokeEvidence {
 }
 
 function fixedRequest(now: Date): IssueBridgeRequest {
-  const scopeHash = createHash("sha256").update(JSON.stringify({ repository: ISSUE_REPOSITORY, capability: ISSUE_CAPABILITY, title: LIVE_TITLE, body: LIVE_BODY })).digest("hex");
+  const scopeHash = issueScopeHash(LIVE_TITLE, LIVE_BODY);
   return {
     run: { runId: `phase1a4a-live-smoke-${scopeHash.slice(0, 12)}`, state: "DRY_RUN_READY", scopeHash, repository: ISSUE_REPOSITORY, branchCreated: false, draftPrCreated: false, mergeAllowed: false, productionDeployAllowed: false },
     title: LIVE_TITLE,

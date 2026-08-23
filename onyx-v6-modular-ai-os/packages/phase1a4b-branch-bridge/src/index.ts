@@ -1,5 +1,5 @@
 import type { ApprovalRecord } from "@onyx/automation-foundation";
-import { createScopeHash } from "@onyx/automation-foundation";
+import { createScopeHash, isCurrentScopeHash } from "@onyx/automation-foundation";
 import { idempotencyKey } from "@onyx/github-automation";
 
 export const BRANCH_CAPABILITY = "CREATE_ISOLATED_BRANCH" as const;
@@ -43,8 +43,10 @@ async function validate(request: BranchBridgeRequest, approval: BranchApproval, 
   if (approval.approver !== "Rahul Kumar") throw new Error("Branch approval authority must be Rahul Kumar.");
   if (approval.capability !== BRANCH_CAPABILITY) throw new Error("Capability must be CREATE_ISOLATED_BRANCH.");
   if (approval.repository !== BRANCH_REPOSITORY || approval.issueNumber !== BRANCH_ISSUE_NUMBER || approval.baseBranch !== BASE_BRANCH || approval.proposedBranch !== PROPOSED_BRANCH) throw new Error("Approval binding does not match the exact branch scope.");
+  if (!isCurrentScopeHash(approval.scopeHash)) throw new Error("Branch approval uses an unsupported scope hash version.");
   if (approval.scopeHash !== createScopeHash(scope(request))) throw new Error("Branch approval scope hash mismatch.");
   if (approval.expiresAt && Date.parse(approval.expiresAt) <= now) throw new Error("Branch approval has expired.");
+  if (!isCurrentScopeHash(approval.idempotencyKey)) throw new Error("Branch idempotency key uses an unsupported scope hash version.");
   if (approval.idempotencyKey !== idempotencyKey(BRANCH_REPOSITORY, BRANCH_CAPABILITY, scope(request))) throw new Error("Branch idempotency key does not match the approved request.");
   if (!/^(automation|feature|fix|docs|chore)\/[a-z0-9][a-z0-9-]*$/.test(PROPOSED_BRANCH)) throw new Error("Invalid branch name.");
   if (["main", "integration/onyx-nova"].includes(BASE_BRANCH)) throw new Error("Protected branch cannot be used.");

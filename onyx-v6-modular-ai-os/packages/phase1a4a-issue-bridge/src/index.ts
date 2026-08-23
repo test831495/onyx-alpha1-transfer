@@ -1,4 +1,5 @@
 import type { ApprovalRecord } from "@onyx/automation-foundation";
+import { createScopeHash, isCurrentScopeHash } from "@onyx/automation-foundation";
 import { idempotencyKey, type WriteResult, type WriteRequest } from "@onyx/github-automation";
 
 export const ISSUE_CAPABILITY = "CREATE_GITHUB_ISSUE" as const;
@@ -11,11 +12,18 @@ export interface IssueEvidence { event: string; detail: string; timestamp: strin
 export interface IssueBridgeResult { issueNumber?: number; issueUrl?: string; newIssueCreated: boolean; idempotentlyReused: boolean; evidence: IssueEvidence[]; finalState: IssueBridgeState; }
 export interface IssueWriter { execute(request: WriteRequest): Promise<WriteResult>; }
 
+export function issueScopeHash(title: string, body: string): string {
+  return createScopeHash({ repository: ISSUE_REPOSITORY, capability: ISSUE_CAPABILITY, title: title.trim(), body: body.trim() });
+}
+
 function assertRequest(request: IssueBridgeRequest, approval: IssueApproval, now: number) {
   if (request.run.state !== "DRY_RUN_READY") throw new Error("E.10 run must be DRY_RUN_READY.");
   if (request.run.repository !== ISSUE_REPOSITORY) throw new Error("Repository must be test831495/onyx-alpha1-transfer.");
   if (approval.approver !== "Rahul Kumar") throw new Error("Issue approval authority must be Rahul Kumar.");
   if (approval.capability !== ISSUE_CAPABILITY) throw new Error("Issue capability must be CREATE_GITHUB_ISSUE.");
+  const expectedScopeHash = issueScopeHash(request.title, request.body);
+  if (!isCurrentScopeHash(request.run.scopeHash) || !isCurrentScopeHash(approval.scopeHash)) throw new Error("Issue approval uses an unsupported scope hash version.");
+  if (request.run.scopeHash !== expectedScopeHash) throw new Error("Issue run scope hash does not match the approved request.");
   if (approval.scopeHash !== request.run.scopeHash) throw new Error("Issue approval scope hash mismatch.");
   if (approval.expiresAt && Date.parse(approval.expiresAt) <= now) throw new Error("Issue approval has expired.");
   if (!request.title.trim()) throw new Error("Issue title must not be empty.");
@@ -33,7 +41,7 @@ export function requestIssueApproval(request: IssueBridgeRequest, now = new Date
   if (!title) throw new Error("Issue title must not be empty.");
   if (!body) throw new Error("Issue body must not be empty.");
   const issued = now.getTime();
-  return { planId: request.run.runId, scopeHash: request.run.scopeHash, approver: "Rahul Kumar", approvedAt: now.toISOString(), expiresAt: request.expiresAt ?? new Date(issued + 900000).toISOString(), capability: ISSUE_CAPABILITY, reason: request.reason.trim(), idempotencyKey: idempotencyKey(ISSUE_REPOSITORY, ISSUE_CAPABILITY, { title, body }), consumed: false };
+  return { planId: request.run.runId, scopeHash: issueScopeHash(title, body), approver: "Rahul Kumar", approvedAt: now.toISOString(), expiresAt: request.expiresAt ?? new Date(issued + 900000).toISOString(), capability: ISSUE_CAPABILITY, reason: request.reason.trim(), idempotencyKey: idempotencyKey(ISSUE_REPOSITORY, ISSUE_CAPABILITY, { title, body }), consumed: false };
 }
 
 function issuePlan(request: IssueBridgeRequest) { const title = request.title.trim(); const body = request.body.trim(); return { id: request.run.runId, capabilityId: ISSUE_CAPABILITY, repository: ISSUE_REPOSITORY, payload: { title, body }, dryRun: true as const, approvalRequired: true, scopeHash: request.run.scopeHash, createdAt: new Date().toISOString() }; }

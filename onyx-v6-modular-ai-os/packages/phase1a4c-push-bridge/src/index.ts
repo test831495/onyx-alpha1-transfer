@@ -1,5 +1,5 @@
 import type { ApprovalRecord } from "@onyx/automation-foundation";
-import { createScopeHash } from "@onyx/automation-foundation";
+import { createScopeHash, isCurrentScopeHash } from "@onyx/automation-foundation";
 import { idempotencyKey } from "@onyx/github-automation";
 
 export const PUSH_CAPABILITY = "PUSH_ISOLATED_BRANCH" as const;
@@ -42,8 +42,10 @@ async function validate(request: PushBridgeRequest, approval: PushApproval, chec
   if (approval.approver !== "Rahul Kumar") throw new Error("Push approval authority must be Rahul Kumar.");
   if (approval.capability !== PUSH_CAPABILITY) throw new Error("Capability must be PUSH_ISOLATED_BRANCH.");
   if (approval.repository !== PUSH_REPOSITORY || approval.issueNumber !== PUSH_ISSUE_NUMBER || approval.localBranch !== PUSH_BRANCH || approval.remoteBranch !== PUSH_BRANCH || approval.remote !== PUSH_REMOTE || approval.localCommit !== PUSH_COMMIT) throw new Error("Approval binding does not match the exact push scope.");
+  if (!isCurrentScopeHash(approval.scopeHash)) throw new Error("Push approval uses an unsupported scope hash version.");
   if (approval.scopeHash !== createScopeHash(scope(request))) throw new Error("Push approval scope hash mismatch.");
   if (approval.expiresAt && Date.parse(approval.expiresAt) <= now) throw new Error("Push approval has expired.");
+  if (!isCurrentScopeHash(approval.idempotencyKey)) throw new Error("Push idempotency key uses an unsupported scope hash version.");
   if (approval.idempotencyKey !== idempotencyKey(PUSH_REPOSITORY, PUSH_CAPABILITY, scope(request))) throw new Error("Push idempotency key does not match the approved request.");
   if (request.remote !== undefined && request.remote !== PUSH_REMOTE || request.remoteBranch !== undefined && request.remoteBranch !== PUSH_BRANCH) throw new Error("Only origin and the exact branch are permitted.");
   if (request.force === true) throw new Error("Force push is not permitted.");
