@@ -1,0 +1,32 @@
+import type { AccountId, HouseholdId, HouseholdIdentityContext, MembershipId, PermissionCatalogVersion, PolicyVersion, RoleId, RoleVersion } from "@onyx/phase1a11-household-identity-runtime";
+
+export type SessionId = `session_${string}`;
+export type SessionFamilyId = `session-family_${string}`;
+export type SessionRevision = number;
+export type DeviceContextId = `device-context_${string}`;
+export type AuthenticationEventReference = `auth-event_${string}`;
+export type SessionStatus = "pending" | "active" | "elevated" | "rotation-required" | "revoked" | "expired-by-inactivity" | "expired-by-absolute-limit" | "replaced" | "invalid";
+export type SessionReason = "logout" | "owner-requested-revocation" | "account-suspension" | "membership-suspension" | "role-invalidation" | "policy-invalidation" | "permission-catalog-invalidation" | "potential-compromise" | "account-switch" | "audit-integrity-failure" | "administrative-security-action";
+export type AuthenticationAssurance = "low" | "standard" | "strong" | "unknown";
+export type AuthenticationMethodClass = "local-verified" | "federated-verified" | "step-up-verified";
+export type DeviceClassification = "private" | "trusted-shared" | "untrusted-shared" | "kiosk-like" | "unknown";
+
+export interface VerifiedAuthenticationFact { accountId: AccountId; eventTime: string; assurance: AuthenticationAssurance; methodClass: AuthenticationMethodClass; verifierReference: string; eventReference: AuthenticationEventReference; verificationResult: "verified" | "unverified"; sessionCreationPermitted: boolean; }
+export interface SessionBinding { accountId: AccountId; householdId: HouseholdId; membershipId: MembershipId; roleId: RoleId; deviceContextId: DeviceContextId; authenticationEventReference: AuthenticationEventReference; }
+export interface SessionVersionBinding { roleVersion: RoleVersion; policyVersion: PolicyVersion; permissionCatalogVersion: PermissionCatalogVersion; }
+export interface SessionTiming { createdAt: string; lastActivityAt: string; inactivityDeadline: string; absoluteDeadline: string; rotationAt: string; }
+export interface StepUpGrant { requiredAssurance: AuthenticationAssurance; currentAssurance: AuthenticationAssurance; protectedOperation: string; createdAt: string; expiresAt: string; purpose: string; resourceScope: string; accountId: AccountId; sessionId: SessionId; auditRequired: boolean; }
+export interface SessionAuditRequirement { required: boolean; purpose: string; }
+export interface SessionRecord { sessionId: SessionId; familyId: SessionFamilyId; revision: SessionRevision; binding: SessionBinding; versions: SessionVersionBinding; timing: SessionTiming; revocationTime?: string; replacementReference?: SessionId; status: SessionStatus; stepUp?: StepUpGrant; sharedDevice: DeviceClassification; audit: SessionAuditRequirement; provenanceReference: string; }
+export interface SessionEvaluationInput { session: SessionRecord; identity: HouseholdIdentityContext; currentTime: string; expectedVersions: SessionVersionBinding; deviceClassification: DeviceClassification; operation?: string; requiredAssurance?: AuthenticationAssurance; auditAvailable: boolean; }
+export interface SessionEvaluationResult { allowed: boolean; status: SessionStatus; decisionCode: string; title: string; explanation: string; workPreserved: boolean; safeNextAction: string; technicalReason: string; rotationRequired: boolean; reauthenticationRequired: boolean; stepUpRequired: boolean; accountSwitchRequired: boolean; auditRequired: boolean; versionReferences: SessionVersionBinding; }
+export interface SessionCreationInput { identity: HouseholdIdentityContext; authentication: VerifiedAuthenticationFact; policy: ConcurrentSessionPolicy; currentTime: string; deviceContextId?: DeviceContextId; versions: SessionVersionBinding; auditAvailable: boolean; provenanceReference: string; }
+export interface SessionCreationResult { created: boolean; session?: SessionRecord; decisionCode: string; friendlyMessage: string; technicalReason: string; }
+export interface SessionRotationRequest { session: SessionRecord; currentTime: string; trigger: "scheduled" | "step-up" | "account-switch" | "role-version-change" | "policy-version-change" | "permission-catalog-version-change" | "security-event" | "sensitive-transition"; }
+export interface SessionRotationResult { rotated: boolean; oldSession: SessionRecord; newSession?: SessionRecord; decisionCode: string; technicalReason: string; }
+export interface SessionRevocationRequest { session: SessionRecord; currentTime: string; reason?: SessionReason; actorAccountId: AccountId; purpose: string; familyWide?: boolean; auditAvailable: boolean; }
+export interface SessionRevocationResult { revoked: boolean; session: SessionRecord; decisionCode: string; technicalReason: string; }
+export interface CleanupManifest { privateAccountContext: boolean; projectJourneyResults: boolean; connectorContext: boolean; conversationContext: boolean; memoryContext: boolean; technicalInformationDetails: boolean; accountBoundCharacterPreferences: boolean; generatedDocumentProjections: boolean; retrievedEvidenceProjections: boolean; }
+export interface AccountSwitchRequest { session: SessionRecord; targetIdentity: HouseholdIdentityContext; targetAuthentication: VerifiedAuthenticationFact; currentTime: string; policy: ConcurrentSessionPolicy; auditAvailable: boolean; }
+export interface AccountSwitchResult { switched: boolean; priorSession: SessionRecord; targetSession?: SessionRecord; cleanupManifest: CleanupManifest; decisionCode: string; technicalReason: string; }
+export interface ConcurrentSessionPolicy { inactivityTimeoutMs: number; absoluteTimeoutMs: number; rotationIntervalMs: number; elevatedAssuranceTimeoutMs: number; allowedAssuranceLevels: AuthenticationAssurance[]; sharedDeviceRestrictions: { classification: DeviceClassification; shorterInactivityMs?: number; durableSessionAllowed: boolean; ownerHistoryNarrationAllowed: boolean; technicalInformationAllowed: boolean; }; concurrentSessionLimit: number; protectedOperationAssurance: AuthenticationAssurance; auditRequired: boolean; policyVersion: PolicyVersion; }
