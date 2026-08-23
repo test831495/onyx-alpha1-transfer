@@ -1,4 +1,4 @@
-import { RUNTIME_CONTRACT_VERSION, type Capability, type RuntimeStatus, type WorkflowState } from "@onyx/phase1a6-workflow-runtime";
+import { RUNTIME_CONTRACT_VERSION, type Capability, type RuntimeStatus, type WorkflowState } from "@onyx/phase1a6-workflow-runtime/browser";
 
 /**
  * Phase 1A.7 UI integration contract, bound explicitly to the frozen Phase 1A.6

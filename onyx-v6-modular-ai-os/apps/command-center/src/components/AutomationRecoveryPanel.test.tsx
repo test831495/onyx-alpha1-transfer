@@ -89,7 +89,7 @@ describe("AutomationRecoveryPanel", () => {
     });
     const text = renderToText(AutomationRecoveryPanel({ recovery }));
     expect(text).toContain("never repairs a remote resource");
-    expect(text).toContain("RECOVERY AVAILABLE");
+    expect(text).toContain("Recovery Option Available");
     expect(text).toContain(String(recovery.checkpointCount));
   });
 });

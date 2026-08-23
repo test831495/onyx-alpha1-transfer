@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0.0",
+  "phase": "1A.9.1",
+  "status": "accepted-with-known-limitations",
+  "limitations": [
+    {"id": "UX-1A91-001", "summary": "Minor ONYX/NOVA automatic-layout asymmetry", "disposition": "deferred"},
+    {"id": "UX-1A91-002", "summary": "Automatic card arrangement is not optimal in every viewport", "disposition": "deferred"},
+    {"id": "UX-1A91-003", "summary": "Card movement lacks final motion choreography", "disposition": "deferred"},
+    {"id": "UX-1A91-004", "summary": "Viewport-specific density and whitespace variations", "disposition": "deferred"},
+    {"id": "UX-1A91-005", "summary": "Orbit and advanced aura behavior", "disposition": "deferred"},
+    {"id": "UX-1A91-006", "summary": "Wake-word and Auto Listen", "disposition": "deferred"},
+    {"id": "UX-1A91-007", "summary": "COMMAND-CENTER-REGRESSION-01", "disposition": "tracked-separately"},
+    {"id": "UX-1A91-008", "summary": "Existing CSS/build warnings remain technical debt", "disposition": "deferred"}
+  ],
+  "schedulerEnabled": false,
+  "promotionEnabled": false,
+  "finalState": "READY_FOR_RAHUL_GIT_CLOSURE_APPROVAL"
+}

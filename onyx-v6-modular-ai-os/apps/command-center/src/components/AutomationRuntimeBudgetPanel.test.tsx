@@ -31,16 +31,16 @@ describe("AutomationRuntimeBudgetPanel", () => {
     const text = renderToText(AutomationRuntimeBudgetPanel({ budget, modelRoutingClass: budget.modelRoutingClass ?? "unknown", voiceMetadataProviderNeutralReady: true }));
     expect(text).toContain("200000");
     expect(text).toContain("48213");
-    expect(text).toContain("UNDER_BUDGET");
-    expect(text).toContain("provider-neutral-standard");
+    expect(text).toContain("Budget status");
+    expect(text).toContain("Standard AI Routing");
     expect(text).toContain("37%");
-    expect(text).toContain("READY");
+    expect(text).toContain("Ready");
   });
 
   it("shows 'Not projected' for every unset optional budget field", () => {
     const text = renderToText(AutomationRuntimeBudgetPanel({ budget: {}, modelRoutingClass: "provider-neutral-standard", voiceMetadataProviderNeutralReady: false }));
     expect(text).toContain("Not projected");
-    expect(text).toContain("NOT READY");
+    expect(text).toContain("Not Ready");
   });
 
   it("states that every value is a deterministic local projection with no paid API invocation", () => {

@@ -1,6 +1,19 @@
 import type { CSSProperties } from "react";
-import type { ReconciliationHandoff } from "@onyx/phase1a6-workflow-runtime";
+import type { ReconciliationHandoff } from "@onyx/phase1a6-workflow-runtime/browser";
 import type { AutomationRuntimeProjection } from "../automationRuntimeProjection";
+import {
+  formatTechnicalIdentifier,
+  formatTimestampDisplay,
+  getBudgetStatusDisplayName,
+  getCapabilityDisplayName,
+  getCheckpointDisplayName,
+  getEvidenceStatusDisplayName,
+  getGenericReferenceLabel,
+  getModelRoutingDisplayName,
+  getScopeDisplayName,
+  getSourceDisplayName,
+  getWorkflowStateDisplayName,
+} from "../presentationLabels";
 import { AutomationConnectorScopePanel } from "./AutomationConnectorScopePanel";
 import { AutomationRecoveryPanel, type RecoveryPanelViewModel } from "./AutomationRecoveryPanel";
 import { AutomationReconciliationPanel } from "./AutomationReconciliationPanel";
@@ -108,30 +121,30 @@ export function AutomationRuntimeDashboard({
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div>
           <small style={{ color: "#65d9ef" }}>
-            PHASE 1A.7 · GOVERNED RUNTIME PROJECTION · {projection.noLiveWorkflowExecuting ? "NO LIVE GITHUB WORKFLOW IS EXECUTING" : ""}
+            Automation Center Status · {projection.noLiveWorkflowExecuting ? "No live GitHub workflow is executing" : "Local runtime projection"}
           </small>
           <h3 style={{ margin: "4px 0" }}>
-            {projection.repository} · {projection.currentState}
+            {getSourceDisplayName(projection.repository)} · {getWorkflowStateDisplayName(projection.currentState)}
           </h3>
           <p style={{ margin: "4px 0", color: "#9ac7d6" }}>
-            Runtime status: {projection.runtimeStatus} · Current capability: {projection.currentCapability ?? "None"} · Lane limit: {projection.executionLaneLimit}
+            Runtime status: {getWorkflowStateDisplayName(projection.runtimeStatus)} · Current capability: {projection.currentCapability ? getCapabilityDisplayName(projection.currentCapability) : "None"} · Lane limit: {projection.executionLaneLimit}
           </p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {safetyFlags.map(([label, allowed]) => (
-            <span key={label} style={safetyPill}>{label}: {allowed ? "YES" : "NO"}</span>
+            <span key={label} style={safetyPill}>{label}: {allowed ? "Yes" : "No"}</span>
           ))}
         </div>
       </header>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 10 }}>
         <article style={card}>
-          <small style={{ color: "#91bdcb" }}>Scope hash</small>
-          <p style={{ overflowWrap: "anywhere" }}>{projection.scopeHash}</p>
+          <small style={{ color: "#91bdcb" }}>Scope</small>
+          <p style={{ overflowWrap: "anywhere" }}>{getScopeDisplayName(projection.scopeHash)}</p>
         </article>
         <article style={card}>
           <small style={{ color: "#91bdcb" }}>Checkpoints</small>
-          <p>{projection.checkpointCount} · digest {projection.latestCheckpointDigest ?? "none"}</p>
+          <p>{projection.checkpointCount} · {projection.latestCheckpointDigest ? getCheckpointDisplayName(projection.latestCheckpointDigest) : "No checkpoint recorded"}</p>
         </article>
         <article style={card}>
           <small style={{ color: "#91bdcb" }}>Evidence</small>
@@ -139,19 +152,44 @@ export function AutomationRuntimeDashboard({
         </article>
         <article style={card}>
           <small style={{ color: "#91bdcb" }}>Reconciliation required</small>
-          <p>{projection.reconciliationRequired ? "YES" : "NO"}</p>
+          <p>{projection.reconciliationRequired ? "Yes" : "No"}</p>
         </article>
       </div>
+
+      {projection.updatedAt && (
+        <div style={{ color: "#9ac7d6", fontSize: "0.875rem" }}>
+          Updated: {formatTimestampDisplay(projection.updatedAt)}
+        </div>
+      )}
 
       <article style={card}>
         <small style={{ color: "#91bdcb" }}>Ordered capability progress</small>
         <p style={{ margin: "6px 0" }}>
-          Completed: {projection.completedCapabilities.join(", ") || "None"}
+          Completed: {projection.completedCapabilities.map(getCapabilityDisplayName).join(", ") || "None"}
         </p>
         <p style={{ margin: "6px 0" }}>
-          Pending: {projection.pendingCapabilities.join(", ") || "None"}
+          Pending: {projection.pendingCapabilities.map(getCapabilityDisplayName).join(", ") || "None"}
         </p>
       </article>
+
+      <details aria-label="Show technical details" style={{ ...card, cursor: "pointer" }}>
+        <summary style={{ cursor: "pointer", color: "#9bcbd9", fontWeight: 600 }}>Show technical details</summary>
+        <div style={{ display: "grid", gap: 8, marginTop: 10, color: "#a5c5d4" }}>
+          <div><strong>Technical source ID:</strong> {formatTechnicalIdentifier(projection.repository)}</div>
+          <div><strong>Phase reference:</strong> {formatTechnicalIdentifier("PHASE 1A.7")}</div>
+          <div><strong>Runtime scenario code:</strong> {formatTechnicalIdentifier(projection.currentState)}</div>
+          <div><strong>Workflow state code:</strong> {formatTechnicalIdentifier(projection.currentState)}</div>
+          <div><strong>Capability code:</strong> {formatTechnicalIdentifier(projection.currentCapability ?? "NONE")}</div>
+          <div><strong>Runtime ID:</strong> {formatTechnicalIdentifier(projection.identity.runtimeId)}</div>
+          <div><strong>Runtime session ID:</strong> {formatTechnicalIdentifier(projection.identity.runtimeSessionId)}</div>
+          <div><strong>Workflow ID:</strong> {formatTechnicalIdentifier(projection.identity.workflowId)}</div>
+          <div><strong>Scope hash:</strong> {formatTechnicalIdentifier(projection.scopeHash)}</div>
+          <div><strong>Checkpoint ID:</strong> {formatTechnicalIdentifier(projection.latestCheckpointDigest ?? "none")}</div>
+          <div><strong>Checkpoint digest:</strong> {formatTechnicalIdentifier(projection.latestCheckpointDigest ?? "none")}</div>
+          <div><strong>Evidence sequence:</strong> {formatTechnicalIdentifier(String(projection.latestEvidenceSequence ?? "none"))}</div>
+          <div><strong>Contract version:</strong> {formatTechnicalIdentifier(projection.runtimeContractVersion)}</div>
+        </div>
+      </details>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <button type="button" style={projection.pauseAvailable && onPause ? btn : btnDisabled} disabled={!projection.pauseAvailable || !onPause} onClick={onPause}>Pause</button>
@@ -180,15 +218,15 @@ export function AutomationRuntimeDashboard({
           <p style={{ margin: "6px 0", overflowWrap: "anywhere" }}>
             Approver: {approval.approver}
             <br />
-            Scope hash: {approval.scopeHash}
+            Scope hash: {formatTechnicalIdentifier(approval.scopeHash)}
             <br />
             Ordered capability count: {approval.orderedCapabilityCount}
             <br />
             Approval digest: {approval.approvalDigest}
             <br />
-            Issued: {approval.issuedAt}
+            Issued: {formatTimestampDisplay(approval.issuedAt)}
             <br />
-            Expires: {approval.expiresAt}
+            Expires: {formatTimestampDisplay(approval.expiresAt)}
             <br />
             Consumed: {approval.consumed ? "YES" : "NO"}
           </p>

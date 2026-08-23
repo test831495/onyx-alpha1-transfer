@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
-import type { RuntimeSnapshot } from "@onyx/phase1a6-workflow-runtime";
+import type { RuntimeSnapshot } from "@onyx/phase1a6-workflow-runtime/browser";
+import { getCapabilityDisplayName, getCheckpointDisplayName, getWorkflowStateDisplayName } from "../presentationLabels";
 
 const card: CSSProperties = { border: "1px solid rgba(148,197,218,.22)", background: "rgba(5,23,42,.72)", borderRadius: 14, padding: 14 };
 const pill = (ok: boolean): CSSProperties => ({
@@ -72,16 +73,16 @@ export function AutomationRecoveryPanel({ recovery }: { recovery: RecoveryPanelV
     <div aria-label="Automation runtime recovery panel" style={{ display: "grid", gap: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <small style={{ color: "#65d9ef" }}>PHASE 1A.7 · RUNTIME RECOVERY, READ-ONLY, NO REMOTE REPAIR</small>
+          <small style={{ color: "#65d9ef" }}>Recovery Information</small>
           <h4 style={{ margin: "4px 0" }}>Recovery</h4>
         </div>
-        <span style={pill(recovery.recoveryAvailable)}>{recovery.recoveryAvailable ? "RECOVERY AVAILABLE" : "RECOVERY BLOCKED"}</span>
+        <span style={pill(recovery.recoveryAvailable)}>{recovery.recoveryAvailable ? "Recovery Option Available" : "Recovery Blocked"}</span>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 10 }}>
         <article style={card}>
           <small style={{ color: "#91bdcb" }}>Last trusted checkpoint</small>
-          <p style={{ overflowWrap: "anywhere" }}>{recovery.lastTrustedCheckpointDigest ?? "None recorded"}</p>
+          <p style={{ overflowWrap: "anywhere" }}>{recovery.lastTrustedCheckpointDigest ? getCheckpointDisplayName(recovery.lastTrustedCheckpointDigest) : "None recorded"}</p>
         </article>
         <article style={card}>
           <small style={{ color: "#91bdcb" }}>Checkpoint count</small>
@@ -89,11 +90,11 @@ export function AutomationRecoveryPanel({ recovery }: { recovery: RecoveryPanelV
         </article>
         <article style={card}>
           <small style={{ color: "#91bdcb" }}>Target state</small>
-          <p>{recovery.targetState}</p>
+          <p>{getWorkflowStateDisplayName(recovery.targetState)}</p>
         </article>
         <article style={card}>
           <small style={{ color: "#91bdcb" }}>First incomplete capability</small>
-          <p>{recovery.firstIncompleteCapability ?? "None"}</p>
+          <p>{recovery.firstIncompleteCapability ? getCapabilityDisplayName(recovery.firstIncompleteCapability) : "None"}</p>
         </article>
       </div>
 
@@ -103,7 +104,7 @@ export function AutomationRecoveryPanel({ recovery }: { recovery: RecoveryPanelV
           {verificationRows.map(([label, ok]) => (
             <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span>{label}</span>
-              <span style={pill(ok)}>{ok ? "PASS" : "FAIL"}</span>
+              <span style={pill(ok)}>{ok ? "Verified" : "Failed"}</span>
             </div>
           ))}
         </div>

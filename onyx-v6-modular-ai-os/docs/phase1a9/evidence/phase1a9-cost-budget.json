@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "1.0.0",
+  "scope": "contract evidence; no real usage or cost claimed",
+  "budgetContractCoverage": ["time", "tokens", "model-class", "API-calls", "cost", "attempts", "evidence-storage", "lane-capacity"],
+  "warningBehavior": "project warning",
+  "hardStopBehavior": "stop and preserve evidence",
+  "approvalRequirements": "fresh governed approval where required",
+  "noSpendAssertion": true,
+  "noPaidActionAssertion": true,
+  "realUsage": "not measured"
+}

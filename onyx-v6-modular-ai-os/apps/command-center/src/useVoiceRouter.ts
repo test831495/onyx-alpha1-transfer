@@ -42,10 +42,16 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
     recognition.onresult = event => {
       const heard = event.results[event.resultIndex]?.[0]?.transcript?.trim() ?? "";
       if (!heard) { setDiagnostic("NO SPEECH DETECTED"); return; }
+      setStatus("thinking");
       setDiagnostic("PROCESSING");
       const parsed = parseVoice(heard);
       commandRef.current(parsed.command || heard, parsed.mode);
-      setDiagnostic(`${parsed.mode ? `MATCHED ${parsed.mode.toUpperCase()} · ` : ""}HEARD “${heard}”`);
+      const liveDiagnostic = `${parsed.mode ? `MATCHED ${parsed.mode.toUpperCase()} · ` : ""}HEARD “${heard}”`;
+      setDiagnostic(liveDiagnostic);
+      window.setTimeout(() => {
+        setDiagnostic(supported ? "MIC READY" : "VOICE UNAVAILABLE · USE TYPED COMMANDS");
+        setStatus("idle");
+      }, 1500);
     };
     recognition.onerror = event => {
       const message = event.error === "not-allowed" || event.error === "service-not-allowed"

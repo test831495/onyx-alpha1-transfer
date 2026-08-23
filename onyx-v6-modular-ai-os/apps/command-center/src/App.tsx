@@ -1,9 +1,6 @@
 import "./voiceSessionCoordinator";
 import "./voiceRecognitionSupervisor";
-import "./settingsCenterBootstrap";
-import "./automationDashboardBootstrap";
 import { getAssistantProfile, styleAssistantResponse } from "@onyx/identity-runtime";
-import "./providerHealthBootstrap";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AssistantMode, CoreState, Intent } from "@onyx/contracts";
 import { createIntelligenceRuntime } from "@onyx/intelligence-runtime";
@@ -16,6 +13,7 @@ import {
 } from "@onyx/voice-runtime";
 import { loadCalendar, composeCalendarSpeech } from "./calendarController";
 import { CalendarIntelligencePanel } from "./components/CalendarIntelligencePanel";
+import { NewsPanel } from "./components/NewsPanel";
 import { VoiceSettingsPanel } from "./components/VoiceSettingsPanel";
 import type { WorkspaceSnapshot } from "@onyx/workspace-contracts";
 import { WorkspacePanel } from "./components/WorkspacePanel";
@@ -29,7 +27,28 @@ import { NovaDashboard } from "./components/NovaDashboard";
 import { OnyxDashboard } from "./components/OnyxDashboard";
 import { HeroCore } from "./components/HeroCore";
 import { GlassCommandBar } from "./components/GlassCommandBar";
+import { AppWindowShell } from "./components/AppWindowShell";
+import { AppCardShell, type AppCardPosition } from "./components/AppCardShell";
+import { ProviderHealthDashboard } from "./components/ProviderHealthDashboard";
 import { useVoiceRouter } from "./useVoiceRouter";
+import { AutomationDashboard } from "./components/AutomationDashboard";
+import { OverflowIndicator } from "./components/OverflowIndicator";
+import { MinimizedAppTray } from "./components/MinimizedAppTray";
+import { DetailShell } from "./components/DetailShell";
+import { getAppDetail } from "./appDetailRegistry";
+import {
+  HOME_MINIMAL,
+  allocateCardSlots,
+  allocateVisibleAndOverflow,
+  getActiveWorkspace,
+  getVisibleAppIds,
+  resolveShellIntent,
+  shellReducer,
+  shellStateFactory,
+  type ShellAppId,
+  type ShellIntent,
+} from "./shellState";
+import { DetailDataContext } from "./appDetailRegistry";
 
 const states: CoreState[] = [
   "wake-armed",
@@ -149,18 +168,18 @@ function modulePanel(intent: Intent): Panel {
   return intent.target;
 }
 
+function isCalendarCommand(normalized: string): boolean {
+  return /next meeting|today.?s meetings|show today meetings|tomorrow.?s (calendar|schedule)|summarize my day|how busy am i|free time|calendar status/.test(
+    normalized,
+  );
+}
+
 function normalizeCommand(raw: string): string {
   return raw
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-}
-
-function isCalendarCommand(normalized: string): boolean {
-  return /next meeting|today.?s meetings|show today meetings|tomorrow.?s (calendar|schedule)|summarize my day|how busy am i|free time|calendar status/.test(
-    normalized,
-  );
 }
 
 export function App() {
@@ -177,6 +196,7 @@ export function App() {
     "balanced",
   );
   const [activePanel, setActivePanel] = useState<Panel>(null);
+  const [shell, setShell] = useState(shellStateFactory());
   const [calendarSummary, setCalendarSummary] = useState<CalendarSummary>();
   const [calendarBusy, setCalendarBusy] = useState(false);
   const [calendarMinimized, setCalendarMinimized] = useState(false);
@@ -242,6 +262,63 @@ export function App() {
     [],
   );
 
+  // Shell routing must be defined early for use in selectPanel
+  const dispatchShell = useCallback((intent: ShellIntent) => {
+    setShell((current) => shellReducer(current, intent));
+  }, []);
+
+  const openShellApp = useCallback(
+    (appId: ShellAppId) => {
+      if (appId === "home") {
+        dispatchShell({ type: "RETURN_HOME" });
+        setActivePanel(null);
+        return;
+      }
+      dispatchShell({ type: "OPEN_APP", appId });
+    },
+    [dispatchShell],
+  );
+
+  const handleShellIntent = useCallback(
+    (intent: ShellIntent) => {
+      if (intent.type === "SET_PRESENCE_MODE") {
+        dispatchShell(intent);
+        return;
+      }
+      if (intent.type === "RETURN_HOME") {
+        dispatchShell(intent);
+        setActivePanel(null);
+        return;
+      }
+      if (intent.type === "CLOSE_ALL_APPS") {
+        dispatchShell(intent);
+        setActivePanel(null);
+        return;
+      }
+      if (intent.type === "OPEN_DETAILS") {
+        dispatchShell(intent);
+        return;
+      }
+      if (intent.type === "OPEN_APP") {
+        openShellApp(intent.appId);
+        return;
+      }
+      if (intent.type === "CLOSE_APP") {
+        dispatchShell(intent);
+        return;
+      }
+      if (intent.type === "MINIMIZE_APP") {
+        dispatchShell(intent);
+        return;
+      }
+      if (intent.type === "FOCUS_APP") {
+        dispatchShell(intent);
+        return;
+      }
+    },
+    [dispatchShell, openShellApp],
+  );
+
   const activate = useCallback(
     (next: AssistantMode) => {
       voiceManager.current.stop();
@@ -256,6 +333,11 @@ export function App() {
       setPhase("covered");
       setMode(next);
       modeRef.current = next;
+      // Sync shell state currentCharacter with mode
+      setShell((current) => ({
+        ...current,
+        currentCharacter: next,
+      }));
       setActivePanel(null);
       reset(next);
 
@@ -275,20 +357,34 @@ export function App() {
     (panel: Panel) => {
       if (!panel) return;
 
-      setActivePanel(panel);
+      const appMap: Record<string, ShellAppId | null> = {
+        home: "home",
+        messages: "messages",
+        settings: "settings",
+        files: null,
+        calendar: "calendar",
+        weather: null,
+        "system-health": "health",
+        tasks: "tasks",
+        "smart-home": null,
+        business: null,
+        finance: null,
+        news: "news",
+        social: null,
+        email: null,
+        automation: "automation",
+        workspace: "workspace",
+      };
+
+      const appId = appMap[panel];
+      if (appId) {
+        openShellApp(appId);
+      }
+
       setState("executing");
       setCaption(`${names[panel]} selected.`);
-
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => {
-          document.getElementById(`panel-${panel}`)?.scrollIntoView({
-            behavior: touch ? "auto" : "smooth",
-            block: "center",
-          });
-        }),
-      );
     },
-    [touch],
+    [openShellApp],
   );
 
   const showError = useCallback(
@@ -493,6 +589,14 @@ export function App() {
         return;
       }
 
+      const boundedIntent = resolveShellIntent(clean);
+      if (boundedIntent) {
+        handleShellIntent(boundedIntent);
+        setState("executing");
+        setCaption(clean);
+        return;
+      }
+
       commandController.current?.abort();
       const controller = new AbortController();
       commandController.current = controller;
@@ -579,6 +683,7 @@ export function App() {
     [
       activate,
       dispatchLegacy,
+      handleShellIntent,
       refreshWorkspace,
       reset,
       selectPanel,
@@ -606,19 +711,142 @@ export function App() {
     reset();
   };
 
-  const nav =
-    mode === "nova"
-      ? ["Home", "Messages", "Tasks", "News", "Workspace"]
-      : [
-          "Home",
-          "Executive",
-          "Finance",
-          "News",
-          "Workspace",
-          "Calendar",
-        ];
+
+  const renderShellAppContent = (appId: ShellAppId) => {
+    const detailSpec = getAppDetail(appId);
+    const canOpenDetails = detailSpec?.supportsDetails ?? false;
+
+    switch (appId) {
+      case "automation":
+        return (
+          <>
+            <div className="app-card-summary">
+              <strong>Automation status</strong>
+              <span>Workflow state: idle • Approvals: pending • Validation: not started • Recovery: nominal • Evidence: waiting.</span>
+            </div>
+            {canOpenDetails && (
+              <button type="button" className="app-card-action" onClick={() => dispatchShell({ type: "OPEN_DETAILS", appId: "automation" })}>
+                Open Details
+              </button>
+            )}
+          </>
+        );
+      case "workspace":
+        return (
+          <>
+            <div className="app-card-summary">
+              <strong>Workspace</strong>
+              <span>{workspaceBusy ? "Refreshing provider state…" : workspace.activeProvider ? `Connected: ${workspace.activeProvider}` : "Connected providers: 0 • Microsoft: disconnected • Google: disconnected • Yahoo: disconnected."}</span>
+            </div>
+            {canOpenDetails && (
+              <button type="button" className="app-card-action" onClick={() => dispatchShell({ type: "OPEN_DETAILS", appId: "workspace" })}>
+                Open Details
+              </button>
+            )}
+          </>
+        );
+      case "settings":
+        return (
+          <>
+            <div className="app-card-summary">
+              <strong>{mode.toUpperCase()} profile</strong>
+              <span>Voice and assistant preferences are ready.</span>
+            </div>
+            {canOpenDetails && (
+              <button type="button" className="app-card-action" onClick={() => dispatchShell({ type: "OPEN_DETAILS", appId: "settings" })}>
+                Open Details
+              </button>
+            )}
+          </>
+        );
+      case "calendar":
+        return (
+          <>
+            <div className="app-card-summary">
+              <strong>Calendar</strong>
+              <span>{calendarSummary ? `${calendarSummary.rangeLabel ?? "Today"} • ${calendarSummary.events?.length ?? 0} events` : "No meetings loaded."}</span>
+            </div>
+            {canOpenDetails && (
+              <button type="button" className="app-card-action" onClick={() => dispatchShell({ type: "OPEN_DETAILS", appId: "calendar" })}>
+                Open Details
+              </button>
+            )}
+          </>
+        );
+      case "messages":
+        return (
+          <>
+            <div className="app-card-summary"><strong>Messages</strong><span>Recent conversations are ready.</span></div>
+            {canOpenDetails && (
+              <button type="button" className="app-card-action" onClick={() => dispatchShell({ type: "OPEN_DETAILS", appId: "messages" })}>
+                Open Details
+              </button>
+            )}
+          </>
+        );
+      case "tasks":
+        return (
+          <>
+            <div className="app-card-summary"><strong>Tasks</strong><span>2 pending items in focus.</span></div>
+            {canOpenDetails && (
+              <button type="button" className="app-card-action" onClick={() => dispatchShell({ type: "OPEN_DETAILS", appId: "tasks" })}>
+                Open Details
+              </button>
+            )}
+          </>
+        );
+      case "news":
+        return (
+          <>
+            <div className="app-card-summary"><strong>News</strong><span>Connected status is idle.</span></div>
+            {canOpenDetails && (
+              <button type="button" className="app-card-action" onClick={() => dispatchShell({ type: "OPEN_DETAILS", appId: "news" })}>
+                Open Details
+              </button>
+            )}
+          </>
+        );
+      case "health":
+        return (
+          <>
+            <div className="app-card-summary"><strong>System health</strong><span>All monitored services remain stable.</span></div>
+            {canOpenDetails && (
+              <button type="button" className="app-card-action" onClick={() => dispatchShell({ type: "OPEN_DETAILS", appId: "health" })}>
+                Open Details
+              </button>
+            )}
+          </>
+        );
+      case "provider-health":
+        return <ProviderHealthDashboard />;
+      default:
+        return <div className="app-card-summary"><strong>Home</strong><span>Character view active.</span></div>;
+    }
+  };
 
   const activityVisible = state !== "wake-armed" && state !== "idle";
+  const activeWorkspace = getActiveWorkspace(shell);
+  const visibleAppIds = getVisibleAppIds(shell);
+  const overflowLayout = allocateVisibleAndOverflow(
+    activeWorkspace.openAppIds,
+    activeWorkspace.minimizedAppIds,
+    0,
+  );
+  const overflowNavigation = overflowLayout.overflowCount > 0 ? (
+    <div className="overflow-navigation-region">
+      <OverflowIndicator
+        overflowCount={overflowLayout.overflowCount}
+        currentPage={overflowLayout.currentPage}
+        totalPages={overflowLayout.totalPages}
+        onPrevious={() => {
+          dispatchShell({ type: "SET_OVERFLOW_PAGE", page: Math.max(0, overflowLayout.currentPage - 1) });
+        }}
+        onNext={() => {
+          dispatchShell({ type: "SET_OVERFLOW_PAGE", page: Math.min(overflowLayout.totalPages - 1, overflowLayout.currentPage + 1) });
+        }}
+      />
+    </div>
+  ) : null;
 
   return (
     <main
@@ -650,17 +878,19 @@ export function App() {
         </div>
         <div className="stability-controls">
           <label>
-            QUALITY{" "}
-            <select
+            <span className="quality-control">
+              <span>Quality</span>
+              <select
               value={quality}
               onChange={(event) =>
                 setQuality(event.target.value as "full" | "balanced" | "low")
               }
-            >
+              >
               <option value="full">Full</option>
               <option value="balanced">Balanced</option>
               <option value="low">Low Power</option>
-            </select>
+              </select>
+            </span>
           </label>
           <span>{voice.diagnostic}</span>
         </div>
@@ -668,100 +898,118 @@ export function App() {
 
       <div className="mode-transition-veil" />
 
-      <div className="module-slot">
-        {activePanel && (
-          <aside className="module-drawer glass-surface">
-            <div>
-              <small>{mode.toUpperCase()} MODULE</small>
-              <b>{names[activePanel]}</b>
-            </div>
-            <span>SELECTED</span>
-            <button onClick={closeModule}>×</button>
-          </aside>
-        )}
-      </div>
-
       <div className="phase0-scroll">
-        {activePanel === "calendar" && (
-          <>
-            <section className="glass-surface" style={{margin:"1rem",padding:".75rem 1rem",borderRadius:"1rem",display:"flex",justifyContent:"space-between",alignItems:"center",gap:"1rem"}}>
-              <strong>Calendar Intelligence</strong>
-              <div style={{display:"flex",gap:".5rem"}}><button onClick={() => setCalendarMinimized((value) => !value)}>{calendarMinimized ? "Expand" : "Minimize"}</button><button onClick={closeModule}>Close</button></div>
-            </section>
-            {!calendarMinimized && <CalendarIntelligencePanel
-              summary={calendarSummary}
-              busy={calendarBusy}
-              onRefresh={() => void dispatch("Show today meetings")}
-              onSpeak={() => {
-                if (!calendarSummary) return;
-                void voiceManager.current
-                  .speak(
-                    composeCalendarSpeech(
-                      calendarSummary,
-                      voicePreferences.detail,
-                    ),
-                    voicePreferences,
-                  )
-                  .then((result) =>
-                    setVoiceStatus(
-                      result.message ?? `${result.engine} voice ready.`,
-                    ),
+        {(() => {
+          if (!activeWorkspace.openAppIds.length && shell.homeState === HOME_MINIMAL) {
+            return (
+              <section className="functional-scene">
+                <HeroCore
+                  mode={mode}
+                  state={state}
+                  onSwitch={() => activate(mode === "nova" ? "onyx" : "nova")}
+                  onAction={(action) =>
+                    action === "Listen" ? voice.startListening() : void dispatch(action)
+                  }
+                  lowPower={quality === "low"}
+                />
+              </section>
+            );
+          }
+
+          const visibleCardIds: ShellAppId[] = visibleAppIds.slice(0, 6);
+          const cardLookup = allocateCardSlots(visibleCardIds, activeWorkspace.selectedAppId ?? null);
+
+          return (
+            <section className="functional-scene functional-scene--cards" aria-label="Application cards overview">
+              <HeroCore
+                mode={mode}
+                state={state}
+                onSwitch={() => activate(mode === "nova" ? "onyx" : "nova")}
+                onAction={(action) =>
+                  action === "Listen" ? voice.startListening() : void dispatch(action)
+                }
+                lowPower={quality === "low"}
+              />
+              <div className="app-card-list" role="list" aria-label="Open applications">
+                {visibleCardIds.map((appId: ShellAppId) => {
+                  const position = cardLookup.get(appId) ?? "RIGHT_MIDDLE";
+                  const presentation = activeWorkspace.cardPresentationByAppId.get(appId) ?? {
+                    x: position.startsWith("LEFT") ? 2 : 70,
+                    y: position.includes("TOP") ? 3 : position.includes("MIDDLE") ? 34 : 65,
+                    zIndex: appId === activeWorkspace.selectedAppId ? 6 : 1,
+                    selected: appId === activeWorkspace.selectedAppId,
+                    hasManualPosition: false,
+                  };
+                  const title = appId === "provider-health" ? "Provider Health" : appId.charAt(0).toUpperCase() + appId.slice(1);
+                  const selected = activeWorkspace.selectedAppId === appId;
+                  return (
+                    <AppCardShell
+                      key={appId}
+                      appId={appId}
+                      title={title}
+                      position={position}
+                      selected={selected}
+                      x={presentation.x}
+                      y={presentation.y}
+                      zIndex={presentation.zIndex}
+                      hasManualPosition={presentation.hasManualPosition}
+                      icon={appId === "workspace" ? "▣" : appId === "automation" ? "◎" : appId === "settings" ? "⚙" : appId === "health" ? "♥" : appId === "messages" ? "✉" : appId === "calendar" ? "◫" : appId === "news" ? "◍" : appId === "tasks" ? "✓" : "◈"}
+                      onSelect={() => dispatchShell({ type: "FOCUS_APP", appId })}
+                      onMove={(x, y) => dispatchShell({ type: "SET_CARD_POSITION_PREVIEW", appId, x, y })}
+                      onMoveEnd={(x, y) => dispatchShell({ type: "SET_CARD_POSITION", appId, x, y })}
+                      onMinimize={() => {
+                        dispatchShell({ type: "MINIMIZE_APP", appId });
+                      }}
+                      onClose={() => {
+                        dispatchShell({ type: "CLOSE_APP", appId });
+                      }}
+                    >
+                      {renderShellAppContent(appId)}
+                    </AppCardShell>
                   );
-              }}
-            />}
-          </>
-        )}
-
-        {activePanel === "settings" && (
-          <>
-            <section className="glass-surface" style={{margin:"1rem",padding:"1rem",borderRadius:"1.25rem"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:"1rem"}}>
-                <div><small>ASSISTANT IDENTITY</small><h2 style={{margin:".2rem 0"}}>{identityProfile.name} · {identityProfile.role}</h2></div>
-                <button onClick={closeModule}>Close Settings</button>
+                })}
               </div>
-              <p>{identityProfile.description}</p>
-              <p><b>Tone:</b> {identityProfile.tone} · <b>Verbosity:</b> {identityProfile.verbosity} · <b>Execution:</b> {identityProfile.executionBias}</p>
+
+              {activeWorkspace.detailAppId && (() => {
+                const detailAppId = activeWorkspace.detailAppId;
+                const detailSpec = getAppDetail(detailAppId);
+                if (!detailSpec) return null;
+                const DetailComponent = detailSpec.detailComponent;
+                return (
+                  <DetailDataContext.Provider value={{
+                    workspaceSnapshot: workspace,
+                    workspaceBusy,
+                    onWorkspaceConnect: () => void connectMicrosoft(),
+                    onWorkspaceDisconnect: () => void disconnectMicrosoft(),
+                    onWorkspaceRefresh: refreshWorkspace,
+                    calendarSummary,
+                    calendarBusy,
+                    onCalendarRefresh: () => void loadCalendar(0),
+                    onCalendarSpeak: () => {
+                      if (calendarSummary) {
+                        void voiceManager.current.speak(
+                          composeCalendarSpeech(calendarSummary, voicePreferences.detail),
+                          voicePreferences,
+                        );
+                      }
+                    },
+                  }}>
+                    <DetailShell
+                      appId={detailAppId}
+                      appTitle={detailSpec.label}
+                      state="ready"
+                      onClose={() => dispatchShell({ type: "CLOSE_DETAILS" })}
+                      onBack={() => dispatchShell({ type: "CLOSE_DETAILS" })}
+                      onMinimize={() => dispatchShell({ type: "MINIMIZE_APP", appId: detailAppId })}
+                    >
+                      <DetailComponent appId={detailAppId} />
+                    </DetailShell>
+                  </DetailDataContext.Provider>
+                );
+              })()}
             </section>
-            <VoiceSettingsPanel
-              assistant={mode}
-              value={voicePreferences}
-              onChange={(value) => { setVoicePreferences(value); saveVoicePreferences(mode, value); }}
-              onTest={() => { void voiceManager.current.speak("This is " + identityProfile.name + ". Voice profile test successful.", voicePreferences).then((result) => setVoiceStatus(result.message ?? result.engine + " voice ready.")); }}
-              status={voiceStatus}
-            />
-          </>
-        )}
-
-        {activePanel === "workspace" && (
-          <WorkspacePanel
-            snapshot={workspace}
-            busy={workspaceBusy}
-            onConnect={() => void connectMicrosoft()}
-            onDisconnect={() => void disconnectMicrosoft()}
-            onRefresh={() => void refreshWorkspace()}
-          />
-        )}
-
-        <section className="functional-scene">
-          {mode === "nova" ? (
-            <NovaDashboard
-              activePanel={activePanel === "workspace" ? null : activePanel}
-            />
-          ) : (
-            <OnyxDashboard
-              activePanel={activePanel === "workspace" ? null : activePanel}
-            />
-          )}
-          <HeroCore
-            mode={mode}
-            state={state}
-            onSwitch={() => activate(mode === "nova" ? "onyx" : "nova")}
-            onAction={(action) =>
-              action === "Listen" ? voice.startListening() : void dispatch(action)
-            }
-            lowPower={quality === "low"}
-          />
-        </section>
+          );
+        })()}
       </div>
 
       <div className="bottom-stack">
@@ -772,32 +1020,44 @@ export function App() {
             <small>{voice.diagnostic}</small>
           </div>
         )}
+        {overflowNavigation}
+        {getActiveWorkspace(shell).minimizedAppIds.length > 0 && (
+          <div className="minimized-app-dock-region">
+            <MinimizedAppTray
+              minimizedAppIds={getActiveWorkspace(shell).minimizedAppIds}
+              onRestore={(appId) => {
+                dispatchShell({ type: "RESTORE_APP", appId });
+              }}
+              onClose={(appId) => {
+                dispatchShell({ type: "CLOSE_APP", appId });
+              }}
+            />
+          </div>
+        )}
         <footer className="functional-footer">
           <nav className="glass-surface">
-            {nav.map((item) => (
-              <button key={item} onClick={() => void dispatch(item)}>
-                {item}
-              </button>
-            ))}
-            {(["Automation", "Settings", "Health"] as const).map((item) => (
-              <button
-                key={`utility-${item}`}
-                data-onyx-global-utility={item.toLowerCase()}
-                onClick={() =>
-                  window.dispatchEvent(
-                    new CustomEvent(
-                      item === "Automation"
-                        ? "onyx:open-automation"
-                        : item === "Settings"
-                          ? "onyx:open-settings"
-                          : "onyx:open-provider-health",
-                    ),
-                  )
+            <button
+              onClick={() => {
+                const activeWorkspace = getActiveWorkspace(shell);
+                if (activeWorkspace.openAppIds.length > 0) {
+                  dispatchShell({ type: "CLOSE_ALL_APPS" });
+                } else {
+                  dispatchShell({ type: "RETURN_HOME" });
                 }
-              >
-                {item}
-              </button>
-            ))}
+              }}
+            >
+              Home
+            </button>
+            <button onClick={() => openShellApp("messages")}>Messages</button>
+            <button onClick={() => openShellApp("tasks")}>Tasks</button>
+            <button onClick={() => openShellApp("news")}>News</button>
+            <button onClick={() => openShellApp("workspace")}>Workspace</button>
+            {mode === "onyx" && (
+              <button onClick={() => openShellApp("calendar")}>Calendar</button>
+            )}
+            <button onClick={() => openShellApp("automation")}>Automation</button>
+            <button onClick={() => openShellApp("settings")}>Settings</button>
+            <button onClick={() => openShellApp("health")}>Health</button>
           </nav>
           <GlassCommandBar
             mode={mode}

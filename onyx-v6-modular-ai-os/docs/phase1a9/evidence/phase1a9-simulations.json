@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "1.0.0",
+  "scope": "deterministic local projection only; no live execution",
+  "phase1a8": {"scenarioCount": 44, "pass": 43, "reconciliationRequired": 1, "unexpectedFailures": 0},
+  "phase1a9": {"scenarioCount": 7, "uniqueScenarioIds": 7, "faultCount": 4, "uniqueFaultIds": 4, "mappedTestIds": "T01-T40", "result": "PASS", "replay": "PASS", "safetyState": "PASS"},
+  "unexpectedDifferences": [],
+  "resultClassifications": ["PASS", "EXPECTED_BLOCK", "EXPECTED_RECONCILIATION", "EXPECTED_FAILED_SAFE", "EXPECTED_PROHIBITED"]
+}

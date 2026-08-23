@@ -27,7 +27,7 @@ describe("AutomationConnectorScopePanel", () => {
     expect(text).toContain("Outlook");
     expect(text).toContain("Work Outlook");
     expect(text).toContain("mail.metadata.read");
-    expect(text).toContain("READ_ONLY");
+    expect(text).toContain("Read-Only Status");
     expect(text).toContain("Gmail");
   });
 

@@ -1,0 +1,7 @@
+import { describe, expect, it } from "vitest";
+import { assertRiskClass, assertSchedulerEvent, defaultSchedulerSafetyProfile, resolvePreparationAlias } from "../src";
+describe("Phase 1A.9 security boundaries", () => {
+  it("keeps R4 approval-sensitive and R5 prohibited", () => { expect(() => assertRiskClass("R4")).not.toThrow(); expect(() => assertRiskClass("R5")).not.toThrow(); expect(() => assertRiskClass("R6")).toThrow(); });
+  it("resolves aliases fail-closed without granting authority", () => { expect(resolvePreparationAlias("ISOLATED")).toBe("ISOLATED_COMPUTE_PARALLEL_SAFE"); expect(resolvePreparationAlias("PROMOTION_ONLY")).toBe("PROTECTED_PROMOTION_ONLY"); expect(() => resolvePreparationAlias("READ_SHARED")).toThrow(); expect(() => resolvePreparationAlias("WRITE_DISJOINT")).toThrow(); expect(() => resolvePreparationAlias("UNKNOWN")).toThrow(); });
+  it("rejects unknown and execution event types and keeps safety false", () => { const event = { schedulerEventId: "1a9:schedulerEventId:test", schedulerRunId: "run", eventType: "UNKNOWN", workflowId: "wf", runtimeId: "rt", runtimeSessionId: "session", laneStage: "S0_SINGLE", logicalSequence: 0, causalParentEventIds: [], evidenceArtifactIds: [], resultClassification: "reference", redactedDetail: "", occurredAt: "2026-08-21T00:00:00.000Z", contractVersion: "1.0.0" } as any; expect(() => assertSchedulerEvent(event)).toThrow(); expect(Object.values(defaultSchedulerSafetyProfile()).every((value) => value === false)).toBe(true); });
+});

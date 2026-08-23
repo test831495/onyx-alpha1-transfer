@@ -28,7 +28,8 @@
     "@onyx/calendar-intelligence": "workspace:*",
     "@onyx/voice-runtime": "workspace:*",
     "@onyx/identity-runtime": "workspace:*",
-    "@onyx/phase1a6-workflow-runtime": "workspace:*"
+    "@onyx/phase1a6-workflow-runtime": "workspace:*",
+    "@onyx/phase1a9-governed-scheduler": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19.1.10",

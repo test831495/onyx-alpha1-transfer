@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
-import type { ReconciliationHandoff } from "@onyx/phase1a6-workflow-runtime";
+import type { ReconciliationHandoff } from "@onyx/phase1a6-workflow-runtime/browser";
+import { getCapabilityDisplayName, getWorkflowStateDisplayName } from "../presentationLabels";
 
 const card: CSSProperties = { border: "1px solid rgba(148,197,218,.22)", background: "rgba(5,23,42,.72)", borderRadius: 14, padding: 14 };
 const pill: CSSProperties = {
@@ -25,7 +26,7 @@ export function AutomationReconciliationPanel({ handoff }: { handoff: Reconcilia
   if (!handoff) {
     return (
       <div aria-label="Automation runtime reconciliation panel" style={card}>
-        <small style={{ color: "#65d9ef" }}>PHASE 1A.7 · RECONCILIATION, READ-ONLY</small>
+        <small style={{ color: "#65d9ef" }}>Reconciliation, Read-Only</small>
         <p style={{ color: "#9bc8d5" }}>No uncertain operation currently requires reconciliation.</p>
       </div>
     );
@@ -35,10 +36,10 @@ export function AutomationReconciliationPanel({ handoff }: { handoff: Reconcilia
     <div aria-label="Automation runtime reconciliation panel" style={{ display: "grid", gap: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <small style={{ color: "#65d9ef" }}>PHASE 1A.7 · RECONCILIATION, READ-ONLY, NO AUTOMATIC RETRY</small>
+          <small style={{ color: "#65d9ef" }}>Reconciliation, Read-Only, No Automatic Retry</small>
           <h4 style={{ margin: "4px 0" }}>Reconciliation required</h4>
         </div>
-        <span style={pill}>RECONCILIATION REQUIRED</span>
+        <span style={pill}>Reconciliation Required</span>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 10 }}>
@@ -48,11 +49,11 @@ export function AutomationReconciliationPanel({ handoff }: { handoff: Reconcilia
         </article>
         <article style={card}>
           <small style={{ color: "#91bdcb" }}>Current state</small>
-          <p>{handoff.currentState}</p>
+          <p>{getWorkflowStateDisplayName(handoff.currentState)}</p>
         </article>
         <article style={card}>
           <small style={{ color: "#91bdcb" }}>Current capability</small>
-          <p>{handoff.currentStep}</p>
+          <p>{getCapabilityDisplayName(handoff.currentStep)}</p>
         </article>
         <article style={card}>
           <small style={{ color: "#91bdcb" }}>Idempotency key</small>

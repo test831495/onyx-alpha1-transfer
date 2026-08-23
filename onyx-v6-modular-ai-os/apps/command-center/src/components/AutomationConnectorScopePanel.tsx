@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { ConnectorScopeProjection } from "../automationRuntimeContracts";
+import { getSourceDisplayName } from "../presentationLabels";
 
 const card: CSSProperties = { border: "1px solid rgba(148,197,218,.22)", background: "rgba(5,23,42,.72)", borderRadius: 14, padding: 14 };
 const pill = (readOnly: boolean): CSSProperties => ({
@@ -25,7 +26,7 @@ export function AutomationConnectorScopePanel({ connectors }: { connectors: read
   return (
     <div aria-label="Automation runtime connector scope panel" style={{ display: "grid", gap: 10 }}>
       <div>
-        <small style={{ color: "#65d9ef" }}>PHASE 1A.7 · CONNECTOR SCOPE, METADATA ONLY, NO CONTENT ACCESS</small>
+        <small style={{ color: "#65d9ef" }}>Connector Scope</small>
         <h4 style={{ margin: "4px 0" }}>Connector scope</h4>
       </div>
 
@@ -36,15 +37,15 @@ export function AutomationConnectorScopePanel({ connectors }: { connectors: read
           {connectors.map((connector) => (
             <article key={`${connector.connectorProvider}:${connector.connectorAccountId}`} style={card}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-                <b>{connector.connectorProvider} · {connector.connectorAccountLabel}</b>
-                <span style={pill(connector.readOnly)}>{connector.readOnly ? "READ-ONLY" : "ACTION APPROVAL REQUIRED"}</span>
+                <b>{getSourceDisplayName(connector.connectorProvider)} · {connector.connectorAccountLabel}</b>
+                <span style={pill(connector.readOnly)}>{connector.readOnly ? "Read-Only Status" : "Action Approval Required"}</span>
               </div>
               <p style={{ margin: "6px 0", color: "#afd5df", overflowWrap: "anywhere" }}>
                 Account: {connector.connectorAccountId}
                 <br />
                 Scope: {connector.connectorScope}
                 <br />
-                Permission mode: {connector.permissionMode}
+                Permission mode: {connector.permissionMode === "READ_ONLY" ? "Read-Only" : "Action Approval Required"}
               </p>
             </article>
           ))}

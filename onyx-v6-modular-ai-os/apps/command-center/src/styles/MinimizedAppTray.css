@@ -1,0 +1,117 @@
+.minimized-app-tray {
+  width: max-content;
+  max-width: min(100%, 900px);
+  margin: 0 auto;
+  padding: 0.35rem 0.55rem;
+  background: rgba(80, 120, 160, 0.08);
+  border: 1px solid rgba(80, 120, 160, 0.2);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: row;
+  gap: 0.55rem;
+  align-items: center;
+  color: #e8f7ff;
+}
+
+.minimized-app-tray__label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #9ec6d8;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.minimized-app-tray__apps {
+  display: flex;
+  gap: 0.4rem;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.minimized-app-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.45rem;
+  background: rgba(100, 150, 200, 0.06);
+  border: 1px solid rgba(100, 150, 200, 0.15);
+  border-radius: 4px;
+  flex: 0 0 auto;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.minimized-app-item:hover,
+.minimized-app-item:focus-within {
+  background: rgba(100, 150, 200, 0.1);
+  border-color: rgba(100, 150, 200, 0.3);
+}
+
+.minimized-app-item__icon {
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+}
+
+.minimized-app-item__label {
+  flex: 1;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #e8f7ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.minimized-app-item__actions {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.minimized-app-item:hover .minimized-app-item__actions,
+.minimized-app-item:focus-within .minimized-app-item__actions {
+  opacity: 1;
+}
+
+.minimized-app-item__restore,
+.minimized-app-item__close {
+  padding: 0.3rem 0.5rem;
+  font-size: 0.7rem;
+  background: #0b263b;
+  color: #e8f7ff;
+  border: 1px solid #34718b;
+  border-radius: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s;
+}
+
+.minimized-app-item__restore:hover {
+  background: var(--button-hover-bg, #357abd);
+}
+
+.minimized-app-item__close {
+  background: #321d2a;
+  border-color: #96516b;
+}
+
+.minimized-app-item__close:hover {
+  background: var(--danger-hover-bg, #b71c1c);
+}
+
+@media (max-width: 600px) {
+  .minimized-app-tray {
+    width: min(100%, calc(100vw - 16px));
+  }
+
+  .minimized-app-tray__apps {
+    min-width: 0;
+  }
+}

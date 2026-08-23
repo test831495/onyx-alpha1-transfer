@@ -1,5 +1,9 @@
 import type { CSSProperties } from "react";
 import type { RuntimeBudgetProjection } from "../automationRuntimeContracts";
+import {
+  getBudgetStatusDisplayName,
+  getModelRoutingDisplayName,
+} from "../presentationLabels";
 
 const card: CSSProperties = { border: "1px solid rgba(148,197,218,.22)", background: "rgba(5,23,42,.72)", borderRadius: 14, padding: 14 };
 
@@ -22,15 +26,15 @@ export function AutomationRuntimeBudgetPanel({
     ["Estimated cost", budget.estimatedCost !== undefined ? `${budget.estimatedCost} ${budget.currency ?? ""}`.trim() : "Not projected"],
     ["Cache hit rate", budget.cacheHitRate !== undefined ? `${Math.round(budget.cacheHitRate * 100)}%` : "Not projected"],
     ["Context tier", budget.contextTier ?? "Not projected"],
-    ["Budget status", budget.budgetStatus ?? "NOT_APPLICABLE"],
-    ["Model routing class", modelRoutingClass],
-    ["Provider-neutral voice metadata", voiceMetadataProviderNeutralReady ? "READY" : "NOT READY"],
+    ["Budget status", getBudgetStatusDisplayName(budget.budgetStatus ?? "NOT_APPLICABLE")],
+    ["Model routing class", getModelRoutingDisplayName(modelRoutingClass)],
+    ["Provider-neutral voice metadata", voiceMetadataProviderNeutralReady ? "Ready" : "Not Ready"],
   ];
 
   return (
     <div aria-label="Automation runtime budget panel" style={{ display: "grid", gap: 10 }}>
       <div>
-        <small style={{ color: "#65d9ef" }}>PHASE 1A.7 · BUDGET AND ROUTING, MOCK-ONLY, NO PAID EXECUTION</small>
+        <small style={{ color: "#65d9ef" }}>Budget and Routing</small>
         <h4 style={{ margin: "4px 0" }}>Budget and model routing</h4>
       </div>
 

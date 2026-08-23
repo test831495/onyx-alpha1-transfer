@@ -1,4 +1,4 @@
-import { type RuntimeStatus, type WorkflowState, WORKFLOW_STATES } from "./contracts";
+import { type RuntimeStatus, type WorkflowState, WORKFLOW_STATES } from "./browser";
 
 /**
  * Read-only projection from the frozen 32 Phase 1A.5 workflow states onto stable

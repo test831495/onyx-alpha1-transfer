@@ -1,0 +1,28 @@
+.app-card-shell {
+  left: var(--card-left) !important;
+  top: var(--card-top) !important;
+  right: auto !important;
+  bottom: auto !important;
+}
+
+.functional-scene--cards > .app-card-list {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  display: block !important;
+  grid-column: auto !important;
+  grid-row: auto !important;
+}
+
+.app-card-shell--manual-position {
+  right: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+}
+
+.app-card-shell--dragging {
+  transition: none !important;
+  user-select: none;
+}

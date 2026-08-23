@@ -54,16 +54,16 @@ describe("AutomationRuntimeDashboard", () => {
   it("states clearly that no live GitHub workflow is executing", () => {
     const projection = buildRuntimeFixtures().READY;
     const text = renderToText(AutomationRuntimeDashboard({ projection }));
-    expect(text).toContain("NO LIVE GITHUB WORKFLOW IS EXECUTING");
+    expect(text).toContain("No live GitHub workflow is executing");
   });
 
   it("shows all four safety flags as unavailable", () => {
     const projection = buildRuntimeFixtures().RUNNING_ISSUE_STEP;
     const text = renderToText(AutomationRuntimeDashboard({ projection }));
-    expect(text).toContain("Merge allowed: NO");
-    expect(text).toContain("Production deploy allowed: NO");
-    expect(text).toContain("Force push allowed: NO");
-    expect(text).toContain("Branch deletion allowed: NO");
+    expect(text).toContain("Merge allowed: No");
+    expect(text).toContain("Production deploy allowed: No");
+    expect(text).toContain("Force push allowed: No");
+    expect(text).toContain("Branch deletion allowed: No");
   });
 
   it("shows the execution lane limit of one", () => {
@@ -75,7 +75,7 @@ describe("AutomationRuntimeDashboard", () => {
   it("shows completed and pending capability progress", () => {
     const projection = buildRuntimeFixtures().RUNNING_BRANCH_STEP;
     const text = renderToText(AutomationRuntimeDashboard({ projection }));
-    expect(text).toContain("Completed: CREATE_GITHUB_ISSUE");
+    expect(text).toContain("Completed: Create GitHub Work Item");
     expect(text).toContain("Pending:");
   });
 

@@ -1,4 +1,339 @@
-import{useEffect,useMemo,useState,type CSSProperties}from"react";import type{UiJob}from"../automationDashboardContracts";import{listApprovalDecisions}from"../automationApprovalService";import{toDraftPrReview}from"../automationDraftPrReviewModel";
-const card:CSSProperties={border:"1px solid rgba(148,197,218,.24)",background:"rgba(5,23,42,.78)",borderRadius:14,padding:15};const pill=(ok:boolean):CSSProperties=>({display:"inline-flex",alignItems:"center",justifyContent:"center",minWidth:76,minHeight:32,padding:"6px 14px",boxSizing:"border-box",borderRadius:999,border:ok?"1px solid rgba(114,237,190,.3)":"1px solid rgba(255,170,170,.3)",background:ok?"rgba(70,210,165,.16)":"rgba(255,143,143,.16)",color:ok?"#72edbe":"#ffaaaa",fontWeight:800,lineHeight:1,textAlign:"center"});
-function List({items,empty="None recorded"}:{items:string[];empty?:string}){return items.length?<ul style={{paddingLeft:22}}>{items.map(x=><li key={x} style={{marginBottom:7,overflowWrap:"anywhere"}}>{x}</li>)}</ul>:<p style={{color:"#9bc8d5"}}>{empty}</p>}
-export function AutomationDraftPrReview({job}:{job:UiJob}){const[revision,setRevision]=useState(0);useEffect(()=>{const h=()=>setRevision(x=>x+1);window.addEventListener("onyx:automation-approval-recorded",h);return()=>window.removeEventListener("onyx:automation-approval-recorded",h)},[]);const review=useMemo(()=>toDraftPrReview({job,approvals:listApprovalDecisions().map(x=>x.decision),baseBranch:"feature/phase1a2-github-automation-foundation"}),[job,revision]);if(!review)return <article style={card}>No Draft PR has been created for this job.</article>;const passed=review.reviewerChecklist.filter(x=>x.passed).length;return <div aria-label="Draft PR engineering review" style={{display:"grid",gap:12}}><header style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center",flexWrap:"wrap"}}><div><small style={{color:"#65d9ef"}}>DRAFT PR REVIEW PACKAGE</small><h3 style={{margin:"4px 0"}}>Draft PR #{review.number} · {review.state}</h3><p style={{margin:"4px 0",color:"#a8d1dd"}}>Issue #{review.issueNumber} · {review.title}</p></div><div style={{display:"flex",gap:8,alignItems:"center"}}><span style={pill(true)}>DRAFT ONLY</span><a href={review.url} target="_blank" rel="noreferrer" style={{padding:"9px 13px",borderRadius:9,border:"1px solid #3c91aa",background:"#0b5268",color:"white",fontWeight:700,textDecoration:"none"}}>Open Draft PR</a></div></header><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:12}}><article style={card}><h4>Pull request summary</h4><p>Repository: {review.repository}<br/>Base: {review.baseBranch}<br/>Head: {review.headBranch}<br/>Risk: {review.risk.toUpperCase()}<br/>Scope: {review.scopeHash}</p></article><article style={card}><h4>Validation digest</h4><p><span style={pill(review.validation.failed===0)}>PASS {review.validation.passed}/{review.validation.total}</span></p>{review.validation.checks.map(x=><p key={x.id}><b>{x.label}</b><br/><span style={{color:"#afd5df"}}>{x.detail}</span></p>)}</article><article style={card}><h4>Changed files</h4><List items={review.changedFiles}/></article><article style={card}><h4>Approval history</h4>{review.approvalHistory.length?review.approvalHistory.map(a=><div key={a.decisionId} style={{borderTop:"1px solid rgba(148,197,218,.16)",paddingTop:8,marginTop:8}}><b>{a.action.replaceAll("_"," ")}</b><p>{a.reason}<br/><small>{a.approvedBy} · {a.createdAt}</small></p></div>):<p style={{color:"#9bc8d5"}}>No E.8B decision has been recorded for this issue.</p>}</article></div><article style={card}><h4>Reviewer checklist · {passed}/{review.reviewerChecklist.length}</h4><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:8}}>{review.reviewerChecklist.map(x=><div key={x.id} style={{display:"flex",alignItems:"center",gap:10}}><span style={pill(x.passed)}>{x.passed?"PASS":"REVIEW"}</span><span>{x.label}</span></div>)}</div></article><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))",gap:12}}><article style={card}><h4>Known issues</h4><List items={review.knownIssues}/></article><article style={card}><h4>Rollback</h4><List items={review.rollback}/></article></div><article style={{...card,borderColor:"#d8a950"}}><h4>Hard governance stop</h4><p>Merge allowed: NO<br/>Production deployment allowed: NO</p><p style={{color:"#ffd166"}}>Opening Draft PR #{review.number} is read-only navigation. ONYX does not merge, deploy, modify permissions, or access secrets.</p></article></div>}
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import type { UiJob } from "../automationDashboardContracts";
+import { listApprovalDecisions } from "../automationApprovalService";
+import { toDraftPrReview } from "../automationDraftPrReviewModel";
+import {
+  getBranchDisplayName,
+  getRepositoryDisplayName,
+  getScopeDisplayName,
+  formatHistoryEventLanguage,
+} from "../presentationLabels";
+
+const card: CSSProperties = {
+  border: "1px solid rgba(148,197,218,.24)",
+  background: "rgba(5,23,42,.78)",
+  borderRadius: 14,
+  padding: 15,
+};
+
+const technicalCard: CSSProperties = {
+  ...card,
+  background: "rgba(20,40,60,.60)",
+};
+
+const pill = (ok: boolean): CSSProperties => ({
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minWidth: 76,
+  minHeight: 32,
+  padding: "6px 14px",
+  boxSizing: "border-box",
+  borderRadius: 999,
+  border: ok
+    ? "1px solid rgba(114,237,190,.3)"
+    : "1px solid rgba(255,170,170,.3)",
+  background: ok
+    ? "rgba(70,210,165,.16)"
+    : "rgba(255,143,143,.16)",
+  color: ok ? "#72edbe" : "#ffaaaa",
+  fontWeight: 800,
+  lineHeight: 1,
+  textAlign: "center",
+});
+
+function List({
+  items,
+  empty = "None recorded",
+}: {
+  items: string[];
+  empty?: string;
+}) {
+  return items.length ? (
+    <ul style={{ paddingLeft: 22 }}>
+      {items.map((x) => (
+        <li key={x} style={{ marginBottom: 7, overflowWrap: "anywhere" }}>
+          {x}
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p style={{ color: "#9bc8d5" }}>{empty}</p>
+  );
+}
+
+export function AutomationDraftPrReview({ job }: { job: UiJob }) {
+  const [revision, setRevision] = useState(0);
+
+  useEffect(() => {
+    const h = () => setRevision((x) => x + 1);
+    window.addEventListener("onyx:automation-approval-recorded", h);
+    return () =>
+      window.removeEventListener("onyx:automation-approval-recorded", h);
+  }, []);
+
+  const review = useMemo(
+    () =>
+      toDraftPrReview({
+        job,
+        approvals: listApprovalDecisions().map((x) => x.decision),
+        baseBranch: "feature/phase1a2-github-automation-foundation",
+      }),
+    [job, revision]
+  );
+
+  if (!review)
+    return (
+      <article style={card}>
+        No Draft PR has been created for this job.
+      </article>
+    );
+
+  const passed = review.reviewerChecklist.filter((x) => x.passed).length;
+
+  // Friendly display values
+  const repositoryDisplay = getRepositoryDisplayName(review.repository);
+  const baseBranchDisplay = getBranchDisplayName(review.baseBranch);
+  const headBranchDisplay = getBranchDisplayName(review.headBranch);
+  const scopeDisplay = getScopeDisplayName(review.scopeHash);
+
+  // Work Item display
+  const workItemNumber = review.issueNumber;
+  const workItemTitle = "Limited Workflow Validation";
+
+  return (
+    <div
+      aria-label="Draft PR engineering review"
+      style={{ display: "grid", gap: 12 }}
+    >
+      <header
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 12,
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <small style={{ color: "#65d9ef" }}>DRAFT REVIEW</small>
+          <h3 style={{ margin: "4px 0" }}>
+            Draft Pull Request {review.number} · {formatHistoryEventLanguage(review.state) || review.state}
+          </h3>
+          <p style={{ margin: "4px 0", color: "#a8d1dd" }}>
+            Work Item {workItemNumber} · {workItemTitle}
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <span style={pill(true)}>DRAFT ONLY</span>
+          <a
+            href={review.url}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              padding: "9px 13px",
+              borderRadius: 9,
+              border: "1px solid #3c91aa",
+              background: "#0b5268",
+              color: "white",
+              fontWeight: 700,
+              textDecoration: "none",
+            }}
+          >
+            Open Draft PR
+          </a>
+        </div>
+      </header>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
+          gap: 12,
+        }}
+      >
+        <article style={card}>
+          <h4>Pull request summary</h4>
+          <p>
+            Project: {repositoryDisplay}
+            <br />
+            Starting Point: {baseBranchDisplay}
+            <br />
+            Working Branch: {headBranchDisplay}
+            <br />
+            Risk: {review.risk.toUpperCase()}
+            <br />
+            Scope: {scopeDisplay}
+          </p>
+        </article>
+
+        <article style={card}>
+          <h4>Validation digest</h4>
+          <p>
+            <span style={pill(review.validation.failed === 0)}>
+              {review.validation.failed === 0 ? "Passed" : "Failed"} {review.validation.passed}/{review.validation.total}
+            </span>
+          </p>
+          {review.validation.checks.map((x) => (
+            <p key={x.id}>
+              <b>{formatHistoryEventLanguage(x.label) || x.label}</b>
+              <br />
+              <span style={{ color: "#afd5df" }}>{formatHistoryEventLanguage(x.detail) || x.detail}</span>
+            </p>
+          ))}
+        </article>
+
+        <article style={card}>
+          <h4>Changed files</h4>
+          <List
+            items={review.changedFiles.map((f) => {
+              // Display friendly names for known files, keep technical details for unknown
+              if (f.includes("docs/")) return "Workflow Validation Documentation";
+              return "Project File";
+            })}
+          />
+        </article>
+
+        <article style={card}>
+          <h4>Approval history</h4>
+          {review.approvalHistory.length ? (
+            review.approvalHistory.map((a) => (
+              <div
+                key={a.decisionId}
+                style={{
+                  borderTop: "1px solid rgba(148,197,218,.16)",
+                  paddingTop: 8,
+                  marginTop: 8,
+                }}
+              >
+                <b>{a.action.replaceAll("_", " ")}</b>
+                <p>
+                  {a.reason}
+                  <br />
+                  <small>
+                    {a.approvedBy} · {a.createdAt}
+                  </small>
+                </p>
+              </div>
+            ))
+          ) : (
+            <p style={{ color: "#9bc8d5" }}>
+              No approval decision has been recorded for this work item.
+            </p>
+          )}
+        </article>
+      </div>
+
+      <article style={card}>
+        <h4>
+          Reviewer checklist · {passed}/{review.reviewerChecklist.length}
+        </h4>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))",
+            gap: 8,
+          }}
+        >
+          {review.reviewerChecklist.map((x) => (
+            <div
+              key={x.id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
+              <span style={pill(x.passed)}>
+                {x.passed ? "PASS" : "REVIEW"}
+              </span>
+              <span>{x.label}</span>
+            </div>
+          ))}
+        </div>
+      </article>
+
+      {/* Technical Details Disclosure */}
+      <details style={{ marginTop: 10 }}>
+        <summary
+          style={{
+            cursor: "pointer",
+            color: "#65d9ef",
+            padding: "8px 0",
+            userSelect: "none",
+          }}
+        >
+          Show Draft Review technical details
+        </summary>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
+            gap: 12,
+            marginTop: 10,
+          }}
+        >
+          <article style={technicalCard}>
+            <h4>Technical references</h4>
+            <p style={{ fontSize: "0.9em", fontFamily: "monospace" }}>
+              <b>Repository:</b> {review.repository}
+              <br />
+              <b>Base Branch:</b> {review.baseBranch}
+              <br />
+              <b>Head Branch:</b> {review.headBranch}
+              <br />
+              <b>Scope ID:</b> {review.scopeHash}
+              <br />
+              <b>Issue:</b> {review.issueNumber}
+            </p>
+          </article>
+
+          <article style={technicalCard}>
+            <h4>Validation commands</h4>
+            <p style={{ fontSize: "0.9em", fontFamily: "monospace" }}>
+              {review.validation.checks.map((check) => (
+                <div key={check.id}>
+                  <b>{check.label}:</b> {check.detail}
+                </div>
+              ))}
+            </p>
+          </article>
+
+          <article style={technicalCard}>
+            <h4>Changed files (technical paths)</h4>
+            <List items={review.changedFiles} empty="No files changed" />
+          </article>
+        </div>
+      </details>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 12 }}>
+        <article style={card}>
+          <h4>Known issues</h4>
+          <List items={review.knownIssues} />
+        </article>
+        <article style={card}>
+          <h4>Rollback</h4>
+          <List items={review.rollback} />
+        </article>
+      </div>
+
+      <article
+        style={{
+          ...card,
+          borderColor: "#d8a950",
+        }}
+      >
+        <h4>Hard governance stop</h4>
+        <p>
+          Merge allowed: NO
+          <br />
+          Production deployment allowed: NO
+        </p>
+        <p style={{ color: "#ffd166" }}>
+          Opening Draft Pull Request {review.number} is read-only navigation. ONYX does not merge, deploy,
+          modify permissions, or access secrets.
+        </p>
+      </article>
+    </div>
+  );
+}

@@ -1,4 +1,4 @@
-import type { RuntimeSnapshot } from "@onyx/phase1a6-workflow-runtime";
+import type { RuntimeSnapshot } from "@onyx/phase1a6-workflow-runtime/browser";
 import {
   AUTOMATION_RUNTIME_UI_CONTRACT_VERSION,
   CONNECTOR_PROVIDERS,

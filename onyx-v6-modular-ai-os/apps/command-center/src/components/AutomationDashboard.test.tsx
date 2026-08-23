@@ -8,6 +8,8 @@ import {
   labels,
   tabs,
 } from "./AutomationDashboard";
+import { AutomationEvidenceViewer } from "./AutomationEvidenceViewer";
+import { loadAutomationSnapshot } from "../automationDashboardData";
 
 /** Resolves a stateless function-component element tree into plain text, without a DOM. */
 function renderToText(node: unknown): string {
@@ -52,6 +54,39 @@ function findAll(node: unknown, predicate: (element: RenderedElement) => boolean
 const EXISTING_TAB_IDS = ["create", "execute", "overview", "queue", "approvals", "validation", "evidence", "draft-prs", "history"];
 
 describe("Phase 1A.7 Governed Runtime tab reachability", () => {
+  it("renders friendly default evidence text while retaining canonical source data", () => {
+    const job = loadAutomationSnapshot().jobs[0];
+    if (!job) throw new Error("Expected seeded Automation Center job");
+    const text = renderToText(<AutomationEvidenceViewer job={job} />);
+
+    for (const raw of [
+      "ENGINEERING EVIDENCE PACKAGE",
+      "test831495/onyx-alpha1-transfer",
+      "automation/issue-8-e7b-live-smoke-test",
+      "live-smoke-evidence-issue-5",
+      "phase1a2e7b-live-smoke",
+      "D.4.1 visual acceptance remains pending",
+      "git diff --check",
+      "tsc --noEmit",
+    ]) {
+      expect(text).not.toContain(raw);
+    }
+    for (const friendly of [
+      "Validation Evidence",
+      "Limited Workflow Validation",
+      "Visual review remains pending",
+      "File and Formatting Check Passed",
+      "Application Code Check Passed",
+      "ONYX/NOVA Project",
+      "Isolated Work Branch",
+      "Documentation Validation Scope",
+    ]) {
+      expect(text).toContain(friendly);
+    }
+    expect(job.state).toBe("DRAFT_PR_CREATED");
+    expect(job.repository).toBe("test831495/onyx-alpha1-transfer");
+  });
+
   it("keeps the existing AutomationDashboard entry point exported and reachable", () => {
     expect(typeof AutomationDashboard).toBe("function");
   });
@@ -73,7 +108,7 @@ describe("Phase 1A.7 Governed Runtime tab reachability", () => {
   it("renders AutomationRuntimeDashboard when the Governed Runtime tab content is selected", () => {
     const element = GovernedRuntimeTab({ fixtureId: "RUNNING_BRANCH_STEP", onFixtureChange: () => undefined });
     const text = renderToText(element);
-    expect(text).toContain("NO LIVE GITHUB WORKFLOW IS EXECUTING");
+    expect(text).toContain("No live GitHub workflow is executing");
     expect(findAll(element, (item) => item.props["aria-label"] === "ONYX Automation Center runtime dashboard")).toHaveLength(1);
   });
 

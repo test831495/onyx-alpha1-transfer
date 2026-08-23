@@ -7,7 +7,7 @@ import {
   type Capability,
   type RuntimeSnapshotInput,
   type WorkflowState,
-} from "@onyx/phase1a6-workflow-runtime";
+} from "@onyx/phase1a6-workflow-runtime/browser";
 import { buildAutomationRuntimeProjection, type AutomationRuntimeProjection } from "./automationRuntimeProjection";
 import type { ConnectorScopeProjection, RuntimeBudgetProjection, RuntimeIdentityProjection } from "./automationRuntimeContracts";
 

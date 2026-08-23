@@ -1,0 +1,11 @@
+# Phase 1A.9 Baseline Compatibility and Provenance
+
+The accepted Phase 1A.8 checkpoint is commit `ee20f8aa5a82720f0b03b49a55e1f390c97c6f84`, tag `phase1a8-governed-multiagent-memory-context-contracts-local-validated`, with 29 accepted P18 IDs, 44 deterministic scenarios, 32 workflow states, active runtime limit 1, promotion limit 1, and eight false safety flags. These identifiers are provenance records only, not production contract inputs.
+
+Bindings are additive and reference exported predecessor constants: Phase 1A.5 workflow 1.0.0, Phase 1A.6 runtime 1.0.0, Phase 1A.7 `AUTOMATION_RUNTIME_UI_CONTRACT_VERSION` and source `apps/command-center/src/automationRuntimeContracts.ts` at 1.0.0, and Phase 1A.8 governed groups at 1.0.0. No Phase 1A.7 package is invented.
+
+Preparation aliases map ISOLATED to ISOLATED_COMPUTE_PARALLEL_SAFE; READ_SHARED requires explicit context; WRITE_DISJOINT requires scope proof and an applicable authoritative class; WRITE_SERIALIZED requires an applicable sequential class; PROMOTION_ONLY maps to PROTECTED_PROMOTION_ONLY. Unknown or ambiguous mappings fail closed.
+
+External baselines named by the approved preparation material are recorded as approved inputs but are not locally available here: Architecture and Operations Bible v3.0, Architecture Freeze and Consolidation Pack v1.0, GitHub Agent Playbook Pack v1.0, Memory Architecture Specification v1.0, Automation Center V2 UX Blueprint v1.0, Parallel Acceleration Pack v1.0, Connector Architecture and Integration Contracts Enterprise v1.0, Production Readiness Roadmap v1.0, Integrated Alpha Readiness Review and Scenario Matrix v1.0, Voice and Presence Architecture v1.0, Character Bible v1.0, Character Asset Factory Blueprint v1.0, and ONYX_NOVA_Phase_1A9_Acceptance_Preparation_Pack_v1.0. Their consumed invariants are authority separation, default deny, bounded lanes, provenance, and evidence gates; reconciliation is required if local evidence conflicts. Missing documents are not reconstructed.
+
+ADR candidates: scheduler authority boundary, lane progression gates, additive classification aliases, and operational-ledger evidence boundary.

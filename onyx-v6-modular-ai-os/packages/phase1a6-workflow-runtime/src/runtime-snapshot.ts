@@ -1,4 +1,4 @@
-import { CAPABILITIES, type Capability, type RuntimeStatus, type WorkflowState } from "./contracts";
+import { CAPABILITIES, type Capability, type RuntimeStatus, type WorkflowState } from "./browser";
 import { projectRuntimeStatus } from "./status-projector";
 
 export interface RuntimeSnapshot {

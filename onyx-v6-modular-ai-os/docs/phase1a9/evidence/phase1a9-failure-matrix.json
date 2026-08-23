@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0.0",
+  "scope": "projection-only failure evidence",
+  "failureClasses": "PHASE1A9_FAILURE_MATRIX",
+  "primaryDisposition": "safe-stop-or-reconcile",
+  "secondaryDispositions": ["deny", "quarantine", "safe-reduction", "provider-truth"],
+  "automaticRetryAllowed": false,
+  "automaticResumeAllowed": false,
+  "automaticReassignmentAllowed": false,
+  "providerTruthRequired": true,
+  "rahulDecisionRequired": true,
+  "promotionBlocked": true,
+  "laneReductionAllowed": true,
+  "requiredEvidence": true,
+  "scenarioCoverage": "Phase 1A.9 simulation registry",
+  "p19Coverage": ["P19-EVIDENCE", "P19-RECOVERY", "P19-PROMOTION"],
+  "tCoverage": ["T20", "T21", "T22", "T23", "T25", "T40"]
+}

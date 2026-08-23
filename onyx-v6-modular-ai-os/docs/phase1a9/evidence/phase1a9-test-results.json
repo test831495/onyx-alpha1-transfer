@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "1.0.0",
+  "scope": "local validation only; no production execution, remote mutation, or Git closure",
+  "schedulerBaseline": {"testFiles": 31, "tests": 325, "typecheck": "PASS"},
+  "validatorTests": {"testFiles": 2, "tests": 7, "result": "PASS"},
+  "wave5aFocusedTests": {"testFiles": 2, "tests": 62, "result": "PASS"},
+  "boundedPredecessorRegressions": {"result": "PASS", "t30Status": "EXECUTABLE", "implementationWave": "WAVE_5B"},
+  "focusedCommandCenterWave4B": {"result": "PASS", "testFiles": 4, "tests": 62},
+  "knownSkippedOrFailingSuites": ["root pnpm test not run", "COMMAND-CENTER-REGRESSION-01"],
+  "commands": ["pnpm --filter @onyx/phase1a9-governed-scheduler typecheck", "pnpm --filter @onyx/phase1a9-governed-scheduler test", "focused validator tests", "bash scripts/validate-phase1a5.sh", "bash scripts/validate-phase1a6.sh", "bash scripts/validate-phase1a7.sh", "bash scripts/validate-phase1a8.sh", "bash scripts/validate-phase1a3e10.sh", "pnpm --filter @onyx/command-center build", "pnpm --dir apps/command-center exec tsc --noEmit", "focused Wave 4B vitest command"],
+  "exitStatus": 0,
+  "validationMetadata": "fixed repository evidence; no runtime timestamp"
+}

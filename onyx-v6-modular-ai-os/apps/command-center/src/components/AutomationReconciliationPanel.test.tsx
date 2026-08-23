@@ -44,7 +44,7 @@ describe("AutomationReconciliationPanel", () => {
 
   it("displays the uncertain operation, state, capability, and idempotency key", () => {
     const text = renderToText(AutomationReconciliationPanel({ handoff: HANDOFF }));
-    expect(text).toContain("WORKFLOW_RECONCILIATION_REQUIRED");
+    expect(text).toContain("Workflow Reconciliation Required");
     expect(text).toContain("PUSH_ISOLATED_BRANCH");
     expect(text).toContain("wf-test:PUSH_ISOLATED_BRANCH:hash");
   });

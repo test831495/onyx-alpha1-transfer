@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { UiJob } from "../automationDashboardContracts";
 import { toEvidenceReview } from "../automationEvidenceModel";
+import { formatTimestampDisplay, getBranchDisplayName, getCapabilityDisplayName, getKnownLimitationDisplayName, getPlanDisplayName, getRepositoryDisplayName, getScopeDisplayName, getWorkflowStateDisplayName } from "../presentationLabels";
 
 const card: CSSProperties = {
   border: "1px solid rgba(148,197,218,.24)",
@@ -84,11 +85,11 @@ export function AutomationEvidenceViewer({
       >
         <div>
           <small style={{ color: "#65d9ef" }}>
-            ENGINEERING EVIDENCE PACKAGE
+            Validation Evidence
           </small>
 
           <h3 style={{ margin: "4px 0" }}>
-            Issue #{evidence.issueNumber} · {evidence.state}
+            Issue #{evidence.issueNumber} · {getWorkflowStateDisplayName(evidence.state)}
           </h3>
         </div>
 
@@ -113,15 +114,15 @@ export function AutomationEvidenceViewer({
           <h4>Provenance</h4>
 
           <p style={{ overflowWrap: "anywhere" }}>
-            Repository: {evidence.repository}
+            Repository: {getRepositoryDisplayName(evidence.repository)}
             <br />
-            Plan: {evidence.planId}
+            Plan: {getPlanDisplayName(evidence.planId)}
             <br />
-            Scope: {evidence.scopeHash}
+            Scope: {getScopeDisplayName(evidence.scopeHash)}
             <br />
-            Base: {evidence.baseCommit}
+            Base: {getBranchDisplayName(evidence.baseCommit)}
             <br />
-            Branch: {evidence.branch}
+            Branch: {getBranchDisplayName(evidence.branch)}
             <br />
             Risk: {evidence.risk.toUpperCase()}
           </p>
@@ -192,7 +193,7 @@ export function AutomationEvidenceViewer({
               </span>
 
               <div>
-                <b>{validation.label}</b>
+                <b>{getKnownLimitationDisplayName(validation.label)}</b>
 
                 <p
                   style={{
@@ -200,7 +201,7 @@ export function AutomationEvidenceViewer({
                     color: "#afd5df",
                   }}
                 >
-                  {validation.detail}
+                  {getKnownLimitationDisplayName(validation.detail)}
                 </p>
               </div>
             </div>
@@ -218,7 +219,7 @@ export function AutomationEvidenceViewer({
       >
         <article style={card}>
           <h4>Known issues and limitations</h4>
-          <Items items={evidence.knownIssues} />
+          <Items items={evidence.knownIssues.map(getKnownLimitationDisplayName)} />
         </article>
 
         <article style={card}>
@@ -246,14 +247,14 @@ export function AutomationEvidenceViewer({
               }}
             >
               <time style={{ color: "#82cada" }}>
-                {auditItem.at}
+                {formatTimestampDisplay(auditItem.at)}
               </time>
 
               <div>
                 <b>{auditItem.label}</b>
 
                 <div style={{ color: "#afd5df" }}>
-                  {auditItem.detail}
+                  {getKnownLimitationDisplayName(auditItem.detail)}
                 </div>
               </div>
             </div>

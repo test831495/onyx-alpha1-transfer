@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts", "./local-simulation": "./src/local-simulation.ts" },
+  "exports": { ".": "./src/index.ts", "./browser": "./src/browser.ts", "./local-simulation": "./src/local-simulation.ts" },
   "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run" },
   "devDependencies": {
     "@types/node": "^26.2.0",
