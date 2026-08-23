@@ -2,6 +2,52 @@ import { useEffect, useRef, useState } from "react";
 import type { AssistantMode, CoreState } from "@onyx/contracts";
 
 const normalize = (value: string) => value.toLowerCase().normalize("NFKD").replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+
+/**
+ * Pure timer state machine for managing diagnostic-reset timeout.
+ * Testable without React/DOM dependencies.
+ */
+export class DiagnosticResetTimer {
+  private timeoutHandle: number | NodeJS.Timeout | null = null;
+
+  /**
+   * Schedule a new diagnostic reset timeout, clearing any existing one.
+   * @param onTimeout Callback to invoke when timeout fires
+   * @param delayMs Delay in milliseconds before invoking callback
+   */
+  schedule(onTimeout: () => void, delayMs: number): void {
+    this.clear();
+    this.timeoutHandle = globalThis.setTimeout(() => {
+      this.timeoutHandle = null;
+      onTimeout();
+    }, delayMs);
+  }
+
+  /**
+   * Clear any pending timeout.
+   */
+  clear(): void {
+    if (this.timeoutHandle !== null) {
+      globalThis.clearTimeout(this.timeoutHandle);
+      this.timeoutHandle = null;
+    }
+  }
+
+  /**
+   * Check if a timeout is currently pending.
+   */
+  isPending(): boolean {
+    return this.timeoutHandle !== null;
+  }
+
+  /**
+   * Get the current timeout handle (for testing).
+   */
+  getHandle(): number | NodeJS.Timeout | null {
+    return this.timeoutHandle;
+  }
+}
+
 export function parseVoice(text: string): { mode: AssistantMode | null; command: string } {
   const value = normalize(text);
   const match = [...value.matchAll(/(?:^|\s)(?:hey\s+)?(nova|nover|onyx|onix|onics)(?:\s|$)/g)].at(-1);
@@ -16,10 +62,12 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
   const [status, setStatus] = useState<CoreState>("idle");
   const [diagnostic, setDiagnostic] = useState(supported ? "MIC READY" : "VOICE UNAVAILABLE · USE TYPED COMMANDS");
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const timerRef = useRef(new DiagnosticResetTimer());
   const commandRef = useRef(onCommand);
   useEffect(() => { commandRef.current = onCommand; }, [onCommand]);
 
   const stopListening = () => {
+    timerRef.current.clear();
     try { recognitionRef.current?.abort(); } catch {}
     recognitionRef.current = null;
     setStatus("idle");
@@ -48,7 +96,7 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
       commandRef.current(parsed.command || heard, parsed.mode);
       const liveDiagnostic = `${parsed.mode ? `MATCHED ${parsed.mode.toUpperCase()} · ` : ""}HEARD “${heard}”`;
       setDiagnostic(liveDiagnostic);
-      window.setTimeout(() => {
+      timerRef.current.schedule(() => {
         setDiagnostic(supported ? "MIC READY" : "VOICE UNAVAILABLE · USE TYPED COMMANDS");
         setStatus("idle");
       }, 1500);
