@@ -14,7 +14,7 @@ These values are deterministic fixture values, not universal production recommen
 
 ## Security boundary
 
-Wave B2 focused tests: PASS, exactly 22 tests. Wave A regression: PASS, 10 tests. Wave B1 regression: PASS, 14 tests. Workspace-wide typecheck: PASS. This is local deterministic implementation only. Candidate account and household inputs receive explicit runtime validation, and malformed candidate scope fails closed. No production session registry or Character Agent Gateway runtime exists; gateway readiness remains prerequisite-only.
+Wave B2 focused tests: PASS, exactly 26 tests. Wave A regression: PASS, 10 tests. Wave B1 regression: PASS, 14 tests. Workspace-wide typecheck: PASS. This is local deterministic implementation only. Candidate account and household inputs receive explicit runtime validation, and malformed candidate scope fails closed. No production session registry or Character Agent Gateway runtime exists; gateway readiness remains prerequisite-only. Policy logic retains an explicit unknown-device deny and a single deterministic assurance-ranking rule with fail-closed rotation and chronology semantics.
 
 Policy does not authenticate users, issue credentials, persist sessions, or expand authority. Unknown device classification, stale versions, unavailable required audit, malformed timestamps, and insufficient assurance fail closed.
 

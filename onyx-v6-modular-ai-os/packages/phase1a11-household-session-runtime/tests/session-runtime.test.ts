@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createSession, evaluateConcurrentSessions, evaluateSession, evaluateStepUp, revokeSession, rotateSession, switchAccount } from "../src";
+import { createSession, evaluateConcurrentSessions, evaluateSession, evaluateStepUp, revokeSession, rotateSession, switchAccount, validateSessionPolicy } from "../src";
 import { sessionCreationInput, sessionVersions, SESSION_POLICY, verifiedAuthentication, identities, accounts } from "../src/fixtures";
 const created = createSession(sessionCreationInput);
 const session = created.session!;
@@ -127,5 +127,45 @@ describe("Wave B2 session foundation", () => {
     expect(result.versionReferences).toEqual(session.versions);
     expect(session.permissionBinding).toEqual({ permissionCatalogVersion: session.versions.permissionCatalogVersion, roleId: session.binding.roleId, roleVersion: session.versions.roleVersion, membershipId: session.binding.membershipId });
     expect(session.timing.absoluteDeadline).toBe("2026-08-23T20:00:00.000Z");
+  });
+  it("uses the explicit assurance ranking and approved elevation rule", () => {
+    expect(evaluation({ requiredAssurance: "standard" }).allowed).toBe(true);
+    expect(evaluation({ session: { ...session, authenticationAssurance: "standard" }, requiredAssurance: "strong" }).technicalReason).toBe("STEP_UP_REQUIRED");
+    expect(evaluation({ session: { ...session, authenticationAssurance: "strong" }, requiredAssurance: "standard" }).allowed).toBe(true);
+    expect(evaluation({ session: { ...session, authenticationAssurance: "strong" }, requiredAssurance: "strong" }).allowed).toBe(true);
+    expect(evaluation({ session: { ...session, status: "elevated", authenticationAssurance: "standard" }, requiredAssurance: "strong" }).allowed).toBe(true);
+    expect(evaluation({ session: { ...session, authenticationAssurance: "unknown" } }).technicalReason).toBe("INVALID_AUTHENTICATION_ASSURANCE");
+    expect(evaluation({ session: { ...session, status: "revoked", authenticationAssurance: "strong" } }).decisionCode).toBe("SESSION_REVOKED");
+    expect(evaluation({ session: { ...session, authenticationAssurance: "strong" }, identity: { ...identities.rahul, membership: { ...identities.rahul.membership, roleId: "STANDARD_FAMILY_MEMBER" } } }).technicalReason).toBe("SESSION_ROLE_BINDING_MISMATCH");
+    expect(evaluation({ session: { ...session, authenticationAssurance: "strong" }, auditAvailable: false }).technicalReason).toBe("AUDIT_UNAVAILABLE");
+    const strongResult = evaluation({ session: { ...session, authenticationAssurance: "strong" }, requiredAssurance: "strong" });
+    expect(strongResult.versionReferences).toEqual(session.versions);
+    expect(strongResult.status).toBe("active");
+  });
+  it("uses deterministic next-deadline rotation semantics and stable family IDs", () => {
+    const createdA = createSession({ ...sessionCreationInput, currentTime: "2026-08-23T12:00:00.000Z", provenanceReference: "rotation-seed-a", creationNonce: "nonce-a" });
+    const createdB = createSession({ ...sessionCreationInput, currentTime: "2026-08-23T12:00:00.000Z", provenanceReference: "rotation-seed-a", creationNonce: "nonce-a" });
+    const createdC = createSession({ ...sessionCreationInput, currentTime: "2026-08-23T12:00:00.000Z", provenanceReference: "rotation-seed-b", creationNonce: "nonce-b" });
+    expect(createdA.session!.sessionId).toBe(createdB.session!.sessionId);
+    expect(createdA.session!.sessionId).not.toBe(createdC.session!.sessionId);
+    expect(createdA.session!.familyId).toBe(createdB.session!.familyId);
+    const rotated = rotateSession({ session: createdA.session!, currentTime: "2026-08-23T12:05:00.000Z", trigger: "scheduled", policy: SESSION_POLICY, rotationSeed: "rotation-seed-a" });
+    expect(rotated.rotated).toBe(true);
+    expect(rotated.newSession!.familyId).toBe(createdA.session!.familyId);
+    expect(rotated.newSession!.sessionId).not.toBe(createdA.session!.sessionId);
+    expect(new Date(rotated.newSession!.timing.rotationAt).getTime()).toBeGreaterThan(new Date("2026-08-23T12:05:00.000Z").getTime());
+    expect(new Date(rotated.newSession!.timing.rotationAt).getTime()).toBe(new Date("2026-08-23T13:05:00.000Z").getTime());
+  });
+  it("returns operation-specific chronology reasons for malformed and early timing", () => {
+    expect(revokeSession({ session: { ...session, timing: { ...session.timing, createdAt: "bad" } }, currentTime: session.timing.createdAt, reason: "logout", ...revocationContext, purpose: "logout", auditAvailable: true }).technicalReason).toBe("INVALID_SESSION_CREATION_TIME");
+    expect(revokeSession({ session, currentTime: "bad", reason: "logout", ...revocationContext, purpose: "logout", auditAvailable: true }).technicalReason).toBe("INVALID_REVOCATION_TIME");
+    expect(revokeSession({ session, currentTime: "2026-08-23T11:59:00.000Z", reason: "logout", ...revocationContext, purpose: "logout", auditAvailable: true }).technicalReason).toBe("REVOCATION_BEFORE_SESSION_CREATION");
+    expect(rotateSession({ session: { ...session, timing: { ...session.timing, createdAt: "bad" } }, currentTime: "2026-08-23T12:05:00.000Z", trigger: "scheduled" }).technicalReason).toBe("INVALID_SESSION_CREATION_TIME");
+    expect(rotateSession({ session, currentTime: "2026-08-23T11:59:00.000Z", trigger: "scheduled" }).technicalReason).toBe("ROTATION_BEFORE_SESSION_CREATION");
+    expect(rotateSession({ session, currentTime: "2026-08-23T12:05:00.000Z", trigger: "scheduled" }).rotated).toBe(true);
+  });
+  it("preserves unknown device deny behavior and explicit policy allowlists", () => {
+    expect(validateSessionPolicy({ ...SESSION_POLICY, sharedDeviceRestrictions: { ...SESSION_POLICY.sharedDeviceRestrictions, classification: "unknown" as never } }, "policy-1").valid).toBe(false);
+    expect(validateSessionPolicy({ ...SESSION_POLICY, allowedAssuranceLevels: ["standard", "strong"] }, "policy-1").valid).toBe(true);
   });
 });

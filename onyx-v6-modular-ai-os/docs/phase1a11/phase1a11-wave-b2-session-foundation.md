@@ -20,7 +20,7 @@ This is local deterministic implementation only. It provides no production authe
 
 ## Validation and recovery
 
-Wave B2 focused tests: PASS, exactly 22 tests. Wave A regression: PASS, 10 tests. Wave B1 regression: PASS, 14 tests. Workspace-wide typecheck: PASS. This is local deterministic implementation only. Candidate account and household inputs receive explicit runtime validation; malformed candidate scope fails closed. Gateway readiness remains prerequisite-only and no Character Agent Gateway runtime exists.
+Wave B2 focused tests: PASS, exactly 26 tests. Wave A regression: PASS, 10 tests. Wave B1 regression: PASS, 14 tests. Workspace-wide typecheck: PASS. This is local deterministic implementation only. Candidate account and household inputs receive explicit runtime validation; malformed candidate scope fails closed. Gateway readiness remains prerequisite-only and no Character Agent Gateway runtime exists. Review remediation corrected explicit assurance ranking, next-deadline rotation semantics, deterministic projection IDs, and operation-specific chronology reasons without adding production authentication or persistence.
 
 See the test-evidence and known-limitations documents. Rollback removes this package, the other three B2 documents, and its lockfile importer. Wave A, Wave B1, and the validated B1 checkpoint remain intact.
 
