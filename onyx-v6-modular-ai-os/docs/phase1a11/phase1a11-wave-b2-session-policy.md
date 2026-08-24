@@ -8,7 +8,7 @@
 
 ## Policy
 
-The fixture policy uses explicit inactivity, absolute, rotation, and elevated-assurance limits; allowed assurance levels; shared-device restrictions; a concurrent-session limit; protected-operation assurance; audit requirement; and `policy-1`.
+The fixture policy uses explicit inactivity, absolute, rotation, and elevated-assurance limits; allowed assurance levels; shared-device restrictions; an account or device-scoped concurrent-session limit; protected-operation assurance; audit requirement; and `policy-1`.
 
 These values are deterministic fixture values, not universal production recommendations. Policy validation rejects malformed, negative, zero, inconsistent, stale, unknown, and unsupported values.
 

@@ -10,7 +10,7 @@
 
 This runtime is a deterministic local projection. It does not authenticate users, generate production secrets, issue cookies or bearer tokens, persist sessions, use a database or Redis, call connectors, retrieve Project Journey history, run Council or break-glass flows, render UI, or deploy.
 
-Concurrent-session handling is policy projection only and has no persistent registry. Device classification is supplied input and is not fingerprinting. Rotation uses deterministic fixture identifiers and cannot be treated as production secret generation. Friendly fields omit raw session identifiers, while technical result codes remain available to permitted callers.
+Concurrent-session handling is policy projection only and has no persistent registry. Account and device scope, typed references, status, ordering, and replacement eligibility are supplied local inputs and are not a session registry. Device classification is supplied input and is not fingerprinting. Rotation uses deterministic fixture identifiers and cannot be treated as production secret generation. Friendly fields omit raw session identifiers, while technical result codes remain available to permitted callers.
 
 Exact expiry boundaries are deterministic and deny at the deadline. Session creation requires a verified input fact but never verifies credentials. No NIST or OWASP certification is claimed.
 

@@ -48,7 +48,13 @@ export function rotateSession(request: SessionRotationRequest): SessionRotationR
 }
 export function revokeSession(request: SessionRevocationRequest): SessionRevocationResult {
   if (!request.reason) return { revoked: false, session: request.session, decisionCode: "REVOCATION_REASON_REQUIRED", technicalReason: "REVOCATION_REASON_REQUIRED" };
-  if (invalidTime(request.currentTime) || parsed(request.currentTime) < parsed(request.session.timing.createdAt)) return { revoked: false, session: request.session, decisionCode: "INVALID_SESSION_TIME", technicalReason: "INVALID_SESSION_TIME" };
+  const creationTime = parsed(request.session.timing.createdAt);
+  const revocationTime = parsed(request.currentTime);
+  if (Number.isNaN(creationTime)) return { revoked: false, session: request.session, decisionCode: "INVALID_SESSION_CREATION_TIME", technicalReason: "INVALID_SESSION_CREATION_TIME" };
+  if (Number.isNaN(revocationTime)) return { revoked: false, session: request.session, decisionCode: "INVALID_REVOCATION_TIME", technicalReason: "INVALID_REVOCATION_TIME" };
+  if (revocationTime < creationTime) return { revoked: false, session: request.session, decisionCode: "REVOCATION_BEFORE_SESSION_CREATION", technicalReason: "REVOCATION_BEFORE_SESSION_CREATION" };
+  const sessionTimes = [request.session.timing.lastActivityAt, request.session.timing.inactivityDeadline, request.session.timing.absoluteDeadline, request.session.timing.rotationAt].map(parsed);
+  if (sessionTimes.some(Number.isNaN)) return { revoked: false, session: request.session, decisionCode: "INVALID_SESSION_TIME", technicalReason: "INVALID_SESSION_TIME" };
   if (request.session.binding.accountId !== request.actorAccountId) return { revoked: false, session: request.session, decisionCode: "CROSS_ACCOUNT_REVOCATION_DENIED", technicalReason: "CROSS_ACCOUNT_REVOCATION_DENIED" };
   if (request.session.binding.roleId === "DEVICE_SERVICE_IDENTITY") return { revoked: false, session: request.session, decisionCode: "DEVICE_REVOCATION_DENIED", technicalReason: "DEVICE_REVOCATION_DENIED" };
   if (request.session.audit.required && !request.auditAvailable) return { revoked: false, session: request.session, decisionCode: "AUDIT_UNAVAILABLE", technicalReason: "AUDIT_UNAVAILABLE" };
@@ -56,10 +62,19 @@ export function revokeSession(request: SessionRevocationRequest): SessionRevocat
 }
 const cleanup: CleanupManifest = { privateAccountContext: true, projectJourneyResults: true, connectorContext: true, conversationContext: true, memoryContext: true, technicalInformationDetails: true, accountBoundCharacterPreferences: true, generatedDocumentProjections: true, retrievedEvidenceProjections: true, pendingCharacterAgentGatewayRequestContext: true, pendingContributionEnvelopeContext: true };
 
-export function evaluateConcurrentSessions(policy: ConcurrentSessionPolicy, accountId: AccountId, activeSessions: ConcurrentSessionReference[], candidateDeviceClassification: SessionRecord["sharedDevice"]): ConcurrentSessionEvaluation {
-  if (!Number.isInteger(policy.concurrentSessionLimit) || policy.concurrentSessionLimit < 1 || candidateDeviceClassification === "unknown") return { allowed: false, decisionCode: "CONCURRENCY_UNCERTAIN", technicalReason: "CONCURRENCY_UNCERTAIN" };
-  if (activeSessions.some((reference) => reference.accountId !== accountId)) return { allowed: false, decisionCode: "CROSS_ACCOUNT_CONCURRENCY_DENIED", technicalReason: "CROSS_ACCOUNT_CONCURRENCY_DENIED" };
-  return activeSessions.length < policy.concurrentSessionLimit ? { allowed: true, decisionCode: "CONCURRENT_SESSION_ALLOWED", technicalReason: "CONCURRENT_SESSION_ALLOWED" } : { allowed: false, decisionCode: "CONCURRENT_SESSION_LIMIT_REACHED", replaceSessionId: activeSessions[0]!.sessionId, technicalReason: "CONCURRENT_SESSION_LIMIT_REACHED" };
+export function evaluateConcurrentSessions(policy: ConcurrentSessionPolicy, accountId: AccountId, householdId: string, activeSessions: ConcurrentSessionReference[], candidateDeviceContextId: string, candidateRoleId: string, candidateIdentityKind: ConcurrentSessionReference["identityKind"]): ConcurrentSessionEvaluation {
+  if (!Number.isInteger(policy.concurrentSessionLimit) || policy.concurrentSessionLimit < 1 || !candidateDeviceContextId || !candidateRoleId || candidateIdentityKind === "character") return { allowed: false, decisionCode: "CONCURRENCY_UNCERTAIN", technicalReason: "CONCURRENCY_UNCERTAIN" };
+  for (const reference of activeSessions) {
+    if (!reference.sessionId || !reference.accountId || !reference.householdId || !reference.deviceContextId || !reference.createdAt || !reference.roleId || !reference.status || !Number.isFinite(parsed(reference.createdAt))) return { allowed: false, decisionCode: "CONCURRENCY_UNCERTAIN", technicalReason: "CONCURRENCY_UNCERTAIN" };
+    if (reference.accountId !== accountId) return { allowed: false, decisionCode: "CROSS_ACCOUNT_CONCURRENCY_DENIED", technicalReason: "CROSS_ACCOUNT_CONCURRENCY_DENIED" };
+    if (reference.householdId !== householdId) return { allowed: false, decisionCode: "CROSS_HOUSEHOLD_CONCURRENCY_DENIED", technicalReason: "CROSS_HOUSEHOLD_CONCURRENCY_DENIED" };
+    if (reference.status !== "active") return { allowed: false, decisionCode: "CONCURRENCY_UNCERTAIN", technicalReason: "CONCURRENCY_UNCERTAIN" };
+  }
+  const scopedSessions = policy.concurrentSessionScope === "device" ? activeSessions.filter((reference) => reference.deviceContextId === candidateDeviceContextId) : activeSessions;
+  const eligible = scopedSessions.filter((reference) => reference.replacementEligible && !(candidateIdentityKind !== "human" && reference.identityKind === "human") && !(candidateRoleId !== "PRIMARY_OWNER" && reference.roleId === "PRIMARY_OWNER"));
+  if (scopedSessions.length < policy.concurrentSessionLimit) return { allowed: true, decisionCode: "CONCURRENT_SESSION_ALLOWED", technicalReason: "CONCURRENT_SESSION_ALLOWED" };
+  if (eligible.length === 0) return { allowed: false, decisionCode: "CONCURRENT_SESSION_LIMIT_REACHED", technicalReason: "CONCURRENT_SESSION_LIMIT_REACHED" };
+  return { allowed: false, decisionCode: "CONCURRENT_SESSION_REPLACEMENT_REQUIRED", replaceSessionId: eligible[0]!.sessionId, technicalReason: "CONCURRENT_SESSION_REPLACEMENT_REQUIRED" };
 }
 export function switchAccount(request: AccountSwitchRequest): AccountSwitchResult {
   const auth = request.targetAuthentication;
