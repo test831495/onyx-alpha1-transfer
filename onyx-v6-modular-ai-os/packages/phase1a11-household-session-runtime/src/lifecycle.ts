@@ -67,7 +67,10 @@ export function evaluateConcurrentSessions(policy: ConcurrentSessionPolicy, acco
   const validStatuses = ["active"];
   const validRoles = ["PRIMARY_OWNER", "HOUSEHOLD_ADMINISTRATOR", "STANDARD_FAMILY_MEMBER", "SUPERVISED_MEMBER", "GUEST", "DEVICE_SERVICE_IDENTITY"];
   const validKinds = ["human", "device", "service", "character"];
-  if (!Number.isInteger(policy.concurrentSessionLimit) || policy.concurrentSessionLimit < 1 || !candidateDeviceContextId.startsWith("device-context_") || !candidateRoleId || !validRoles.includes(candidateRoleId) || !validKinds.includes(candidateIdentityKind)) return { allowed: false, decisionCode: "CONCURRENCY_UNCERTAIN", technicalReason: "CONCURRENCY_UNCERTAIN" };
+  const candidateFailure = (decisionCode: string, explanation: string): ConcurrentSessionEvaluation => ({ allowed: false, decisionCode, technicalReason: decisionCode, title: "Session cannot be verified", explanation, safeNextAction: "Verify your account and device, then try again." });
+  if (!/^account_[A-Za-z0-9_-]+$/.test(accountId)) return candidateFailure("INVALID_CANDIDATE_ACCOUNT_ID", "The account scope could not be verified.");
+  if (!/^household_[A-Za-z0-9_-]+$/.test(householdId)) return candidateFailure("INVALID_CANDIDATE_HOUSEHOLD_ID", "The household scope could not be verified.");
+  if (!Number.isInteger(policy.concurrentSessionLimit) || policy.concurrentSessionLimit < 1 || !candidateDeviceContextId.startsWith("device-context_") || !candidateRoleId || !validRoles.includes(candidateRoleId) || !validKinds.includes(candidateIdentityKind)) return candidateFailure("CONCURRENCY_UNCERTAIN", "The session scope could not be verified.");
   const seen = new Set<string>();
   for (const reference of activeSessions) {
     if (!/^session_[A-Za-z0-9_-]+$/.test(reference.sessionId) || !/^account_[A-Za-z0-9_-]+$/.test(reference.accountId) || !/^household_[A-Za-z0-9_-]+$/.test(reference.householdId) || !/^device-context_[A-Za-z0-9_-]+$/.test(reference.deviceContextId) || !Number.isFinite(parsed(reference.createdAt)) || !validStatuses.includes(reference.status) || !validRoles.includes(reference.roleId) || !validKinds.includes(reference.identityKind) || typeof reference.replacementEligible !== "boolean" || seen.has(reference.sessionId)) return { allowed: false, decisionCode: "CONCURRENCY_UNCERTAIN", technicalReason: "CONCURRENCY_UNCERTAIN" };

@@ -49,6 +49,12 @@ describe("Wave B2 session foundation", () => {
     expect(evaluateConcurrentSessions(SESSION_POLICY, session.binding.accountId, session.binding.householdId, [{ ...reference, accountId: accounts.family.accountId }], session.binding.deviceContextId, session.binding.roleId, "human").decisionCode).toBe("CROSS_ACCOUNT_CONCURRENCY_DENIED");
     expect(evaluateConcurrentSessions(SESSION_POLICY, session.binding.accountId, "household_other", [reference], session.binding.deviceContextId, session.binding.roleId, "human").decisionCode).toBe("CROSS_HOUSEHOLD_CONCURRENCY_DENIED");
     expect(evaluateConcurrentSessions(SESSION_POLICY, session.binding.accountId, session.binding.householdId, [], session.binding.deviceContextId, session.binding.roleId, "human").allowed).toBe(true);
+    expect(evaluateConcurrentSessions(SESSION_POLICY, "bad" as never, session.binding.householdId, [], session.binding.deviceContextId, session.binding.roleId, "human")).toMatchObject({ decisionCode: "INVALID_CANDIDATE_ACCOUNT_ID", allowed: false, safeNextAction: expect.any(String) });
+    expect(evaluateConcurrentSessions(SESSION_POLICY, "" as never, session.binding.householdId, [reference], session.binding.deviceContextId, session.binding.roleId, "human").decisionCode).toBe("INVALID_CANDIDATE_ACCOUNT_ID");
+    expect(evaluateConcurrentSessions(SESSION_POLICY, session.binding.accountId, "bad", [], session.binding.deviceContextId, session.binding.roleId, "human")).toMatchObject({ decisionCode: "INVALID_CANDIDATE_HOUSEHOLD_ID", allowed: false, explanation: expect.any(String) });
+    expect(evaluateConcurrentSessions(SESSION_POLICY, session.binding.accountId, "", [reference], session.binding.deviceContextId, session.binding.roleId, "human").decisionCode).toBe("INVALID_CANDIDATE_HOUSEHOLD_ID");
+    expect(evaluateConcurrentSessions(SESSION_POLICY, "bad" as never, "bad", [reference], session.binding.deviceContextId, session.binding.roleId, "human").decisionCode).toBe("INVALID_CANDIDATE_ACCOUNT_ID");
+    expect(evaluateConcurrentSessions(SESSION_POLICY, session.binding.accountId, "household_other", [reference], session.binding.deviceContextId, session.binding.roleId, "human").decisionCode).toBe("CROSS_HOUSEHOLD_CONCURRENCY_DENIED");
     expect(evaluateConcurrentSessions({ ...SESSION_POLICY, concurrentSessionScope: "device" }, session.binding.accountId, session.binding.householdId, [reference], "device-context_other", session.binding.roleId, "human").allowed).toBe(true);
   });
   it("blocks terminal sessions before step-up and enforces role and audit bindings", () => {

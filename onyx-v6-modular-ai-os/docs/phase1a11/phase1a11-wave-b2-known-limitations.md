@@ -18,4 +18,6 @@ Exact expiry boundaries are deterministic and deny at the deadline. Session crea
 
 ## Recovery and rollback
 
+Wave B2 focused tests: PASS, exactly 22 tests. Wave A regression: PASS, 10 tests. Wave B1 regression: PASS, 14 tests. Workspace-wide typecheck: PASS. This is local deterministic implementation only. Candidate account and household inputs receive explicit runtime validation, and malformed candidate scope fails closed. No production session registry or Character Agent Gateway runtime exists; gateway readiness remains prerequisite-only.
+
 Verify identity and reauthenticate through a later runtime. Rollback removes only the B2 package, its four documents, and lockfile importer; Wave A, Wave B1, and the B1 checkpoint remain.
