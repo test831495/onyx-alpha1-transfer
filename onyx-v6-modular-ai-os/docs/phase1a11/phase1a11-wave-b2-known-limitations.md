@@ -12,6 +12,8 @@ This runtime is a deterministic local projection. It does not authenticate users
 
 Concurrent-session handling is policy projection only and has no persistent registry. Account and device scope, typed references, status, ordering, and replacement eligibility are supplied local inputs and are not a session registry. Device classification is supplied input and is not fingerprinting. Rotation uses deterministic fixture identifiers and cannot be treated as production secret generation. Friendly fields omit raw session identifiers, while technical result codes remain available to permitted callers.
 
+Chronology validation and revocation scope validation fail closed before lifecycle mutation. Permission binding remains referential to current Wave B1 versions and membership identity; it is not a permission snapshot or authorization source. Character Agent Gateway support is limited to account-bound prerequisites and cleanup projection fields. No gateway runtime, approval authority, or execution authority exists here.
+
 Exact expiry boundaries are deterministic and deny at the deadline. Session creation requires a verified input fact but never verifies credentials. No NIST or OWASP certification is claimed.
 
 ## Recovery and rollback

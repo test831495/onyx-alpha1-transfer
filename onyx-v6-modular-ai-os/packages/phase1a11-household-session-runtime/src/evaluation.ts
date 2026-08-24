@@ -18,6 +18,7 @@ export function evaluateSession(input: SessionEvaluationInput): SessionEvaluatio
   if (input.session.status === "expired-by-inactivity" || now >= time(input.session.timing.inactivityDeadline)) return invalid("SESSION_EXPIRED_INACTIVITY", input, "expired-by-inactivity");
   if (input.session.status !== "active" && input.session.status !== "elevated" && input.session.status !== "rotation-required") return invalid("UNKNOWN_SESSION_STATUS", input);
   if (JSON.stringify(input.session.versions) !== JSON.stringify(input.expectedVersions)) return invalid("STALE_SESSION_VERSION", input);
+    if (!input.session.permissionBinding || input.session.permissionBinding.permissionCatalogVersion !== input.expectedVersions.permissionCatalogVersion || input.session.permissionBinding.roleVersion !== input.expectedVersions.roleVersion || input.session.permissionBinding.roleId !== input.identity.membership.roleId || input.session.permissionBinding.membershipId !== input.identity.membership.membershipId) return invalid("STALE_SESSION_VERSION", input);
   if (input.deviceClassification === "unknown" || (input.deviceClassification !== "private" && input.session.sharedDevice !== input.deviceClassification)) return invalid("SHARED_DEVICE_RESTRICTED", input);
   const rotation = now >= time(input.session.timing.rotationAt) || input.session.status === "rotation-required";
   if (input.session.audit.required && !input.auditAvailable) return invalid("AUDIT_UNAVAILABLE", input);

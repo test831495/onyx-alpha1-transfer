@@ -12,7 +12,7 @@ Provide a deterministic local session-lifecycle projection over verified Wave B1
 
 ## Implemented behavior
 
-The package creates, evaluates, rotates, revokes, and replaces typed session records. It models inactivity and absolute expiry, terminal-safe step-up grants, role binding, shared-device restrictions, account and device-scoped concurrent-session policy inputs, audit requirements, cleanup manifests, and provenance without persistence or side effects.
+The package creates, evaluates, rotates, revokes, and replaces typed session records. It models shared fail-closed chronology validation, inactivity and absolute expiry, terminal-safe step-up grants, role and referential permission binding, explicit revocation scopes, shared-device restrictions, account and device-scoped concurrent-session references, audit requirements, cleanup manifests, and provenance without persistence or side effects.
 
 ## Boundaries
 
