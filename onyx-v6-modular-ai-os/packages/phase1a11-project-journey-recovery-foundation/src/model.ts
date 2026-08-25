@@ -2,7 +2,7 @@ export const OPERATING_MODES = ["ACTIVE", "LIGHT", "VACATION", "HIBERNATION"] as
 export type OperatingMode = (typeof OPERATING_MODES)[number];
 export const createsAuthority = false as const;
 
-export type AcceptanceFamily = "JOURNEY" | "RECOVERY" | "INTEGRITY" | "ARCHIVE";
+export type AcceptanceFamily = "JOURNEY" | "RECOVERY" | "INTEGRITY" | "ARCHIVE" | "CAPTURE";
 export type AcceptanceStatus =
   | "CONTRACT_DEFINED"
   | "POLICY_VALIDATED"
@@ -38,7 +38,10 @@ export const ACCEPTANCE_IDS = [
   "INTEGRITY-001", "INTEGRITY-002", "INTEGRITY-003", "INTEGRITY-004", "INTEGRITY-005", "INTEGRITY-006", "INTEGRITY-007", "INTEGRITY-008",
   "INTEGRITY-009", "INTEGRITY-010", "INTEGRITY-011", "INTEGRITY-012", "INTEGRITY-013", "INTEGRITY-014", "INTEGRITY-015", "INTEGRITY-016",
   "ARCHIVE-001", "ARCHIVE-002", "ARCHIVE-003", "ARCHIVE-004", "ARCHIVE-005", "ARCHIVE-006", "ARCHIVE-007", "ARCHIVE-008",
-  "ARCHIVE-009", "ARCHIVE-010", "ARCHIVE-011", "ARCHIVE-012", "ARCHIVE-013", "ARCHIVE-014", "ARCHIVE-015", "ARCHIVE-016"
+  "ARCHIVE-009", "ARCHIVE-010", "ARCHIVE-011", "ARCHIVE-012", "ARCHIVE-013", "ARCHIVE-014", "ARCHIVE-015", "ARCHIVE-016",
+  "CAPTURE-001", "CAPTURE-002", "CAPTURE-003", "CAPTURE-004", "CAPTURE-005", "CAPTURE-006", "CAPTURE-007", "CAPTURE-008",
+  "CAPTURE-009", "CAPTURE-010", "CAPTURE-011", "CAPTURE-012", "CAPTURE-013", "CAPTURE-014", "CAPTURE-015", "CAPTURE-016",
+  "CAPTURE-017", "CAPTURE-018", "CAPTURE-019", "CAPTURE-020", "CAPTURE-021", "CAPTURE-022", "CAPTURE-023", "CAPTURE-024"
 ] as const;
 export type AcceptanceId = (typeof ACCEPTANCE_IDS)[number];
 export type ExternalDependencyIdentifier =
@@ -51,12 +54,12 @@ export type ExternalDependencyIdentifier =
 export type DependencyIdentifier = AcceptanceId | ExternalDependencyIdentifier;
 
 export interface TechnicalInformationMetadata {
-  available: boolean;
-  defaultVisible: false;
-  notes: string;
+  readonly available: boolean;
+  readonly defaultVisible: false;
+  readonly notes: string;
 }
 
-export interface NonAuthorityMarker { createsAuthority: false; }
+export interface NonAuthorityMarker { readonly createsAuthority: false; }
 export type EvidenceSourceClass = "REPOSITORY_RECORD" | "OWNER_RECORD" | "SYNTHETIC_FIXTURE" | "UNKNOWN";
 export type PrivacyClassification = "OWNER_ONLY" | "CURATED_BASIC" | "SAFE_METADATA";
 export interface OwnerOnlyAccessMetadata extends NonAuthorityMarker {
