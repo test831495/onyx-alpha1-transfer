@@ -4,6 +4,7 @@ export * from "./acceptance-registry";
 export * from "./fixtures";
 export * from "./journey-events";
 export * from "./recovery-metadata";
+export * from "./recovery-completeness-policy";
 export * from "./capture-policy";
 export * from "./capture-policy-labels";
 export {
