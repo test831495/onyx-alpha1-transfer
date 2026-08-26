@@ -37,6 +37,18 @@ const SENSITIVITIES = [
   "PROHIBITED_PRIVATE_HOUSEHOLD_CONTENT", "PROHIBITED_CAMERA_OR_BIOMETRIC_CONTENT", "UNKNOWN_SENSITIVITY",
 ] as const;
 const hasText = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
+const opaqueReferencePattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
+const isOpaqueIdentifierOrReference = (value: unknown): value is string =>
+  typeof value === "string" && opaqueReferencePattern.test(value);
+const isBoundedSafeText = (value: unknown): value is string => {
+  if (typeof value !== "string" || value.length === 0 || value.length > 256 || value !== value.trim()) return false;
+  if (/[[\]{}<>`;$|\\]|[\u0000-\u001F\u007F]/.test(value)) return false;
+  if (/[?#%]/.test(value) || /(?:^|\b)[A-Za-z][A-Za-z0-9+.-]*:/.test(value)) return false;
+  if (/^(?:\.{1,2}\/|\/|[A-Za-z]:[\\/])/.test(value)) return false;
+  if (/(?:^|\s)[A-Za-z0-9_.-]+[ \t]*=/.test(value) || /\b[\w.-]+:[^\s]+@/i.test(value)) return false;
+  if (/\b(?:command|execute|execution|restore|run)\b/i.test(value)) return false;
+  return true;
+};
 const isOneOf = <T extends string>(values: readonly T[], value: unknown): value is T =>
   typeof value === "string" && values.includes(value as T);
 const result = (state: RecoveryMetadataValidationState, reasons: readonly string[], value?: Readonly<Record<string, unknown>>): RecoveryMetadataValidationResult =>
@@ -60,7 +72,6 @@ const artifactKeys = ["referenceId", "artifactClass", "providerNeutralReference"
 const evidenceKeys = ["evidenceId", "evidenceType", "provenanceReference", "presence", "sensitivity", "policyVersion", "createsAuthority"] as const;
 const validationKeys = ["descriptorId", "purpose", "evidenceExpectations", "missingEvidenceOutcome", "policyVersion", "createsAuthority"] as const;
 const expectationKeys = ["evidenceType", "requirement"] as const;
-const referencePattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const copyRecord = (value: Record<string, unknown>): Readonly<Record<string, unknown>> =>
   boundedFreeze({ ...value });
 
@@ -73,6 +84,10 @@ export const validateRecoveryMetadataDescriptor = (value: RecoveryMetadataDescri
   const input = value as unknown;
   const reasons = validateBase(input, ["metadataId", "classification", "policyVersion"], descriptorKeys);
   if (!isPlainRecord(input)) return result("INVALID", reasons);
+  if (!isOpaqueIdentifierOrReference(input.metadataId)) reasons.push("metadataId must be an opaque identifier");
+  if (!isOpaqueIdentifierOrReference(input.classification)) reasons.push("classification must be an opaque identifier");
+  if (!isOpaqueIdentifierOrReference(input.policyVersion)) reasons.push("policyVersion must be an opaque identifier");
+  if (input.sourceReference !== undefined && !isOpaqueIdentifierOrReference(input.sourceReference)) reasons.push("sourceReference must be an opaque identifier");
   if (!isOneOf(METADATA_KINDS, input.metadataKind)) reasons.push("metadataKind is unsupported");
   if (!isOneOf(SENSITIVITIES, input.sensitivity)) reasons.push("sensitivity is unsupported");
   return result(reasons.length === 0 ? "VALID" : "INVALID", reasons, reasons.length === 0 ? copyRecord(input) : undefined);
@@ -82,9 +97,10 @@ export const validateRecoveryArtifactReference = (value: RecoveryArtifactReferen
   const input = value as unknown;
   const reasons = validateBase(input, ["referenceId", "providerNeutralReference"], artifactKeys);
   if (!isPlainRecord(input)) return result("INVALID", reasons);
+  if (!isOpaqueIdentifierOrReference(input.referenceId)) reasons.push("referenceId must be an opaque identifier");
   if (!isOneOf(ARTIFACT_CLASSES, input.artifactClass)) reasons.push("artifactClass is unsupported");
   if (!isOneOf(SENSITIVITIES, input.sensitivity)) reasons.push("sensitivity is unsupported");
-  if (!referencePattern.test(String(input.providerNeutralReference))) reasons.push("providerNeutralReference must be an opaque identifier");
+  if (!isOpaqueIdentifierOrReference(input.providerNeutralReference)) reasons.push("providerNeutralReference must be an opaque identifier");
   return result(reasons.length === 0 ? "VALID" : "INVALID", reasons, reasons.length === 0 ? copyRecord(input) : undefined);
 };
 
@@ -92,6 +108,10 @@ export const validateRecoveryEvidenceReference = (value: RecoveryEvidenceReferen
   const input = value as unknown;
   const reasons = validateBase(input, ["evidenceId", "evidenceType", "provenanceReference", "policyVersion"], evidenceKeys);
   if (!isPlainRecord(input)) return result("INVALID", reasons);
+  if (!isOpaqueIdentifierOrReference(input.evidenceId)) reasons.push("evidenceId must be an opaque identifier");
+  if (!isOpaqueIdentifierOrReference(input.evidenceType)) reasons.push("evidenceType must be an opaque identifier");
+  if (!isOpaqueIdentifierOrReference(input.provenanceReference)) reasons.push("provenanceReference must be an opaque identifier");
+  if (!isOpaqueIdentifierOrReference(input.policyVersion)) reasons.push("policyVersion must be an opaque identifier");
   if (!isOneOf(PRESENCE_STATES, input.presence)) reasons.push("presence is unsupported");
   if (!isOneOf(SENSITIVITIES, input.sensitivity)) reasons.push("sensitivity is unsupported");
   return result(reasons.length === 0 ? "VALID" : "INVALID", reasons, reasons.length === 0 ? copyRecord(input) : undefined);
@@ -101,12 +121,16 @@ export const validateRecoveryValidationDescriptor = (value: RecoveryValidationDe
   const input = value as unknown;
   const reasons = validateBase(input, ["descriptorId", "purpose", "missingEvidenceOutcome", "policyVersion"], validationKeys);
   if (!isPlainRecord(input)) return result("INVALID", reasons);
+  if (!isOpaqueIdentifierOrReference(input.descriptorId)) reasons.push("descriptorId must be an opaque identifier");
+  if (!isBoundedSafeText(input.purpose)) reasons.push("purpose must be bounded safe text");
+  if (!isBoundedSafeText(input.missingEvidenceOutcome)) reasons.push("missingEvidenceOutcome must be bounded safe text");
+  if (!isOpaqueIdentifierOrReference(input.policyVersion)) reasons.push("policyVersion must be an opaque identifier");
   const expectations = input.evidenceExpectations;
   if (!Array.isArray(expectations)) reasons.push("evidenceExpectations must be an array");
   else expectations.forEach((expectation: RecoveryEvidenceExpectation) => {
     if (!isPlainRecord(expectation) || !hasOnlyKeys(expectation, expectationKeys)) reasons.push("evidence expectation is malformed");
     else {
-      if (!hasText(expectation.evidenceType)) reasons.push("evidenceType is required");
+      if (!isOpaqueIdentifierOrReference(expectation.evidenceType)) reasons.push("evidenceType must be an opaque identifier");
       if (!isOneOf(REQUIREMENTS, expectation.requirement)) reasons.push("requirement is unsupported");
     }
   });

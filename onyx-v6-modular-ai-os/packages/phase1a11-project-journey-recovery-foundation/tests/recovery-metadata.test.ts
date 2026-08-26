@@ -42,6 +42,35 @@ describe("B4-4A.1 recovery metadata", () => {
     }
     expect(validateRecoveryArtifactReference(artifact({ credentialBlob: "x" })).state).toBe("INVALID");
   });
+  it("rejects unsafe opaque identifiers and references in every contract", () => {
+    const unsafe = ["https://example.test", "https://user:password@example.test/a", "file:///tmp/private", "../private/path", "/absolute/path", "ref?token=value", "ref#fragment", "ref%2Fsecret", "token=value", "value with spaces", "value\u0001control", "a".repeat(129)];
+    const cases: Array<[string, (value: string) => unknown]> = [
+      ["metadataId", (value) => validateRecoveryMetadataDescriptor(descriptor({ metadataId: value }))],
+      ["classification", (value) => validateRecoveryMetadataDescriptor(descriptor({ classification: value }))],
+      ["policyVersion", (value) => validateRecoveryMetadataDescriptor(descriptor({ policyVersion: value }))],
+      ["sourceReference", (value) => validateRecoveryMetadataDescriptor(descriptor({ sourceReference: value }))],
+      ["referenceId", (value) => validateRecoveryArtifactReference(artifact({ referenceId: value }))],
+      ["providerNeutralReference", (value) => validateRecoveryArtifactReference(artifact({ providerNeutralReference: value }))],
+      ["evidenceId", (value) => validateRecoveryEvidenceReference(evidence({ evidenceId: value }))],
+      ["evidenceType", (value) => validateRecoveryEvidenceReference(evidence({ evidenceType: value }))],
+      ["provenanceReference", (value) => validateRecoveryEvidenceReference(evidence({ provenanceReference: value }))],
+      ["evidence policyVersion", (value) => validateRecoveryEvidenceReference(evidence({ policyVersion: value }))],
+      ["descriptorId", (value) => validateRecoveryValidationDescriptor(validation(undefined, { descriptorId: value }))],
+      ["expectation evidenceType", (value) => validateRecoveryValidationDescriptor(validation([{ evidenceType: value, requirement: "REQUIRED" }]))],
+      ["validation policyVersion", (value) => validateRecoveryValidationDescriptor(validation(undefined, { policyVersion: value }))],
+    ];
+    for (const [field, validate] of cases) for (const value of unsafe) expect(validate(value), `${field}: ${JSON.stringify(value)}`).toMatchObject({ state: "INVALID" });
+  });
+  it("accepts bounded descriptions and rejects unsafe description forms", () => {
+    for (const value of ["recovery evidence is incomplete", "required evidence is missing", "validation remains not assessable", "recovery status is missing", "metadata mode remains active"]) {
+      expect(validateRecoveryValidationDescriptor(validation(undefined, { purpose: value, missingEvidenceOutcome: value })).state).toBe("VALID");
+    }
+    for (const value of ["https://example.test", "https://user:password@example.test/a", "file:///tmp/private", "urn:recovery:metadata", "custom-scheme:value", "mailto:user@example.test", "data:text/plain,value", "../private/path", "/absolute/path", "ref?token=value", "ref#fragment", "ref%2Fsecret", "password=secret", "status=missing", "key=value", "mode = active", "payload={value}", "{\"payload\":true}", "<payload>", "command --restore", "restore from backup", "value\u0001control", " leading", "trailing ", "a".repeat(257)]) {
+      expect(validateRecoveryValidationDescriptor(validation(undefined, { purpose: value })).state, `purpose: ${JSON.stringify(value)}`).toBe("INVALID");
+      expect(validateRecoveryValidationDescriptor(validation(undefined, { missingEvidenceOutcome: value })).state, `missingEvidenceOutcome: ${JSON.stringify(value)}`).toBe("INVALID");
+    }
+    expect(validateRecoveryValidationDescriptor(validation(undefined, { purpose: "a".repeat(256), missingEvidenceOutcome: "a".repeat(256) })).state).toBe("VALID");
+  });
   it("preserves every closed evidence presence state and rejects unknown fields", () => {
     for (const presence of RECOVERY_EVIDENCE_PRESENCE_STATES) expect(validateRecoveryEvidenceReference(evidence({ presence })).state).toBe("VALID");
     expect(validateRecoveryEvidenceReference(evidence({ presence: "UNKNOWN" })).state).toBe("INVALID");
