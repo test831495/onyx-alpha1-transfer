@@ -227,6 +227,38 @@ describe("B4-4A.2 recovery completeness policy", () => {
     expect(validateRecoveryCompletenessAssessmentInput(input({ gaps: [gap({ evidenceReference: "bad ref" })] })).state).toBe("INVALID");
   });
 
+  it("rejects symbol-bearing assessment arrays without mutating caller input", () => {
+    const fields = [
+      "gaps",
+      "restorationDependencies",
+      "prohibitedContentFindings",
+      "portabilityEvidence",
+      "cryptoMigrationEvidence",
+      "deviceLifecycleEvidence",
+      "tombstoneReferences",
+      "revocationReferences",
+      "blockedByReferences",
+    ] as const;
+
+    expect(validateRecoveryCompletenessAssessmentInput(input()).state).toBe("VALID");
+    for (const field of fields) {
+      const candidate = input();
+      const collection = candidate[field] as unknown[];
+      const symbol = Symbol(field);
+      Object.defineProperty(collection, symbol, { enumerable: true, value: "synthetic" });
+      const before = JSON.stringify(candidate);
+      const first = validateRecoveryCompletenessAssessmentInput(candidate);
+      const second = validateRecoveryCompletenessAssessmentInput(candidate);
+
+      expect(first.state).toBe("INVALID");
+      expect(first).toEqual(second);
+      expect(first.createsAuthority).toBe(false);
+      expect(first.value).toBeUndefined();
+      expect(JSON.stringify(candidate)).toBe(before);
+      expect(Object.getOwnPropertySymbols(collection)).toContain(symbol);
+    }
+  });
+
   it("accepts opaque identifiers at length 128", () => {
     const longValue = `a${"b".repeat(127)}`;
     expect(validateRecoveryCompletenessGap(gap({ requirementId: longValue, evidenceReference: longValue })).state).toBe("VALID");

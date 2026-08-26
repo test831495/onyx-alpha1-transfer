@@ -147,6 +147,7 @@ const hasOnlyKeys = (value: Record<string, unknown>, allowed: readonly string[])
 const hasDenseIndexesOnly = (array: readonly unknown[]): boolean => {
   const names = Object.getOwnPropertyNames(array);
   if (!names.every((name) => name === "length" || (Number.isInteger(Number(name)) && Number(name) >= 0 && Number(name) < array.length))) return false;
+  if (Object.getOwnPropertySymbols(array).length !== 0) return false;
   return names.filter((name) => name !== "length").length === array.length;
 };
 const validateBase = (value: unknown, required: readonly string[], allowed: readonly string[]): string[] => {
