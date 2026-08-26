@@ -26,13 +26,20 @@ const stableFingerprint = (value: unknown): string => {
   for (const character of JSON.stringify(value)) { hash ^= character.codePointAt(0) ?? 0; hash = Math.imul(hash, 16777619); }
   return (hash >>> 0).toString(16).padStart(8, "0");
 };
+const FROZEN_B4_1_B4_3_BASELINE: ReadonlyArray<readonly [string, string]> = [
+  ...FROZEN_B4_1_B4_2_BASELINE,
+  ["CONTINUITY-001", "da00006d"], ["CONTINUITY-002", "3d9b405f"], ["CONTINUITY-003", "d8c13475"], ["CONTINUITY-004", "48b73c8b"], ["CONTINUITY-005", "b4ff94ec"],
+  ["CONTINUITY-006", "ca4d90f8"], ["CONTINUITY-007", "1a851331"], ["CONTINUITY-008", "fb37c8e5"], ["CONTINUITY-009", "da037a94"], ["CONTINUITY-010", "be185057"],
+  ["CONTINUITY-011", "f10225a6"], ["CONTINUITY-012", "7a6ce416"], ["CONTINUITY-013", "c8759615"], ["CONTINUITY-014", "aa3ef613"], ["CONTINUITY-015", "d1e5398c"],
+  ["CONTINUITY-016", "cc0a978c"], ["CONTINUITY-017", "96cc1322"], ["CONTINUITY-018", "b8eaff92"], ["CONTINUITY-019", "32e14c14"], ["CONTINUITY-020", "6fc04b8d"],
+];
 
 describe("B4-1 acceptance registry", () => {
   it("contains the exact ordered 68-entry contract", () => {
     const result = validateAcceptanceRegistry(ACCEPTANCE_REGISTRY);
     expect(result.valid).toBe(true);
-    expect(result.totalCount).toBe(112);
-    expect(result.familyCounts).toEqual({ JOURNEY: 16, RECOVERY: 20, INTEGRITY: 16, ARCHIVE: 16, CAPTURE: 24, CONTINUITY: 20 });
+    expect(result.totalCount).toBe(116);
+    expect(result.familyCounts).toEqual({ JOURNEY: 16, RECOVERY: 20, INTEGRITY: 16, ARCHIVE: 16, CAPTURE: 24, CONTINUITY: 20, COMPLETENESS: 4 });
     expect(result.duplicateIds).toEqual([]);
     expect(result.missingIds).toEqual([]);
     expect(result.unexpectedIds).toEqual([]);
@@ -57,6 +64,14 @@ describe("B4-1 acceptance registry", () => {
     const actual = predecessors.map((entry) => [entry.id, stableFingerprint(predecessorProjection(entry))] as const);
     const mismatches = actual.filter(([id, digest], index) => id !== FROZEN_B4_1_B4_2_BASELINE[index]?.[0] || digest !== FROZEN_B4_1_B4_2_BASELINE[index]?.[1]);
     expect(mismatches, `Frozen B4-1/B4-2 predecessor baseline changed for records ${mismatches.map(([id]) => id).join(", ")}.`).toEqual([]);
+  });
+  it("guards every authoritative field of each frozen B4-1/B4-2/B4-3 predecessor record (first 112)", () => {
+    expect(FROZEN_B4_1_B4_3_BASELINE).toHaveLength(112);
+    const predecessors = ACCEPTANCE_REGISTRY.slice(0, 112);
+    const actual = predecessors.map((entry) => [entry.id, stableFingerprint(predecessorProjection(entry))] as const);
+    expect(actual).toEqual(FROZEN_B4_1_B4_3_BASELINE);
+    expect(stableFingerprint(actual)).toBe("d6b37a0f");
+    expect(stableFingerprint(predecessors.map(predecessorProjection))).toBe("c6ff4f1a");
   });
 
   it("reports identity and ordering defects", () => {
@@ -206,9 +221,9 @@ describe("B4-1 acceptance registry", () => {
     const predecessorMeaningSet = new Set(ACCEPTANCE_REGISTRY.filter((entry) => entry.family !== "CONTINUITY").map((entry) => entry.userMeaning));
     const continuityEntries = ACCEPTANCE_REGISTRY.filter((entry) => entry.family === "CONTINUITY");
 
-    expect(ACCEPTANCE_REGISTRY).toHaveLength(112);
-    expect(new Set(ACCEPTANCE_REGISTRY.map((entry) => entry.friendlyTitle)).size).toBe(112);
-    expect(new Set(ACCEPTANCE_REGISTRY.map((entry) => entry.userMeaning)).size).toBe(112);
+    expect(ACCEPTANCE_REGISTRY).toHaveLength(116);
+    expect(new Set(ACCEPTANCE_REGISTRY.map((entry) => entry.friendlyTitle)).size).toBe(116);
+    expect(new Set(ACCEPTANCE_REGISTRY.map((entry) => entry.userMeaning)).size).toBe(116);
     expect(duplicateTitleGroups).toEqual([]);
     expect(duplicateMeaningGroups).toEqual([]);
     expect(continuityEntries).toHaveLength(20);

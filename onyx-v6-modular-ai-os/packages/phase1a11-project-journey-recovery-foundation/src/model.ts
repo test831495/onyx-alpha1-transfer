@@ -2,7 +2,7 @@ export const OPERATING_MODES = ["ACTIVE", "LIGHT", "VACATION", "HIBERNATION"] as
 export type OperatingMode = (typeof OPERATING_MODES)[number];
 export const createsAuthority = false as const;
 
-export type AcceptanceFamily = "JOURNEY" | "RECOVERY" | "INTEGRITY" | "ARCHIVE" | "CAPTURE" | "CONTINUITY";
+export type AcceptanceFamily = "JOURNEY" | "RECOVERY" | "INTEGRITY" | "ARCHIVE" | "CAPTURE" | "CONTINUITY" | "COMPLETENESS";
 export type AcceptanceStatus =
   | "CONTRACT_DEFINED"
   | "POLICY_VALIDATED"
@@ -41,7 +41,8 @@ export const ACCEPTANCE_IDS = [
   "ARCHIVE-009", "ARCHIVE-010", "ARCHIVE-011", "ARCHIVE-012", "ARCHIVE-013", "ARCHIVE-014", "ARCHIVE-015", "ARCHIVE-016",
   "CAPTURE-001", "CAPTURE-002", "CAPTURE-003", "CAPTURE-004", "CAPTURE-005", "CAPTURE-006", "CAPTURE-007", "CAPTURE-008",
   "CAPTURE-009", "CAPTURE-010", "CAPTURE-011", "CAPTURE-012", "CAPTURE-013", "CAPTURE-014", "CAPTURE-015", "CAPTURE-016",
-  "CAPTURE-017", "CAPTURE-018", "CAPTURE-019", "CAPTURE-020", "CAPTURE-021", "CAPTURE-022", "CAPTURE-023", "CAPTURE-024"
+  "CAPTURE-017", "CAPTURE-018", "CAPTURE-019", "CAPTURE-020", "CAPTURE-021", "CAPTURE-022", "CAPTURE-023", "CAPTURE-024",
+  "COMPLETENESS-001", "COMPLETENESS-002", "COMPLETENESS-003", "COMPLETENESS-004"
 ] as const;
 export type AcceptanceId = (typeof ACCEPTANCE_IDS)[number];
 export type ExternalDependencyIdentifier =
@@ -214,6 +215,74 @@ export type ContinuitySensitivityClass =
   | "PROHIBITED_PRIVATE_HOUSEHOLD_CONTENT"
   | "PROHIBITED_CAMERA_OR_BIOMETRIC_CONTENT"
   | "UNKNOWN_SENSITIVITY";
+
+export type RecoveryMetadataKind =
+  | "RECOVERY_DESCRIPTOR"
+  | "ARTIFACT_REFERENCE"
+  | "EVIDENCE_REFERENCE"
+  | "VALIDATION_DESCRIPTOR";
+
+export type RecoveryArtifactClass =
+  | "JOURNEY_RECORD_SET"
+  | "POLICY_METADATA_SET"
+  | "IDENTITY_METADATA_SET"
+  | "REVOCATION_METADATA_SET"
+  | "DEVICE_REGISTRY_METADATA_SET"
+  | "TOMBSTONE_METADATA_SET"
+  | "MEMORY_SYNC_METADATA_SET"
+  | "CONNECTOR_METADATA_SET";
+
+export type RecoveryEvidencePresence =
+  | "PRESENT"
+  | "MISSING"
+  | "STALE"
+  | "CONFLICTED"
+  | "PROHIBITED"
+  | "NOT_ASSESSABLE";
+
+export type RecoveryEvidenceRequirement = "REQUIRED" | "OPTIONAL" | "PROHIBITED";
+
+export interface RecoveryMetadataDescriptor {
+  readonly metadataId: string;
+  readonly metadataKind: RecoveryMetadataKind;
+  readonly classification: string;
+  readonly sensitivity: ContinuitySensitivityClass;
+  readonly policyVersion: string;
+  readonly sourceReference?: string;
+  readonly createsAuthority: false;
+}
+
+export interface RecoveryArtifactReference {
+  readonly referenceId: string;
+  readonly artifactClass: RecoveryArtifactClass;
+  readonly providerNeutralReference: string;
+  readonly sensitivity: ContinuitySensitivityClass;
+  readonly createsAuthority: false;
+}
+
+export interface RecoveryEvidenceReference {
+  readonly evidenceId: string;
+  readonly evidenceType: string;
+  readonly provenanceReference: string;
+  readonly presence: RecoveryEvidencePresence;
+  readonly sensitivity: ContinuitySensitivityClass;
+  readonly policyVersion: string;
+  readonly createsAuthority: false;
+}
+
+export interface RecoveryEvidenceExpectation {
+  readonly evidenceType: string;
+  readonly requirement: RecoveryEvidenceRequirement;
+}
+
+export interface RecoveryValidationDescriptor {
+  readonly descriptorId: string;
+  readonly purpose: string;
+  readonly evidenceExpectations: readonly RecoveryEvidenceExpectation[];
+  readonly missingEvidenceOutcome: string;
+  readonly policyVersion: string;
+  readonly createsAuthority: false;
+}
 export type SafeNextActionValue =
   | "KEEP_EVIDENCE_VISIBLE_WITH_PROVENANCE"
   | "KEEP_GAPS_VISIBLE"

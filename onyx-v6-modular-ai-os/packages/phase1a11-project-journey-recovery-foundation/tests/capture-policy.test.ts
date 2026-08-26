@@ -13,7 +13,7 @@ describe("B4-2 governed capture policy", () => {
   it("contains individually authored CAPTURE records and preserves the frozen family shape", () => {
     const capture = ACCEPTANCE_REGISTRY.filter((entry) => entry.family === "CAPTURE");
     expect(capture).toHaveLength(24);
-    expect(capture.map((entry) => entry.id)).toEqual(ACCEPTANCE_IDS.slice(68));
+    expect(capture.map((entry) => entry.id)).toEqual(ACCEPTANCE_IDS.slice(68, 92));
     expect(new Set(capture.map((entry) => entry.authoritativeRequirement)).size).toBe(24);
     expect(new Set(capture.map((entry) => entry.userMeaning)).size).toBe(24);
     expect(capture.every((entry) => entry.createsAuthority === false && entry.runtimeStatus === "RUNTIME_DEFERRED" && entry.uiStatus === "UI_DEFERRED")).toBe(true);

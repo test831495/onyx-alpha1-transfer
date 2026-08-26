@@ -1,4 +1,6 @@
 import type { AcceptanceFamily, ArchiveSetHealth, CopyHealthState, ContinuityGapType, EvidenceState, IntegrityState, JourneyEventKind, OperatingMode, RecoveryPackageState, RecoveryRouteClass, RetentionDecision, SanitizationDecision, StoragePressureState, SummaryQuality } from "./model";
+import type { RecoveryArtifactClass, RecoveryEvidencePresence, RecoveryEvidenceRequirement, RecoveryMetadataKind } from "./model";
+import type { RecoveryMetadataValidationState } from "./recovery-metadata";
 import { boundedFreeze } from "./capture-policy";
 
 export interface FriendlyLabel {
@@ -20,6 +22,7 @@ const label = (title: string, explanation: string, safeNextAction: string, sever
 });
 
 export const FRIENDLY_LABELS = boundedFreeze({
+  COMPLETENESS: label("Recovery metadata completeness", "Recovery metadata describes references and expectations without performing recovery.", "Keep recovery deferred until separately authorized."),
   AUTHORITATIVE: label("Authoritative record", "This record has an identified trusted source.", "Review the source when you need technical detail."),
   INCOMPLETE: label("Incomplete evidence", "Some supporting evidence is missing.", "Treat the gap as unresolved and seek an authoritative record.", "WARNING"),
   CONFLICTING: label("Conflicting evidence", "Sources disagree, so history is not silently resolved.", "Review the sources before relying on this record.", "WARNING"),
@@ -80,6 +83,59 @@ export const OPERATING_MODE_LABELS: Readonly<Record<OperatingMode, FriendlyLabel
   HIBERNATION: FRIENDLY_LABELS.HIBERNATION
 });
 
+export const RECOVERY_METADATA_LABELS = boundedFreeze({
+  RECOVERY_DESCRIPTOR: label("Recovery descriptor", "A bounded description of recovery metadata.", "Treat this as descriptive metadata only."),
+  ARTIFACT_REFERENCE: label("Artifact reference", "A provider-neutral reference without artifact access.", "Do not retrieve or restore the artifact."),
+  EVIDENCE_REFERENCE: label("Evidence reference", "A reference that preserves evidence identity and presence.", "Keep missing or prohibited evidence visible."),
+  VALIDATION_DESCRIPTOR: label("Validation descriptor", "A description of evidence expectations.", "Do not treat expectations as validation or authorization."),
+  PRESENT: label("Evidence present", "Evidence presence is recorded by reference only.", "Review its provenance."),
+  MISSING: label("Evidence missing", "No evidence is recorded for this reference.", "Keep the gap visible." , "WARNING"),
+  STALE: label("Evidence stale", "Recorded evidence is marked stale.", "Require fresh provenance." , "WARNING"),
+  CONFLICTED: label("Evidence conflicted", "Evidence references disagree.", "Preserve the conflict for review." , "WARNING"),
+  PROHIBITED: label("Evidence prohibited", "The evidence class is outside this boundary.", "Keep prohibited content excluded." , "CRITICAL"),
+  NOT_ASSESSABLE: label("Evidence not assessable", "The evidence state cannot be safely assessed.", "Keep the result unresolved." , "WARNING"),
+  REQUIRED: label("Required evidence", "This evidence expectation is required.", "Keep absence visible."),
+  OPTIONAL: label("Optional evidence", "This evidence may support an assessment but is not required.", "Do not treat it as required."),
+  PROHIBITED_EXPECTATION: label("Prohibited evidence", "This evidence class must remain outside the boundary.", "Do not accept or collect it.", "CRITICAL"),
+});
+
+export const RECOVERY_METADATA_KIND_LABELS: Readonly<Record<RecoveryMetadataKind, FriendlyLabel>> = boundedFreeze({
+  RECOVERY_DESCRIPTOR: RECOVERY_METADATA_LABELS.RECOVERY_DESCRIPTOR,
+  ARTIFACT_REFERENCE: RECOVERY_METADATA_LABELS.ARTIFACT_REFERENCE,
+  EVIDENCE_REFERENCE: RECOVERY_METADATA_LABELS.EVIDENCE_REFERENCE,
+  VALIDATION_DESCRIPTOR: RECOVERY_METADATA_LABELS.VALIDATION_DESCRIPTOR,
+});
+export const RECOVERY_ARTIFACT_LABELS: Readonly<Record<RecoveryArtifactClass, FriendlyLabel>> = boundedFreeze({
+  JOURNEY_RECORD_SET: label("Journey record set", "A reference to Journey metadata only.", "Do not retrieve or restore its contents."),
+  POLICY_METADATA_SET: label("Policy metadata set", "A reference to policy metadata only.", "Treat it as descriptive metadata."),
+  IDENTITY_METADATA_SET: label("Identity metadata set", "A reference to identity metadata only.", "Do not infer identity authority."),
+  REVOCATION_METADATA_SET: label("Revocation metadata set", "A reference to revocation metadata only.", "Preserve revocation boundaries."),
+  DEVICE_REGISTRY_METADATA_SET: label("Device registry metadata set", "A reference to device registry metadata only.", "Do not establish device trust."),
+  TOMBSTONE_METADATA_SET: label("Tombstone metadata set", "A reference to deletion metadata only.", "Do not override deletion state."),
+  MEMORY_SYNC_METADATA_SET: label("Memory synchronization metadata set", "A reference to synchronization metadata only.", "Do not synchronize or restore data."),
+  CONNECTOR_METADATA_SET: label("Connector metadata set", "A reference to connector metadata only.", "Do not connect or retrieve content."),
+});
+export const RECOVERY_EVIDENCE_PRESENCE_LABELS: Readonly<Record<RecoveryEvidencePresence, FriendlyLabel>> = boundedFreeze({
+  PRESENT: RECOVERY_METADATA_LABELS.PRESENT,
+  MISSING: RECOVERY_METADATA_LABELS.MISSING,
+  STALE: RECOVERY_METADATA_LABELS.STALE,
+  CONFLICTED: RECOVERY_METADATA_LABELS.CONFLICTED,
+  PROHIBITED: RECOVERY_METADATA_LABELS.PROHIBITED,
+  NOT_ASSESSABLE: RECOVERY_METADATA_LABELS.NOT_ASSESSABLE,
+});
+export const RECOVERY_EVIDENCE_REQUIREMENT_LABELS: Readonly<Record<RecoveryEvidenceRequirement, FriendlyLabel>> = boundedFreeze({
+  REQUIRED: RECOVERY_METADATA_LABELS.REQUIRED,
+  OPTIONAL: RECOVERY_METADATA_LABELS.OPTIONAL,
+  PROHIBITED: RECOVERY_METADATA_LABELS.PROHIBITED_EXPECTATION,
+});
+export const RECOVERY_METADATA_VALIDATION_LABELS: Readonly<Record<RecoveryMetadataValidationState, FriendlyLabel>> = boundedFreeze({
+  VALID: label("Metadata valid", "The supplied metadata matches its closed contract.", "Keep it descriptive and non-authorizing."),
+  INVALID: FRIENDLY_LABELS.INVALID,
+  MISSING: FRIENDLY_LABELS.MISSING_EVIDENCE,
+  PROHIBITED: RECOVERY_METADATA_LABELS.PROHIBITED,
+  NOT_ASSESSABLE: RECOVERY_METADATA_LABELS.NOT_ASSESSABLE,
+});
+
 export const CONTINUITY_EVIDENCE_LABELS: Readonly<Record<EvidenceState, FriendlyLabel>> = boundedFreeze({ AUTHORITATIVE: FRIENDLY_LABELS.AUTHORITATIVE, INCOMPLETE: FRIENDLY_LABELS.INCOMPLETE, CONFLICTING: FRIENDLY_LABELS.CONFLICTING, UNVERIFIED: FRIENDLY_LABELS.UNVERIFIED });
 export const CONTINUITY_GAP_LABELS: Readonly<Record<ContinuityGapType, FriendlyLabel>> = boundedFreeze({ MISSING_EVIDENCE: FRIENDLY_LABELS.MISSING_EVIDENCE, CONFLICTING_EVIDENCE: FRIENDLY_LABELS.CONFLICTING_EVIDENCE, UNVERIFIED_SOURCE: FRIENDLY_LABELS.UNVERIFIED_SOURCE, UNRECORDED_INTERVAL: FRIENDLY_LABELS.UNRECORDED_INTERVAL });
 export const JOURNEY_EVENT_LABELS: Readonly<Record<JourneyEventKind, FriendlyLabel>> = boundedFreeze({ MILESTONE: FRIENDLY_LABELS.MILESTONE, ROADMAP_DECISION: FRIENDLY_LABELS.ROADMAP_DECISION, ARCHITECTURE_DECISION: FRIENDLY_LABELS.ARCHITECTURE_DECISION, ACCEPTANCE_CHANGE: FRIENDLY_LABELS.ACCEPTANCE_CHANGE, IMPLEMENTATION_OUTCOME: FRIENDLY_LABELS.IMPLEMENTATION_OUTCOME, POLICY_EXERCISE: FRIENDLY_LABELS.POLICY_EXERCISE, RECOVERY_EXERCISE: FRIENDLY_LABELS.RECOVERY_EXERCISE });
@@ -92,4 +148,4 @@ export const RECOVERY_ROUTE_LABELS: Readonly<Record<RecoveryRouteClass, Friendly
 export const STORAGE_PRESSURE_LABELS: Readonly<Record<StoragePressureState, FriendlyLabel>> = boundedFreeze({ NORMAL: FRIENDLY_LABELS.NORMAL, ELEVATED: FRIENDLY_LABELS.ELEVATED, CRITICAL: FRIENDLY_LABELS.CRITICAL, UNVERIFIED: FRIENDLY_LABELS.NOT_VERIFIED });
 export const RETENTION_LABELS: Readonly<Record<RetentionDecision, FriendlyLabel>> = boundedFreeze({ RETAIN: FRIENDLY_LABELS.RETAIN, RETAIN_PENDING_REVIEW: FRIENDLY_LABELS.RETAIN_PENDING_REVIEW, DEFER: FRIENDLY_LABELS.DEFER, DENY_DESTRUCTIVE_ACTION: FRIENDLY_LABELS.DENY_DESTRUCTIVE_ACTION });
 export const SANITIZATION_LABELS: Readonly<Record<SanitizationDecision, FriendlyLabel>> = boundedFreeze({ ALLOWED_METADATA_ONLY: FRIENDLY_LABELS.ALLOWED_METADATA_ONLY, DENIED_PRIVATE_DATA: FRIENDLY_LABELS.DENIED_PRIVATE_DATA, DENIED_CREDENTIALS: FRIENDLY_LABELS.DENIED_CREDENTIALS, DENIED_UNKNOWN: FRIENDLY_LABELS.DENIED_UNKNOWN });
-export const ACCEPTANCE_FAMILY_LABELS: Readonly<Record<AcceptanceFamily, FriendlyLabel>> = boundedFreeze({ JOURNEY: FRIENDLY_LABELS.MILESTONE, RECOVERY: FRIENDLY_LABELS.DESCRIBED, INTEGRITY: FRIENDLY_LABELS.EXPECTED, ARCHIVE: FRIENDLY_LABELS.HEALTHY_PROJECTION, CAPTURE: FRIENDLY_LABELS.MILESTONE, CONTINUITY: label("Continuity assessment", "A continuity assessment is described without granting runtime authority or permission.", "Keep evidence visible and do not treat this as an operational decision.") });
+export const ACCEPTANCE_FAMILY_LABELS: Readonly<Record<AcceptanceFamily, FriendlyLabel>> = boundedFreeze({ JOURNEY: FRIENDLY_LABELS.MILESTONE, RECOVERY: FRIENDLY_LABELS.DESCRIBED, INTEGRITY: FRIENDLY_LABELS.EXPECTED, ARCHIVE: FRIENDLY_LABELS.HEALTHY_PROJECTION, CAPTURE: FRIENDLY_LABELS.MILESTONE, CONTINUITY: label("Continuity assessment", "A continuity assessment is described without granting runtime authority or permission.", "Keep evidence visible and do not treat this as an operational decision."), COMPLETENESS: FRIENDLY_LABELS.DESCRIBED });
