@@ -42,8 +42,8 @@ describe("B4-1 acceptance registry", () => {
   it("contains the exact ordered 68-entry contract", () => {
     const result = validateAcceptanceRegistry(ACCEPTANCE_REGISTRY);
     expect(result.valid).toBe(true);
-    expect(result.totalCount).toBe(122);
-    expect(result.familyCounts).toEqual({ JOURNEY: 16, RECOVERY: 20, INTEGRITY: 16, ARCHIVE: 16, CAPTURE: 24, CONTINUITY: 20, COMPLETENESS: 10 });
+    expect(result.totalCount).toBe(128);
+    expect(result.familyCounts).toEqual({ JOURNEY: 16, RECOVERY: 20, INTEGRITY: 16, ARCHIVE: 16, CAPTURE: 24, CONTINUITY: 20, COMPLETENESS: 16 });
     expect(result.duplicateIds).toEqual([]);
     expect(result.missingIds).toEqual([]);
     expect(result.unexpectedIds).toEqual([]);
@@ -88,13 +88,13 @@ describe("B4-1 acceptance registry", () => {
 
   it("contains exact COMPLETENESS-001..010 ordering and exact B4-4A.2 additions", () => {
     const completeness = ACCEPTANCE_REGISTRY.filter((entry) => entry.family === "COMPLETENESS");
-    expect(completeness.map((entry) => entry.id)).toEqual([
+    expect(completeness.slice(0, 10).map((entry) => entry.id)).toEqual([
       "COMPLETENESS-001", "COMPLETENESS-002", "COMPLETENESS-003", "COMPLETENESS-004", "COMPLETENESS-005",
       "COMPLETENESS-006", "COMPLETENESS-007", "COMPLETENESS-008", "COMPLETENESS-009", "COMPLETENESS-010",
     ]);
-    expect(ACCEPTANCE_REGISTRY.some((entry) => entry.id === "COMPLETENESS-011")).toBe(false);
+    expect(ACCEPTANCE_REGISTRY.some((entry) => entry.id === "COMPLETENESS-011")).toBe(true);
 
-    const added = completeness.slice(4);
+    const added = completeness.slice(10);
     expect(added).toHaveLength(6);
     expect(added.every((entry) => entry.contractStatus === "CONTRACT_DEFINED")).toBe(true);
     expect(added.every((entry) => entry.runtimeStatus === "RUNTIME_DEFERRED")).toBe(true);
@@ -105,24 +105,22 @@ describe("B4-1 acceptance registry", () => {
     expect(new Set(added.map((entry) => entry.userMeaning)).size).toBe(6);
     expect(new Set(added.map((entry) => entry.authoritativeRequirement)).size).toBe(6);
 
-    expect(added.map((entry) => entry.id)).toEqual([
-      "COMPLETENESS-005", "COMPLETENESS-006", "COMPLETENESS-007", "COMPLETENESS-008", "COMPLETENESS-009", "COMPLETENESS-010",
-    ]);
+    expect(added.map((entry) => entry.id)).toEqual(["COMPLETENESS-011", "COMPLETENESS-012", "COMPLETENESS-013", "COMPLETENESS-014", "COMPLETENESS-015", "COMPLETENESS-016"]);
     expect(added.map((entry) => entry.contractLocation)).toEqual([
-      "src/recovery-completeness-policy.ts#RecoveryCompletenessGap",
-      "src/recovery-completeness-policy.ts#RecoveryRestorationDependency",
-      "src/recovery-completeness-policy.ts#RecoveryProhibitedContentDescriptor",
-      "src/recovery-completeness-policy.ts#RecoveryPortabilityEvidence",
-      "src/recovery-completeness-policy.ts#RecoveryCompletenessAssessmentInput",
-      "src/recovery-completeness-policy.ts#assessRecoveryCompleteness",
+      "src/recovery-dependency-readiness-policy.ts#RecoveryDependencyArtifactClass",
+      "src/recovery-dependency-readiness-policy.ts#RecoveryDependencyArtifactPrerequisite",
+      "src/recovery-dependency-readiness-policy.ts#RecoveryDependencyReadinessResult",
+      "src/recovery-dependency-readiness-policy.ts#RecoveryDependencyReadinessResult",
+      "src/recovery-dependency-readiness-policy.ts#RecoveryDependencyReadinessResult",
+      "src/recovery-dependency-readiness-policy.ts#assessRecoveryDependencyReadiness",
     ]);
     expect(added.map((entry) => entry.plannedTestMapping)).toEqual([
-      "tests/recovery-completeness-policy.test.ts#completeness-005-contract",
-      "tests/recovery-completeness-policy.test.ts#completeness-006-contract",
-      "tests/recovery-completeness-policy.test.ts#completeness-007-contract",
-      "tests/recovery-completeness-policy.test.ts#completeness-008-contract",
-      "tests/recovery-completeness-policy.test.ts#completeness-009-contract",
-      "tests/recovery-completeness-policy.test.ts#completeness-010-contract",
+      "tests/recovery-dependency-readiness-policy.test.ts#completeness-011-contract",
+      "tests/recovery-dependency-readiness-policy.test.ts#completeness-012-contract",
+      "tests/recovery-dependency-readiness-policy.test.ts#completeness-013-contract",
+      "tests/recovery-dependency-readiness-policy.test.ts#completeness-014-contract",
+      "tests/recovery-dependency-readiness-policy.test.ts#completeness-015-contract",
+      "tests/recovery-dependency-readiness-policy.test.ts#completeness-016-contract",
     ]);
   });
 
@@ -273,9 +271,9 @@ describe("B4-1 acceptance registry", () => {
     const predecessorMeaningSet = new Set(ACCEPTANCE_REGISTRY.filter((entry) => entry.family !== "CONTINUITY").map((entry) => entry.userMeaning));
     const continuityEntries = ACCEPTANCE_REGISTRY.filter((entry) => entry.family === "CONTINUITY");
 
-    expect(ACCEPTANCE_REGISTRY).toHaveLength(122);
-    expect(new Set(ACCEPTANCE_REGISTRY.map((entry) => entry.friendlyTitle)).size).toBe(122);
-    expect(new Set(ACCEPTANCE_REGISTRY.map((entry) => entry.userMeaning)).size).toBe(122);
+    expect(ACCEPTANCE_REGISTRY).toHaveLength(128);
+    expect(new Set(ACCEPTANCE_REGISTRY.map((entry) => entry.friendlyTitle)).size).toBe(128);
+    expect(new Set(ACCEPTANCE_REGISTRY.map((entry) => entry.userMeaning)).size).toBe(128);
     expect(duplicateTitleGroups).toEqual([]);
     expect(duplicateMeaningGroups).toEqual([]);
     expect(continuityEntries).toHaveLength(20);
@@ -292,5 +290,38 @@ describe("B4-1 acceptance registry", () => {
     expect(ACCEPTANCE_REGISTRY.every((entry) => entry.technicalInformation.notes.trim().length > 20)).toBe(true);
     expect(ACCEPTANCE_REGISTRY.every((entry) => entry.failClosedRequirement.trim().length > 20)).toBe(true);
     expect(ACCEPTANCE_REGISTRY.every((entry) => !/TBD|same as above|future requirement|generic requirement|placeholder|to be defined/i.test(`${entry.userMeaning} ${entry.authoritativeRequirement}`))).toBe(true);
+  });
+
+  it("freezes the accepted first-122 aggregate fingerprints", () => {
+    const first122 = ACCEPTANCE_REGISTRY.slice(0, 122);
+    const tuples = first122.map((entry) => [entry.id, stableFingerprint(predecessorProjection(entry))] as const);
+    expect(stableFingerprint(tuples)).toBe("de821225");
+    expect(stableFingerprint(first122.map(predecessorProjection))).toBe("a51a1118");
+  });
+
+  it("freezes the six B4-4A.2 individual fingerprints", () => {
+    const expected = ["24cd7de4", "712b30bb", "16c899a6", "9de42ddb", "4ac078b8", "778f36ef"];
+    expect(ACCEPTANCE_REGISTRY.slice(116, 122).map((entry) => stableFingerprint(predecessorProjection(entry)))).toEqual(expected);
+  });
+
+  it("requires canonical lexical deferred-capability ordering", () => {
+    const current = ACCEPTANCE_REGISTRY.find((entry) => entry.id === "COMPLETENESS-016");
+    if (!current) throw new Error("COMPLETENESS-016 is missing");
+    expect(current?.deferredCapabilities).toEqual(["REAL_RESTORATION", "RECOVERY_DASHBOARD", "RESTORE_PLAN_EXECUTION"]);
+    expect(stableFingerprint(predecessorProjection(current))).toBe("51c31e7a");
+    expect(validateAcceptanceRegistry(ACCEPTANCE_REGISTRY).valid).toBe(true);
+    const oldOrder = ["REAL_RESTORATION", "RESTORE_PLAN_EXECUTION", "RECOVERY_DASHBOARD"];
+    const oldOrderOnCompleteness = ACCEPTANCE_REGISTRY.map((entry) => entry.id === "COMPLETENESS-016" ? { ...entry, deferredCapabilities: oldOrder } : entry);
+    const oldOrderOnOtherRecord = ACCEPTANCE_REGISTRY.map((entry) => entry.id === "COMPLETENESS-015" ? { ...entry, deferredCapabilities: oldOrder } : entry);
+    expect(validateAcceptanceRegistry(oldOrderOnCompleteness).nondeterministicDeferredCapabilities).toEqual(["COMPLETENESS-016: deferred capabilities are not deterministically ordered"]);
+    expect(validateAcceptanceRegistry(oldOrderOnOtherRecord).nondeterministicDeferredCapabilities).toEqual(["COMPLETENESS-015: deferred capabilities are not deterministically ordered"]);
+    expect(validateAcceptanceRegistry(ACCEPTANCE_REGISTRY.map((entry) => entry.id === "COMPLETENESS-016" ? { ...entry, deferredCapabilities: ["RECOVERY_DASHBOARD", "REAL_RESTORATION", "RESTORE_PLAN_EXECUTION"] } : entry)).valid).toBe(false);
+    expect(validateAcceptanceRegistry(ACCEPTANCE_REGISTRY.map((entry) => entry.id === "COMPLETENESS-016" ? { ...entry, deferredCapabilities: ["REAL_RESTORATION", "REAL_RESTORATION", "RESTORE_PLAN_EXECUTION"] } : entry)).valid).toBe(false);
+    expect(validateAcceptanceRegistry(ACCEPTANCE_REGISTRY.map((entry) => entry.id === "COMPLETENESS-016" ? { ...entry, deferredCapabilities: ["UNKNOWN_CAPABILITY", "RESTORE_PLAN_EXECUTION"] } : entry)).valid).toBe(false);
+  });
+
+  it.each(["COMPLETENESS-011", "COMPLETENESS-012", "COMPLETENESS-013", "COMPLETENESS-014", "COMPLETENESS-015", "COMPLETENESS-016"])("records %s with non-authorizing metadata", (id) => {
+    const entry = ACCEPTANCE_REGISTRY.find((candidate) => candidate.id === id);
+    expect(entry).toMatchObject({ family: "COMPLETENESS", contractStatus: "CONTRACT_DEFINED", runtimeStatus: "RUNTIME_DEFERRED", uiStatus: "UI_DEFERRED", createsAuthority: false, ownerOnly: false });
   });
 });
