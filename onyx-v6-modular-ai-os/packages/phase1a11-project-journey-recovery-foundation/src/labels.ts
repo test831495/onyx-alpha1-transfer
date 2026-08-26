@@ -1,7 +1,9 @@
 import type { AcceptanceFamily, ArchiveSetHealth, CopyHealthState, ContinuityGapType, EvidenceState, IntegrityState, JourneyEventKind, OperatingMode, RecoveryPackageState, RecoveryRouteClass, RetentionDecision, SanitizationDecision, StoragePressureState, SummaryQuality } from "./model";
 import type { RecoveryArtifactClass, RecoveryEvidencePresence, RecoveryEvidenceRequirement, RecoveryMetadataKind } from "./model";
+import type { RecoveryCompletenessAssessmentState, RecoveryCompletenessGapReason, RecoveryCryptoMigrationClass, RecoveryDeviceLifecycleEvidenceClass, RecoveryEvidencePrecedenceResult, RecoveryPortabilityEvidenceClass, RecoveryProhibitedContentClass, RecoveryRestorationStage } from "./model";
 import type { RecoveryMetadataValidationState } from "./recovery-metadata";
 import { boundedFreeze } from "./capture-policy";
+import { RECOVERY_COMPLETENESS_ASSESSMENT_STATES, RECOVERY_COMPLETENESS_GAP_REASONS, RECOVERY_CRYPTO_MIGRATION_CLASSES, RECOVERY_DEVICE_LIFECYCLE_EVIDENCE_CLASSES, RECOVERY_EVIDENCE_PRECEDENCE_RESULTS, RECOVERY_PORTABILITY_EVIDENCE_CLASSES, RECOVERY_PROHIBITED_CONTENT_CLASSES, RECOVERY_RESTORATION_STAGES } from "./recovery-completeness-policy";
 
 export interface FriendlyLabel {
   readonly title: string;
@@ -149,3 +151,101 @@ export const STORAGE_PRESSURE_LABELS: Readonly<Record<StoragePressureState, Frie
 export const RETENTION_LABELS: Readonly<Record<RetentionDecision, FriendlyLabel>> = boundedFreeze({ RETAIN: FRIENDLY_LABELS.RETAIN, RETAIN_PENDING_REVIEW: FRIENDLY_LABELS.RETAIN_PENDING_REVIEW, DEFER: FRIENDLY_LABELS.DEFER, DENY_DESTRUCTIVE_ACTION: FRIENDLY_LABELS.DENY_DESTRUCTIVE_ACTION });
 export const SANITIZATION_LABELS: Readonly<Record<SanitizationDecision, FriendlyLabel>> = boundedFreeze({ ALLOWED_METADATA_ONLY: FRIENDLY_LABELS.ALLOWED_METADATA_ONLY, DENIED_PRIVATE_DATA: FRIENDLY_LABELS.DENIED_PRIVATE_DATA, DENIED_CREDENTIALS: FRIENDLY_LABELS.DENIED_CREDENTIALS, DENIED_UNKNOWN: FRIENDLY_LABELS.DENIED_UNKNOWN });
 export const ACCEPTANCE_FAMILY_LABELS: Readonly<Record<AcceptanceFamily, FriendlyLabel>> = boundedFreeze({ JOURNEY: FRIENDLY_LABELS.MILESTONE, RECOVERY: FRIENDLY_LABELS.DESCRIBED, INTEGRITY: FRIENDLY_LABELS.EXPECTED, ARCHIVE: FRIENDLY_LABELS.HEALTHY_PROJECTION, CAPTURE: FRIENDLY_LABELS.MILESTONE, CONTINUITY: label("Continuity assessment", "A continuity assessment is described without granting runtime authority or permission.", "Keep evidence visible and do not treat this as an operational decision."), COMPLETENESS: FRIENDLY_LABELS.DESCRIBED });
+
+export const RECOVERY_COMPLETENESS_GAP_REASON_LABELS: Readonly<Record<RecoveryCompletenessGapReason, FriendlyLabel>> = boundedFreeze({
+  REQUIRED_EVIDENCE_MISSING: label("Required evidence is missing", "A required recovery evidence reference is missing.", "Keep the gap visible and request the required evidence.", "WARNING"),
+  REQUIRED_EVIDENCE_STALE: label("Required evidence is stale", "Required evidence is stale for current recovery completeness assessment.", "Require fresh evidence before relying on this assessment.", "WARNING"),
+  REQUIRED_EVIDENCE_PROHIBITED: label("Required evidence is prohibited", "The required evidence class is prohibited in this recovery scope.", "Keep prohibited evidence excluded and unresolved.", "CRITICAL"),
+  DEVICE_KEY_ROTATION_EVIDENCE_MISSING: label("Device key rotation evidence is missing", "Device key rotation evidence is missing for recovery completeness.", "Record the gap and request authoritative key-rotation evidence.", "WARNING"),
+  REMOTE_ERASURE_ACK_MISSING: label("Remote erasure acknowledgement is missing", "Remote erasure acknowledgement evidence is missing.", "Keep deletion state unresolved until evidence is provided.", "WARNING"),
+  BIOMETRIC_DELETION_EVIDENCE_MISSING: label("Biometric deletion evidence is missing", "Biometric deletion evidence is missing for the assessed scope.", "Do not infer deletion without attributable evidence.", "WARNING"),
+  SYNC_INTEGRITY_EVIDENCE_MISSING: label("Synchronization integrity evidence is missing", "Synchronization integrity evidence is missing for recovery completeness.", "Keep synchronization integrity unresolved.", "WARNING"),
+  DELETION_TOMBSTONE_EVIDENCE_MISSING: label("Deletion tombstone evidence is missing", "Deletion tombstone evidence is missing for the assessed subject.", "Preserve the unresolved deletion gap.", "WARNING"),
+  TRUSTED_TIME_EVIDENCE_MISSING: label("Trusted time evidence is missing", "Trusted time evidence required for ordered recovery completeness is missing.", "Do not rely on temporal ordering without trusted-time evidence.", "WARNING"),
+  APPLICATION_INTEGRITY_EVIDENCE_MISSING: label("Application integrity evidence is missing", "Application integrity evidence is missing for recovery completeness.", "Keep application integrity unresolved.", "WARNING"),
+  REVOCATION_EVIDENCE_MISSING: label("Revocation evidence is missing", "Revocation evidence is missing for authoritative recovery completeness.", "Preserve revocation uncertainty as a visible gap.", "WARNING"),
+  RESTORATION_DEPENDENCY_UNRESOLVED: label("Restoration dependency is unresolved", "A restoration prerequisite dependency remains unresolved.", "Do not treat restoration ordering as complete.", "WARNING"),
+  PORTABILITY_EVIDENCE_MISSING: label("Portability evidence is missing", "Provider-neutral portability evidence is missing.", "Keep portability readiness unresolved.", "WARNING"),
+  CRYPTOGRAPHIC_MIGRATION_EVIDENCE_MISSING: label("Cryptographic migration evidence is missing", "Cryptographic migration evidence is missing in this metadata scope.", "Preserve migration uncertainty and request evidence.", "WARNING"),
+  EVIDENCE_NOT_ASSESSABLE: label("Evidence is not assessable", "The evidence cannot be safely assessed under current policy input.", "Keep the result unresolved and request owner review.", "WARNING"),
+});
+
+export const RECOVERY_RESTORATION_STAGE_LABELS: Readonly<Record<RecoveryRestorationStage, FriendlyLabel>> = boundedFreeze({
+  TRUST_ANCHORS_AND_CRYPTO_POLICY: label("Trust anchors and cryptographic policy", "This stage describes trust anchors and cryptographic policy prerequisites.", "Preserve prerequisite evidence before later stages."),
+  HOUSEHOLD_IDENTITIES_AND_MEMBERSHIPS: label("Household identities and memberships", "This stage describes household identity and membership prerequisites.", "Keep identity and membership prerequisites explicit."),
+  REVOCATIONS_AND_INCIDENTS: label("Revocations and incidents", "This stage describes revocation and incident prerequisites.", "Preserve revocation evidence before policy interpretation."),
+  ROLES_AND_CURRENT_AUTHORIZATION_POLICIES: label("Roles and current authorization policies", "This stage describes role and authorization policy prerequisites.", "Do not infer authorization from recovery metadata."),
+  DEVICE_REGISTRY_AND_SUPPORTED_CLIENT_POLICY: label("Device registry and supported client policy", "This stage describes device registry and supported-client policy prerequisites.", "Preserve device policy evidence without creating trust."),
+  SESSIONS_INVALIDATED_HISTORY_ONLY: label("Sessions as invalidated history only", "This stage keeps sessions as invalidated historical metadata only.", "Do not reactivate expired or invalidated sessions."),
+  APPROVAL_AND_CONSUMPTION_STATE: label("Approval and consumption state", "This stage describes approval and consumption prerequisites.", "Consumed approvals remain consumed."),
+  DELETION_TOMBSTONES: label("Deletion tombstones", "This stage describes deletion tombstone prerequisites.", "Deletion tombstones remain authoritative precedence evidence."),
+  MEMORY_AND_SYNCHRONIZATION_METADATA: label("Memory and synchronization metadata", "This stage describes memory and synchronization metadata prerequisites.", "Keep synchronization metadata descriptive only."),
+  CONNECTORS_OPTIONAL_RUNTIME_SERVICES_LAST: label("Connectors and optional runtime services", "This stage is last and remains descriptive metadata only.", "Do not activate connectors from recovery completeness metadata."),
+});
+
+export const RECOVERY_PROHIBITED_CONTENT_CLASS_LABELS: Readonly<Record<RecoveryProhibitedContentClass, FriendlyLabel>> = boundedFreeze({
+  PASSWORDS: label("Passwords", "Passwords are prohibited from recovery completeness metadata.", "Keep password material excluded.", "CRITICAL"),
+  PINS: label("PINs", "PIN values are prohibited from recovery completeness metadata.", "Keep PIN material excluded.", "CRITICAL"),
+  PASSKEYS: label("Passkeys", "Passkey material is prohibited from recovery completeness metadata.", "Keep passkey material excluded.", "CRITICAL"),
+  SESSION_AND_APPROVAL_TOKENS: label("Session and approval tokens", "Session and approval tokens are prohibited content.", "Do not include token material in metadata.", "CRITICAL"),
+  OAUTH_CREDENTIALS: label("OAuth credentials", "OAuth credentials are prohibited content.", "Exclude OAuth credential payloads.", "CRITICAL"),
+  CONNECTOR_AND_API_SECRETS: label("Connector and API secrets", "Connector and API secrets are prohibited content.", "Exclude secret payloads and keep boundaries enforced.", "CRITICAL"),
+  DEVICE_PRIVATE_KEYS: label("Device private keys", "Device private keys are prohibited from this metadata scope.", "Never include private keys in recovery completeness metadata.", "CRITICAL"),
+  RAW_BIOMETRIC_DATA_OR_TEMPLATES: label("Raw biometric data or templates", "Raw biometric material is prohibited content.", "Exclude biometric values and templates.", "CRITICAL"),
+  RAW_CAMERA_FOOTAGE: label("Raw camera footage", "Raw camera footage is prohibited content.", "Exclude raw camera content.", "CRITICAL"),
+  DECRYPTED_CACHES: label("Decrypted caches", "Decrypted cache payloads are prohibited content.", "Keep decrypted cache content excluded.", "CRITICAL"),
+  SENSITIVE_NOTIFICATION_CONTENT: label("Sensitive notification content", "Sensitive notification content is prohibited content.", "Exclude sensitive notification payloads.", "CRITICAL"),
+  UNRESTRICTED_PRIVATE_PROMPTS: label("Unrestricted private prompts", "Unrestricted private prompts are prohibited content.", "Exclude private prompt payloads.", "CRITICAL"),
+  RAW_HOUSEHOLD_PRIVATE_PAYLOADS: label("Raw household private payloads", "Raw household-private payloads are prohibited content.", "Keep household-private payloads outside recovery completeness metadata.", "CRITICAL"),
+});
+
+export const RECOVERY_PORTABILITY_EVIDENCE_CLASS_LABELS: Readonly<Record<RecoveryPortabilityEvidenceClass, FriendlyLabel>> = boundedFreeze({
+  PROVIDER_EXIT_READINESS: label("Provider exit readiness", "Provider-exit readiness evidence is metadata-only and provider-neutral.", "Keep readiness descriptive and non-operational."),
+  FORMAT_COMPATIBILITY: label("Format compatibility", "Format compatibility evidence is metadata-only.", "Do not treat format evidence as migration execution."),
+  SOURCE_PROVENANCE: label("Source provenance", "Source provenance evidence identifies metadata provenance only.", "Preserve provenance references and keep payloads excluded."),
+  TARGET_COMPATIBILITY: label("Target compatibility", "Target compatibility evidence is descriptive metadata only.", "Do not infer runtime migration capability."),
+});
+
+export const RECOVERY_CRYPTO_MIGRATION_CLASS_LABELS: Readonly<Record<RecoveryCryptoMigrationClass, FriendlyLabel>> = boundedFreeze({
+  POLICY_TRANSITION: label("Policy transition", "Cryptographic policy transition evidence is descriptive metadata only.", "Do not execute policy transition from this metadata."),
+  ALGORITHM_CLASS_TRANSITION: label("Algorithm class transition", "Algorithm-class transition evidence is descriptive metadata only.", "Do not infer key migration execution."),
+  KEY_LIFECYCLE_TRANSITION_EVIDENCE: label("Key lifecycle transition evidence", "Key lifecycle transition evidence is metadata-only.", "Never expose key material in this metadata scope."),
+  COMPATIBILITY_EVIDENCE: label("Compatibility evidence", "Compatibility evidence is descriptive and non-operational.", "Keep compatibility evidence provider-neutral and non-authorizing."),
+});
+
+export const RECOVERY_DEVICE_LIFECYCLE_EVIDENCE_CLASS_LABELS: Readonly<Record<RecoveryDeviceLifecycleEvidenceClass, FriendlyLabel>> = boundedFreeze({
+  TERMINAL_DECOMMISSIONING: label("Terminal decommissioning", "Terminal decommissioning evidence is metadata-only.", "Do not infer device trust from decommissioning metadata."),
+  DEVICE_REVOCATION: label("Device revocation", "Device revocation evidence is metadata-only.", "Revoked devices remain non-authorized."),
+  DEVICE_KEY_ROTATION: label("Device key rotation", "Device key rotation evidence is metadata-only.", "Do not generate or rotate keys in this layer."),
+  REPLACEMENT_DEVICE_NEW_KEY: label("Replacement device new key", "Replacement-device new-key evidence is metadata-only.", "Do not clone prior device identity or keys."),
+  REMOTE_ERASURE_ACKNOWLEDGEMENT: label("Remote erasure acknowledgement", "Remote erasure acknowledgement evidence is metadata-only.", "Do not claim erasure without evidence."),
+  BIOMETRIC_DELETION: label("Biometric deletion", "Biometric deletion evidence is metadata-only.", "Do not include biometric payload values."),
+  APPLICATION_INTEGRITY: label("Application integrity", "Application integrity evidence is metadata-only.", "Keep integrity unresolved when evidence is missing."),
+  SYNC_INTEGRITY: label("Synchronization integrity", "Synchronization integrity evidence is metadata-only.", "Do not infer synchronization completion without evidence."),
+  DELETION_TOMBSTONE: label("Deletion tombstone", "Deletion tombstone evidence is metadata-only.", "Deletion tombstones override stale permissive metadata."),
+});
+
+export const RECOVERY_COMPLETENESS_ASSESSMENT_STATE_LABELS: Readonly<Record<RecoveryCompletenessAssessmentState, FriendlyLabel>> = boundedFreeze({
+  COMPLETE_FOR_METADATA_SCOPE: label("Complete for metadata scope", "Recovery completeness metadata is complete for the declared policy scope.", "Keep the result descriptive and non-authorizing."),
+  INCOMPLETE_VISIBLE_GAPS: label("Incomplete with visible gaps", "Recovery completeness metadata contains visible unresolved gaps.", "Keep all unresolved gaps visible.", "WARNING"),
+  NOT_ASSESSABLE: label("Not assessable", "Recovery completeness cannot be safely assessed from supplied metadata.", "Keep the assessment unresolved.", "WARNING"),
+  REJECTED_PROHIBITED_CONTENT: label("Rejected prohibited content", "Recovery information contains content that must not be included.", "Exclude prohibited content and keep the result denied.", "CRITICAL"),
+});
+
+export const RECOVERY_EVIDENCE_PRECEDENCE_RESULT_LABELS: Readonly<Record<RecoveryEvidencePrecedenceResult, FriendlyLabel>> = boundedFreeze({
+  NO_OVERRIDE_REQUIRED: label("No override required", "No tombstone or revocation precedence override is required.", "Continue with descriptive policy-only assessment."),
+  TOMBSTONE_PRECEDENCE_APPLIED: label("Tombstone precedence applied", "Deletion tombstone precedence is applied over stale permissive metadata.", "Keep deletion precedence visible.", "WARNING"),
+  REVOCATION_PRECEDENCE_APPLIED: label("Revocation precedence applied", "Revocation precedence is applied over stale permissive metadata.", "Keep revocation precedence visible.", "WARNING"),
+  TOMBSTONE_AND_REVOCATION_PRECEDENCE_APPLIED: label("Tombstone and revocation precedence applied", "Both tombstone and revocation precedence are applied over permissive metadata.", "Preserve both precedence signals and keep authority denied.", "WARNING"),
+});
+
+export const RECOVERY_COMPLETENESS_LABEL_COVERAGE = boundedFreeze({
+  RECOVERY_COMPLETENESS_GAP_REASONS,
+  RECOVERY_RESTORATION_STAGES,
+  RECOVERY_PROHIBITED_CONTENT_CLASSES,
+  RECOVERY_PORTABILITY_EVIDENCE_CLASSES,
+  RECOVERY_CRYPTO_MIGRATION_CLASSES,
+  RECOVERY_DEVICE_LIFECYCLE_EVIDENCE_CLASSES,
+  RECOVERY_COMPLETENESS_ASSESSMENT_STATES,
+  RECOVERY_EVIDENCE_PRECEDENCE_RESULTS,
+});

@@ -42,7 +42,8 @@ export const ACCEPTANCE_IDS = [
   "CAPTURE-001", "CAPTURE-002", "CAPTURE-003", "CAPTURE-004", "CAPTURE-005", "CAPTURE-006", "CAPTURE-007", "CAPTURE-008",
   "CAPTURE-009", "CAPTURE-010", "CAPTURE-011", "CAPTURE-012", "CAPTURE-013", "CAPTURE-014", "CAPTURE-015", "CAPTURE-016",
   "CAPTURE-017", "CAPTURE-018", "CAPTURE-019", "CAPTURE-020", "CAPTURE-021", "CAPTURE-022", "CAPTURE-023", "CAPTURE-024",
-  "COMPLETENESS-001", "COMPLETENESS-002", "COMPLETENESS-003", "COMPLETENESS-004"
+  "COMPLETENESS-001", "COMPLETENESS-002", "COMPLETENESS-003", "COMPLETENESS-004", "COMPLETENESS-005", "COMPLETENESS-006",
+  "COMPLETENESS-007", "COMPLETENESS-008", "COMPLETENESS-009", "COMPLETENESS-010"
 ] as const;
 export type AcceptanceId = (typeof ACCEPTANCE_IDS)[number];
 export type ExternalDependencyIdentifier =
@@ -280,6 +281,158 @@ export interface RecoveryValidationDescriptor {
   readonly purpose: string;
   readonly evidenceExpectations: readonly RecoveryEvidenceExpectation[];
   readonly missingEvidenceOutcome: string;
+  readonly policyVersion: string;
+  readonly createsAuthority: false;
+}
+
+export type RecoveryCompletenessGapReason =
+  | "REQUIRED_EVIDENCE_MISSING"
+  | "REQUIRED_EVIDENCE_STALE"
+  | "REQUIRED_EVIDENCE_PROHIBITED"
+  | "DEVICE_KEY_ROTATION_EVIDENCE_MISSING"
+  | "REMOTE_ERASURE_ACK_MISSING"
+  | "BIOMETRIC_DELETION_EVIDENCE_MISSING"
+  | "SYNC_INTEGRITY_EVIDENCE_MISSING"
+  | "DELETION_TOMBSTONE_EVIDENCE_MISSING"
+  | "TRUSTED_TIME_EVIDENCE_MISSING"
+  | "APPLICATION_INTEGRITY_EVIDENCE_MISSING"
+  | "REVOCATION_EVIDENCE_MISSING"
+  | "RESTORATION_DEPENDENCY_UNRESOLVED"
+  | "PORTABILITY_EVIDENCE_MISSING"
+  | "CRYPTOGRAPHIC_MIGRATION_EVIDENCE_MISSING"
+  | "EVIDENCE_NOT_ASSESSABLE";
+
+export type RecoveryRestorationStage =
+  | "TRUST_ANCHORS_AND_CRYPTO_POLICY"
+  | "HOUSEHOLD_IDENTITIES_AND_MEMBERSHIPS"
+  | "REVOCATIONS_AND_INCIDENTS"
+  | "ROLES_AND_CURRENT_AUTHORIZATION_POLICIES"
+  | "DEVICE_REGISTRY_AND_SUPPORTED_CLIENT_POLICY"
+  | "SESSIONS_INVALIDATED_HISTORY_ONLY"
+  | "APPROVAL_AND_CONSUMPTION_STATE"
+  | "DELETION_TOMBSTONES"
+  | "MEMORY_AND_SYNCHRONIZATION_METADATA"
+  | "CONNECTORS_OPTIONAL_RUNTIME_SERVICES_LAST";
+
+export type RecoveryProhibitedContentClass =
+  | "PASSWORDS"
+  | "PINS"
+  | "PASSKEYS"
+  | "SESSION_AND_APPROVAL_TOKENS"
+  | "OAUTH_CREDENTIALS"
+  | "CONNECTOR_AND_API_SECRETS"
+  | "DEVICE_PRIVATE_KEYS"
+  | "RAW_BIOMETRIC_DATA_OR_TEMPLATES"
+  | "RAW_CAMERA_FOOTAGE"
+  | "DECRYPTED_CACHES"
+  | "SENSITIVE_NOTIFICATION_CONTENT"
+  | "UNRESTRICTED_PRIVATE_PROMPTS"
+  | "RAW_HOUSEHOLD_PRIVATE_PAYLOADS";
+
+export type RecoveryPortabilityEvidenceClass =
+  | "PROVIDER_EXIT_READINESS"
+  | "FORMAT_COMPATIBILITY"
+  | "SOURCE_PROVENANCE"
+  | "TARGET_COMPATIBILITY";
+
+export type RecoveryCryptoMigrationClass =
+  | "POLICY_TRANSITION"
+  | "ALGORITHM_CLASS_TRANSITION"
+  | "KEY_LIFECYCLE_TRANSITION_EVIDENCE"
+  | "COMPATIBILITY_EVIDENCE";
+
+export type RecoveryDeviceLifecycleEvidenceClass =
+  | "TERMINAL_DECOMMISSIONING"
+  | "DEVICE_REVOCATION"
+  | "DEVICE_KEY_ROTATION"
+  | "REPLACEMENT_DEVICE_NEW_KEY"
+  | "REMOTE_ERASURE_ACKNOWLEDGEMENT"
+  | "BIOMETRIC_DELETION"
+  | "APPLICATION_INTEGRITY"
+  | "SYNC_INTEGRITY"
+  | "DELETION_TOMBSTONE";
+
+export type RecoveryCompletenessAssessmentState =
+  | "COMPLETE_FOR_METADATA_SCOPE"
+  | "INCOMPLETE_VISIBLE_GAPS"
+  | "NOT_ASSESSABLE"
+  | "REJECTED_PROHIBITED_CONTENT";
+
+export type RecoveryEvidencePrecedenceResult =
+  | "NO_OVERRIDE_REQUIRED"
+  | "TOMBSTONE_PRECEDENCE_APPLIED"
+  | "REVOCATION_PRECEDENCE_APPLIED"
+  | "TOMBSTONE_AND_REVOCATION_PRECEDENCE_APPLIED";
+
+export interface RecoveryCompletenessGap {
+  readonly requirementId: string;
+  readonly reason: RecoveryCompletenessGapReason;
+  readonly evidenceReference?: string;
+  readonly createsAuthority: false;
+}
+
+export interface RecoveryRestorationDependency {
+  readonly stage: RecoveryRestorationStage;
+  readonly dependsOnStage: RecoveryRestorationStage;
+  readonly unresolvedGapReason: "RESTORATION_DEPENDENCY_UNRESOLVED";
+  readonly createsAuthority: false;
+}
+
+export interface RecoveryProhibitedContentDescriptor {
+  readonly findingId: string;
+  readonly contentClass: RecoveryProhibitedContentClass;
+  readonly disposition: "PROHIBITED";
+  readonly evidenceReference?: string;
+  readonly createsAuthority: false;
+}
+
+export interface RecoveryPortabilityEvidence {
+  readonly evidenceId: string;
+  readonly evidenceClass: RecoveryPortabilityEvidenceClass;
+  readonly presence: RecoveryEvidencePresence;
+  readonly policyVersion: string;
+  readonly providerNeutralReference: string;
+  readonly createsAuthority: false;
+}
+
+export interface RecoveryCryptoMigrationEvidence {
+  readonly evidenceId: string;
+  readonly migrationClass: RecoveryCryptoMigrationClass;
+  readonly presence: RecoveryEvidencePresence;
+  readonly policyVersion: string;
+  readonly evidenceReference: string;
+  readonly createsAuthority: false;
+}
+
+export interface RecoveryDeviceLifecycleEvidence {
+  readonly evidenceId: string;
+  readonly lifecycleClass: RecoveryDeviceLifecycleEvidenceClass;
+  readonly presence: RecoveryEvidencePresence;
+  readonly policyVersion: string;
+  readonly evidenceReference: string;
+  readonly createsAuthority: false;
+}
+
+export interface RecoveryCompletenessAssessmentInput {
+  readonly gaps: readonly RecoveryCompletenessGap[];
+  readonly restorationDependencies: readonly RecoveryRestorationDependency[];
+  readonly prohibitedContentFindings: readonly RecoveryProhibitedContentDescriptor[];
+  readonly portabilityEvidence: readonly RecoveryPortabilityEvidence[];
+  readonly cryptoMigrationEvidence: readonly RecoveryCryptoMigrationEvidence[];
+  readonly deviceLifecycleEvidence: readonly RecoveryDeviceLifecycleEvidence[];
+  readonly tombstoneReferences: readonly string[];
+  readonly revocationReferences: readonly string[];
+  readonly blockedByReferences: readonly string[];
+  readonly policyVersion: string;
+  readonly createsAuthority: false;
+}
+
+export interface RecoveryCompletenessAssessment {
+  readonly state: RecoveryCompletenessAssessmentState;
+  readonly gaps: readonly RecoveryCompletenessGap[];
+  readonly blockedByReferences: readonly string[];
+  readonly prohibitedContentFindingIds: readonly string[];
+  readonly precedenceResult: RecoveryEvidencePrecedenceResult;
   readonly policyVersion: string;
   readonly createsAuthority: false;
 }
