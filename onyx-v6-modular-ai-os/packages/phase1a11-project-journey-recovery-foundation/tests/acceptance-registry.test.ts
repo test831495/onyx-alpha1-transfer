@@ -304,6 +304,22 @@ describe("B4-1 acceptance registry", () => {
     expect(ACCEPTANCE_REGISTRY.slice(116, 122).map((entry) => stableFingerprint(predecessorProjection(entry)))).toEqual(expected);
   });
 
+  it("requires canonical lexical deferred-capability ordering", () => {
+    const current = ACCEPTANCE_REGISTRY.find((entry) => entry.id === "COMPLETENESS-016");
+    if (!current) throw new Error("COMPLETENESS-016 is missing");
+    expect(current?.deferredCapabilities).toEqual(["REAL_RESTORATION", "RECOVERY_DASHBOARD", "RESTORE_PLAN_EXECUTION"]);
+    expect(stableFingerprint(predecessorProjection(current))).toBe("51c31e7a");
+    expect(validateAcceptanceRegistry(ACCEPTANCE_REGISTRY).valid).toBe(true);
+    const oldOrder = ["REAL_RESTORATION", "RESTORE_PLAN_EXECUTION", "RECOVERY_DASHBOARD"];
+    const oldOrderOnCompleteness = ACCEPTANCE_REGISTRY.map((entry) => entry.id === "COMPLETENESS-016" ? { ...entry, deferredCapabilities: oldOrder } : entry);
+    const oldOrderOnOtherRecord = ACCEPTANCE_REGISTRY.map((entry) => entry.id === "COMPLETENESS-015" ? { ...entry, deferredCapabilities: oldOrder } : entry);
+    expect(validateAcceptanceRegistry(oldOrderOnCompleteness).nondeterministicDeferredCapabilities).toEqual(["COMPLETENESS-016: deferred capabilities are not deterministically ordered"]);
+    expect(validateAcceptanceRegistry(oldOrderOnOtherRecord).nondeterministicDeferredCapabilities).toEqual(["COMPLETENESS-015: deferred capabilities are not deterministically ordered"]);
+    expect(validateAcceptanceRegistry(ACCEPTANCE_REGISTRY.map((entry) => entry.id === "COMPLETENESS-016" ? { ...entry, deferredCapabilities: ["RECOVERY_DASHBOARD", "REAL_RESTORATION", "RESTORE_PLAN_EXECUTION"] } : entry)).valid).toBe(false);
+    expect(validateAcceptanceRegistry(ACCEPTANCE_REGISTRY.map((entry) => entry.id === "COMPLETENESS-016" ? { ...entry, deferredCapabilities: ["REAL_RESTORATION", "REAL_RESTORATION", "RESTORE_PLAN_EXECUTION"] } : entry)).valid).toBe(false);
+    expect(validateAcceptanceRegistry(ACCEPTANCE_REGISTRY.map((entry) => entry.id === "COMPLETENESS-016" ? { ...entry, deferredCapabilities: ["UNKNOWN_CAPABILITY", "RESTORE_PLAN_EXECUTION"] } : entry)).valid).toBe(false);
+  });
+
   it.each(["COMPLETENESS-011", "COMPLETENESS-012", "COMPLETENESS-013", "COMPLETENESS-014", "COMPLETENESS-015", "COMPLETENESS-016"])("records %s with non-authorizing metadata", (id) => {
     const entry = ACCEPTANCE_REGISTRY.find((candidate) => candidate.id === id);
     expect(entry).toMatchObject({ family: "COMPLETENESS", contractStatus: "CONTRACT_DEFINED", runtimeStatus: "RUNTIME_DEFERRED", uiStatus: "UI_DEFERRED", createsAuthority: false, ownerOnly: false });
