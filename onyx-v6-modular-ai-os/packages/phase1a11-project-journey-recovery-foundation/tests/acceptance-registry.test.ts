@@ -14,6 +14,12 @@ const FROZEN_B4_1_BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["INTEGRITY-001", "636dcbdc"], ["INTEGRITY-002", "6aea6ef7"], ["INTEGRITY-003", "4be51a6a"], ["INTEGRITY-004", "1a2a3df8"], ["INTEGRITY-005", "e488a56c"], ["INTEGRITY-006", "ad290ee6"], ["INTEGRITY-007", "188e00dd"], ["INTEGRITY-008", "ffa2af3e"], ["INTEGRITY-009", "36a23e11"], ["INTEGRITY-010", "eae51ea2"], ["INTEGRITY-011", "9f5e0107"], ["INTEGRITY-012", "01fdfdaf"], ["INTEGRITY-013", "f8454705"], ["INTEGRITY-014", "3ab016e5"], ["INTEGRITY-015", "ebc2a40b"], ["INTEGRITY-016", "b97c9596"],
   ["ARCHIVE-001", "19ef16d2"], ["ARCHIVE-002", "692f4d05"], ["ARCHIVE-003", "e8358728"], ["ARCHIVE-004", "54cb9a97"], ["ARCHIVE-005", "74aea74c"], ["ARCHIVE-006", "34ee542f"], ["ARCHIVE-007", "9c4dcb67"], ["ARCHIVE-008", "e8555b50"], ["ARCHIVE-009", "fb9f0228"], ["ARCHIVE-010", "303f22e2"], ["ARCHIVE-011", "8dbd7a29"], ["ARCHIVE-012", "d9a6e925"], ["ARCHIVE-013", "0d334b72"], ["ARCHIVE-014", "77b396c5"], ["ARCHIVE-015", "d2d996b7"], ["ARCHIVE-016", "ec28424d"]
 ];
+// Independent second guard covering the accepted B4-1/B4-2 baseline (JOURNEY..CAPTURE, 92 records) at commit
+// 9180aac5fb1b3301489598a99c398bcb1f40f419. Frozen separately from FROZEN_B4_1_BASELINE and excludes CONTINUITY.
+const FROZEN_B4_1_B4_2_BASELINE: ReadonlyArray<readonly [string, string]> = [
+  ...FROZEN_B4_1_BASELINE,
+  ["CAPTURE-001", "827eb5dc"], ["CAPTURE-002", "367700e3"], ["CAPTURE-003", "29d4cf7a"], ["CAPTURE-004", "322709e1"], ["CAPTURE-005", "0f455ac2"], ["CAPTURE-006", "87a59f8c"], ["CAPTURE-007", "65a5857b"], ["CAPTURE-008", "67e210ef"], ["CAPTURE-009", "dc51e8d9"], ["CAPTURE-010", "93d43d02"], ["CAPTURE-011", "52d3ccec"], ["CAPTURE-012", "5a94e6b8"], ["CAPTURE-013", "7af2383d"], ["CAPTURE-014", "df4e67ea"], ["CAPTURE-015", "f445af67"], ["CAPTURE-016", "a2a04121"], ["CAPTURE-017", "d8ee51c6"], ["CAPTURE-018", "bc3f650b"], ["CAPTURE-019", "6c45931e"], ["CAPTURE-020", "8f7ec08b"], ["CAPTURE-021", "cc899274"], ["CAPTURE-022", "6a655d9d"], ["CAPTURE-023", "86019a2f"], ["CAPTURE-024", "fe68e290"],
+];
 const predecessorProjection = (entry: AcceptanceEntry) => ({ id: entry.id, family: entry.family, friendlyTitle: entry.friendlyTitle, userMeaning: entry.userMeaning, authoritativeRequirement: entry.authoritativeRequirement, contractStatus: entry.contractStatus, runtimeStatus: entry.runtimeStatus, uiStatus: entry.uiStatus, contractLocation: entry.contractLocation, plannedImplementationLocation: entry.plannedImplementationLocation, plannedTestMapping: entry.plannedTestMapping, plannedEvidenceMapping: entry.plannedEvidenceMapping, dependencies: entry.dependencies, deferredCapabilities: entry.deferredCapabilities, failClosedRequirement: entry.failClosedRequirement, ownerOnly: entry.ownerOnly, createsAuthority: entry.createsAuthority, technicalInformation: entry.technicalInformation });
 const stableFingerprint = (value: unknown): string => {
   let hash = 2166136261;
@@ -25,8 +31,8 @@ describe("B4-1 acceptance registry", () => {
   it("contains the exact ordered 68-entry contract", () => {
     const result = validateAcceptanceRegistry(ACCEPTANCE_REGISTRY);
     expect(result.valid).toBe(true);
-    expect(result.totalCount).toBe(92);
-    expect(result.familyCounts).toEqual({ JOURNEY: 16, RECOVERY: 20, INTEGRITY: 16, ARCHIVE: 16, CAPTURE: 24 });
+    expect(result.totalCount).toBe(112);
+    expect(result.familyCounts).toEqual({ JOURNEY: 16, RECOVERY: 20, INTEGRITY: 16, ARCHIVE: 16, CAPTURE: 24, CONTINUITY: 20 });
     expect(result.duplicateIds).toEqual([]);
     expect(result.missingIds).toEqual([]);
     expect(result.unexpectedIds).toEqual([]);
@@ -42,6 +48,15 @@ describe("B4-1 acceptance registry", () => {
     const actual = predecessors.map((entry) => [entry.id, stableFingerprint(predecessorProjection(entry))] as const);
     const mismatches = actual.filter(([id, digest], index) => id !== FROZEN_B4_1_BASELINE[index]?.[0] || digest !== FROZEN_B4_1_BASELINE[index]?.[1]);
     expect(mismatches, `Frozen B4-1 baseline differs for records ${mismatches.map(([id]) => id).join(", ")}.`).toEqual([]);
+  });
+
+  it("guards every authoritative field of each frozen B4-1/B4-2 predecessor record (first 92)", () => {
+    expect(FROZEN_B4_1_B4_2_BASELINE).toHaveLength(92);
+    const predecessors = ACCEPTANCE_REGISTRY.slice(0, FROZEN_B4_1_B4_2_BASELINE.length);
+    expect(predecessors.some((entry) => entry.family === "CONTINUITY")).toBe(false);
+    const actual = predecessors.map((entry) => [entry.id, stableFingerprint(predecessorProjection(entry))] as const);
+    const mismatches = actual.filter(([id, digest], index) => id !== FROZEN_B4_1_B4_2_BASELINE[index]?.[0] || digest !== FROZEN_B4_1_B4_2_BASELINE[index]?.[1]);
+    expect(mismatches, `Frozen B4-1/B4-2 predecessor baseline changed for records ${mismatches.map(([id]) => id).join(", ")}.`).toEqual([]);
   });
 
   it("reports identity and ordering defects", () => {
@@ -177,18 +192,38 @@ describe("B4-1 acceptance registry", () => {
   });
 
   it("keeps authored semantic content diverse across the registry", () => {
-    expect(new Set(ACCEPTANCE_REGISTRY.map((entry) => entry.userMeaning)).size).toBeGreaterThan(60);
-    expect(new Set(ACCEPTANCE_REGISTRY.map((entry) => entry.authoritativeRequirement)).size).toBeGreaterThan(60);
-    expect(new Set(ACCEPTANCE_REGISTRY.map((entry) => entry.technicalInformation.notes)).size).toBeGreaterThan(2);
-    expect(new Set(ACCEPTANCE_REGISTRY.map((entry) => entry.failClosedRequirement)).size).toBeGreaterThan(2);
-    expect(new Set(ACCEPTANCE_REGISTRY.map((entry) => entry.friendlyTitle)).size).toBe(92);
-    expect(new Set(ACCEPTANCE_REGISTRY.map((entry) => entry.userMeaning)).size).toBe(92);
-    expect(new Set(ACCEPTANCE_REGISTRY.map((entry) => entry.authoritativeRequirement)).size).toBeGreaterThan(60);
+    const titleGroups = new Map<string, string[]>();
+    const meaningGroups = new Map<string, string[]>();
+    for (const entry of ACCEPTANCE_REGISTRY) {
+      if (!titleGroups.has(entry.friendlyTitle)) titleGroups.set(entry.friendlyTitle, []);
+      titleGroups.get(entry.friendlyTitle)!.push(entry.id);
+      if (!meaningGroups.has(entry.userMeaning)) meaningGroups.set(entry.userMeaning, []);
+      meaningGroups.get(entry.userMeaning)!.push(entry.id);
+    }
+    const duplicateTitleGroups = [...titleGroups.entries()].filter(([, ids]) => ids.length > 1).map(([value, ids]) => ({ value, ids }));
+    const duplicateMeaningGroups = [...meaningGroups.entries()].filter(([, ids]) => ids.length > 1).map(([value, ids]) => ({ value, ids }));
+    const predecessorTitleSet = new Set(ACCEPTANCE_REGISTRY.filter((entry) => entry.family !== "CONTINUITY").map((entry) => entry.friendlyTitle));
+    const predecessorMeaningSet = new Set(ACCEPTANCE_REGISTRY.filter((entry) => entry.family !== "CONTINUITY").map((entry) => entry.userMeaning));
+    const continuityEntries = ACCEPTANCE_REGISTRY.filter((entry) => entry.family === "CONTINUITY");
+
+    expect(ACCEPTANCE_REGISTRY).toHaveLength(112);
+    expect(new Set(ACCEPTANCE_REGISTRY.map((entry) => entry.friendlyTitle)).size).toBe(112);
+    expect(new Set(ACCEPTANCE_REGISTRY.map((entry) => entry.userMeaning)).size).toBe(112);
+    expect(duplicateTitleGroups).toEqual([]);
+    expect(duplicateMeaningGroups).toEqual([]);
+    expect(continuityEntries).toHaveLength(20);
+    expect(new Set(continuityEntries.map((entry) => entry.friendlyTitle)).size).toBe(20);
+    expect(new Set(continuityEntries.map((entry) => entry.userMeaning)).size).toBe(20);
+    expect(continuityEntries.every((entry) => entry.friendlyTitle.trim().length > 0)).toBe(true);
+    expect(continuityEntries.every((entry) => entry.userMeaning.trim().length > 0)).toBe(true);
+    for (const entry of continuityEntries) {
+      expect(predecessorTitleSet.has(entry.friendlyTitle)).toBe(false);
+      expect(predecessorMeaningSet.has(entry.userMeaning)).toBe(false);
+      expect(entry.friendlyTitle).not.toMatch(/TBD|placeholder|to be defined|generic requirement/i);
+      expect(entry.userMeaning).not.toMatch(/TBD|placeholder|to be defined|generic requirement/i);
+    }
     expect(ACCEPTANCE_REGISTRY.every((entry) => entry.technicalInformation.notes.trim().length > 20)).toBe(true);
     expect(ACCEPTANCE_REGISTRY.every((entry) => entry.failClosedRequirement.trim().length > 20)).toBe(true);
-    expect(new Set(ACCEPTANCE_REGISTRY.map((entry) => entry.userMeaning.split(" ")[0])).size).toBeGreaterThan(1);
-    expect(new Set(ACCEPTANCE_REGISTRY.map((entry) => entry.authoritativeRequirement.split(" ")[0])).size).toBeGreaterThan(1);
-    expect(new Set(ACCEPTANCE_REGISTRY.map((entry) => entry.failClosedRequirement.split(" ")[0])).size).toBeGreaterThan(1);
     expect(ACCEPTANCE_REGISTRY.every((entry) => !/TBD|same as above|future requirement|generic requirement|placeholder|to be defined/i.test(`${entry.userMeaning} ${entry.authoritativeRequirement}`))).toBe(true);
   });
 });

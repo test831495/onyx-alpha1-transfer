@@ -2,7 +2,7 @@ export const OPERATING_MODES = ["ACTIVE", "LIGHT", "VACATION", "HIBERNATION"] as
 export type OperatingMode = (typeof OPERATING_MODES)[number];
 export const createsAuthority = false as const;
 
-export type AcceptanceFamily = "JOURNEY" | "RECOVERY" | "INTEGRITY" | "ARCHIVE" | "CAPTURE";
+export type AcceptanceFamily = "JOURNEY" | "RECOVERY" | "INTEGRITY" | "ARCHIVE" | "CAPTURE" | "CONTINUITY";
 export type AcceptanceStatus =
   | "CONTRACT_DEFINED"
   | "POLICY_VALIDATED"
@@ -164,6 +164,69 @@ export interface CopyReceiptDescriptor extends NonAuthorityMarker { receiptId: s
 export interface ArchiveSetDescriptor extends NonAuthorityMarker { archiveSetId: string; health: ArchiveSetHealth; storagePressure: StoragePressureState; retention: RetentionDecision; operatingMode: OperatingMode; }
 export interface SanitizationDescriptor extends NonAuthorityMarker { contentClass: SanitizationContentClass; decision: SanitizationDecision; }
 
+export type ContinuityState =
+  | "COMPLETE_CONTINUITY"
+  | "PARTIAL_CONTINUITY"
+  | "GAP_PRESENT"
+  | "INSUFFICIENT_EVIDENCE"
+  | "CONFLICTED_CONTINUITY"
+  | "UNKNOWN_CONTINUITY"
+  | "MALFORMED_ASSESSMENT";
+export type EvidenceSufficiencyState =
+  | "SUFFICIENT"
+  | "PARTIALLY_SUFFICIENT"
+  | "INSUFFICIENT"
+  | "MISSING"
+  | "PROHIBITED"
+  | "STALE"
+  | "CONFLICTED"
+  | "NOT_ASSESSABLE";
+export type HistoricalConfidenceBand =
+  | "HIGH_CONFIDENCE"
+  | "MEDIUM_CONFIDENCE"
+  | "LOW_CONFIDENCE"
+  | "UNVERIFIED"
+  | "CONFLICTED"
+  | "NOT_ASSESSABLE";
+export type JourneyProjectionPurpose =
+  | "PROJECT_PHASE_HISTORY"
+  | "ARCHITECTURE_HISTORY"
+  | "IMPLEMENTATION_HISTORY"
+  | "VALIDATION_HISTORY"
+  | "DECISION_HISTORY"
+  | "RELEASE_HISTORY"
+  | "RECOVERY_HISTORY"
+  | "CONTINUITY_SUMMARY";
+export type ProjectionEligibilityState =
+  | "ELIGIBLE"
+  | "PARTIALLY_ELIGIBLE"
+  | "OWNER_REVIEW_REQUIRED"
+  | "DENIED"
+  | "UNVERIFIED"
+  | "MALFORMED";
+export type ContinuitySensitivityClass =
+  | "PUBLIC_PROJECT_METADATA"
+  | "HOUSEHOLD_SAFE_METADATA"
+  | "OWNER_PRIVATE_PROJECT_HISTORY"
+  | "SECURITY_SENSITIVE_METADATA"
+  | "CREDENTIAL_ADJACENT_METADATA"
+  | "PROHIBITED_SECRET_CONTENT"
+  | "PROHIBITED_PRIVATE_HOUSEHOLD_CONTENT"
+  | "PROHIBITED_CAMERA_OR_BIOMETRIC_CONTENT"
+  | "UNKNOWN_SENSITIVITY";
+export type SafeNextActionValue =
+  | "KEEP_EVIDENCE_VISIBLE_WITH_PROVENANCE"
+  | "KEEP_GAPS_VISIBLE"
+  | "REQUEST_OWNER_REVIEW"
+  | "DENY_PROHIBITED_CONTENT"
+  | "REQUIRE_FRESH_PROVENANCE"
+  | "DO_NOT_CREATE_AUTHORITY";
+export type EvidenceFreshnessState =
+  | "CURRENT"
+  | "STALE"
+  | "MATERIALLY_CHANGED"
+  | "UNKNOWN_FRESHNESS";
+
 export interface AcceptanceEntry extends NonAuthorityMarker {
   id: string;
   family: AcceptanceFamily;
@@ -182,6 +245,66 @@ export interface AcceptanceEntry extends NonAuthorityMarker {
   failClosedRequirement: string;
   ownerOnly?: boolean;
   technicalInformation: TechnicalInformationMetadata;
+}
+
+export interface ContinuityRequirement {
+  readonly id: string;
+  readonly required: boolean;
+  readonly title: string;
+  readonly mandatory?: boolean;
+  readonly evidenceTypes?: readonly string[];
+  readonly provenanceRequired?: boolean;
+}
+
+export interface ContinuityEvidenceRecord extends NonAuthorityMarker {
+  readonly id: string;
+  readonly requirementId: string;
+  readonly sourceKind: string;
+  readonly compatible: boolean;
+  readonly precedence: string;
+  readonly provenance: string;
+  readonly sensitivity: ContinuitySensitivityClass | string;
+  readonly ownerOnly: boolean;
+  readonly freshness: EvidenceFreshnessState;
+}
+
+export interface ContinuityAssessmentInput {
+  readonly requirements: readonly ContinuityRequirement[];
+  readonly evidence: readonly ContinuityEvidenceRecord[];
+  readonly gaps?: readonly unknown[];
+  readonly conflicts?: readonly unknown[];
+  readonly sensitivity: ContinuitySensitivityClass | string;
+  readonly ownerScopeVerified: boolean;
+  readonly canonicalPrimaryOwner: boolean;
+  readonly policyVersion: string;
+}
+
+export interface ContinuityAssessmentResult extends NonAuthorityMarker {
+  readonly continuityState: ContinuityState;
+  readonly missingEvidence: boolean;
+  readonly hasConflicts: boolean;
+  readonly policyVersion: string;
+}
+
+export interface EvidenceSufficiencyAssessmentResult extends NonAuthorityMarker {
+  readonly state: EvidenceSufficiencyState;
+  readonly missingEvidence: boolean;
+  readonly policyVersion: string;
+}
+
+export interface HistoricalConfidenceAssessmentResult extends NonAuthorityMarker {
+  readonly band: HistoricalConfidenceBand;
+  readonly policyVersion: string;
+}
+
+export interface ProjectionEligibilityAssessmentResult extends NonAuthorityMarker {
+  readonly eligibility: ProjectionEligibilityState;
+  readonly policyVersion: string;
+}
+
+export interface ProjectionProvenanceAssessmentResult extends NonAuthorityMarker {
+  readonly valid: boolean;
+  readonly policyVersion: string;
 }
 
 export interface RegistryValidationResult {
