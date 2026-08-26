@@ -1,5 +1,6 @@
 import type { AcceptanceFamily, ArchiveSetHealth, CopyHealthState, ContinuityGapType, EvidenceState, IntegrityState, JourneyEventKind, OperatingMode, RecoveryPackageState, RecoveryRouteClass, RetentionDecision, SanitizationDecision, StoragePressureState, SummaryQuality } from "./model";
-import type { RecoveryArtifactClass, RecoveryEvidencePresence, RecoveryEvidenceRequirement, RecoveryMetadataKind } from "./model";
+import type { RecoveryArtifactClass as LegacyRecoveryArtifactClass, RecoveryEvidencePresence, RecoveryEvidenceRequirement, RecoveryMetadataKind } from "./model";
+import type { RecoveryDependencyArtifactClass, RecoveryDependencyReadinessState } from "./recovery-dependency-readiness-policy";
 import type { RecoveryCompletenessAssessmentState, RecoveryCompletenessGapReason, RecoveryCryptoMigrationClass, RecoveryDeviceLifecycleEvidenceClass, RecoveryEvidencePrecedenceResult, RecoveryPortabilityEvidenceClass, RecoveryProhibitedContentClass, RecoveryRestorationStage } from "./model";
 import type { RecoveryMetadataValidationState } from "./recovery-metadata";
 import { boundedFreeze } from "./capture-policy";
@@ -107,7 +108,7 @@ export const RECOVERY_METADATA_KIND_LABELS: Readonly<Record<RecoveryMetadataKind
   EVIDENCE_REFERENCE: RECOVERY_METADATA_LABELS.EVIDENCE_REFERENCE,
   VALIDATION_DESCRIPTOR: RECOVERY_METADATA_LABELS.VALIDATION_DESCRIPTOR,
 });
-export const RECOVERY_ARTIFACT_LABELS: Readonly<Record<RecoveryArtifactClass, FriendlyLabel>> = boundedFreeze({
+export const RECOVERY_ARTIFACT_LABELS: Readonly<Record<LegacyRecoveryArtifactClass, FriendlyLabel>> = boundedFreeze({
   JOURNEY_RECORD_SET: label("Journey record set", "A reference to Journey metadata only.", "Do not retrieve or restore its contents."),
   POLICY_METADATA_SET: label("Policy metadata set", "A reference to policy metadata only.", "Treat it as descriptive metadata."),
   IDENTITY_METADATA_SET: label("Identity metadata set", "A reference to identity metadata only.", "Do not infer identity authority."),
@@ -116,6 +117,35 @@ export const RECOVERY_ARTIFACT_LABELS: Readonly<Record<RecoveryArtifactClass, Fr
   TOMBSTONE_METADATA_SET: label("Tombstone metadata set", "A reference to deletion metadata only.", "Do not override deletion state."),
   MEMORY_SYNC_METADATA_SET: label("Memory synchronization metadata set", "A reference to synchronization metadata only.", "Do not synchronize or restore data."),
   CONNECTOR_METADATA_SET: label("Connector metadata set", "A reference to connector metadata only.", "Do not connect or retrieve content."),
+});
+
+export const RECOVERY_DEPENDENCY_ARTIFACT_CLASS_LABELS: Readonly<Record<RecoveryDependencyArtifactClass, FriendlyLabel>> = boundedFreeze({
+  TRUST_ANCHOR_METADATA: label("Trust anchor metadata", "Metadata describing the trust anchor boundary.", "Keep trust evidence descriptive and non-authorizing."),
+  CRYPTOGRAPHIC_POLICY_METADATA: label("Cryptographic policy metadata", "Metadata describing cryptographic policy.", "Keep cryptographic policy separate from key handling."),
+  HOUSEHOLD_IDENTITY_METADATA: label("Household identity metadata", "Metadata describing household identity.", "Preserve identity evidence without activating authority."),
+  HOUSEHOLD_MEMBERSHIP_METADATA: label("Household membership metadata", "Metadata describing household memberships.", "Review membership evidence without inferring access."),
+  REVOCATION_METADATA: label("Revocation metadata", "Metadata describing revocation evidence.", "Preserve revocation boundaries."),
+  INCIDENT_METADATA: label("Incident metadata", "Metadata describing recorded incident evidence.", "Keep incident evidence visible and unresolved when needed."),
+  ROLE_METADATA: label("Role metadata", "Metadata describing role state.", "Do not infer current authorization from metadata."),
+  AUTHORIZATION_POLICY_METADATA: label("Authorization policy metadata", "Metadata describing current policy boundaries.", "Keep authorization server-authoritative."),
+  DEVICE_REGISTRY_METADATA: label("Device registry metadata", "Metadata describing registered devices.", "Do not establish device trust from metadata."),
+  SUPPORTED_CLIENT_POLICY_METADATA: label("Supported client policy metadata", "Metadata describing supported-client policy.", "Keep client policy descriptive."),
+  INVALIDATED_SESSION_HISTORY: label("Invalidated session history", "Historical metadata for invalidated sessions.", "Do not reactivate a session."),
+  APPROVAL_CONSUMPTION_STATE: label("Approval consumption state", "Metadata describing approval consumption history.", "Consumed approvals remain consumed."),
+  DELETION_TOMBSTONE_METADATA: label("Deletion tombstone metadata", "Metadata describing deletion tombstones.", "Keep deletion precedence visible."),
+  MEMORY_METADATA: label("Memory metadata", "Metadata describing memory boundaries.", "Do not restore or expose memory payloads."),
+  SYNCHRONIZATION_METADATA: label("Synchronization metadata", "Metadata describing synchronization state.", "Do not synchronize from this policy."),
+  CONNECTOR_METADATA: label("Connector metadata", "Metadata describing connector boundaries.", "Do not activate or query connectors."),
+  OPTIONAL_RUNTIME_SERVICE_METADATA: label("Optional runtime service metadata", "Metadata describing optional runtime services.", "Keep runtime services deferred."),
+});
+
+export const RECOVERY_DEPENDENCY_READINESS_STATE_LABELS: Readonly<Record<RecoveryDependencyReadinessState, FriendlyLabel>> = boundedFreeze({
+  READY_FOR_METADATA_REVIEW: label("Ready for metadata review", "Evidence is sufficient for descriptive metadata review only.", "Do not treat this as restoration permission."),
+  BLOCKED_MISSING_PREREQUISITE: label("Blocked by missing prerequisite", "A required artifact or evidence reference is absent.", "Keep the gap visible and request evidence.", "WARNING"),
+  BLOCKED_CONFLICTING_PREREQUISITE: label("Blocked by conflicting prerequisite", "Prerequisite evidence conflicts and remains unresolved.", "Preserve the conflict for authoritative review.", "WARNING"),
+  BLOCKED_UNVERIFIED_EVIDENCE: label("Blocked by unverified evidence", "Required evidence has not been verified.", "Do not rely on unverified metadata.", "WARNING"),
+  BLOCKED_PROHIBITED_REACTIVATION: label("Blocked prohibited reactivation", "The input describes a prohibited reactivation.", "Keep historical state non-reactivating.", "CRITICAL"),
+  NOT_ASSESSABLE: label("Not assessable", "The supplied metadata cannot be safely assessed.", "Keep the result unresolved and request corrected metadata.", "WARNING"),
 });
 export const RECOVERY_EVIDENCE_PRESENCE_LABELS: Readonly<Record<RecoveryEvidencePresence, FriendlyLabel>> = boundedFreeze({
   PRESENT: RECOVERY_METADATA_LABELS.PRESENT,
