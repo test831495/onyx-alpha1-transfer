@@ -91,6 +91,15 @@ importers:
         specifier: workspace:*
         version: link:../contracts
 
+  packages/ai-development-factory-foundation:
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.7
+        version: 3.2.7(@types/node@26.2.0)(tsx@4.23.12)
+
   packages/automation-foundation:
     devDependencies:
       typescript:
@@ -301,6 +310,18 @@ importers:
       '@onyx/phase1a11-household-session-runtime':
         specifier: workspace:*
         version: link:../phase1a11-household-session-runtime
+    devDependencies:
+      '@types/node':
+        specifier: ^26.2.0
+        version: 26.2.0
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.7
+        version: 3.2.7(@types/node@26.2.0)(tsx@4.23.12)
+
+  packages/phase1a11-project-journey-recovery-foundation:
     devDependencies:
       '@types/node':
         specifier: ^26.2.0
