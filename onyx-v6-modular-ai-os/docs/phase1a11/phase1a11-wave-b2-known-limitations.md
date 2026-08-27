@@ -3,7 +3,7 @@
 **Version:** 0.1.0
 **Date:** 2026-08-23
 **Owner:** Rahul
-**Status:** Local foundation; review required
+**Status:** Local deterministic foundation; validated and superseded by merged PR #13. Production runtime remains deferred.
 **Audience:** Rahul and reviewers
 
 ## Limitations
