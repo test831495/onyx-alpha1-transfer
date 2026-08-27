@@ -29,6 +29,7 @@ import {
   projectContinuityGaps,
   projectEvidenceInventory,
 } from "../src/index";
+import { classifyMalformedInput, dispositionForMalformedInput, inspectRecord, validateBoundedNumber, validateBoundedString } from "../src/factory-constitution";
 
 const baseEnvelope = {
   taskId: "task-1",
@@ -166,6 +167,52 @@ const baseDecision = {
 };
 
 describe("deterministic validators", () => {
+  it("classifies malformed records without invoking accessors and preserves typed absence", () => {
+    const cases: [unknown, string][] = [[null, "NULL_INPUT"], [[], "ARRAY_INPUT"], [1, "PRIMITIVE_INPUT"], [{}, "MISSING_FIELD"]];
+    for (const [input, kind] of cases) expect(inspectRecord(input, ["required"])).toMatchObject({ valid: false, kind });
+    const accessor = {} as Record<string, unknown>;
+    let getterCalled = false;
+    Object.defineProperty(accessor, "required", { enumerable: true, get: () => { getterCalled = true; return "value"; } });
+    expect(inspectRecord(accessor, ["required"])).toMatchObject({ valid: false, kind: "ACCESSOR_PROPERTY" });
+    expect(getterCalled).toBe(false);
+    expect(inspectRecord(Object.assign(Object.create(null), { required: "value" }), ["required"]).valid).toBe(true);
+    expect(inspectRecord({ required: "value", constructor: "unsafe" }, ["required"])).toMatchObject({ valid: false, kind: "DANGEROUS_KEY" });
+  });
+
+  it("keeps owner dispositions and diagnostics restrictive, bounded, and non-authorizing", () => {
+    for (const kind of ["NULL_INPUT", "MISSING_FIELD", "DANGEROUS_KEY", "INVALID_VALUE"] as const) {
+      expect(dispositionForMalformedInput("TASK_ENVELOPE", kind)).toBe("DENIED");
+      expect(dispositionForMalformedInput("CAPABILITY", kind)).toBe("QUARANTINED");
+      expect(classifyMalformedInput({})).toBe("MISSING_FIELD");
+    }
+    const diagnostic = validateSensitiveExclusion({ excludedClass: "PASSWORDS", sourceOrigin: "SYNTHETIC_FIXTURE", subject: "sensitive-value", collectionStopped: true, reasonCode: "SENSITIVE_EVIDENCE_EXCLUDED", ingested: false, echoed: false, persisted: false, ownerVisibleEscalation: true, authorityStatus: "NON_AUTHORIZING" });
+    expect(diagnostic).toMatchObject({ status: "DENIED", reasonCode: "SENSITIVE_EVIDENCE_EXCLUDED", createsAuthority: false, authorityStatus: "NON_AUTHORIZING" });
+    expect(JSON.stringify(diagnostic)).not.toContain("sensitive-value");
+  });
+
+  it("validates bounded primitive classes with stable reasons and explicit absence", () => {
+    for (const value of [null, undefined, 1n, Symbol("x"), () => true, Number.NaN, Infinity, -Infinity]) expect(validateBoundedNumber(value)).toMatchObject({ valid: false });
+    expect(validateBoundedNumber(0, { minimum: 0, maximum: 1 })).toMatchObject({ valid: true, reasonCodes: [] });
+    expect(validateBoundedNumber(-1, { minimum: 0, maximum: 1 }).reasonCodes).toEqual(["NUMBER_BELOW_MINIMUM"]);
+    expect(validateBoundedNumber(2, { minimum: 0, maximum: 1 }).reasonCodes).toEqual(["NUMBER_ABOVE_MAXIMUM"]);
+    for (const value of ["", "   ", "a\u0000", "a\u200b", "a\u202e"]) expect(validateBoundedString(value)).toMatchObject({ valid: false });
+    expect(validateBoundedString("abc", { minimumLength: 3, maximumLength: 3 })).toMatchObject({ valid: true, reasonCodes: [] });
+    expect(validateBoundedString("ab", { minimumLength: 3, maximumLength: 3 }).reasonCodes).toEqual(["STRING_TOO_SHORT"]);
+    expect(validateBoundedString("abcd", { minimumLength: 3, maximumLength: 3 }).reasonCodes).toEqual(["STRING_TOO_LONG"]);
+  });
+
+  it("enforces the default string ceiling and deterministic combined reason precedence", () => {
+    expect(validateBoundedString("x".repeat(4096)).valid).toBe(true);
+    expect(validateBoundedString("x".repeat(4097)).reasonCodes).toEqual(["STRING_TOO_LONG"]);
+    expect(validateBoundedString("", { minimumLength: 1 }).reasonCodes).toEqual(["STRING_EMPTY", "STRING_WHITESPACE_ONLY", "STRING_TOO_SHORT"]);
+    const input = { required: "stable" };
+    const snapshot = JSON.stringify(input);
+    const inspection = inspectRecord(input, ["required"]);
+    expect(inspection).toEqual({ valid: true, reasonCodes: [] });
+    expect(input).toEqual(JSON.parse(snapshot));
+    expect(Object.isFrozen(inspection)).toBe(true);
+    expect(Object.isFrozen(inspection.reasonCodes)).toBe(true);
+  });
   it("denies malformed, null, unknown, and authority-bearing inputs", () => {
     expect(validateConstitution(null).status).toBe("DENIED");
     expect(validateConstitution({ ...FACTORY_CONSTITUTION, createsAuthority: true }).reasonCode).toBe("CONSTITUTION_INVARIANT_FAILED");
