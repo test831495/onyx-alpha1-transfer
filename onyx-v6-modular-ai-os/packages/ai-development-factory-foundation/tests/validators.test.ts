@@ -198,7 +198,31 @@ describe("deterministic validators", () => {
   });
 
   it("rejects invalid envelope actors, policies, budgets, timestamps, and duplicate policy values", () => {
-    for (const [field, value] of [["requestedBy", ""], ["authorizedBy", "collaborator"], ["authorityClassification", "OWNER"], ["repositoryId", "wrong/repository"], ["repositoryVisibilityClassification", "SECRET"], ["expectedBranch", "feature branch"], ["networkPolicy", "ALLOW"], ["dataPolicy", "ALL_DATA"], ["secretPolicy", "ALLOW"], ["providerPolicy", "REMOTE"], ["continuityGapPolicy", "IGNORE"], ["cancellationState", "UNKNOWN"], ["killSwitchState", "UNKNOWN"], ["expiresAt", "2026-99-99T00:00:00.000Z"]] as [string, unknown][]) expect(validateTaskEnvelope({ ...baseEnvelope, [field]: value }), field).toMatchObject({ status: "DENIED", reasonCode: "TASK_ENVELOPE_INVALID", createsAuthority: false });
+    for (const [field, value] of [["requestedBy", ""], ["authorityClassification", "OWNER"], ["repositoryVisibilityClassification", "SECRET"], ["expectedBranch", "feature branch"], ["networkPolicy", "ALLOW"], ["dataPolicy", "ALL_DATA"], ["secretPolicy", "ALLOW"], ["providerPolicy", "REMOTE"], ["continuityGapPolicy", "IGNORE"], ["cancellationState", "UNKNOWN"], ["killSwitchState", "UNKNOWN"], ["expiresAt", "2026-99-99T00:00:00.000Z"]] as [string, unknown][]) expect(validateTaskEnvelope({ ...baseEnvelope, [field]: value }), field).toMatchObject({ status: "DENIED", reasonCode: "TASK_ENVELOPE_INVALID", createsAuthority: false });
+  });
+
+  it("remains valid for synthetic repository and actor identifiers when structurally coherent", () => {
+    expect(validateTaskEnvelope({ ...baseEnvelope, repositoryId: "synthetic-owner/synthetic-repo" }).status).toBe("VALID");
+    expect(validateTaskEnvelope({ ...baseEnvelope, repositoryId: "wrong/repository" }).status).toBe("VALID");
+    expect(validateTaskEnvelope({ ...baseEnvelope, requestedBy: "synthetic-agent-1", authorizedBy: "synthetic-owner-reference" }).status).toBe("VALID");
+    expect(validateTaskEnvelope({ ...baseEnvelope, authorizedBy: "collaborator" }).status).toBe("VALID");
+  });
+
+  it("rejects malformed repository identifiers regardless of specific deployment", () => {
+    for (const repositoryId of ["", "   ", "a".repeat(201), "../etc/passwd", "http://example.test/repo", "owner/repo\u200b", "owner;rm -rf/repo", "owner//repo", "/owner/repo", "owner/repo/", "owner", "owner/\u202erepo"]) expect(validateTaskEnvelope({ ...baseEnvelope, repositoryId }), repositoryId || "empty").toMatchObject({ status: "DENIED", reasonCode: "TASK_ENVELOPE_INVALID" });
+  });
+
+  it("rejects malformed actor references for requestedBy and authorizedBy independent of specific identity", () => {
+    for (const value of ["", "   ", "a".repeat(257), "collab orator", "collaborator\u200b", "collaborator;rm", "collaborator`x`", "collaborator$(x)", "\u202ecollaborator"]) expect(validateTaskEnvelope({ ...baseEnvelope, requestedBy: value }), value || "empty").toMatchObject({ status: "DENIED", reasonCode: "TASK_ENVELOPE_INVALID" });
+    for (const value of ["", "   ", "a".repeat(257), "Rahul owner", "owner\u200b"]) expect(validateTaskEnvelope({ ...baseEnvelope, authorizedBy: value }), value || "empty").toMatchObject({ status: "DENIED", reasonCode: "TASK_ENVELOPE_INVALID" });
+  });
+
+  it("keeps authority classification closed and unaffected by actor display-name content", () => {
+    expect(validateTaskEnvelope({ ...baseEnvelope, authorizedBy: "owner-claim", authorityClassification: "OWNER_AUTHORIZED" })).toMatchObject({ status: "DENIED", reasonCode: "TASK_ENVELOPE_INVALID", createsAuthority: false });
+    expect(validateTaskEnvelope({ ...baseEnvelope, requestedBy: "Rahul", authorizedBy: "anyone" })).toMatchObject({ status: "VALID", createsAuthority: false });
+    const swapped = validateTaskEnvelope({ ...baseEnvelope, requestedBy: "synthetic-agent", authorizedBy: "synthetic-authority" });
+    expect(swapped).toMatchObject({ status: "VALID", createsAuthority: false, authorityStatus: "NON_AUTHORIZING" });
+    expect(validateTaskEnvelope(baseEnvelope).status).toBe("VALID");
     for (const [field, value] of [["resourceBudget", { maxItems: -1 }], ["modelBudget", { maxTokens: Number.NaN }], ["timeBudget", { maxMilliseconds: Number.POSITIVE_INFINITY }], ["resourceBudget", { maxItems: 1_000_000_001 }], ["evidenceRequirements", ["baseline", "baseline"]], ["reviewerRequirements", ["independent", "independent"]], ["stopConditions", ["MUTATION", "MUTATION"]]] as [string, unknown][]) expect(validateTaskEnvelope({ ...baseEnvelope, [field]: value }), field).toMatchObject({ status: "DENIED", createsAuthority: false });
     for (const field of ["outputClasses", "evidenceRequirements", "reviewerRequirements", "stopConditions"]) expect(validateTaskEnvelope({ ...baseEnvelope, [field]: [] }), field).toMatchObject({ status: "DENIED", createsAuthority: false });
   });

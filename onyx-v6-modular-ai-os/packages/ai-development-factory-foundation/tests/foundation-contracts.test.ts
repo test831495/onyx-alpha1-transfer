@@ -3,6 +3,7 @@ import * as factory from "../src/index";
 import { AUTHORITY_IMPACTS, BLOCKER_STATES, CONTINUITY_GAP_REASONS, EVIDENCE_STATUSES, FACTORY_CONSTITUTION, FACTORY_MODES, FACTORY_STAGES, READ_ONLY_COMMAND_CLASSES, RESTRICTIVE_TRANSITION_REASONS, assessModeTransition, freezeContinuityGap, freezeEvidenceRecord, freezeContinuityDraft, freezeTaskEnvelope, projectContinuityGaps, projectEvidenceInventory, validateCommand, validateConstitution, validateFactoryMode, validateFactoryStage, validateGap, validateModeTransition, validateEvidence, validateInventory } from "../src/index";
 
 const baseline = "fcc6489155e93f0aea79aedfe32c6fd789f558ae";
+const EVALUATION_TIME = "2026-08-27T00:00:00.000Z";
 const baseEvidence = {
   evidenceId: "e1",
   status: "OBSERVED",
@@ -253,7 +254,7 @@ describe("foundation closed contracts", () => {
       accepted,
     ];
     const input = [...records];
-    const inventory = projectEvidenceInventory(input);
+    const inventory = projectEvidenceInventory(input, EVALUATION_TIME);
     expect(inventory.records.map((record) => record.evidenceId)).toEqual(["e-accepted", "e-conflict", "e-missing", "e-reported", "e-stale", "e-verified"]);
     expect(inventory.byStatus).toEqual({ ACCEPTED: 1, CONFLICTING: 1, MISSING: 1, REPORTED: 1, STALE: 1, VERIFIED: 1 });
     expect(inventory.externallyAccepted.map((record) => record.evidenceId)).toEqual(["e-accepted"]);
@@ -278,9 +279,35 @@ describe("foundation closed contracts", () => {
     expect(validateInventory({ records: [valid, valid], authorityStatus: "NON_AUTHORIZING" })).toMatchObject({ status: "INVALID" });
     expect(validateInventory({ records: [valid], authorityStatus: "EXTERNALLY_ACCEPTED" })).toMatchObject({ status: "INVALID" });
   });
+  it("derives a deterministic, bounded expired subset of stale evidence from an explicit evaluation time", () => {
+    const beforeExpiry = { ...baseEvidence, evidenceId: "e-before", status: "STALE", staleReason: "FRESHNESS_WINDOW_EXCEEDED", expiresAt: "2026-08-28T00:00:00.000Z" };
+    const atExpiry = { ...baseEvidence, evidenceId: "e-at", status: "STALE", staleReason: "FRESHNESS_WINDOW_EXCEEDED", expiresAt: "2026-08-27T00:00:00.000Z" };
+    const afterExpiry = { ...baseEvidence, evidenceId: "e-after", status: "STALE", staleReason: "FRESHNESS_WINDOW_EXCEEDED", expiresAt: "2026-08-26T00:00:00.000Z" };
+    const verifiedWithExpiryField = { ...baseEvidence, evidenceId: "e-verified-expiry", status: "VERIFIED", validationResult: { outcome: "VALID" }, expiresAt: "2026-08-01T00:00:00.000Z" };
+    const observed = { ...baseEvidence, evidenceId: "e-observed" };
+    const literalExpired = { ...baseEvidence, evidenceId: "e-literal-expired", status: "EXPIRED" };
+    const records = [beforeExpiry, atExpiry, afterExpiry, verifiedWithExpiryField, observed, literalExpired];
+    const before = JSON.parse(JSON.stringify(records));
+    const inventory = projectEvidenceInventory(records, EVALUATION_TIME);
+    expect(inventory.stale.map((record) => record.evidenceId)).toEqual(["e-after", "e-at", "e-before"]);
+    expect(inventory.expired.map((record) => record.evidenceId)).toEqual(["e-after", "e-at"]);
+    expect(inventory.expired.every((record) => inventory.stale.some((stale) => stale.evidenceId === record.evidenceId))).toBe(true);
+    expect(inventory.invalid.map((record) => record.evidenceId)).toEqual(expect.arrayContaining(["e-literal-expired", "e-verified-expiry"]));
+    expect(inventory.verified.map((record) => record.evidenceId)).toEqual([]);
+    expect(inventory.observed.map((record) => record.evidenceId)).toEqual(["e-observed"]);
+    expect(inventory.expired.some((record) => record.evidenceId === "e-observed")).toBe(false);
+    expect(() => projectEvidenceInventory(records, "not-a-time")).toThrow();
+    expect(() => projectEvidenceInventory(records, "")).toThrow();
+    expect(() => projectEvidenceInventory(records, "2026-99-99T00:00:00.000Z")).toThrow();
+    expect(projectEvidenceInventory(records, EVALUATION_TIME)).toEqual(inventory);
+    expect(Object.isFrozen(inventory.stale)).toBe(true);
+    expect(Object.isFrozen(inventory.expired)).toBe(true);
+    expect(records).toEqual(before);
+    expect(inventory.authorityStatus).toBe("NON_AUTHORIZING");
+  });
   it("keeps invalid inventory records visible instead of presenting a complete summary", () => {
     const invalid = { ...baseEvidence, evidenceId: "e-invalid", status: "UNKNOWN" };
-    const inventory = projectEvidenceInventory([baseEvidence, invalid]);
+    const inventory = projectEvidenceInventory([baseEvidence, invalid], EVALUATION_TIME);
     expect(inventory.records.map((record) => record.evidenceId)).toEqual(["e-invalid", "e1"]);
     expect(inventory.invalid.map((record) => record.evidenceId)).toEqual(["e-invalid"]);
     expect(inventory.byStatus).toEqual({ OBSERVED: 1, UNKNOWN: 1 });
@@ -309,7 +336,7 @@ describe("foundation closed contracts", () => {
     const left = { ...baseEvidence, evidenceId: "e-left", status: "CONFLICTING", contradictionIds: ["e-right"] };
     const right = { ...baseEvidence, evidenceId: "e-right", status: "CONFLICTING", contradictionIds: ["e-left"] };
     expect(validateInventory({ records: [old, replacement, left, right], authorityStatus: "NON_AUTHORIZING" })).toMatchObject({ status: "VALID" });
-    const inventory = projectEvidenceInventory([replacement, old, right, left]);
+    const inventory = projectEvidenceInventory([replacement, old, right, left], EVALUATION_TIME);
     expect(inventory.records.map((record) => record.evidenceId)).toEqual(["e-left", "e-new", "e-old", "e-right"]);
     expect(inventory.records.map((record) => record.status)).toContain("SUPERSEDED");
     expect(inventory.records.filter((record) => record.status === "CONFLICTING")).toHaveLength(2);
@@ -327,7 +354,7 @@ describe("foundation closed contracts", () => {
       { evidenceId: "b", status: "STALE", authorityStatus: "NON_AUTHORIZING", reviewStatus: "UNREVIEWED" },
       { evidenceId: "a", status: "OBSERVED", authorityStatus: "NON_AUTHORIZING", reviewStatus: "UNREVIEWED" },
     ] as const;
-    const inventory = projectEvidenceInventory(records);
+    const inventory = projectEvidenceInventory(records, EVALUATION_TIME);
     expect(inventory.records.map((record) => record.evidenceId)).toEqual(["a", "b"]);
     expect(inventory.authorityStatus).toBe("NON_AUTHORIZING");
     expect(inventory.byStatus).toEqual({ OBSERVED: 1, STALE: 1 });
@@ -335,7 +362,7 @@ describe("foundation closed contracts", () => {
   });
   it("projects every evidence status without promotion, conflict resolution, or stale hiding", () => {
     const records = EVIDENCE_STATUSES.map((status, index) => historicalEvidence(status, `e-${String(index).padStart(2, "0")}`));
-    const inventory = projectEvidenceInventory(records);
+    const inventory = projectEvidenceInventory(records, EVALUATION_TIME);
     expect(inventory.records.map((record) => record.status)).toEqual(EVIDENCE_STATUSES);
     expect(inventory.authorityStatus).toBe("NON_AUTHORIZING");
     expect(inventory.externallyAccepted).toHaveLength(1);

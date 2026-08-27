@@ -10,6 +10,12 @@ const DISALLOWED_PATH_VARIANTS = /[\\\u2215\u2216\u2044\u29f8\u29f9\uFF3C\uFF0F\
 const validPath = (path: unknown): path is string => typeof path === "string" && path.length > 0 && path.normalize("NFC") === path && PATH.test(path) && !path.startsWith("/") && !/^[A-Za-z]:/.test(path) && !path.startsWith("//") && !DISALLOWED_PATH_VARIANTS.test(path) && !/%(?:2f|5c|2e)/i.test(path) && !path.endsWith("/") && !path.split("/").some((segment) => segment === "" || segment === "." || segment === ".." || /[ .]$/.test(segment));
 const unique = (values: readonly unknown[]): boolean => new Set(values).size === values.length;
 const boundedBudget = (value: unknown): boolean => isSafeRecord(value) && Object.keys(value).length > 0 && Object.values(value).every((item) => typeof item === "number" && Number.isFinite(item) && item >= 0 && item <= 1_000_000_000);
+// Actor and repository references are validated structurally so no display name, account, or repository slug is a hard-coded authority primitive.
+const ACTOR_REFERENCE = /^[^\s\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff;&|`$(){}<>\\]{1,256}$/u;
+const isValidActorReference = (value: unknown): value is string => typeof value === "string" && ACTOR_REFERENCE.test(value) && value.normalize("NFC") === value;
+const REPOSITORY_IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}\/[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/;
+const isValidRepositoryIdentifier = (value: unknown): value is string => typeof value === "string" && value.length <= 200 && REPOSITORY_IDENTIFIER.test(value) && value.normalize("NFC") === value;
+const AUTHORITY_CLASSIFICATIONS = ["PROPOSAL_ONLY"] as const;
 export const isValidTaskEnvelope = (input: unknown): boolean => {
   if (!isSafeRecord(input)) return false;
   const value = input as Record<string, unknown>;
@@ -23,7 +29,7 @@ export const isValidTaskEnvelope = (input: unknown): boolean => {
   if (permitted.length === 0 || ![...permitted, ...prohibited].every(validPath) || !unique(permitted) || !unique(prohibited) || permitted.some((path, index) => permitted.some((other, otherIndex) => index !== otherIndex && path.startsWith(`${other}/`))) || permitted.some((path) => prohibited.some((other) => path === other || path.startsWith(`${other}/`)))) return false;
   if (["outputClasses", "evidenceRequirements", "reviewerRequirements", "stopConditions"].some((key) => (value[key] as unknown[]).length === 0)) return false;
   if (arrays.some((key) => !(value[key] as unknown[]).every((item) => String(item).trim() !== "") || !unique(value[key] as unknown[]))) return false;
-  if (value.requestedBy !== "collaborator" || value.authorizedBy !== "Rahul" || value.authorityClassification !== "PROPOSAL_ONLY" || value.repositoryId !== "test831495/onyx-alpha1-transfer" || value.repositoryVisibilityClassification !== "PUBLIC" || !/^[A-Za-z0-9._/-]+$/.test(String(value.expectedBranch)) || !["DENY", "LOCAL_ONLY"].includes(String(value.networkPolicy)) || value.dataPolicy !== "REPOSITORY_METADATA_ONLY" || value.secretPolicy !== "PROHIBIT" || value.providerPolicy !== "NONE" || value.continuityGapPolicy !== "TYPED_GAPS" || !boundedBudget(value.resourceBudget) || !boundedBudget(value.modelBudget) || !boundedBudget(value.timeBudget)) return false;
+  if (!isValidActorReference(value.requestedBy) || !isValidActorReference(value.authorizedBy) || !AUTHORITY_CLASSIFICATIONS.includes(value.authorityClassification as never) || !isValidRepositoryIdentifier(value.repositoryId) || value.repositoryVisibilityClassification !== "PUBLIC" || !/^[A-Za-z0-9._/-]+$/.test(String(value.expectedBranch)) || !["DENY", "LOCAL_ONLY"].includes(String(value.networkPolicy)) || value.dataPolicy !== "REPOSITORY_METADATA_ONLY" || value.secretPolicy !== "PROHIBIT" || value.providerPolicy !== "NONE" || value.continuityGapPolicy !== "TYPED_GAPS" || !boundedBudget(value.resourceBudget) || !boundedBudget(value.modelBudget) || !boundedBudget(value.timeBudget)) return false;
   if (!isFactoryMode(value.operatingMode) || !isFactoryStage(value.factoryStage)) return false;
   const falseFlags = ["mutationAllowed", "createsAuthority", "networkAllowed", "productionSecretsAllowed", "productionDataAllowed", "householdPrivateDataAllowed", "gitWriteAllowed", "remoteWriteAllowed", "runtimeActivationAllowed"];
   if (falseFlags.some((key) => value[key] !== false)) return false;
