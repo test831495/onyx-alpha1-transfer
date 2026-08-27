@@ -70,4 +70,4 @@ No credential material is required for these validations. Protected operations r
 
 ## Next safe step
 
-Rahul reviews this evidence with the uncommitted remediation diff for B3 closure decision.
+Historical status at the time of this record: Rahul review of the remediation diff and evidence was required for the B3 closure decision. Superseded by merged PR #14 and later Phase 1A.11 closure evidence.

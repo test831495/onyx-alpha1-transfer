@@ -3,7 +3,7 @@
 **Version:** 0.2.0
 **Date:** 2026-08-23
 **Owner:** Rahul
-**Status:** Review remediation completed; awaiting Rahul review
+**Status:** Review remediation completed; superseded by merged PR #12. Runtime capabilities remain deferred.
 **Intended audience:** Rahul, security reviewers, and future Wave B maintainers
 
 ## Purpose

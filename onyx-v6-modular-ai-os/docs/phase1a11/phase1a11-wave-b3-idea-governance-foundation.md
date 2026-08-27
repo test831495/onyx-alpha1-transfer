@@ -102,4 +102,4 @@ Re-run focused package validation after correcting failing contracts/tests. To r
 
 ## Next safe step
 
-Rahul reviews the uncommitted remediation diff and evidence before B3 closure inclusion.
+Historical status at the time of this record: Rahul review of the remediation diff and evidence was required before B3 closure inclusion. Superseded by merged PR #14 and later Phase 1A.11 closure evidence.

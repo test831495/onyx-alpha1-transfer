@@ -3,7 +3,7 @@
 **Version:** 0.1.0
 **Date:** 2026-08-23
 **Owner:** Rahul
-**Status:** Focused-tested; awaiting Rahul review
+**Status:** Focused-tested; superseded by merged PR #12. Runtime capabilities remain deferred.
 **Intended audience:** Rahul and maintainers of the ONYX/NOVA monorepo
 
 ## Purpose

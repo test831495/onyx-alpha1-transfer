@@ -1,6 +1,6 @@
 # Phase 1A.11 Wave B3 Resource Isolation Foundation
 
-**Status:** Validated local implementation; uncommitted for Rahul review
+**Status:** Validated local implementation; superseded by merged PR #14 and later Phase 1A.11 merges. Runtime activation remains deferred.
 **Version:** wave-b3-1.1
 **Date:** 2026-08-24
 **Owner:** Rahul
@@ -74,7 +74,7 @@ MODE-001 through MODE-016; resource and operational test files in the package.
 
 ## Next safe step
 
-Rahul reviews the uncommitted local evidence before any integration or runtime proposal.
+Historical status at the time of this record: Rahul review of the uncommitted local evidence was required before integration or runtime proposals. Superseded by merged PR #14 and later Phase 1A.11 closure evidence.
 
 ## Implemented foundation
 
