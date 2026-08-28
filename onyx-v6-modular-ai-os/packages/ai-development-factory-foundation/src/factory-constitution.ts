@@ -17,21 +17,34 @@ export const FACTORY_CONSTITUTION = Object.freeze({
 } as const);
 export type FactoryConstitution = typeof FACTORY_CONSTITUTION;
 const DANGEROUS_KEYS = new Set(["__proto__", "prototype", "constructor"]);
-export const isSafeRecord = (value: unknown): value is Record<string, unknown> => {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+export const MALFORMED_INPUT_KINDS = ["UNDEFINED_INPUT", "NULL_INPUT", "ARRAY_INPUT", "PRIMITIVE_INPUT", "UNSAFE_PROTOTYPE", "DANGEROUS_KEY", "SYMBOL_KEY", "ACCESSOR_PROPERTY", "NON_ENUMERABLE_PROPERTY", "MISSING_FIELD", "UNEXPECTED_FIELD", "INVALID_VALUE"] as const;
+export type MalformedInputKind = (typeof MALFORMED_INPUT_KINDS)[number];
+export type RecordInspection = Readonly<{ valid: boolean; kind?: MalformedInputKind; reasonCodes: readonly string[] }>;
+export type MalformedInputOwner = "TASK_ENVELOPE" | "CAPABILITY" | "CONSTITUTION" | "EVIDENCE";
+export const dispositionForMalformedInput = (owner: MalformedInputOwner, _kind: MalformedInputKind): "DENIED" | "QUARANTINED" | "NOT_ASSESSABLE" => owner === "CAPABILITY" ? "QUARANTINED" : owner === "EVIDENCE" ? "NOT_ASSESSABLE" : "DENIED";
+
+const inspection = (valid: boolean, kind?: MalformedInputKind, reasonCodes: readonly string[] = []): RecordInspection => Object.freeze({ valid, ...(kind ? { kind } : {}), reasonCodes: Object.freeze([...reasonCodes]) });
+export const inspectRecord = (value: unknown, requiredKeys: readonly string[] = []): RecordInspection => {
+  if (value === undefined) return inspection(false, "UNDEFINED_INPUT", ["INPUT_REQUIRED"]);
+  if (value === null) return inspection(false, "NULL_INPUT", ["INPUT_REQUIRED"]);
+  if (typeof value !== "object") return inspection(false, "PRIMITIVE_INPUT", ["RECORD_REQUIRED"]);
+  if (Array.isArray(value)) return inspection(false, "ARRAY_INPUT", ["RECORD_REQUIRED"]);
   const prototype = Object.getPrototypeOf(value);
-  if (prototype !== Object.prototype && prototype !== null) return false;
+  if (prototype !== Object.prototype && prototype !== null) return inspection(false, "UNSAFE_PROTOTYPE", ["PLAIN_RECORD_REQUIRED"]);
   for (const key of Reflect.ownKeys(value)) {
-    if (typeof key !== "string" || DANGEROUS_KEYS.has(key)) return false;
+    if (typeof key !== "string") return inspection(false, "SYMBOL_KEY", ["STRING_KEYS_ONLY"]);
+    if (DANGEROUS_KEYS.has(key)) return inspection(false, "DANGEROUS_KEY", ["DANGEROUS_KEY"]);
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
-    if (!descriptor || !("value" in descriptor)) return false;
-    if (descriptor.enumerable !== true) return false;
+    if (!descriptor || !("value" in descriptor)) return inspection(false, "ACCESSOR_PROPERTY", ["ACCESSOR_NOT_ALLOWED"]);
+    if (descriptor.enumerable !== true) return inspection(false, "NON_ENUMERABLE_PROPERTY", ["ENUMERABLE_PROPERTIES_REQUIRED"]);
   }
-  for (const key of Object.keys(value)) {
-    if (Object.prototype.propertyIsEnumerable.call(Object.getPrototypeOf(value) ?? {}, key)) return false;
-  }
-  return true;
+  const keys = Object.keys(value);
+  if (requiredKeys.some((key) => !keys.includes(key))) return inspection(false, "MISSING_FIELD", ["REQUIRED_FIELD_MISSING"]);
+  if (requiredKeys.length > 0 && keys.some((key) => !requiredKeys.includes(key))) return inspection(false, "UNEXPECTED_FIELD", ["CLOSED_SCHEMA"]);
+  return inspection(true);
 };
+export const classifyMalformedInput = (input: unknown): MalformedInputKind | undefined => inspectRecord(input, ["required"]).kind;
+export const isSafeRecord = (value: unknown): value is Record<string, unknown> => inspectRecord(value).valid;
 
 const cloneLimits = { depth: 12, string: 4096, array: 256, keys: 256, nodes: 2048 } as const;
 export const cloneFreeze = <T>(value: T): T => {
@@ -65,4 +78,30 @@ export const cloneFreeze = <T>(value: T): T => {
     active.delete(input); return Object.freeze(output);
   };
   return clone(value, 0) as T;
+};
+
+export type BoundedNumberOptions = Readonly<{ minimum?: number; maximum?: number }>;
+export type BoundedStringOptions = Readonly<{ minimumLength?: number; maximumLength?: number }>;
+export type PrimitiveValidation = Readonly<{ valid: boolean; reasonCodes: readonly string[] }>;
+const primitiveResult = (valid: boolean, reasonCodes: readonly string[]): PrimitiveValidation => cloneFreeze({ valid, reasonCodes });
+export const validateBoundedNumber = (value: unknown, options: BoundedNumberOptions = {}): PrimitiveValidation => {
+  const reasons: string[] = [];
+  if (typeof value !== "number") reasons.push("NUMBER_TYPE_INVALID");
+  else if (!Number.isFinite(value)) reasons.push("NUMBER_NOT_FINITE");
+  else {
+    if (options.minimum !== undefined && value < options.minimum) reasons.push("NUMBER_BELOW_MINIMUM");
+    if (options.maximum !== undefined && value > options.maximum) reasons.push("NUMBER_ABOVE_MAXIMUM");
+  }
+  return primitiveResult(reasons.length === 0, reasons);
+};
+export const validateBoundedString = (value: unknown, options: BoundedStringOptions = {}): PrimitiveValidation => {
+  if (typeof value !== "string") return primitiveResult(false, ["STRING_TYPE_INVALID"]);
+  const reasons: string[] = [];
+  if (value.length === 0) reasons.push("STRING_EMPTY");
+  if (value.trim().length === 0) reasons.push("STRING_WHITESPACE_ONLY");
+  if (/[\u0000-\u001f\u007f]/u.test(value)) reasons.push("STRING_CONTROL_CHARACTER");
+  if (/[\u200b-\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]/u.test(value)) reasons.push("STRING_INVISIBLE_CHARACTER");
+  if (options.minimumLength !== undefined && value.length < options.minimumLength) reasons.push("STRING_TOO_SHORT");
+  if (value.length > (options.maximumLength ?? 4096)) reasons.push("STRING_TOO_LONG");
+  return primitiveResult(reasons.length === 0, reasons);
 };
