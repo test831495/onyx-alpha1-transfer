@@ -17,7 +17,7 @@ export const FACTORY_CONSTITUTION = Object.freeze({
 } as const);
 export type FactoryConstitution = typeof FACTORY_CONSTITUTION;
 const DANGEROUS_KEYS = new Set(["__proto__", "prototype", "constructor"]);
-export const MALFORMED_INPUT_KINDS = ["UNDEFINED_INPUT", "NULL_INPUT", "ARRAY_INPUT", "PRIMITIVE_INPUT", "UNSAFE_PROTOTYPE", "DANGEROUS_KEY", "SYMBOL_KEY", "ACCESSOR_PROPERTY", "NON_ENUMERABLE_PROPERTY", "MISSING_FIELD", "UNEXPECTED_FIELD", "INVALID_VALUE"] as const;
+export const MALFORMED_INPUT_KINDS = ["UNDEFINED_INPUT", "NULL_INPUT", "ARRAY_INPUT", "PRIMITIVE_INPUT", "UNSAFE_PROTOTYPE", "UNINSPECTABLE_INPUT", "DANGEROUS_KEY", "SYMBOL_KEY", "ACCESSOR_PROPERTY", "NON_ENUMERABLE_PROPERTY", "MISSING_FIELD", "UNEXPECTED_FIELD", "INVALID_VALUE"] as const;
 export type MalformedInputKind = (typeof MALFORMED_INPUT_KINDS)[number];
 export type RecordInspection = Readonly<{ valid: boolean; kind?: MalformedInputKind; reasonCodes: readonly string[] }>;
 export type MalformedInputOwner = "TASK_ENVELOPE" | "CAPABILITY" | "CONSTITUTION" | "EVIDENCE";
@@ -28,17 +28,25 @@ export const inspectRecord = (value: unknown, requiredKeys: readonly string[] = 
   if (value === undefined) return inspection(false, "UNDEFINED_INPUT", ["INPUT_REQUIRED"]);
   if (value === null) return inspection(false, "NULL_INPUT", ["INPUT_REQUIRED"]);
   if (typeof value !== "object") return inspection(false, "PRIMITIVE_INPUT", ["RECORD_REQUIRED"]);
-  if (Array.isArray(value)) return inspection(false, "ARRAY_INPUT", ["RECORD_REQUIRED"]);
-  const prototype = Object.getPrototypeOf(value);
+  let isArray: boolean;
+  try { isArray = Array.isArray(value); } catch { return inspection(false, "UNINSPECTABLE_INPUT", ["OBJECT_INSPECTION_REVOKED"]); }
+  if (isArray) return inspection(false, "ARRAY_INPUT", ["RECORD_REQUIRED"]);
+  let prototype: object | null;
+  try { prototype = Object.getPrototypeOf(value); } catch { return inspection(false, "UNINSPECTABLE_INPUT", ["PROTOTYPE_INSPECTION_FAILED"]); }
   if (prototype !== Object.prototype && prototype !== null) return inspection(false, "UNSAFE_PROTOTYPE", ["PLAIN_RECORD_REQUIRED"]);
-  for (const key of Reflect.ownKeys(value)) {
+  let ownKeys: (string | symbol)[];
+  try { ownKeys = Reflect.ownKeys(value); } catch { return inspection(false, "UNINSPECTABLE_INPUT", ["KEY_ENUMERATION_FAILED"]); }
+  if (ownKeys.length > 256) return inspection(false, "INVALID_VALUE", ["RECORD_KEY_LIMIT_EXCEEDED"]);
+  const keys: string[] = [];
+  for (const key of ownKeys) {
     if (typeof key !== "string") return inspection(false, "SYMBOL_KEY", ["STRING_KEYS_ONLY"]);
     if (DANGEROUS_KEYS.has(key)) return inspection(false, "DANGEROUS_KEY", ["DANGEROUS_KEY"]);
-    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    let descriptor: PropertyDescriptor | undefined;
+    try { descriptor = Object.getOwnPropertyDescriptor(value, key); } catch { return inspection(false, "UNINSPECTABLE_INPUT", ["DESCRIPTOR_INSPECTION_FAILED"]); }
     if (!descriptor || !("value" in descriptor)) return inspection(false, "ACCESSOR_PROPERTY", ["ACCESSOR_NOT_ALLOWED"]);
     if (descriptor.enumerable !== true) return inspection(false, "NON_ENUMERABLE_PROPERTY", ["ENUMERABLE_PROPERTIES_REQUIRED"]);
+    keys.push(key);
   }
-  const keys = Object.keys(value);
   if (requiredKeys.some((key) => !keys.includes(key))) return inspection(false, "MISSING_FIELD", ["REQUIRED_FIELD_MISSING"]);
   if (requiredKeys.length > 0 && keys.some((key) => !requiredKeys.includes(key))) return inspection(false, "UNEXPECTED_FIELD", ["CLOSED_SCHEMA"]);
   return inspection(true);

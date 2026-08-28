@@ -29,7 +29,7 @@ import {
   projectContinuityGaps,
   projectEvidenceInventory,
 } from "../src/index";
-import { classifyMalformedInput, dispositionForMalformedInput, inspectRecord, validateBoundedNumber, validateBoundedString } from "../src/factory-constitution";
+import { MALFORMED_INPUT_KINDS, classifyMalformedInput, dispositionForMalformedInput, inspectRecord, validateBoundedNumber, validateBoundedString } from "../src/factory-constitution";
 
 const baseEnvelope = {
   taskId: "task-1",
@@ -167,6 +167,123 @@ const baseDecision = {
 };
 
 describe("deterministic validators", () => {
+  it("contains hostile reflective failures without diagnostic leakage", () => {
+    expect(MALFORMED_INPUT_KINDS.filter((kind) => kind === "UNINSPECTABLE_INPUT")).toHaveLength(1);
+    const failures = [
+      [new Proxy({ required: "ok" }, { getPrototypeOf: () => { throw new Error("prototype-secret"); } }), "PROTOTYPE_INSPECTION_FAILED"],
+      [new Proxy({ required: "ok" }, { ownKeys: () => { throw new Error("keys-secret"); } }), "KEY_ENUMERATION_FAILED"],
+      [new Proxy({ required: "ok" }, { getOwnPropertyDescriptor: () => { throw new Error("descriptor-secret"); } }), "DESCRIPTOR_INSPECTION_FAILED"],
+    ] as const;
+    for (const [input, reasonCode] of failures) {
+      const result = inspectRecord(input, ["required"]);
+      expect(result).toEqual({ valid: false, kind: "UNINSPECTABLE_INPUT", reasonCodes: [reasonCode] });
+      expect(Object.isFrozen(result)).toBe(true);
+      expect(Object.isFrozen(result.reasonCodes)).toBe(true);
+      expect(JSON.stringify(result)).not.toMatch(/prototype-secret|keys-secret|descriptor-secret|Error|stack|target-secret|value-secret/i);
+    }
+    const { proxy, revoke } = Proxy.revocable({ required: "ok" }, {});
+    revoke();
+    expect(inspectRecord(proxy)).toMatchObject({ valid: false, kind: "UNINSPECTABLE_INPUT", reasonCodes: ["OBJECT_INSPECTION_REVOKED"] });
+    const invariantTarget = Object.preventExtensions({ required: "ok" });
+    const invariantProxy = new Proxy(invariantTarget, { ownKeys: () => ["required", "extra"] });
+    expect(inspectRecord(invariantProxy)).toMatchObject({ valid: false, kind: "UNINSPECTABLE_INPUT", reasonCodes: ["KEY_ENUMERATION_FAILED"] });
+  });
+
+  it("preserves array precedence before hostile prototype inspection", () => {
+    expect(inspectRecord([], ["required"])).toEqual({ valid: false, kind: "ARRAY_INPUT", reasonCodes: ["RECORD_REQUIRED"] });
+    expect(inspectRecord(new Proxy([], {}), ["required"])).toMatchObject({ kind: "ARRAY_INPUT", reasonCodes: ["RECORD_REQUIRED"] });
+
+    let arrayPrototypeCalls = 0;
+    const hostileArray = new Proxy([], {
+      getPrototypeOf: () => { arrayPrototypeCalls += 1; throw new Error("array-prototype-secret"); },
+    });
+    const hostileArrayResult = inspectRecord(hostileArray, ["required"]);
+    expect(hostileArrayResult).toEqual({ valid: false, kind: "ARRAY_INPUT", reasonCodes: ["RECORD_REQUIRED"] });
+    expect(arrayPrototypeCalls).toBe(0);
+    expect(JSON.stringify(hostileArrayResult)).not.toMatch(/array-prototype-secret|Error|stack/i);
+
+    const revoked = Proxy.revocable([], {});
+    revoked.revoke();
+    const revokedResult = inspectRecord(revoked.proxy, ["required"]);
+    expect(revokedResult).toEqual({ valid: false, kind: "UNINSPECTABLE_INPUT", reasonCodes: ["OBJECT_INSPECTION_REVOKED"] });
+    expect(JSON.stringify(revokedResult)).not.toMatch(/TypeError|stack|Cannot perform/i);
+  });
+
+  it("keeps array and object hostile inspections non-mutating", () => {
+    let arrayPrototypeCalls = 0;
+    let objectPrototypeCalls = 0;
+    let setCalls = 0;
+    let deleteCalls = 0;
+    let defineCalls = 0;
+    let setPrototypeCalls = 0;
+    const mutationTraps = {
+      set: () => { setCalls += 1; return false; },
+      deleteProperty: () => { deleteCalls += 1; return false; },
+      defineProperty: () => { defineCalls += 1; return false; },
+      setPrototypeOf: () => { setPrototypeCalls += 1; return false; },
+    };
+    const hostileArray = new Proxy([], {
+      ...mutationTraps,
+      getPrototypeOf: () => { arrayPrototypeCalls += 1; throw new Error("array-prototype-secret"); },
+    });
+    const hostileObject = new Proxy({ required: "ok" }, {
+      ...mutationTraps,
+      getPrototypeOf: () => { objectPrototypeCalls += 1; throw new Error("object-prototype-secret"); },
+    });
+
+    const arrayResult = inspectRecord(hostileArray, ["required"]);
+    const objectResult = inspectRecord(hostileObject, ["required"]);
+
+    expect(arrayResult).toEqual({ valid: false, kind: "ARRAY_INPUT", reasonCodes: ["RECORD_REQUIRED"] });
+    expect(objectResult).toEqual({ valid: false, kind: "UNINSPECTABLE_INPUT", reasonCodes: ["PROTOTYPE_INSPECTION_FAILED"] });
+    expect(arrayPrototypeCalls).toBe(0);
+    expect(objectPrototypeCalls).toBe(1);
+    expect(setCalls + deleteCalls + defineCalls + setPrototypeCalls).toBe(0);
+    expect(JSON.stringify([arrayResult, objectResult])).not.toMatch(/array-prototype-secret|object-prototype-secret|Error|stack/i);
+  });
+
+  it("bounds own-key inspection and preserves precedence at the boundary", () => {
+    const boundedKeys = ["required", ...Array.from({ length: 255 }, (_, index) => `field-${index}`)];
+    const exactlyBounded = Object.fromEntries(boundedKeys.map((key) => [key, "ok"]));
+    const overBound = { ...exactlyBounded, extra: "ok" };
+    expect(inspectRecord(exactlyBounded, boundedKeys)).toEqual({ valid: true, reasonCodes: [] });
+    expect(inspectRecord(overBound, boundedKeys)).toEqual({ valid: false, kind: "INVALID_VALUE", reasonCodes: ["RECORD_KEY_LIMIT_EXCEEDED"] });
+    let descriptorCalls = 0;
+    const overBoundProxy = new Proxy(overBound, { getOwnPropertyDescriptor: (target, key) => { descriptorCalls += 1; return Object.getOwnPropertyDescriptor(target, key); } });
+    expect(inspectRecord(overBoundProxy, boundedKeys)).toMatchObject({ valid: false, kind: "INVALID_VALUE", reasonCodes: ["RECORD_KEY_LIMIT_EXCEEDED"] });
+    expect(descriptorCalls).toBe(0);
+    expect(inspectRecord({ required: "ok", constructor: "unsafe" }, ["required"])).toMatchObject({ kind: "DANGEROUS_KEY" });
+    expect(inspectRecord(Object.create({ inherited: true }), ["required"])).toMatchObject({ kind: "UNSAFE_PROTOTYPE" });
+    expect(inspectRecord(undefined, ["required"])).toMatchObject({ kind: "UNDEFINED_INPUT" });
+    expect(inspectRecord(null, ["required"])).toMatchObject({ kind: "NULL_INPUT" });
+    expect(inspectRecord({}, ["required"])).toMatchObject({ kind: "MISSING_FIELD" });
+  });
+
+  it("keeps hostile inspection non-mutating, non-authorizing, and deterministic", () => {
+    let getterCalls = 0;
+    let setCalls = 0;
+    let deleteCalls = 0;
+    let defineCalls = 0;
+    let setPrototypeCalls = 0;
+    const target = { required: "ok" };
+    Object.defineProperty(target, "accessor", { enumerable: true, get: () => { getterCalls += 1; return "secret-value"; } });
+    const hostile = new Proxy(target, {
+      set: () => { setCalls += 1; return false; },
+      deleteProperty: () => { deleteCalls += 1; return false; },
+      defineProperty: () => { defineCalls += 1; return false; },
+      setPrototypeOf: () => { setPrototypeCalls += 1; return false; },
+    });
+    const results = Array.from({ length: 3 }, () => inspectRecord(hostile, ["required"]));
+    expect(results[0]).toEqual({ valid: false, kind: "ACCESSOR_PROPERTY", reasonCodes: ["ACCESSOR_NOT_ALLOWED"] });
+    expect(results[1]).toEqual(results[0]);
+    expect(results[2]).toEqual(results[0]);
+    expect(getterCalls).toBe(0);
+    expect(setCalls + deleteCalls + defineCalls + setPrototypeCalls).toBe(0);
+    expect(target).toHaveProperty("required", "ok");
+    expect(target).toHaveProperty("accessor");
+    for (const owner of ["TASK_ENVELOPE", "CAPABILITY", "EVIDENCE", "CONSTITUTION"] as const) expect(dispositionForMalformedInput(owner, "UNINSPECTABLE_INPUT")).toBe(owner === "CAPABILITY" ? "QUARANTINED" : owner === "EVIDENCE" ? "NOT_ASSESSABLE" : "DENIED");
+  });
+
   it("returns no malformed kind for a structurally valid required record", () => {
     const input = { required: "ok" };
     const before = JSON.stringify(input);
