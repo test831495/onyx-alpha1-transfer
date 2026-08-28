@@ -28,9 +28,11 @@ export const inspectRecord = (value: unknown, requiredKeys: readonly string[] = 
   if (value === undefined) return inspection(false, "UNDEFINED_INPUT", ["INPUT_REQUIRED"]);
   if (value === null) return inspection(false, "NULL_INPUT", ["INPUT_REQUIRED"]);
   if (typeof value !== "object") return inspection(false, "PRIMITIVE_INPUT", ["RECORD_REQUIRED"]);
+  let isArray: boolean;
+  try { isArray = Array.isArray(value); } catch { return inspection(false, "UNINSPECTABLE_INPUT", ["OBJECT_INSPECTION_REVOKED"]); }
+  if (isArray) return inspection(false, "ARRAY_INPUT", ["RECORD_REQUIRED"]);
   let prototype: object | null;
   try { prototype = Object.getPrototypeOf(value); } catch { return inspection(false, "UNINSPECTABLE_INPUT", ["PROTOTYPE_INSPECTION_FAILED"]); }
-  if (Array.isArray(value)) return inspection(false, "ARRAY_INPUT", ["RECORD_REQUIRED"]);
   if (prototype !== Object.prototype && prototype !== null) return inspection(false, "UNSAFE_PROTOTYPE", ["PLAIN_RECORD_REQUIRED"]);
   let ownKeys: (string | symbol)[];
   try { ownKeys = Reflect.ownKeys(value); } catch { return inspection(false, "UNINSPECTABLE_INPUT", ["KEY_ENUMERATION_FAILED"]); }

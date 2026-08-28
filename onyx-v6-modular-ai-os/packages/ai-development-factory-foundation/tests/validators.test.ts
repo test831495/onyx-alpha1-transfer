@@ -183,10 +183,63 @@ describe("deterministic validators", () => {
     }
     const { proxy, revoke } = Proxy.revocable({ required: "ok" }, {});
     revoke();
-    expect(inspectRecord(proxy)).toMatchObject({ valid: false, kind: "UNINSPECTABLE_INPUT", reasonCodes: ["PROTOTYPE_INSPECTION_FAILED"] });
+    expect(inspectRecord(proxy)).toMatchObject({ valid: false, kind: "UNINSPECTABLE_INPUT", reasonCodes: ["OBJECT_INSPECTION_REVOKED"] });
     const invariantTarget = Object.preventExtensions({ required: "ok" });
     const invariantProxy = new Proxy(invariantTarget, { ownKeys: () => ["required", "extra"] });
     expect(inspectRecord(invariantProxy)).toMatchObject({ valid: false, kind: "UNINSPECTABLE_INPUT", reasonCodes: ["KEY_ENUMERATION_FAILED"] });
+  });
+
+  it("preserves array precedence before hostile prototype inspection", () => {
+    expect(inspectRecord([], ["required"])).toEqual({ valid: false, kind: "ARRAY_INPUT", reasonCodes: ["RECORD_REQUIRED"] });
+    expect(inspectRecord(new Proxy([], {}), ["required"])).toMatchObject({ kind: "ARRAY_INPUT", reasonCodes: ["RECORD_REQUIRED"] });
+
+    let arrayPrototypeCalls = 0;
+    const hostileArray = new Proxy([], {
+      getPrototypeOf: () => { arrayPrototypeCalls += 1; throw new Error("array-prototype-secret"); },
+    });
+    const hostileArrayResult = inspectRecord(hostileArray, ["required"]);
+    expect(hostileArrayResult).toEqual({ valid: false, kind: "ARRAY_INPUT", reasonCodes: ["RECORD_REQUIRED"] });
+    expect(arrayPrototypeCalls).toBe(0);
+    expect(JSON.stringify(hostileArrayResult)).not.toMatch(/array-prototype-secret|Error|stack/i);
+
+    const revoked = Proxy.revocable([], {});
+    revoked.revoke();
+    const revokedResult = inspectRecord(revoked.proxy, ["required"]);
+    expect(revokedResult).toEqual({ valid: false, kind: "UNINSPECTABLE_INPUT", reasonCodes: ["OBJECT_INSPECTION_REVOKED"] });
+    expect(JSON.stringify(revokedResult)).not.toMatch(/TypeError|stack|Cannot perform/i);
+  });
+
+  it("keeps array and object hostile inspections non-mutating", () => {
+    let arrayPrototypeCalls = 0;
+    let objectPrototypeCalls = 0;
+    let setCalls = 0;
+    let deleteCalls = 0;
+    let defineCalls = 0;
+    let setPrototypeCalls = 0;
+    const mutationTraps = {
+      set: () => { setCalls += 1; return false; },
+      deleteProperty: () => { deleteCalls += 1; return false; },
+      defineProperty: () => { defineCalls += 1; return false; },
+      setPrototypeOf: () => { setPrototypeCalls += 1; return false; },
+    };
+    const hostileArray = new Proxy([], {
+      ...mutationTraps,
+      getPrototypeOf: () => { arrayPrototypeCalls += 1; throw new Error("array-prototype-secret"); },
+    });
+    const hostileObject = new Proxy({ required: "ok" }, {
+      ...mutationTraps,
+      getPrototypeOf: () => { objectPrototypeCalls += 1; throw new Error("object-prototype-secret"); },
+    });
+
+    const arrayResult = inspectRecord(hostileArray, ["required"]);
+    const objectResult = inspectRecord(hostileObject, ["required"]);
+
+    expect(arrayResult).toEqual({ valid: false, kind: "ARRAY_INPUT", reasonCodes: ["RECORD_REQUIRED"] });
+    expect(objectResult).toEqual({ valid: false, kind: "UNINSPECTABLE_INPUT", reasonCodes: ["PROTOTYPE_INSPECTION_FAILED"] });
+    expect(arrayPrototypeCalls).toBe(0);
+    expect(objectPrototypeCalls).toBe(1);
+    expect(setCalls + deleteCalls + defineCalls + setPrototypeCalls).toBe(0);
+    expect(JSON.stringify([arrayResult, objectResult])).not.toMatch(/array-prototype-secret|object-prototype-secret|Error|stack/i);
   });
 
   it("bounds own-key inspection and preserves precedence at the boundary", () => {
