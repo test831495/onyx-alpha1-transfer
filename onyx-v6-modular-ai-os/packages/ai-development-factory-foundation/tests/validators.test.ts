@@ -167,6 +167,18 @@ const baseDecision = {
 };
 
 describe("deterministic validators", () => {
+  it("returns no malformed kind for a structurally valid required record", () => {
+    const input = { required: "ok" };
+    const before = JSON.stringify(input);
+    const inspection = inspectRecord(input, ["required"]);
+
+    expect(inspection.valid).toBe(true);
+    expect(inspection.kind).toBeUndefined();
+    expect(classifyMalformedInput(input)).toBeUndefined();
+    expect(classifyMalformedInput(input)).toBeUndefined();
+    expect(input).toEqual(JSON.parse(before));
+  });
+
   it("classifies malformed records without invoking accessors and preserves typed absence", () => {
     const cases: [unknown, string][] = [[null, "NULL_INPUT"], [[], "ARRAY_INPUT"], [1, "PRIMITIVE_INPUT"], [{}, "MISSING_FIELD"]];
     for (const [input, kind] of cases) expect(inspectRecord(input, ["required"])).toMatchObject({ valid: false, kind });

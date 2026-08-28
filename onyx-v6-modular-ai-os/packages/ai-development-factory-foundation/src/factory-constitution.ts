@@ -43,7 +43,7 @@ export const inspectRecord = (value: unknown, requiredKeys: readonly string[] = 
   if (requiredKeys.length > 0 && keys.some((key) => !requiredKeys.includes(key))) return inspection(false, "UNEXPECTED_FIELD", ["CLOSED_SCHEMA"]);
   return inspection(true);
 };
-export const classifyMalformedInput = (input: unknown): MalformedInputKind => inspectRecord(input, ["required"]).kind ?? "INVALID_VALUE";
+export const classifyMalformedInput = (input: unknown): MalformedInputKind | undefined => inspectRecord(input, ["required"]).kind;
 export const isSafeRecord = (value: unknown): value is Record<string, unknown> => inspectRecord(value).valid;
 
 const cloneLimits = { depth: 12, string: 4096, array: 256, keys: 256, nodes: 2048 } as const;
