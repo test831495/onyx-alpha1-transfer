@@ -7,21 +7,38 @@ import {
 describe("Post-H1 P2 Bundle B Reconciliation Engine", () => {
   const baseValidInput: ReconciliationEngineInput = {
     targetLock: {
+      providerId: "provider",
+      repositoryId: "test831495/onyx-alpha1-transfer",
+      repositoryUrl: "https://github.com/test831495/onyx-alpha1-transfer",
       repository: "onyx-alpha1-transfer",
-      headSha: "b4ea365eed6a4e71faabb9579004bb56567f2a46",
       baseBranch: "main",
+      baseSha: "a".repeat(40),
+      headBranch: "main",
+      headSha: "b".repeat(40),
+      changeRequestNumber: 27,
+      expectedChangeRequestState: "OPEN",
+      expectedDraftState: true,
+      expectedCommitCount: 1,
+      expectedChangedPathDigest: "c".repeat(64),
+      expectedRawBodyHash: "d".repeat(64),
+      expectedNormalizedBodyHash: "e".repeat(64),
+      expectedThreadIds: ["thread-1"],
+      expectedRulesetHash: "f".repeat(64),
+      expectedActorId: "actor-1",
+      purpose: "verify local candidate",
+      expiresAt: "2026-08-30T12:00:00Z",
     },
     repositoryFacts: {
       owner: "test831495",
       repository: "onyx-alpha1-transfer",
       defaultBranch: "main",
-      currentHeadSha: "b4ea365eed6a4e71faabb9579004bb56567f2a46",
+      currentHeadSha: "b".repeat(40),
       isClean: true,
     },
     pullRequestFacts: {
       prNumber: 27,
       state: "OPEN",
-      headSha: "b4ea365eed6a4e71faabb9579004bb56567f2a46",
+      headSha: "b".repeat(40),
       baseBranch: "main",
       isDraft: false,
       title: "P1 Verification",
@@ -60,7 +77,19 @@ describe("Post-H1 P2 Bundle B Reconciliation Engine", () => {
     isPaginationComplete: true,
   };
 
-  it("POSTH1-P2-DRIFT-001: detects repository mismatch against target lock", () => {
+  it("POSTH1-P2-DRIFT-001 & Finding 001 (Comment ID 3886895610): detects repository mismatch against target lock without conditional bypass", () => {
+    const malformedLockNoExpires: ReconciliationEngineInput = {
+      ...baseValidInput,
+      targetLock: {
+        repository: "onyx-alpha1-transfer",
+        headSha: "b4ea365eed6a4e71faabb9579004bb56567f2a46",
+        baseBranch: "main",
+      },
+    };
+    const reportMalformed = reconcileTargetAndDrift(malformedLockNoExpires);
+    expect(reportMalformed.outcome).toBe("DRIFT_DETECTED");
+    expect(reportMalformed.reasons).toContain("TARGET_MISMATCH");
+
     const input: ReconciliationEngineInput = {
       ...baseValidInput,
       repositoryFacts: {
@@ -72,6 +101,25 @@ describe("Post-H1 P2 Bundle B Reconciliation Engine", () => {
     expect(report.outcome).toBe("DRIFT_DETECTED");
     expect(report.reasons).toContain("TARGET_MISMATCH");
     expect(report.authority).toBe("NON_AUTHORIZING");
+  });
+
+  it("Finding 002 (Comment ID 3886895616): detects base-branch mismatch between target lock and PR facts", () => {
+    const inputBaseMismatch: ReconciliationEngineInput = {
+      ...baseValidInput,
+      pullRequestFacts: {
+        ...baseValidInput.pullRequestFacts,
+        baseBranch: "feature/other-branch",
+      },
+    };
+    const report = reconcileTargetAndDrift(inputBaseMismatch);
+    expect(report.outcome).toBe("DRIFT_DETECTED");
+    expect(report.reasons).toContain("TARGET_MISMATCH");
+    expect(report.details).toContainEqual({
+      field: "baseBranch",
+      expected: "main",
+      actual: "feature/other-branch",
+      severity: "BLOCKING",
+    });
   });
 
   it("POSTH1-P2-DRIFT-002: detects HEAD SHA mismatch against target lock", () => {

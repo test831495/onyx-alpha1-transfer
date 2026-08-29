@@ -38,6 +38,25 @@ describe("Post-H1 P2 Bundle A Evidence Normalization & Contracts", () => {
     expect(Object.isFrozen(normalized.source)).toBe(true);
   });
 
+  it("Finding 005 (Comment ID 3886895645): exact raw-payload hashing without trimming, NFC, or silent truncation", () => {
+    const rawUntrimmed = {
+      source: { provider: "github", collectorId: "c1", version: "1.0", capturedAtEpochMilliseconds: 1000 },
+      rawFactType: "pr",
+      rawPayload: "  \n\thello world  \t",
+    };
+    const envUntrimmed = normalizeCollectedEnvelope(rawUntrimmed);
+    expect(envUntrimmed.rawPayload).toBe("  \n\thello world  \t");
+    expect(envUntrimmed.payloadHash).toBe(sha256("  \n\thello world  \t"));
+
+    const oversizedPayload = "a".repeat(4097);
+    const rawOversized = {
+      source: { provider: "github", collectorId: "c1", version: "1.0", capturedAtEpochMilliseconds: 1000 },
+      rawFactType: "pr",
+      rawPayload: oversizedPayload,
+    };
+    expect(() => normalizeCollectedEnvelope(rawOversized)).toThrow("MALFORMED_ENVELOPE");
+  });
+
   it("POSTH1-P2-COLLECT-002: extracts provider-neutral pull request facts", () => {
     const rawRepo = {
       owner: "test831495",
@@ -126,13 +145,24 @@ describe("Post-H1 P2 Bundle A Evidence Normalization & Contracts", () => {
     expect(normalizedAcceptance.coverageComplete).toBe(true);
   });
 
-  it("POSTH1-P2-COLLECT-006: evaluates evidence freshness with explicit supplied timestamp", () => {
-    const freshnessValid = assessEvidenceFreshness(1772300000000, 86400000);
-    expect(freshnessValid.isFresh).toBe(true);
-    expect(freshnessValid.observedAtEpochMilliseconds).toBe(1772300000000);
+  it("POSTH1-P2-COLLECT-006 & Finding 006 (Comment ID 3886895656): evaluates evidence freshness against supplied evaluation epoch", () => {
+    const freshnessFresh = assessEvidenceFreshness(1000, 5000, 2000);
+    expect(freshnessFresh.observedAtEpochMilliseconds).toBe(1000);
+    expect(freshnessFresh.ageMilliseconds).toBe(1000);
+    expect(freshnessFresh.isFresh).toBe(true);
 
-    const freshnessInvalid = assessEvidenceFreshness(0, 86400000);
+    const freshnessStale = assessEvidenceFreshness(1000, 5000, 7000);
+    expect(freshnessStale.observedAtEpochMilliseconds).toBe(1000);
+    expect(freshnessStale.ageMilliseconds).toBe(6000);
+    expect(freshnessStale.isFresh).toBe(false);
+
+    const freshnessOmitted = assessEvidenceFreshness(1000, 5000);
+    expect(freshnessOmitted.isFresh).toBe(false);
+    expect(freshnessOmitted.ageMilliseconds).toBe(Number.MAX_SAFE_INTEGER);
+
+    const freshnessInvalid = assessEvidenceFreshness(1000, 5000, NaN);
     expect(freshnessInvalid.isFresh).toBe(false);
+    expect(freshnessInvalid.ageMilliseconds).toBe(Number.MAX_SAFE_INTEGER);
   });
 
   it("POSTH1-P2-SAFE-001: verifies acceptance registry contains exactly 24 IDs across 4 families", () => {

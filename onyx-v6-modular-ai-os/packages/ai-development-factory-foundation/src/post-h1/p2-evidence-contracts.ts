@@ -84,6 +84,15 @@ export interface NormalizedAcceptanceFacts {
   readonly coverageComplete: boolean;
 }
 
+export interface P1GovernanceFacts {
+  readonly conflicts?: boolean;
+  readonly rulesetVisible?: boolean;
+  readonly findingsClosed?: boolean;
+  readonly ownerAuthorization?: boolean;
+  readonly prMergedClosed?: boolean;
+  readonly handoff?: boolean;
+}
+
 export interface EvidenceFreshnessAssessment {
   readonly observedAtEpochMilliseconds: number;
   readonly maxAgeMilliseconds: number;

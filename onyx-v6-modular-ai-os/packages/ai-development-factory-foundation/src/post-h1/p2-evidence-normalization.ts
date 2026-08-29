@@ -80,9 +80,17 @@ export const normalizeCollectedEnvelope = (rawInput: unknown): CollectedEvidence
     const capturedAtEpochMilliseconds = safeNumber(sourceObj.capturedAtEpochMilliseconds);
 
     const rawFactType = safeString(rawInput.rawFactType);
-    const rawPayload = safeString(rawInput.rawPayload);
 
-    if (!provider || !collectorId || !version || capturedAtEpochMilliseconds < 0 || !rawFactType || !rawPayload) {
+    // Finding 005 (Comment ID 3886895645): exact raw-payload string preservation and over-bound check
+    if (typeof rawInput.rawPayload !== "string") {
+      throw new Error("MALFORMED_ENVELOPE");
+    }
+    const rawPayload = rawInput.rawPayload;
+    if (rawPayload.length === 0 || rawPayload.length > BOUNDS_P2.MAX_STRING_LENGTH) {
+      throw new Error("MALFORMED_ENVELOPE");
+    }
+
+    if (!provider || !collectorId || !version || capturedAtEpochMilliseconds < 0 || !rawFactType) {
       throw new Error("MALFORMED_ENVELOPE");
     }
 
@@ -264,7 +272,8 @@ export const normalizeAcceptanceFacts = (input: unknown): NormalizedAcceptanceFa
 
 export const assessEvidenceFreshness = (
   observedAtEpochMs: unknown,
-  maxAgeMs: number = BOUNDS_P2.MAX_TIMESTAMP_AGE_MS
+  maxAgeMs: number = BOUNDS_P2.MAX_TIMESTAMP_AGE_MS,
+  evaluationEpochMs?: number
 ): EvidenceFreshnessAssessment => {
   const observedAtEpochMilliseconds = safeNumber(observedAtEpochMs);
   if (observedAtEpochMilliseconds <= 0) {
@@ -276,13 +285,23 @@ export const assessEvidenceFreshness = (
     });
   }
 
-  // Pure core receives explicit observedAtEpochMs; freshness age is evaluated relative to observedAtEpochMs or supplied age
   const maxAge = Math.min(Math.max(0, maxAgeMs), BOUNDS_P2.MAX_TIMESTAMP_AGE_MS);
+
+  // Finding 006 (Comment ID 3886895656): calculate age against supplied evaluation epoch; fail closed if omitted/invalid
+  let ageMilliseconds = Number.MAX_SAFE_INTEGER;
+  let isFresh = false;
+  if (typeof evaluationEpochMs === "number" && Number.isFinite(evaluationEpochMs) && evaluationEpochMs >= observedAtEpochMilliseconds) {
+    ageMilliseconds = Math.floor(evaluationEpochMs - observedAtEpochMilliseconds);
+    isFresh = ageMilliseconds <= maxAge;
+  } else if (typeof evaluationEpochMs === "number" && Number.isFinite(evaluationEpochMs) && evaluationEpochMs >= 0) {
+    ageMilliseconds = 0;
+    isFresh = true;
+  }
 
   return Object.freeze({
     observedAtEpochMilliseconds,
     maxAgeMilliseconds: maxAge,
-    ageMilliseconds: 0,
-    isFresh: true,
+    ageMilliseconds,
+    isFresh,
   });
 };

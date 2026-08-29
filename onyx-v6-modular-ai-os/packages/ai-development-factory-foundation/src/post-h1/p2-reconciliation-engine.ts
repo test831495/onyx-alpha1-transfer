@@ -8,9 +8,10 @@ import {
   NormalizedRepositoryFacts,
   NormalizedReviewFacts,
   NormalizedReviewThreadFacts,
+  P1GovernanceFacts,
   P2ReasonCode,
 } from "./p2-evidence-contracts";
-import { TargetLock, compareTargetLocks, validateTargetLock } from "./target-lock";
+import { TargetLock, validateTargetLock } from "./target-lock";
 
 export interface ReconciliationEngineInput {
   readonly targetLock: TargetLock;
@@ -21,6 +22,7 @@ export interface ReconciliationEngineInput {
   readonly checkFacts: NormalizedCheckFacts;
   readonly acceptanceFacts: NormalizedAcceptanceFacts;
   readonly freshness: EvidenceFreshnessAssessment;
+  readonly governanceFacts?: P1GovernanceFacts;
   readonly isPaginationComplete?: boolean;
   readonly providerFailureReason?: P2ReasonCode;
 }
@@ -61,21 +63,29 @@ export const reconcileTargetAndDrift = (input: ReconciliationEngineInput): Lifec
     });
   }
 
-  // Target Lock Comparison (consumes P0/P1 target lock function)
-  if (input.targetLock && typeof input.targetLock === "object" && "expiresAt" in input.targetLock) {
-    const targetLockValidation = validateTargetLock(
-      input.targetLock,
-      new Date(input.freshness.observedAtEpochMilliseconds)
-    );
-    if (targetLockValidation.outcome !== "PASS") {
-      reasons.push("TARGET_MISMATCH");
-      details.push({
-        field: "targetLock",
-        expected: "PASS",
-        actual: targetLockValidation.outcome,
-        severity: "BLOCKING",
-      });
-    }
+  // Finding 001 (Comment ID 3886895610): Target Lock Comparison - unconditional validateTargetLock call
+  if (!input.targetLock || typeof input.targetLock !== "object") {
+    return Object.freeze({
+      outcome: "NOT_ASSESSABLE",
+      driftCount: 0,
+      details: Object.freeze([]),
+      reasons: Object.freeze(["TARGET_MISMATCH" as P2ReasonCode]),
+      authority: "NON_AUTHORIZING",
+    });
+  }
+
+  const targetLockValidation = validateTargetLock(
+    input.targetLock,
+    new Date(input.freshness.observedAtEpochMilliseconds)
+  );
+  if (targetLockValidation.outcome !== "PASS") {
+    reasons.push("TARGET_MISMATCH");
+    details.push({
+      field: "targetLock",
+      expected: "PASS",
+      actual: targetLockValidation.outcome,
+      severity: "BLOCKING",
+    });
   }
 
   const expectedLockRepo = String(input.targetLock.repository ?? input.targetLock.repositoryId ?? "");
@@ -85,6 +95,18 @@ export const reconcileTargetAndDrift = (input: ReconciliationEngineInput): Lifec
       field: "repository",
       expected: expectedLockRepo,
       actual: input.repositoryFacts.repository,
+      severity: "BLOCKING",
+    });
+  }
+
+  // Finding 002 (Comment ID 3886895616): compare targetLock.baseBranch with PR baseBranch
+  const expectedBaseBranch = String(input.targetLock.baseBranch ?? "");
+  if (expectedBaseBranch && input.pullRequestFacts.baseBranch !== expectedBaseBranch) {
+    reasons.push("TARGET_MISMATCH");
+    details.push({
+      field: "baseBranch",
+      expected: expectedBaseBranch,
+      actual: input.pullRequestFacts.baseBranch,
       severity: "BLOCKING",
     });
   }

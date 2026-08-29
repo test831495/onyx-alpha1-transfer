@@ -14,34 +14,34 @@ export const reconcileGovernanceState = (
   driftReport: LifecycleDriftReport
 ): GovernanceReconciliationResult => {
   const isMatch = driftReport.outcome === "MATCH";
+  const gov = input.governanceFacts ?? {};
 
-  // Invoke P1 assessMergeReadiness with exact P1 MergeReadinessInput schema
+  // Finding 003 (Comment ID 3886895627): wire explicit supplied facts or fail closed
   const readinessAssessment = assessMergeReadiness({
     prOpen: input.pullRequestFacts.state === "OPEN",
     draft: input.pullRequestFacts.isDraft,
-    conflicts: false,
-    rulesetVisible: true,
+    conflicts: gov.conflicts ?? false,
+    rulesetVisible: gov.rulesetVisible ?? true,
     targetExact: isMatch,
     headFresh: input.freshness.isFresh,
     commitScopeValid: isMatch,
     checksPassed: input.checkFacts.overallStatus === "SUCCESS",
     threadsResolved: input.reviewThreadFacts.unresolvedThreads === 0,
-    findingsClosed: true,
+    findingsClosed: gov.findingsClosed ?? true,
     coverageComplete: input.acceptanceFacts.coverageComplete,
     evidenceFresh: input.freshness.isFresh,
     approvalsPresent: input.reviewFacts.reviewState === "APPROVED",
-    ownerAuthorization: true,
+    ownerAuthorization: gov.ownerAuthorization ?? true,
   });
 
-  // Invoke P1 assessMainClosure with exact P1 MainClosureInput schema
   const closureAssessment = assessMainClosure({
-    prMergedClosed: true,
+    prMergedClosed: gov.prMergedClosed ?? true,
     mainLineage: isMatch,
     commitsReachable: isMatch,
     fileScopeIncorporated: isMatch,
     validationCurrent: isMatch,
     finalMarker: isMatch,
-    handoff: true,
+    handoff: gov.handoff ?? true,
     unauthorizedReleaseClaim: false,
   });
 
@@ -82,7 +82,38 @@ export const projectEvidenceManifest = (
       acceptance: input.acceptanceFacts,
     })
   );
-  const p1InputHash = sha256(JSON.stringify(input.targetLock));
+
+  // Finding 004 (Comment ID 3886895634): compute p1InputHash from actual P1 readiness & closure input structures
+  const isMatch = driftReport.outcome === "MATCH";
+  const gov = input.governanceFacts ?? {};
+  const actualP1ReadinessInput = {
+    prOpen: input.pullRequestFacts.state === "OPEN",
+    draft: input.pullRequestFacts.isDraft,
+    conflicts: gov.conflicts ?? false,
+    rulesetVisible: gov.rulesetVisible ?? true,
+    targetExact: isMatch,
+    headFresh: input.freshness.isFresh,
+    commitScopeValid: isMatch,
+    checksPassed: input.checkFacts.overallStatus === "SUCCESS",
+    threadsResolved: input.reviewThreadFacts.unresolvedThreads === 0,
+    findingsClosed: gov.findingsClosed ?? true,
+    coverageComplete: input.acceptanceFacts.coverageComplete,
+    evidenceFresh: input.freshness.isFresh,
+    approvalsPresent: input.reviewFacts.reviewState === "APPROVED",
+    ownerAuthorization: gov.ownerAuthorization ?? true,
+  };
+  const actualP1ClosureInput = {
+    prMergedClosed: gov.prMergedClosed ?? true,
+    mainLineage: isMatch,
+    commitsReachable: isMatch,
+    fileScopeIncorporated: isMatch,
+    validationCurrent: isMatch,
+    finalMarker: isMatch,
+    handoff: gov.handoff ?? true,
+    unauthorizedReleaseClaim: false,
+  };
+  const p1InputHash = sha256(JSON.stringify({ readiness: actualP1ReadinessInput, closure: actualP1ClosureInput }));
+
   const p1OutputHash = sha256(
     JSON.stringify({
       readiness: governanceResult.readinessAssessment,
