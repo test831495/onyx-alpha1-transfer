@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { P1_ACCEPTANCE_IDS, validateLifecycleRegistry } from "../src/post-h1/lifecycle-registry";
+import { P1_ACCEPTANCE_IDS, validateLifecycleRegistry, type LifecycleLineage, type LifecycleTarget } from "../src/post-h1/lifecycle-registry";
 
 const sha = "a".repeat(40);
 const expectedAcceptanceIds = Object.freeze([
@@ -51,5 +51,23 @@ describe("POST-H1 P1 registry", () => {
   it("REGISTRY-C05 contains hostile input and treats provider IDs as opaque", () => {
     const { proxy, revoke } = Proxy.revocable(record(), {}); revoke();
     expect(validateLifecycleRegistry(proxy).outcome).toBe("NOT_ASSESSABLE");
+  });
+  it("REGISTRY-C06 accepts normal branch topology while rejecting unknown root keys", () => {
+    const validBaseSha = "e779c663f94e0e098034ff7b6c8e79f816e77884";
+    const validHeadSha = "cdbc41ae44af0f0438f6df75ab0030936f52c215";
+    const validTarget: LifecycleTarget = { baseSha: validBaseSha, headSha: validHeadSha, branchName: "feature/post-h1-p1-lifecycle-registry-verification-engine" };
+    const lineage: LifecycleLineage = { commitLineage: [validBaseSha, validHeadSha], pullRequestLineage: ["PR-27"] };
+    expect(validTarget.baseSha).toBe(validBaseSha);
+    expect(validTarget.headSha).toBe(validHeadSha);
+    expect(lineage.commitLineage).toEqual([validBaseSha, validHeadSha]);
+    expect(validateLifecycleRegistry({
+      ...record(),
+      baseSha: validBaseSha,
+      headSha: validHeadSha,
+      branchName: "feature/post-h1-p1-lifecycle-registry-verification-engine",
+      commitLineage: [validBaseSha, validHeadSha],
+      pullRequestLineage: ["PR-27"],
+    }).outcome).toBe("PASS");
+    expect(validateLifecycleRegistry({ ...record(), unknownField: true }).outcome).toBe("FAIL");
   });
 });

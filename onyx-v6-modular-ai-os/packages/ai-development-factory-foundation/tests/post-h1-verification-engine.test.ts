@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assessMainClosure, assessMergeReadiness, verifyLifecycle } from "../src/post-h1/verification-engine";
+import { assessMainClosure, assessMergeReadiness, verifyLifecycle, type MainClosureInput, type MergeReadinessInput } from "../src/post-h1/verification-engine";
 
 const complete = { prOpen: true, draft: false, targetExact: true, headFresh: true, commitScopeValid: true, checksPassed: true, approvalsPresent: true, threadsResolved: true, findingsClosed: true, coverageComplete: true, evidenceFresh: true, conflicts: false, rulesetVisible: true, ownerAuthorization: false };
 
@@ -17,4 +17,13 @@ describe("POST-H1 P1 verification", () => {
     expect(assessMainClosure({ ...closure, commitsReachable: false }).outcome).toBe("NOT_ASSESSABLE");
   });
   it("VERIFY-C04 returns non-authorizing deterministic verification evidence", () => expect(verifyLifecycle({ outcome: "PASS" })).toEqual(verifyLifecycle({ outcome: "PASS" })));
+  it("VERIFY-C05 requires explicit readonly required-field contracts", () => {
+    const validMerge: MergeReadinessInput = { prOpen: true, draft: false, targetExact: true, headFresh: true, commitScopeValid: true, checksPassed: true, approvalsPresent: true, threadsResolved: true, findingsClosed: true, coverageComplete: true, evidenceFresh: true, conflicts: false, rulesetVisible: true, ownerAuthorization: true };
+    const validClosure: MainClosureInput = { prMergedClosed: true, mainLineage: true, commitsReachable: true, fileScopeIncorporated: true, validationCurrent: true, unauthorizedReleaseClaim: false, finalMarker: true, handoff: true };
+    expect(assessMergeReadiness(validMerge).outcome).toBe("TECHNICALLY_READY");
+    expect(assessMainClosure(validClosure).outcome).toBe("MAIN_CLOSED");
+    // @ts-expect-error requires the explicit required field contract
+    const incompleteMerge: MergeReadinessInput = { prOpen: true, draft: false };
+    expect(incompleteMerge.prOpen).toBe(true);
+  });
 });

@@ -10,9 +10,9 @@ export const P1_ACCEPTANCE_IDS = Object.freeze([
 export const LIFECYCLE_STATES = Object.freeze(["PLANNED", "AUTHORIZED", "IN_PROGRESS", "LOCALLY_ACCEPTED", "COMMITTED", "PUSHED", "PR_OPEN_DRAFT", "PR_OPEN_READY", "REVIEW_BLOCKED", "MERGE_READY", "MERGED", "MAIN_CLOSED", "REOPENED", "NOT_ASSESSABLE"] as const);
 export type LifecycleState = (typeof LIFECYCLE_STATES)[number];
 export type LifecycleTarget = Readonly<{ baseSha: string; headSha: string; branchName: string }>;
-export type LifecycleLineage = Readonly<{ commits: readonly string[]; pullRequests: readonly string[] }>;
+export type LifecycleLineage = Readonly<{ commitLineage: readonly string[]; pullRequestLineage: readonly string[] }>;
 export type LifecycleGateState = Readonly<{ currentGateId: string; state: LifecycleState }>;
-export type AcceptedMarkerRecord = Readonly<{ id: string }>;
+export type AcceptedMarkerRecord = string;
 export type AcceptanceDefinition = Readonly<{ id: string }>;
 export type AcceptanceCoverageRecord = Readonly<{ id: string; covered: boolean }>;
 export type FindingRecord = Readonly<{ id: string; blocked: boolean; closed: boolean }>;
@@ -36,10 +36,13 @@ export const validateLifecycleRegistry = (input: unknown): RegistryResult => {
   const inspection = inspectRecordSnapshot(input);
   if (!inspection.valid) return result("NOT_ASSESSABLE", ["SAFE_INSPECTION_FAILED"]);
   const record = inspection.snapshot as Record<string, unknown>;
-  const required = ["schemaVersion", "id", "projectId", "phaseId", "workstreamId", "currentGateId", "state", "baseSha", "headSha", "branchName", "commitLineage", "pullRequestLineage", "acceptedMarkers", "acceptanceDefinitions", "acceptanceCoverage", "findings", "evidence", "knownLimitations", "residualRisks", "authorityBoundaries", "nextGate", "reopeningTriggers", "observedAt"];
+  const rootKeys = ["schemaVersion", "id", "projectId", "phaseId", "workstreamId", "currentGateId", "state", "baseSha", "headSha", "branchName", "commitLineage", "pullRequestLineage", "acceptedMarkers", "acceptanceDefinitions", "acceptanceCoverage", "findings", "evidence", "knownLimitations", "residualRisks", "authorityBoundaries", "nextGate", "reopeningTriggers", "observedAt"] as const;
+  const unknownKeys = Object.keys(record).filter((key) => !rootKeys.includes(key as (typeof rootKeys)[number]));
+  if (unknownKeys.length > 0) return result("FAIL", ["VOCABULARY_OR_ID_INVALID"]);
+  const required = [...rootKeys];
   if (required.some((key) => !(key in record))) return result("FAIL", ["REQUIRED_FIELD_MISSING"]);
   if (record.schemaVersion !== "1.0.0" || !id(record.id) || !id(record.projectId) || !id(record.phaseId) || !id(record.workstreamId) || !id(record.currentGateId) || !LIFECYCLE_STATES.includes(record.state as LifecycleState)) return result("FAIL", ["VOCABULARY_OR_ID_INVALID"]);
-  if (!sha(record.baseSha) || !sha(record.headSha) || record.baseSha !== record.headSha || !branch(record.branchName)) return result("FAIL", ["TARGET_LOCK_INVALID"]);
+  if (!sha(record.baseSha) || !sha(record.headSha) || !branch(record.branchName)) return result("FAIL", ["TARGET_LOCK_INVALID"]);
   for (const key of ["commitLineage", "pullRequestLineage", "acceptedMarkers", "acceptanceDefinitions", "acceptanceCoverage", "findings", "evidence", "knownLimitations", "residualRisks", "authorityBoundaries", "reopeningTriggers"] as const) if (!bounded(record[key])) return result("FAIL", ["COLLECTION_BOUND_EXCEEDED"]);
   const markers = record.acceptedMarkers as readonly unknown[];
   if (markers.some((value) => !id(value)) || new Set(markers).size !== markers.length) return result("FAIL", ["MARKER_INVALID"]);
