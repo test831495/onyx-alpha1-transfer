@@ -54,6 +54,78 @@ export const inspectRecord = (value: unknown, requiredKeys: readonly string[] = 
 export const classifyMalformedInput = (input: unknown): MalformedInputKind | undefined => inspectRecord(input, ["required"]).kind;
 export const isSafeRecord = (value: unknown): value is Record<string, unknown> => inspectRecord(value).valid;
 
+export type TrustedSnapshotValue = null | boolean | number | string | readonly TrustedSnapshotValue[] | TrustedRecordSnapshot;
+export interface TrustedRecordSnapshot { readonly [key: string]: TrustedSnapshotValue; }
+export type RecordSnapshotInspection = Readonly<{ valid: true; kind?: undefined; reasonCodes: readonly []; snapshot: TrustedRecordSnapshot } | { valid: false; kind: MalformedInputKind; reasonCodes: readonly string[]; snapshot: undefined }>;
+const snapshotInspection = (valid: boolean, kind?: MalformedInputKind, reasonCodes: readonly string[] = [], snapshot?: TrustedRecordSnapshot): RecordSnapshotInspection => valid ? Object.freeze({ valid: true, reasonCodes: Object.freeze([]) as readonly [], snapshot: snapshot! }) : Object.freeze({ valid: false, kind: kind!, reasonCodes: Object.freeze([...reasonCodes]), snapshot: undefined });
+const snapshotLimits = { depth: 16, collection: 256 } as const;
+const snapshotValue = (input: unknown, depth: number, active: WeakSet<object>): TrustedSnapshotValue => {
+  if (input === null || typeof input === "boolean") return input;
+  if (typeof input === "string") return input.normalize("NFC");
+  if (typeof input === "number") { if (!Number.isFinite(input)) throw new Error("SNAPSHOT_VALUE_UNSUPPORTED"); return input; }
+  if (typeof input !== "object" || depth > snapshotLimits.depth || active.has(input)) throw new Error("SNAPSHOT_VALUE_UNSUPPORTED");
+  active.add(input);
+  let isArray: boolean;
+  try { isArray = Array.isArray(input); } catch { throw new Error("UNINSPECTABLE_INPUT"); }
+  let prototype: object | null;
+  try { prototype = Object.getPrototypeOf(input); } catch { throw new Error("UNINSPECTABLE_INPUT"); }
+  if (isArray) {
+    if (prototype !== Array.prototype) throw new Error("UNSAFE_PROTOTYPE");
+    const array = input as unknown[];
+    if (array.length > snapshotLimits.collection) throw new Error("INVALID_VALUE");
+    const output: TrustedSnapshotValue[] = [];
+    for (let index = 0; index < array.length; index += 1) {
+      let descriptor: PropertyDescriptor | undefined;
+      try { descriptor = Object.getOwnPropertyDescriptor(input, String(index)); } catch { throw new Error("UNINSPECTABLE_INPUT"); }
+      if (!descriptor || !("value" in descriptor) || descriptor.enumerable !== true) throw new Error("INVALID_VALUE");
+      output.push(snapshotValue(descriptor.value, depth + 1, active));
+    }
+    active.delete(input); return Object.freeze(output);
+  }
+  if (prototype !== Object.prototype && prototype !== null) throw new Error("UNSAFE_PROTOTYPE");
+  let keys: (string | symbol)[];
+  try { keys = Reflect.ownKeys(input); } catch { throw new Error("UNINSPECTABLE_INPUT"); }
+  if (keys.length > snapshotLimits.collection) throw new Error("INVALID_VALUE");
+  const output: Record<string, TrustedSnapshotValue> = Object.create(null);
+  for (const key of keys) {
+    if (typeof key !== "string") throw new Error("SYMBOL_KEY");
+    if (DANGEROUS_KEYS.has(key)) throw new Error("DANGEROUS_KEY");
+    let descriptor: PropertyDescriptor | undefined;
+    try { descriptor = Object.getOwnPropertyDescriptor(input, key); } catch { throw new Error("UNINSPECTABLE_INPUT"); }
+    if (!descriptor || !("value" in descriptor) || descriptor.enumerable !== true) throw new Error("ACCESSOR_PROPERTY");
+    output[key] = snapshotValue(descriptor.value, depth + 1, active);
+  }
+  active.delete(input); return Object.freeze(output) as TrustedRecordSnapshot;
+};
+export const inspectRecordSnapshot = (value: unknown, requiredKeys: readonly string[] = []): RecordSnapshotInspection => {
+  if (value === undefined || value === null) return snapshotInspection(false, value === undefined ? "UNDEFINED_INPUT" : "NULL_INPUT", ["INPUT_REQUIRED"]);
+  if (typeof value !== "object") return snapshotInspection(false, "PRIMITIVE_INPUT", ["RECORD_REQUIRED"]);
+  let isArray: boolean;
+  try { isArray = Array.isArray(value); } catch { return snapshotInspection(false, "UNINSPECTABLE_INPUT", ["OBJECT_INSPECTION_REVOKED"]); }
+  if (isArray) return snapshotInspection(false, "ARRAY_INPUT", ["RECORD_REQUIRED"]);
+  let prototype: object | null;
+  try { prototype = Object.getPrototypeOf(value); } catch { return snapshotInspection(false, "UNINSPECTABLE_INPUT", ["PROTOTYPE_INSPECTION_FAILED"]); }
+  if (prototype !== Object.prototype && prototype !== null) return snapshotInspection(false, "UNSAFE_PROTOTYPE", ["PLAIN_RECORD_REQUIRED"]);
+  let keys: (string | symbol)[];
+  try { keys = Reflect.ownKeys(value); } catch { return snapshotInspection(false, "UNINSPECTABLE_INPUT", ["KEY_ENUMERATION_FAILED"]); }
+  if (keys.length > snapshotLimits.collection) return snapshotInspection(false, "INVALID_VALUE", ["RECORD_KEY_LIMIT_EXCEEDED"]);
+  const snapshot: Record<string, TrustedSnapshotValue> = Object.create(null);
+  const names: string[] = [];
+  try {
+    for (const key of keys) {
+      if (typeof key !== "string") return snapshotInspection(false, "SYMBOL_KEY", ["STRING_KEYS_ONLY"]);
+      if (DANGEROUS_KEYS.has(key)) return snapshotInspection(false, "DANGEROUS_KEY", ["DANGEROUS_KEY"]);
+      const descriptor = Object.getOwnPropertyDescriptor(value, key);
+      if (!descriptor || !("value" in descriptor)) return snapshotInspection(false, "ACCESSOR_PROPERTY", ["ACCESSOR_NOT_ALLOWED"]);
+      if (descriptor.enumerable !== true) return snapshotInspection(false, "NON_ENUMERABLE_PROPERTY", ["ENUMERABLE_PROPERTIES_REQUIRED"]);
+      snapshot[key] = snapshotValue(descriptor.value, 1, new WeakSet<object>()); names.push(key);
+    }
+  } catch { return snapshotInspection(false, "INVALID_VALUE", ["SNAPSHOT_VALUE_UNSUPPORTED"]); }
+  if (requiredKeys.some((key) => !names.includes(key))) return snapshotInspection(false, "MISSING_FIELD", ["REQUIRED_FIELD_MISSING"]);
+  if (requiredKeys.length > 0 && names.some((key) => !requiredKeys.includes(key))) return snapshotInspection(false, "UNEXPECTED_FIELD", ["CLOSED_SCHEMA"]);
+  return snapshotInspection(true, undefined, [], Object.freeze(snapshot) as TrustedRecordSnapshot);
+};
+
 const cloneLimits = { depth: 12, string: 4096, array: 256, keys: 256, nodes: 2048 } as const;
 export const cloneFreeze = <T>(value: T): T => {
   const active = new WeakSet<object>();

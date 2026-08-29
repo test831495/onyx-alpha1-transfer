@@ -29,7 +29,7 @@ import {
   projectContinuityGaps,
   projectEvidenceInventory,
 } from "../src/index";
-import { MALFORMED_INPUT_KINDS, classifyMalformedInput, dispositionForMalformedInput, inspectRecord, validateBoundedNumber, validateBoundedString } from "../src/factory-constitution";
+import { MALFORMED_INPUT_KINDS, classifyMalformedInput, dispositionForMalformedInput, inspectRecord, inspectRecordSnapshot, validateBoundedNumber, validateBoundedString } from "../src/factory-constitution";
 
 const baseEnvelope = {
   taskId: "task-1",
@@ -167,6 +167,52 @@ const baseDecision = {
 };
 
 describe("deterministic validators", () => {
+  it("creates bounded immutable snapshots without changing inspectRecord", () => {
+    const nested = { value: "nested" };
+    const input = { required: "ok", nested, list: [1, { value: "array" }] };
+    expect(inspectRecord(input, ["required", "nested", "list"])).toEqual({ valid: true, reasonCodes: [] });
+    const inspection = inspectRecordSnapshot(input, ["required", "nested", "list"]);
+    expect(inspection).toMatchObject({ valid: true, reasonCodes: [] });
+    expect(Object.getPrototypeOf(inspection.snapshot!)).toBeNull();
+    expect(Object.isFrozen(inspection.snapshot)).toBe(true);
+    expect(Object.isFrozen(inspection.snapshot!.nested)).toBe(true);
+    expect(Object.isFrozen(inspection.snapshot!.list)).toBe(true);
+    nested.value = "changed";
+    input.list[1] = { value: "changed" };
+    expect(inspection.snapshot).toMatchObject({ nested: { value: "nested" }, list: [1, { value: "array" }] });
+    expect(inspection.snapshot).not.toBe(input);
+    expect(inspection.snapshot!.nested).not.toBe(nested);
+  });
+
+  it("contains hostile snapshot input in one guarded observation pass", () => {
+    let prototypes = 0; let keys = 0; let descriptors = 0; let reads = 0;
+    const target = { required: "ok" };
+    const proxy = new Proxy(target, {
+      getPrototypeOf: (value) => { prototypes += 1; return Object.getPrototypeOf(value); },
+      ownKeys: (value) => { keys += 1; return Reflect.ownKeys(value); },
+      getOwnPropertyDescriptor: (value, key) => { descriptors += 1; return Object.getOwnPropertyDescriptor(value, key); },
+      get: () => { reads += 1; throw new Error("must-not-read"); },
+    });
+    expect(inspectRecordSnapshot(proxy, ["required"])).toMatchObject({ valid: true, snapshot: { required: "ok" } });
+    expect(prototypes).toBe(1);
+    expect(keys).toBe(1);
+    expect(descriptors).toBe(1);
+    expect(reads).toBe(0);
+    const getter = {} as Record<string, unknown>;
+    Object.defineProperty(getter, "required", { enumerable: true, get: () => { throw new Error("must-not-run"); } });
+    expect(inspectRecordSnapshot(getter, ["required"])).toMatchObject({ valid: false, kind: "ACCESSOR_PROPERTY", snapshot: undefined });
+    expect(inspectRecordSnapshot({ required: undefined }, ["required"])).toMatchObject({ valid: false, snapshot: undefined });
+  });
+
+  it("enforces snapshot nested bounds and hostile classifications", () => {
+    const nested: Record<string, unknown> = { required: "ok" }; let cursor = nested;
+    for (let index = 0; index < 17; index += 1) { cursor.child = {}; cursor = cursor.child as Record<string, unknown>; }
+    expect(inspectRecordSnapshot(nested)).toMatchObject({ valid: false, snapshot: undefined });
+    expect(inspectRecordSnapshot({ values: Array.from({ length: 257 }, () => 1) })).toMatchObject({ valid: false, snapshot: undefined });
+    const cycle: Record<string, unknown> = { required: "ok" }; cycle.self = cycle;
+    expect(inspectRecordSnapshot(cycle)).toMatchObject({ valid: false, snapshot: undefined });
+    expect(inspectRecordSnapshot(Object.assign(Object.create(null), { required: "ok" }))).toMatchObject({ valid: true });
+  });
   it("contains hostile reflective failures without diagnostic leakage", () => {
     expect(MALFORMED_INPUT_KINDS.filter((kind) => kind === "UNINSPECTABLE_INPUT")).toHaveLength(1);
     const failures = [
