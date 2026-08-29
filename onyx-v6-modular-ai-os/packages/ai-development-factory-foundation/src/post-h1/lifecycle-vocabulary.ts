@@ -2,6 +2,7 @@ export const BOUNDS = Object.freeze({ ID_MAX_LENGTH: 128, URL_MAX_LENGTH: 2048, 
 export const ACCEPTANCE_IDS = Object.freeze(Array.from({ length: 16 }, (_, index) => `POSTH1-P0-ARCH-${String(index + 1).padStart(3, "0")}`));
 export const TEST_IDS = Object.freeze(Array.from({ length: 64 }, (_, index) => `T${String(index + 1).padStart(2, "0")}`));
 export const PERSISTENCE_MODES = Object.freeze(["P0_EPHEMERAL", "P1_REPOSITORY_PROPOSAL", "P2_GOVERNED_PERSISTENCE"] as const);
+export const ACTION_CLASSES = Object.freeze(["VALIDATE"] as const);
 export const ACTION_AUTHORITY_CLASSES = Object.freeze(["NON_AUTHORIZING", "ADVISORY", "AUTHORIZING", "EXECUTING"] as const);
 export const SENSITIVITY_CLASSES = Object.freeze(["PUBLIC_METADATA", "REPOSITORY_METADATA", "OWNER_RESTRICTED", "SENSITIVE_REDACTED", "PROHIBITED_CONTENT"] as const);
 export const EVIDENCE_FRESHNESS_POLICIES = Object.freeze(["IMMUTABLE_CONTENT_BOUND", "HEAD_BOUND", "BASE_AND_HEAD_BOUND", "PR_STATE_BOUND", "RULESET_BOUND", "TIME_BOUND", "MANUAL_REASSESSMENT_REQUIRED"] as const);

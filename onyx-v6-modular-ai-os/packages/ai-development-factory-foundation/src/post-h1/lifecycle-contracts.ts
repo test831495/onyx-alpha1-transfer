@@ -3,6 +3,7 @@ import { ACCEPTANCE_IDS, BOUNDS, DURABLE_READBACK_CLASSES, EVIDENCE_FRESHNESS_PO
 
 export type LifecycleRecord = Readonly<Record<string, unknown>>;
 export type ValidationResult = Readonly<{ outcome: ValidationOutcome; reasonCodes: readonly string[]; authority: "NON_AUTHORIZING" }>;
+export type EvidenceFreshnessResult = Readonly<{ outcome: ValidationOutcome; reasonCodes: readonly string[]; authority: "NON_AUTHORIZING"; status: "FRESH" | "STALE" | "NOT_ASSESSABLE" }>;
 
 const result = (outcome: ValidationOutcome, reasonCodes: readonly string[] = []): ValidationResult => Object.freeze({ outcome, reasonCodes: Object.freeze([...reasonCodes]), authority: "NON_AUTHORIZING" });
 const sha = (value: unknown, length: number): boolean => typeof value === "string" && new RegExp(`^[a-f0-9]{${length}}$`, "u").test(value);
@@ -104,7 +105,7 @@ export const validateEvidenceReference = (input: unknown): ValidationResult => {
   return result("PASS");
 };
 
-export const validateEvidenceFreshness = (input: unknown, now: Date): ValidationResult => {
+export const validateEvidenceFreshness = (input: unknown, now: Date): EvidenceFreshnessResult => {
   const value = validateShape(input, ["policy", "observedAt", "expiresAt", "targetHash", "contentHash", "headSha", "baseSha", "stateHash", "rulesetHash"]);
   const nonAuthorizing = { authority: "NON_AUTHORIZING" as const };
   if (!value || !EVIDENCE_FRESHNESS_POLICIES.includes(value.policy as typeof EVIDENCE_FRESHNESS_POLICIES[number]) || !timestamp(value.observedAt) || !(now instanceof Date) || Number.isNaN(now.valueOf()) || Date.parse(value.observedAt as string) > now.valueOf()) return Object.freeze({ ...result("NOT_ASSESSABLE", ["EVIDENCE_UNAVAILABLE"]), status: "NOT_ASSESSABLE", ...nonAuthorizing });

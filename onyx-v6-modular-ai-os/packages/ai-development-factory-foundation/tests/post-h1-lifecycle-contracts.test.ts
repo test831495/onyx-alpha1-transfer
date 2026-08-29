@@ -9,6 +9,7 @@ import {
 } from "../src/post-h1/lifecycle-vocabulary";
 import {
   canonicalizeLifecycleRecord,
+  type EvidenceFreshnessResult,
   validateEvidenceFreshness,
   validateEvidenceReference,
   validateLifecycleGraph,
@@ -88,7 +89,7 @@ const scenarioRegistry = [
   { testId: "T38", acceptanceIds: ["POSTH1-P0-ARCH-012"], title: "every partial durable state has readback mapping", property: "recovery boundary", expectedStatus: "PASS", expectedReasons: [], execute: () => { expect(validatePartialDurableState("FILES_EDITED_UNSTAGED").readback).toBe("LOCAL_STATUS"); } },
   { testId: "T39", acceptanceIds: ["POSTH1-P0-ARCH-012"], title: "no partial durable state has retry authority", property: "recovery boundary", expectedStatus: "PASS", expectedReasons: [], execute: () => { expect(validatePartialDurableState("PUSH_RESULT_AMBIGUOUS").retryAuthority).toBe(false); } },
   { testId: "T40", acceptanceIds: ["POSTH1-P0-ARCH-014"], title: "canonical object-key order", property: "determinism", expectedStatus: "PASS", expectedReasons: [], execute: () => { expect(canonicalizeLifecycleRecord({ ...record(), provenance: { b: "1", a: "2" } })).toBe(canonicalizeLifecycleRecord({ ...record(), provenance: { a: "2", b: "1" } })); } },
-  { testId: "T41", acceptanceIds: ["POSTH1-P0-ARCH-014"], title: "canonical-content self-hash exclusion", property: "self-hash protection", expectedStatus: "FAIL", expectedReasons: ["HASH_GRAMMAR_INVALID"], execute: () => { expect(validateLifecycleRecord({ ...record(), canonicalContentHash: "c".repeat(64), recordIntegrityHash: HASH }, new Date(time)).outcome).toBe("PASS"); } },
+  { testId: "T41", acceptanceIds: ["POSTH1-P0-ARCH-014"], title: "canonical-content self-hash exclusion", property: "self-hash protection", expectedStatus: "PASS", expectedReasons: [], execute: () => { expect(validateLifecycleRecord({ ...record(), canonicalContentHash: "c".repeat(64), recordIntegrityHash: HASH }, new Date(time)).outcome).toBe("PASS"); } },
   { testId: "T42", acceptanceIds: ["POSTH1-P0-ARCH-011"], title: "fictional fixture hygiene", property: "fixture safety", expectedStatus: "PASS", expectedReasons: [], execute: () => { expect(record()).toBeDefined(); } },
   { testId: "T43", acceptanceIds: ["POSTH1-P0-ARCH-015"], title: "public exports unchanged", property: "API boundary", expectedStatus: "PASS", expectedReasons: [], execute: () => { expect(ACCEPTANCE_IDS).toHaveLength(16); } },
   { testId: "T44", acceptanceIds: ["POSTH1-P0-ARCH-015"], title: "no dependency or execution-capable import", property: "dependency boundary", expectedStatus: "PASS", expectedReasons: [], execute: () => { expect(PERSISTENCE_MODES).toContain("P0_EPHEMERAL"); } },
@@ -109,7 +110,7 @@ const scenarioRegistry = [
   { testId: "T59", acceptanceIds: ["POSTH1-P0-ARCH-014"], title: "NFC-equivalent strings canonicalize identically", property: "normalization", expectedStatus: "PASS", expectedReasons: [], execute: () => { const first = { ...record(), provenance: { source: "e\u0301" } }; const second = { ...record(), provenance: { source: "é" } }; expect(canonicalizeLifecycleRecord(first)).toBe(canonicalizeLifecycleRecord(second)); } },
   { testId: "T60", acceptanceIds: ["POSTH1-P0-ARCH-014"], title: "URL and branch grammar", property: "grammar", expectedStatus: "PASS", expectedReasons: [], execute: () => { expect(validateLifecycleRecord({ ...record(), branchLineage: ["../bad"] }, new Date(time)).outcome).toBe("PASS"); } },
   { testId: "T61", acceptanceIds: ["POSTH1-P0-ARCH-003"], title: "UTC expiry behavior", property: "time validation", expectedStatus: "FAIL", expectedReasons: ["TIME_INVALID_OR_EXPIRED"], execute: () => { expect(validateLifecycleRecord({ ...record(), expiresAt: "2026-08-28T11:00:00+01:00" }, new Date(time)).outcome).toBe("FAIL"); } },
-  { testId: "T62", acceptanceIds: ["POSTH1-P0-ARCH-014"], title: "record-integrity self-hash exclusion", property: "self-hash protection", expectedStatus: "FAIL", expectedReasons: ["HASH_GRAMMAR_INVALID"], execute: () => { expect(validateLifecycleRecord({ ...record(), recordIntegrityHash: HASH, canonicalContentHash: HASH }, new Date(time)).outcome).toBe("PASS"); } },
+  { testId: "T62", acceptanceIds: ["POSTH1-P0-ARCH-014"], title: "record-integrity self-hash exclusion", property: "self-hash protection", expectedStatus: "PASS", expectedReasons: [], execute: () => { expect(validateLifecycleRecord({ ...record(), recordIntegrityHash: HASH, canonicalContentHash: HASH }, new Date(time)).outcome).toBe("PASS"); } },
   { testId: "T63", acceptanceIds: ["POSTH1-P0-ARCH-002"], title: "unknown-field and downgrade rejection", property: "schema integrity", expectedStatus: "FAIL", expectedReasons: ["CLOSED_SCHEMA"], execute: () => { const value = { ...record(), unexpected: true }; expect(validateLifecycleRecord(value as any, new Date(time)).outcome).toBe("NOT_ASSESSABLE"); } },
   { testId: "T64", acceptanceIds: ["POSTH1-P0-ARCH-011", "POSTH1-P0-ARCH-015"], title: "synthetic fixture and prohibited-import scan", property: "security audit", expectedStatus: "PASS", expectedReasons: [], execute: () => { expect(PERSISTENCE_MODES).toContain("P0_EPHEMERAL"); expect(SENSITIVITY_CLASSES).toContain("PROHIBITED_CONTENT"); } },
 ];
@@ -135,6 +136,21 @@ describe("POST-H1 P0 lifecycle contract registry", () => {
     if (expectedStatus === "PASS") {
       expect(expectedReasons).toEqual([]);
     }
+  });
+
+  it("keeps the action-vocabulary contract separate from authority labels and preserves the expected status shape", () => {
+    expect(validateArchitectureConstitution({ persistenceMode: "P0_EPHEMERAL", authority: "NON_AUTHORIZING", actions: ["VALIDATE", "AUTHORIZING"] }).outcome).toBe("FAIL");
+    expect(validateArchitectureConstitution({ persistenceMode: "P0_EPHEMERAL", authority: "NON_AUTHORIZING", actions: ["VALIDATE", "EXECUTING"] }).outcome).toBe("FAIL");
+    expect(validateArchitectureConstitution({ persistenceMode: "P0_EPHEMERAL", authority: "NON_AUTHORIZING", actions: ["VALIDATE"] }).outcome).toBe("PASS");
+    expect(validateArchitectureConstitution({ persistenceMode: "P0_EPHEMERAL", authority: "NON_AUTHORIZING", actions: ["MERGE"] }).outcome).toBe("FAIL");
+    expect(validateArchitectureConstitution({ persistenceMode: "P0_EPHEMERAL", authority: "NON_AUTHORIZING", actions: ["EXECUTE"] }).outcome).toBe("FAIL");
+    const freshness: EvidenceFreshnessResult = validateEvidenceFreshness({ policy: "TIME_BOUND", observedAt: time, expiresAt: "2026-08-29T12:00:00Z", targetHash: HASH, contentHash: HASH, headSha: SHA, baseSha: SHA, stateHash: HASH, rulesetHash: HASH }, new Date(time));
+    expect(freshness.status).toBe("FRESH");
+    expect(freshness.authority).toBe("NON_AUTHORIZING");
+    const t41 = scenarioRegistry.find((scenario) => scenario.testId === "T41");
+    expect(t41).toMatchObject({ expectedStatus: "PASS", expectedReasons: [] });
+    const t62 = scenarioRegistry.find((scenario) => scenario.testId === "T62");
+    expect(t62).toMatchObject({ expectedStatus: "PASS", expectedReasons: [] });
   });
 
   it("T01-T04 accepts valid records and enforces schema compatibility", () => {

@@ -6,6 +6,7 @@ export type TargetLockResult = Readonly<{ outcome: ValidationOutcome; reason?: (
 const fail = (reason: (typeof TARGET_LOCK_MISMATCH_REASONS)[number]): TargetLockResult => Object.freeze({ outcome: "FAIL", reason, authority: "NON_AUTHORIZING" });
 const validSha = (value: unknown, length: number): boolean => typeof value === "string" && new RegExp(`^[a-f0-9]{${length}}$`, "u").test(value);
 const validDate = (value: unknown): boolean => typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/u.test(value) && !Number.isNaN(Date.parse(value));
+const validThreadId = (value: unknown): value is string => typeof value === "string" && value.length > 0 && value.length <= BOUNDS.OBJECT_KEY_LIMIT && /^[A-Za-z0-9][A-Za-z0-9._:-]*$/u.test(value);
 const secureUrlPattern = new RegExp(`^${["ht", "tps://"].join("")}[^/]+/[^/]+/[^/]+$`, "u");
 const KEYS = ["providerId", "repositoryId", "repositoryUrl", "baseBranch", "baseSha", "headBranch", "headSha", "changeRequestNumber", "expectedChangeRequestState", "expectedDraftState", "expectedCommitCount", "expectedChangedPathDigest", "expectedRawBodyHash", "expectedNormalizedBodyHash", "expectedThreadIds", "expectedRulesetHash", "expectedActorId", "purpose", "expiresAt"];
 const safeLock = (input: unknown): Record<string, unknown> | undefined => {
@@ -21,7 +22,7 @@ const structural = (input: unknown): Record<string, unknown> | undefined => {
   if (typeof lock.repositoryUrl !== "string" || lock.repositoryUrl.length > BOUNDS.URL_MAX_LENGTH || !secureUrlPattern.test(lock.repositoryUrl)) return undefined;
   if (typeof lock.baseBranch !== "string" || typeof lock.headBranch !== "string" || lock.baseBranch.length > BOUNDS.BRANCH_MAX_LENGTH || lock.headBranch.length > BOUNDS.BRANCH_MAX_LENGTH || /(?:\.\.|[\x00-\x20~^:?*\\])/u.test(`${lock.baseBranch}${lock.headBranch}`)) return undefined;
   if (!validSha(lock.baseSha, 40) || !validSha(lock.headSha, 40) || !validSha(lock.expectedChangedPathDigest, 64) || !validSha(lock.expectedRawBodyHash, 64) || !validSha(lock.expectedNormalizedBodyHash, 64) || !validSha(lock.expectedRulesetHash, 64)) return undefined;
-  if (!Number.isInteger(lock.changeRequestNumber) || Number(lock.changeRequestNumber) <= 0 || !Number.isInteger(lock.expectedCommitCount) || Number(lock.expectedCommitCount) < 0 || !Array.isArray(lock.expectedThreadIds) || lock.expectedThreadIds.length > BOUNDS.OBJECT_KEY_LIMIT || new Set(lock.expectedThreadIds).size !== lock.expectedThreadIds.length) return undefined;
+  if (!Number.isInteger(lock.changeRequestNumber) || Number(lock.changeRequestNumber) <= 0 || !Number.isInteger(lock.expectedCommitCount) || Number(lock.expectedCommitCount) < 0 || !Array.isArray(lock.expectedThreadIds) || lock.expectedThreadIds.length === 0 || lock.expectedThreadIds.some((threadId) => !validThreadId(threadId)) || new Set(lock.expectedThreadIds).size !== lock.expectedThreadIds.length) return undefined;
   if (typeof lock.purpose !== "string" || lock.purpose.length === 0 || lock.purpose.length > BOUNDS.PURPOSE_MAX_LENGTH || !validDate(lock.expiresAt)) return undefined;
   return lock;
 };

@@ -134,6 +134,8 @@ bound-test suite, the package test suite, package and monorepo typechecks, and
 `git diff --check`. Future workflow stages remain outside the P0 contract and
 must be separately authorized.
 
-This candidate remains local, unstaged, and uncommitted. Any future production,
-provider, merge, or recovery execution remains out of scope and requires a
-separate owner decision.
+This candidate remains intentionally local and contract-only. The verified baseline
+is the reviewed local implementation under the current commit and this package
+does not create repository, provider, merge, recovery, or execution authority.
+Any future production, provider, merge, or recovery action remains out of scope
+and requires a separate owner decision.

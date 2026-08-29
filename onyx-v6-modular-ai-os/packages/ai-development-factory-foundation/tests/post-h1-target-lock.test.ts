@@ -72,6 +72,9 @@ describe("POST-H1 P0 target lock", () => {
       const changed = { ...lock(), [field]: field === "expectedThreadIds" ? ["thread-2"] : field === "expiresAt" ? "2026-08-30T12:00:00Z" : 2 };
       expect(compareTargetLocks(lock(), changed).outcome).toBe("FAIL");
     }
+    expect(validateTargetLock({ ...lock(), expectedThreadIds: ["thread-1", ""] }, new Date("2026-08-28T12:00:00Z")).outcome).toBe("FAIL");
+    expect(validateTargetLock({ ...lock(), expectedThreadIds: ["thread-1", 1] as any }, new Date("2026-08-28T12:00:00Z")).outcome).toBe("FAIL");
+    expect(validateTargetLock({ ...lock(), expectedThreadIds: ["thread-1", "bad value"] }, new Date("2026-08-28T12:00:00Z")).outcome).toBe("FAIL");
     expect(validateTargetLock({ ...lock(), expectedThreadIds: ["x", "x"] }, new Date("2026-08-28T12:00:00Z")).outcome).toBe("FAIL");
     const unknown = { ...lock(), unexpected: true };
     expect(validateTargetLock(unknown, new Date("2026-08-28T12:00:00Z")).outcome).toBe("FAIL");
