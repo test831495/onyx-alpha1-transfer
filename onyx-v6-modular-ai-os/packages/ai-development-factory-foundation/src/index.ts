@@ -11,3 +11,8 @@ export * from "./read-only-command-policy";
 export * from "./decision-package";
 export * from "./continuity-draft";
 export * from "./validators";
+export * from "./post-h1/p2-evidence-contracts";
+export * from "./post-h1/p2-evidence-normalization";
+export * from "./post-h1/p2-reconciliation-engine";
+export * from "./post-h1/p2-governance-projection";
+export * from "./post-h1/p2-acceptance-registry";
