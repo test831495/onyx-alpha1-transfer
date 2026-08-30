@@ -16,3 +16,7 @@ export * from "./post-h1/p2-evidence-normalization";
 export * from "./post-h1/p2-reconciliation-engine";
 export * from "./post-h1/p2-governance-projection";
 export * from "./post-h1/p2-acceptance-registry";
+export * from "./post-h1/p3-governance-automation-contracts";
+export * from "./post-h1/p3-acceptance-registry";
+export * from "./post-h1/p3-governance-automation";
+export * from "./post-h1/p3-governance-report-projection";
