@@ -12,6 +12,7 @@ import {
   ALPHA0_TEST_REGISTRY,
   validateAlpha0TestRegistry,
 } from "../src/post-h1/alpha0-test-registry";
+import { validateAlpha0Record } from "../src/post-h1/alpha0-validation-contracts";
 import { selectAlpha0Tests } from "../src/post-h1/alpha0-selection-and-dependency-planner";
 
 const candidate = Object.freeze({
@@ -56,6 +57,7 @@ describe("Post-H1 Alpha 0 domain execution registry", () => {
         const testPath = resolve(workspaceRoot, mapping.testFile);
         expect(existsSync(testPath), `${record.id} test file`).toBe(true);
         const contents = readFileSync(testPath, "utf8");
+        expect(contents, `${record.id} suite title`).toContain(`describe("${mapping.suiteTitle}"`);
         expect(contents, `${record.id} test title`).toContain(mapping.testTitle);
         expect(contents, `${record.id} source symbol`).toContain(mapping.sourceSymbol);
       }
@@ -79,5 +81,32 @@ describe("Post-H1 Alpha 0 domain execution registry", () => {
     expect(selection.requiredPhysicalDeviceIds).toContain("ALPHA0-DOMAIN-DEVICE-PHYSICAL");
     expect(selection.requiredRestoreIds).toContain("ALPHA0-DOMAIN-RECOVERY-REAL-RESTORE");
     expect(selection.requiredOwnerDecisionIds).toContain("ALPHA0-DOMAIN-INDEPENDENT-SECURITY");
+  });
+
+  it("accepts every canonical ID and rejects empty or non-canonical ID segments", () => {
+    const base = ALPHA0_TEST_REGISTRY[0]!;
+    for (const record of [...ALPHA0_TEST_REGISTRY, ...ALPHA0_DOMAIN_EXECUTION_REGISTRY]) {
+      expect(validateAlpha0Record({ ...base, id: record.id }).valid, record.id).toBe(true);
+    }
+    for (const id of ["ALPHA0-DOMAIN-FOO-BAR-", "ALPHA0-DOMAIN-", "-ALPHA0-DOMAIN-FOO", "ALPHA0--DOMAIN-FOO", "ALPHA0-DOMAIN--FOO", "ALPHA0-DOMAIN-FOO--BAR", "alpha0-DOMAIN-FOO", "ALPHA0-domain-FOO", "ALPHA0-DOMAIN- foo", "ALPHA0-DOMAIN-FOO BAR", "ALPHA0-DOMAIN-FOO_BAR", "ALPHA0-DOMAIN-FOO.", ""]) {
+      expect(validateAlpha0Record({ ...base, id }).valid, id).toBe(false);
+    }
+  });
+
+  it("rejects malformed domain-specific fields and cross-field contradictions", () => {
+    const mutate = (change: Partial<(typeof ALPHA0_DOMAIN_EXECUTION_REGISTRY)[number]>) =>
+      ALPHA0_DOMAIN_EXECUTION_REGISTRY.map((record, index) => index === 0 ? { ...record, ...change } : record);
+    for (const change of [
+      { displayName: "" },
+      { domainRequirementId: "" },
+      { executionClass: "UNKNOWN" as never },
+      { testMappings: Object.freeze([{} as never]) },
+      { requiresToolAuthorization: "yes" as never },
+      { executionClass: "LOCAL_EXISTING_TEST" as const, testMappings: Object.freeze([]) },
+      { executionClass: "EXTERNAL_AUTHORIZATION_REQUIRED" as const, testMappings: Object.freeze([ALPHA0_DOMAIN_EXECUTION_REGISTRY[0]!.testMappings[0]!]) },
+      { requiresPhysicalDevice: true, executionClass: "LOCAL_EXISTING_TEST" as const },
+    ]) {
+      expect(validateAlpha0DomainExecutionRegistry(mutate(change)).valid, JSON.stringify(change)).toBe(false);
+    }
   });
 });

@@ -253,7 +253,7 @@ export const validateAlpha0Record = (value: unknown): Readonly<{ valid: boolean;
     }
   }
 
-  if (typeof record.id !== "string" || !/^ALPHA0(?:-[A-Z0-9]+)+-(?:\d+|[A-Z][A-Z0-9-]*)$/.test(record.id)) reasons.push("ALPHA0_RECORD_INVALID");
+  if (typeof record.id !== "string" || !/^ALPHA0(?:-[A-Z0-9]+)+$/.test(record.id)) reasons.push("ALPHA0_RECORD_INVALID");
   if (!ALPHA0_RECORD_FAMILIES.includes(record.family as Alpha0RecordFamily)) reasons.push("ALPHA0_FAMILY_INVALID");
   if (!ALPHA0_LANES.includes(record.lane as Alpha0Lane)) reasons.push("ALPHA0_LANE_INVALID");
   if (!ALPHA0_RISK_TIERS.includes(record.riskTier as Alpha0RiskTier)) reasons.push("ALPHA0_RISK_TIER_INVALID");

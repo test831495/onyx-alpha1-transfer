@@ -55,14 +55,14 @@ type Definition = Readonly<{
 
 const mappings = Object.freeze({
   identity: { testFile: "packages/phase1a11-household-identity-runtime/tests/identity-runtime.test.ts", suiteTitle: "Wave B1 identity foundation", testTitle: "enforces exactly one canonical Rahul owner", sourceSymbol: "validateCanonicalOwner", fixture: "CANONICAL_OWNER_BINDING", command: "pnpm --filter @onyx/phase1a11-household-identity-runtime test" },
-  session: { testFile: "packages/phase1a11-household-session-runtime/tests/session-runtime.test.ts", suiteTitle: "Phase 1A.11 household session runtime", testTitle: "switches account with complete cleanup projection", sourceSymbol: "switchAccount", fixture: "sessionCreationInput", command: "pnpm --filter @onyx/phase1a11-household-session-runtime test" },
-  memory: { testFile: "packages/phase1a11-household-resource-isolation-runtime/tests/resource-isolation.test.ts", suiteTitle: "Phase 1A.11 household resource isolation runtime", testTitle: "separates memory, conversations, connectors, caches, evidence, and Project Journey access", sourceSymbol: "evaluateResourceAccess", fixture: "resourceAccessInput", command: "pnpm --filter @onyx/phase1a11-household-resource-isolation-runtime test" },
-  approval: { testFile: "packages/automation-foundation/tests/approval-engine.test.ts", suiteTitle: "approval engine", testTitle: "requires approval before creating a GitHub issue", sourceSymbol: "requiresApproval", fixture: "approvalRequest", command: "pnpm --filter @onyx/automation-foundation test" },
-  intelligence: { testFile: "packages/phase1a8-governed-contracts/tests/poisoning-and-tombstone.test.ts", suiteTitle: "instruction-versus-content classification", testTitle: "detects attempts to override prior instructions", sourceSymbol: "assertPromptInjectionIndicatorContract", fixture: "instructionFixture", command: "pnpm --filter @onyx/phase1a8-governed-contracts test" },
-  recovery: { testFile: "packages/phase1a11-project-journey-recovery-foundation/tests/recovery-completeness-policy.test.ts", suiteTitle: "B4-4A.2 recovery completeness", testTitle: "uses exact restoration stage order", sourceSymbol: "assessRecoveryCompleteness", fixture: "recoveryCompletenessInput", command: "pnpm --filter @onyx/phase1a11-project-journey-recovery-foundation test" },
-  device: { testFile: "packages/phase1a11-household-session-runtime/tests/session-runtime.test.ts", suiteTitle: "Phase 1A.11 household session runtime", testTitle: "denies unknown devices, audit failures, and preserves user-safe fields", sourceSymbol: "evaluateSession", fixture: "session", command: "pnpm --filter @onyx/phase1a11-household-session-runtime test" },
+  session: { testFile: "packages/phase1a11-household-session-runtime/tests/session-runtime.test.ts", suiteTitle: "Wave B2 session foundation", testTitle: "switches account with complete cleanup projection", sourceSymbol: "switchAccount", fixture: "sessionCreationInput", command: "pnpm --filter @onyx/phase1a11-household-session-runtime test" },
+  memory: { testFile: "packages/phase1a11-household-resource-isolation-runtime/tests/resource-isolation.test.ts", suiteTitle: "Wave B3 resource isolation", testTitle: "separates memory, conversations, connectors, caches, evidence, and Project Journey access", sourceSymbol: "evaluateResourceAccess", fixture: "resourceAccessInput", command: "pnpm --filter @onyx/phase1a11-household-resource-isolation-runtime test" },
+  approval: { testFile: "packages/automation-foundation/tests/approval-engine.test.ts", suiteTitle: "automation approval engine", testTitle: "requires approval before creating a GitHub issue", sourceSymbol: "requiresApproval", fixture: "approvalRequest", command: "pnpm --filter @onyx/automation-foundation test" },
+  intelligence: { testFile: "packages/phase1a8-governed-contracts/tests/poisoning-and-tombstone.test.ts", suiteTitle: "Wave 3B: poisoning protection and tombstone contracts", testTitle: "detects attempts to override prior instructions", sourceSymbol: "assertPromptInjectionIndicatorContract", fixture: "instructionFixture", command: "pnpm --filter @onyx/phase1a8-governed-contracts test" },
+  recovery: { testFile: "packages/phase1a11-project-journey-recovery-foundation/tests/recovery-completeness-policy.test.ts", suiteTitle: "B4-4A.2 recovery completeness policy", testTitle: "uses exact restoration stage order", sourceSymbol: "assessRecoveryCompleteness", fixture: "recoveryCompletenessInput", command: "pnpm --filter @onyx/phase1a11-project-journey-recovery-foundation test" },
+  device: { testFile: "packages/phase1a11-household-session-runtime/tests/session-runtime.test.ts", suiteTitle: "Wave B2 session foundation", testTitle: "denies unknown devices, audit failures, and preserves user-safe fields", sourceSymbol: "evaluateSession", fixture: "session", command: "pnpm --filter @onyx/phase1a11-household-session-runtime test" },
   accessibility: { testFile: "packages/phase1a8-governed-contracts/tests/accessibility-gates.test.ts", suiteTitle: "Accessibility gating contracts", testTitle: "blocks release on mandatory failures and requires justification for not-applicable results", sourceSymbol: "evaluateReleaseGates", fixture: "accessibilityGateResults", command: "pnpm --filter @onyx/phase1a8-governed-contracts test" },
-  fault: { testFile: "packages/phase1a9-governed-scheduler/tests/fault-injection.test.ts", suiteTitle: "scheduler fault injection", testTitle: "each fault has required evidence classes", sourceSymbol: "STANDARD_FAULT_INJECTIONS", fixture: "faultScenario", command: "pnpm --filter @onyx/phase1a9-governed-scheduler test" },
+  fault: { testFile: "packages/phase1a9-governed-scheduler/tests/fault-injection.test.ts", suiteTitle: "Phase 1A.9 Wave 5A Fault Injection", testTitle: "each fault has required evidence classes", sourceSymbol: "STANDARD_FAULT_INJECTIONS", fixture: "faultScenario", command: "pnpm --filter @onyx/phase1a9-governed-scheduler test" },
 });
 
 const definitions: readonly Definition[] = [
@@ -116,6 +116,43 @@ const createRecord = (definition: Definition): Alpha0DomainExecutionRecord => Ob
 export const ALPHA0_DOMAIN_EXECUTION_REGISTRY: readonly Alpha0DomainExecutionRecord[] = Object.freeze(definitions.map(createRecord));
 export const ALPHA0_DOMAIN_RECORD_IDS = Object.freeze(ALPHA0_DOMAIN_EXECUTION_REGISTRY.map((record) => record.id));
 
+const DOMAIN_EXECUTION_CLASSES: readonly Alpha0DomainExecutionClass[] = Object.freeze([
+  "LOCAL_EXISTING_TEST",
+  "EXTERNAL_AUTHORIZATION_REQUIRED",
+  "TOOL_AUTHORIZATION_REQUIRED",
+  "OWNER_INSPECTION_REQUIRED",
+]);
+
+const isNonEmptyString = (value: unknown): value is string =>
+  typeof value === "string" && value.trim().length > 0 && value.length <= 1024;
+
+const isValidMapping = (value: unknown): value is Alpha0ExactTestMapping => {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const mapping = value as Record<string, unknown>;
+  const keys = ["testFile", "suiteTitle", "testTitle", "sourceSymbol", "fixture", "command"];
+  return Object.keys(mapping).length === keys.length && keys.every((key) => isNonEmptyString(mapping[key]));
+};
+
+const isValidDomainRecord = (record: Alpha0DomainExecutionRecord): boolean => {
+  if (!isNonEmptyString(record.displayName) || !/^DOM-[A-Z0-9-]+$/.test(record.domainRequirementId)) return false;
+  if (!DOMAIN_EXECUTION_CLASSES.includes(record.executionClass)) return false;
+  if (!Array.isArray(record.testMappings) || !record.testMappings.every(isValidMapping)) return false;
+  const mappingIds = record.testMappings.map((mapping) => `${mapping.testFile}\u0000${mapping.suiteTitle}\u0000${mapping.testTitle}`);
+  if (new Set(mappingIds).size !== mappingIds.length) return false;
+  const external = record.executionClass !== "LOCAL_EXISTING_TEST";
+  if (!external && record.testMappings.length === 0) return false;
+  if (external && record.testMappings.length > 0) return false;
+  if (record.requiresPhysicalDevice !== (record.method === "PHYSICAL_DEVICE")) return false;
+  if (record.requiresRealRestore !== (record.method === "REAL_RESTORE")) return false;
+  if (record.requiresIndependentSecurityReview !== (record.method === "INDEPENDENT_SECURITY_REVIEW")) return false;
+  if (record.requiresToolAuthorization !== (record.method === "PROPERTY_BASED" || record.method === "MUTATION")) return false;
+  if (record.requiresOwnerInspection !== (record.method === "INDEPENDENT_SECURITY_REVIEW" || record.method === "MANUAL_OWNER_INSPECTION")) return false;
+  if ((record.requiresPhysicalDevice || record.requiresRealRestore || record.requiresIndependentSecurityReview) && record.executionClass !== "EXTERNAL_AUTHORIZATION_REQUIRED") return false;
+  if (record.requiresToolAuthorization && record.executionClass !== "TOOL_AUTHORIZATION_REQUIRED") return false;
+  if (record.method === "MANUAL_OWNER_INSPECTION" && record.executionClass !== "OWNER_INSPECTION_REQUIRED") return false;
+  return true;
+};
+
 export type Alpha0DomainAcceptanceRecord = Readonly<{
   id: string;
   family: "ALPHA0-DOMAIN";
@@ -144,7 +181,7 @@ const baseRecord = (record: Alpha0DomainExecutionRecord): Alpha0ValidationRecord
 
 export const validateAlpha0DomainExecutionRegistry = (records: readonly Alpha0DomainExecutionRecord[]): Readonly<{ valid: boolean; missingMappings: readonly string[] }> => {
   const missingMappings = records.filter((record) => record.executionClass === "LOCAL_EXISTING_TEST" && record.testMappings.length === 0).map((record) => record.id);
-  const valid = records.length === definitions.length && new Set(records.map((record) => record.id)).size === records.length && records.every((record) => record.family === ALPHA0_DOMAIN_FAMILY && validateAlpha0Record(baseRecord(record)).valid) && missingMappings.length === 0;
+  const valid = records.length === definitions.length && new Set(records.map((record) => record.id)).size === records.length && records.every((record) => record.family === ALPHA0_DOMAIN_FAMILY && validateAlpha0Record(baseRecord(record)).valid && isValidDomainRecord(record)) && missingMappings.length === 0;
   return Object.freeze({ valid, missingMappings: Object.freeze(missingMappings) });
 };
 
