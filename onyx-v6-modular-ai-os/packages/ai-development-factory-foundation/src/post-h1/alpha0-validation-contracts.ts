@@ -48,6 +48,16 @@ export const ALPHA0_PROFILES = Object.freeze([
 ] as const);
 export type Alpha0Profile = (typeof ALPHA0_PROFILES)[number];
 
+export const ALPHA0_RECORD_FAMILIES = Object.freeze([
+  "ALPHA0-REGISTRY",
+  "ALPHA0-SELECT",
+  "ALPHA0-EVIDENCE",
+  "ALPHA0-SAFE",
+  "ALPHA0-READINESS",
+  "ALPHA0-DOMAIN",
+] as const);
+export type Alpha0RecordFamily = (typeof ALPHA0_RECORD_FAMILIES)[number];
+
 export const ALPHA0_TEST_METHODS = Object.freeze([
   "DETERMINISTIC_UNIT",
   "INTEGRATION",
@@ -243,8 +253,8 @@ export const validateAlpha0Record = (value: unknown): Readonly<{ valid: boolean;
     }
   }
 
-  if (typeof record.id !== "string" || !/^ALPHA0[-A-Z0-9]+-\d+$/.test(record.id)) reasons.push("ALPHA0_RECORD_INVALID");
-  if (typeof record.family !== "string" || record.family.length === 0) reasons.push("ALPHA0_FAMILY_INVALID");
+  if (typeof record.id !== "string" || !/^ALPHA0(?:-[A-Z0-9]+)+$/.test(record.id)) reasons.push("ALPHA0_RECORD_INVALID");
+  if (!ALPHA0_RECORD_FAMILIES.includes(record.family as Alpha0RecordFamily)) reasons.push("ALPHA0_FAMILY_INVALID");
   if (!ALPHA0_LANES.includes(record.lane as Alpha0Lane)) reasons.push("ALPHA0_LANE_INVALID");
   if (!ALPHA0_RISK_TIERS.includes(record.riskTier as Alpha0RiskTier)) reasons.push("ALPHA0_RISK_TIER_INVALID");
   if (!Array.isArray(record.profiles) || record.profiles.length === 0 || record.profiles.length > ALPHA0_BOUNDS.MAX_PROFILES) reasons.push("ALPHA0_PROFILES_INVALID");

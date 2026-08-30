@@ -26,6 +26,7 @@ export * from "./post-h1/p4-governance-assurance";
 export * from "./post-h1/p4-assurance-certificate-projection";
 export * from "./post-h1/alpha0-validation-contracts";
 export * from "./post-h1/alpha0-test-registry";
+export * from "./post-h1/alpha0-domain-execution-registry";
 export * from "./post-h1/alpha0-readiness-acceptance-registry";
 export * from "./post-h1/alpha0-selection-and-dependency-planner";
 export * from "./post-h1/alpha0-evidence-and-readiness-foundation";
