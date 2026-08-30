@@ -1,0 +1,30 @@
+{
+  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker-js/master/packages/api/schema/stryker-schema.json",
+  "packageManager": "pnpm",
+  "testRunner": "vitest",
+  "plugins": ["@stryker-mutator/vitest-runner"],
+  "vitest": {
+    "configFile": "vitest.stryker.config.ts"
+  },
+  "reporters": ["clear-text", "json"],
+  "mutate": [
+    "src/post-h1/alpha0-validation-contracts.ts"
+  ],
+  "mutator": {
+    "excludedMutations": []
+  },
+  "coverageAnalysis": "perTest",
+  "concurrency": 2,
+  "timeoutMS": 30000,
+  "timeoutFactor": 2,
+  "maxConcurrentTestRunners": 2,
+  "disableTypeChecks": false,
+  "thresholds": {
+    "high": 90,
+    "low": 70,
+    "break": 70
+  },
+  "ignoreStatic": true,
+  "tempDirName": ".stryker-tmp",
+  "cleanTempDir": true
+}
