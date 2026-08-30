@@ -20,3 +20,7 @@ export * from "./post-h1/p3-governance-automation-contracts";
 export * from "./post-h1/p3-acceptance-registry";
 export * from "./post-h1/p3-governance-automation";
 export * from "./post-h1/p3-governance-report-projection";
+export * from "./post-h1/p4-governance-assurance-contracts";
+export * from "./post-h1/p4-acceptance-registry";
+export * from "./post-h1/p4-governance-assurance";
+export * from "./post-h1/p4-assurance-certificate-projection";
