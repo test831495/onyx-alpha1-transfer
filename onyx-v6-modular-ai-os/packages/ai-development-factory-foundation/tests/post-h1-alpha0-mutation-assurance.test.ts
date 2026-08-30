@@ -75,6 +75,17 @@ describe("Alpha 0 bounded mutation assurance target: validateAlpha0Record", () =
     expect(
       validateAlpha0Record({ ...validRecord, profiles: Array(9).fill("ALPHA_0_STANDARD") }).valid
     ).toBe(false);
+    // exact-boundary: 8 valid profiles must pass, 9 must fail (kills > vs >= boundary mutants)
+    expect(
+      validateAlpha0Record({ ...validRecord, profiles: Array(8).fill("ALPHA_0_STANDARD") }).valid
+    ).toBe(true);
+  });
+
+  it("rejects profiles containing even one invalid member (kills .some()-for-.every() mutants)", () => {
+    expect(
+      validateAlpha0Record({ ...validRecord, profiles: ["ALPHA_0_STANDARD", "NOT_A_PROFILE"] })
+        .valid
+    ).toBe(false);
   });
 
   it("rejects empty invariant, rationale, target, and executionAdapter", () => {
@@ -104,6 +115,12 @@ describe("Alpha 0 bounded mutation assurance target: validateAlpha0Record", () =
     expect(validateAlpha0Record({ ...validRecord, evidenceClasses: ["NOT_REAL"] }).valid).toBe(false);
   });
 
+  it("rejects evidenceClasses containing even one invalid member (kills .some()-for-.every() mutants)", () => {
+    expect(
+      validateAlpha0Record({ ...validRecord, evidenceClasses: ["TARGET_LOCK", "NOT_REAL"] }).valid
+    ).toBe(false);
+  });
+
   it("rejects empty freshnessPolicy, blockingStatus, expectedOutcome, and resultSchema", () => {
     expect(validateAlpha0Record({ ...validRecord, freshnessPolicy: "" }).valid).toBe(false);
     expect(validateAlpha0Record({ ...validRecord, blockingStatus: "" }).valid).toBe(false);
@@ -117,12 +134,22 @@ describe("Alpha 0 bounded mutation assurance target: validateAlpha0Record", () =
     );
   });
 
+  it("rejects a non-string destructiveSideEffect or connectivityRequirement", () => {
+    expect(validateAlpha0Record({ ...validRecord, destructiveSideEffect: 1 }).valid).toBe(false);
+    expect(
+      validateAlpha0Record({ ...validRecord, destructiveSideEffect: "x".repeat(1025) }).valid
+    ).toBe(false);
+    expect(validateAlpha0Record({ ...validRecord, connectivityRequirement: 1 }).valid).toBe(false);
+  });
+
   it("rejects out-of-range or non-numeric timeoutMs", () => {
     expect(validateAlpha0Record({ ...validRecord, timeoutMs: 0 }).valid).toBe(false);
     expect(validateAlpha0Record({ ...validRecord, timeoutMs: -1 }).valid).toBe(false);
     expect(validateAlpha0Record({ ...validRecord, timeoutMs: 3600001 }).valid).toBe(false);
     expect(validateAlpha0Record({ ...validRecord, timeoutMs: Number.NaN }).valid).toBe(false);
     expect(validateAlpha0Record({ ...validRecord, timeoutMs: "600000" }).valid).toBe(false);
+    // exact-boundary: 3600000 must pass (kills > vs >= boundary mutant)
+    expect(validateAlpha0Record({ ...validRecord, timeoutMs: 3600000 }).valid).toBe(true);
   });
 
   it("rejects non-string retryPolicy, flakePolicy, manifestInclusion, and residualRisk", () => {
