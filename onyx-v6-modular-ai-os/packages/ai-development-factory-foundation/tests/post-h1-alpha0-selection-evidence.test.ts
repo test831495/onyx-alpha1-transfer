@@ -156,4 +156,104 @@ describe("Post-H1 Alpha 0 selection, planning, evidence, and readiness foundatio
 
     expect(evidence.invalidated).toBe(true);
   });
+
+  it("invalidates evidence bound to a different branch even when repository and SHAs match", () => {
+    const evidence = projectAlpha0EvidenceManifest({
+      candidate,
+      selectedIds: ["ALPHA0-REGISTRY-001"],
+      registryFingerprint: "reg-fp",
+      profileFingerprint: "profile-fp",
+      evaluationEpochMilliseconds: 1756512000000,
+      evidence: [
+        { id: "evidence-1", evidenceClass: "TARGET_LOCK", hash: "hash-1", fresh: true, valid: true },
+      ],
+      candidateBinding: {
+        repository: candidate.repository,
+        branch: "a-different-branch",
+        baseSha: candidate.baseSha,
+        headSha: candidate.headSha,
+      },
+    });
+
+    expect(evidence.invalidated).toBe(true);
+  });
+
+  it("invalidates evidence manifests containing duplicate evidence IDs", () => {
+    const evidence = projectAlpha0EvidenceManifest({
+      candidate,
+      selectedIds: ["ALPHA0-REGISTRY-001"],
+      registryFingerprint: "reg-fp",
+      profileFingerprint: "profile-fp",
+      evaluationEpochMilliseconds: 1756512000000,
+      evidence: [
+        { id: "evidence-1", evidenceClass: "TARGET_LOCK", hash: "hash-1", fresh: true, valid: true },
+        { id: "evidence-1", evidenceClass: "TARGET_LOCK", hash: "hash-2", fresh: true, valid: true },
+      ],
+    });
+
+    expect(evidence.invalidated).toBe(true);
+  });
+
+  it("produces an identical manifest hash for equivalent but reordered candidate arrays", () => {
+    const base = {
+      selectedIds: ["ALPHA0-REGISTRY-001"],
+      registryFingerprint: "reg-fp",
+      profileFingerprint: "profile-fp",
+      evaluationEpochMilliseconds: 1756512000000,
+      evidence: [
+        { id: "evidence-1", evidenceClass: "TARGET_LOCK", hash: "hash-1", fresh: true, valid: true },
+      ],
+    };
+
+    const first = projectAlpha0EvidenceManifest({ ...base, candidate });
+    const second = projectAlpha0EvidenceManifest({
+      ...base,
+      candidate: {
+        ...candidate,
+        changedPaths: [...candidate.changedPaths].reverse(),
+        profiles: [...candidate.profiles].slice().reverse(),
+      },
+    });
+
+    expect(first.manifestHash).toBe(second.manifestHash);
+  });
+
+  const dependencyTestTemplate: Alpha0TestRecord = ALPHA0_TEST_REGISTRY[0]!;
+
+  it("rejects a dependency plan referencing a prerequisite absent from the registry", () => {
+    const registry: Alpha0TestRecord[] = [
+      { ...dependencyTestTemplate, id: "ALPHA0-DEP-TEST-A", prerequisiteIds: ["ALPHA0-DEP-TEST-MISSING"] },
+    ];
+
+    expect(() =>
+      buildAlpha0DependencyPlan({ selectedIds: ["ALPHA0-DEP-TEST-A"], registry })
+    ).toThrow("ALPHA0_MISSING_DEPENDENCY_FORBIDDEN");
+  });
+
+  it("rejects a dependency plan containing a prerequisite cycle", () => {
+    const registry: Alpha0TestRecord[] = [
+      { ...dependencyTestTemplate, id: "ALPHA0-DEP-TEST-A", prerequisiteIds: ["ALPHA0-DEP-TEST-B"] },
+      { ...dependencyTestTemplate, id: "ALPHA0-DEP-TEST-B", prerequisiteIds: ["ALPHA0-DEP-TEST-A"] },
+    ];
+
+    expect(() =>
+      buildAlpha0DependencyPlan({ selectedIds: ["ALPHA0-DEP-TEST-A", "ALPHA0-DEP-TEST-B"], registry })
+    ).toThrow("ALPHA0_DEPENDENCY_CYCLE_FORBIDDEN");
+  });
+
+  it("orders dependency plan stages so prerequisites resolve before dependents", () => {
+    const registry: Alpha0TestRecord[] = [
+      { ...dependencyTestTemplate, id: "ALPHA0-DEP-TEST-A", prerequisiteIds: [] },
+      { ...dependencyTestTemplate, id: "ALPHA0-DEP-TEST-B", prerequisiteIds: ["ALPHA0-DEP-TEST-A"] },
+    ];
+
+    const plan = buildAlpha0DependencyPlan({
+      selectedIds: ["ALPHA0-DEP-TEST-B", "ALPHA0-DEP-TEST-A"],
+      registry,
+    });
+
+    expect(plan.stages.length).toBe(2);
+    expect(plan.stages[0]).toEqual(["ALPHA0-DEP-TEST-A"]);
+    expect(plan.stages[1]).toEqual(["ALPHA0-DEP-TEST-B"]);
+  });
 });

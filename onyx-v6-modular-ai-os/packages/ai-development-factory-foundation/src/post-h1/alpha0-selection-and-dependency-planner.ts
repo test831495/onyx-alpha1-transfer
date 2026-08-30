@@ -98,22 +98,42 @@ export const buildAlpha0DependencyPlan = (
 ): Alpha0DependencyPlan => {
   const map = new Map(input.registry.map((entry) => [entry.id, entry]));
   const selected = [...input.selectedIds].filter((id) => map.has(id));
-  const stages: string[][] = [];
-  const seen = new Set<string>();
+  const selectedSet = new Set(selected);
 
   for (const id of selected) {
     const record = map.get(id)!;
-    const dependencies = record.prerequisiteIds.filter((dep) => selected.includes(dep));
-    if (dependencies.some((dep) => dep === id)) {
-      throw new Error("ALPHA0_SELF_DEPENDENCY_FORBIDDEN");
+    for (const dep of record.prerequisiteIds) {
+      if (dep === id) {
+        throw new Error("ALPHA0_SELF_DEPENDENCY_FORBIDDEN");
+      }
+      if (!map.has(dep)) {
+        throw new Error("ALPHA0_MISSING_DEPENDENCY_FORBIDDEN");
+      }
     }
-    if (dependencies.some((dep) => !map.has(dep))) {
-      throw new Error("ALPHA0_MISSING_DEPENDENCY_FORBIDDEN");
-    }
-    if (!seen.has(id)) {
-      stages.push([id]);
-      seen.add(id);
-    }
+  }
+
+  const stageIndex = new Map<string, number>();
+  const visiting = new Set<string>();
+  const resolveStageIndex = (id: string): number => {
+    if (stageIndex.has(id)) return stageIndex.get(id)!;
+    if (visiting.has(id)) throw new Error("ALPHA0_DEPENDENCY_CYCLE_FORBIDDEN");
+    visiting.add(id);
+    const record = map.get(id)!;
+    const prerequisiteStageIndices = record.prerequisiteIds
+      .filter((dep) => selectedSet.has(dep))
+      .map((dep) => resolveStageIndex(dep));
+    const resolved = prerequisiteStageIndices.length === 0 ? 0 : Math.max(...prerequisiteStageIndices) + 1;
+    visiting.delete(id);
+    stageIndex.set(id, resolved);
+    return resolved;
+  };
+
+  for (const id of selected) resolveStageIndex(id);
+
+  const maxStageIndex = selected.reduce((max, id) => Math.max(max, stageIndex.get(id)!), -1);
+  const stages: string[][] = [];
+  for (let level = 0; level <= maxStageIndex; level += 1) {
+    stages.push(Object.freeze(stableOrder(selected.filter((id) => stageIndex.get(id) === level))) as string[]);
   }
 
   const serialIds = [...selected].filter((id) => !id.includes("ALPHA0-REGISTRY-017") && !id.includes("ALPHA0-REGISTRY-018"));

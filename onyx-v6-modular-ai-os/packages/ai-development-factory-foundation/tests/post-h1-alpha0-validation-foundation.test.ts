@@ -147,4 +147,23 @@ describe("Post-H1 Alpha 0 validation foundation contracts and registries", () =>
     expect(validation.valid).toBe(false);
     expect(validation.reasonCodes).toContain("ALPHA0_RECORD_INVALID");
   });
+
+  it("reports missing canonical registry IDs instead of always returning an empty list", () => {
+    const strippedRegistry = ALPHA0_TEST_REGISTRY.filter((entry) => entry.id !== "ALPHA0-REGISTRY-017");
+    const registryCheck = validateAlpha0TestRegistry(strippedRegistry);
+    expect(registryCheck.valid).toBe(false);
+    expect(registryCheck.missingIds).toContain("ALPHA0-REGISTRY-017");
+  });
+
+  it("rejects permanent blocker values outside the closed vocabulary", () => {
+    const baseRecord = ALPHA0_TEST_REGISTRY[0]!;
+    const recordWithUnknownBlocker = {
+      ...baseRecord,
+      permanentBlockers: [...baseRecord.permanentBlockers, "NOT_A_REAL_BLOCKER"],
+    };
+
+    const validation = validateAlpha0Record(recordWithUnknownBlocker);
+    expect(validation.valid).toBe(false);
+    expect(validation.reasonCodes).toContain("ALPHA0_PERMANENT_BLOCKERS_INVALID");
+  });
 });

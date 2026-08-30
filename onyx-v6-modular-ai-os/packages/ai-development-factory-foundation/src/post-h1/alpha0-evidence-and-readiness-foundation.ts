@@ -30,15 +30,26 @@ export type Alpha0EvidenceManifest = Readonly<{
 
 export const projectAlpha0EvidenceManifest = (input: Alpha0EvidenceManifestInput): Alpha0EvidenceManifest => {
   const candidateBinding = input.candidateBinding ?? input.candidate;
+  const evidenceIds = input.evidence.map((entry) => entry.id);
+  const hasDuplicateEvidenceIds = new Set(evidenceIds).size !== evidenceIds.length;
   const invalidated =
     candidateBinding.repository !== input.candidate.repository ||
+    candidateBinding.branch !== input.candidate.branch ||
     candidateBinding.baseSha !== input.candidate.baseSha ||
     candidateBinding.headSha !== input.candidate.headSha ||
     input.evidence.some((entry) => !entry.valid || !entry.fresh) ||
+    hasDuplicateEvidenceIds ||
     input.selectedIds.length === 0;
 
   const canonical = JSON.stringify({
-    candidate: input.candidate,
+    candidate: {
+      repository: input.candidate.repository,
+      branch: input.candidate.branch,
+      baseSha: input.candidate.baseSha,
+      headSha: input.candidate.headSha,
+      changedPaths: [...input.candidate.changedPaths].sort(),
+      profiles: [...input.candidate.profiles].sort(),
+    },
     selectedIds: [...input.selectedIds].sort(),
     registryFingerprint: input.registryFingerprint,
     profileFingerprint: input.profileFingerprint,

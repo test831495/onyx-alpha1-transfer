@@ -127,23 +127,28 @@ export const computeAlpha0TestRegistryFingerprint = (registry: readonly Alpha0Te
   return createHash("sha256").update(canonical, "utf8").digest("hex");
 };
 
+const ALPHA0_REQUIRED_REGISTRY_IDS = Object.freeze([
+  "ALPHA0-REGISTRY-001",
+  "ALPHA0-SELECT-001",
+  "ALPHA0-REGISTRY-017",
+  "ALPHA0-REGISTRY-018",
+] as const);
+
 export const validateAlpha0TestRegistry = (
   registry: readonly Alpha0TestRecord[]
 ): Readonly<{ valid: boolean; missingIds: readonly string[] }> => {
   const ids = registry.map((entry) => entry.id);
+  const missingIds = ALPHA0_REQUIRED_REGISTRY_IDS.filter((requiredId) => !ids.includes(requiredId));
   const valid =
     registry.length >= 18 &&
     registry.length <= 64 &&
     new Set(ids).size === ids.length &&
     registry.every((entry) => validateAlpha0Record(entry).valid) &&
     registry.every((entry) => entry.profiles.length > 0 && entry.evidenceClasses.length > 0) &&
-    registry.some((entry) => entry.id === "ALPHA0-REGISTRY-001") &&
-    registry.some((entry) => entry.id === "ALPHA0-SELECT-001") &&
-    registry.some((entry) => entry.id === "ALPHA0-REGISTRY-017") &&
-    registry.some((entry) => entry.id === "ALPHA0-REGISTRY-018");
+    missingIds.length === 0;
 
   return Object.freeze({
     valid,
-    missingIds: Object.freeze([]),
+    missingIds: Object.freeze(missingIds),
   });
 };

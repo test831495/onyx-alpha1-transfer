@@ -270,6 +270,7 @@ export const validateAlpha0Record = (value: unknown): Readonly<{ valid: boolean;
   if (!isSafeStringArray(record.platformClasses)) reasons.push("ALPHA0_PLATFORM_CLASSES_INVALID");
   if (typeof record.blockingStatus !== "string" || record.blockingStatus.length === 0) reasons.push("ALPHA0_BLOCKING_STATUS_INVALID");
   if (!isSafeStringArray(record.permanentBlockers as any)) reasons.push("ALPHA0_PERMANENT_BLOCKERS_INVALID");
+  else if (!((record.permanentBlockers as unknown[]) as readonly unknown[]).every((item) => ALPHA0_PERMANENT_BLOCKERS.includes(item as Alpha0PermanentBlocker))) reasons.push("ALPHA0_PERMANENT_BLOCKERS_INVALID");
   if (typeof record.timeoutMs !== "number" || !Number.isFinite(record.timeoutMs) || record.timeoutMs <= 0 || record.timeoutMs > 3600000) reasons.push("ALPHA0_TIMEOUT_INVALID");
   if (!isSafeStringArray(record.resourceBounds)) reasons.push("ALPHA0_RESOURCE_BOUNDS_INVALID");
   if (typeof record.retryPolicy !== "string") reasons.push("ALPHA0_RETRY_POLICY_INVALID");
