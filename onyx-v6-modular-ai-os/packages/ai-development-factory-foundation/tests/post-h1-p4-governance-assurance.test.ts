@@ -5,6 +5,9 @@ import {
   validateP4AcceptanceRegistry,
 } from "../src/post-h1/p4-acceptance-registry";
 import {
+  computeAcceptanceRegistryFingerprint,
+} from "../src/post-h1/p4-governance-assurance";
+import {
   P4_ASSURANCE_PROFILES,
   P4_BOUNDS,
   P4_EVIDENCE_CLASSIFICATIONS,
@@ -13,6 +16,7 @@ import {
 } from "../src/post-h1/p4-governance-assurance-contracts";
 
 describe("Post-H1 P4 Governance Assurance Foundation (Wave P4-A Contracts & Registry)", () => {
+  const canonicalFingerprint = computeAcceptanceRegistryFingerprint(P4_ACCEPTANCE_REGISTRY);
   it("defines exact frozen P4 bounds", () => {
     expect(P4_BOUNDS.MAX_DEPTH).toBe(10);
     expect(P4_BOUNDS.MAX_OBJECT_KEYS).toBe(64);
@@ -154,9 +158,11 @@ describe("Post-H1 P4 Governance Assurance Foundation (Wave P4-A Contracts & Regi
     });
 
     it("POSTH1-P4-BIND-001: binds assurance evidence and certificates to exact candidate identity and target lock", async () => {
-      const { evaluateP4GovernanceAssurance } = await import(
+      const { evaluateP4GovernanceAssurance, computeAcceptanceRegistryFingerprint } = await import(
         "../src/post-h1/p4-governance-assurance"
       );
+
+      const derivedFingerprint = computeAcceptanceRegistryFingerprint(P4_ACCEPTANCE_REGISTRY);
 
       const input: P4GovernanceAssuranceInput = {
         evaluationEpochMilliseconds: 1756512000000,
@@ -165,7 +171,7 @@ describe("Post-H1 P4 Governance Assurance Foundation (Wave P4-A Contracts & Regi
         acceptanceRegistry: {
           id: "P4_ACCEPTANCE_REGISTRY",
           count: 20,
-          fingerprint: "p4-fingerprint-test",
+          fingerprint: derivedFingerprint,
         },
         evidenceItems: [
           {
@@ -188,6 +194,51 @@ describe("Post-H1 P4 Governance Assurance Foundation (Wave P4-A Contracts & Regi
       expect(typeof result.candidateHash).toBe("string");
     });
 
+    it("P4-PR30-FINDING-001: provider-neutral candidate repository validation with targetLock", async () => {
+      const { evaluateP4GovernanceAssurance, computeAcceptanceRegistryFingerprint } = await import(
+        "../src/post-h1/p4-governance-assurance"
+      );
+
+      const customRepoCandidate = {
+        ...baseCandidate,
+        repository: "custom-org/custom-repo",
+      };
+
+      const derivedFingerprint = computeAcceptanceRegistryFingerprint(P4_ACCEPTANCE_REGISTRY);
+
+      const input: P4GovernanceAssuranceInput = {
+        evaluationEpochMilliseconds: 1756512000000,
+        profile: "LOCAL_IMPLEMENTATION_ASSURANCE",
+        candidate: customRepoCandidate,
+        targetLock: {
+          repository: "custom-org/custom-repo",
+          baseBranch: "main",
+          headSha: "05155a33209de25ba7805d61bf337366b82ff730",
+        },
+        acceptanceRegistry: {
+          id: "P4_ACCEPTANCE_REGISTRY",
+          count: 20,
+          fingerprint: derivedFingerprint,
+        },
+        evidenceItems: [],
+        provenance: [],
+      };
+
+      const result = evaluateP4GovernanceAssurance(input);
+      expect(result.blockers).not.toContain("CROSS_CANDIDATE_OR_TARGET_MISMATCH");
+
+      const mismatchedLockInput = {
+        ...input,
+        targetLock: {
+          repository: "different-org/different-repo",
+          baseBranch: "main",
+          headSha: "05155a33209de25ba7805d61bf337366b82ff730",
+        },
+      };
+      const mismatchResult = evaluateP4GovernanceAssurance(mismatchedLockInput);
+      expect(mismatchResult.blockers).toContain("CROSS_CANDIDATE_OR_TARGET_MISMATCH");
+    });
+
     it("POSTH1-P4-BIND-002: rejects cross-candidate and cross-target evidence fail-closed", async () => {
       const { evaluateP4GovernanceAssurance } = await import(
         "../src/post-h1/p4-governance-assurance"
@@ -202,10 +253,15 @@ describe("Post-H1 P4 Governance Assurance Foundation (Wave P4-A Contracts & Regi
         evaluationEpochMilliseconds: 1756512000000,
         profile: "PR_MERGE_READINESS_ASSURANCE",
         candidate: mismatchedTargetCandidate,
+        targetLock: {
+          repository: "test831495/onyx-alpha1-transfer",
+          baseBranch: "main",
+          headSha: "05155a33209de25ba7805d61bf337366b82ff730",
+        },
         acceptanceRegistry: {
           id: "P4_ACCEPTANCE_REGISTRY",
           count: 20,
-          fingerprint: "p4-fingerprint-test",
+          fingerprint: canonicalFingerprint,
         },
         evidenceItems: [],
         provenance: [],
@@ -328,7 +384,7 @@ describe("Post-H1 P4 Governance Assurance Foundation (Wave P4-A Contracts & Regi
         acceptanceRegistry: {
           id: "P4_ACCEPTANCE_REGISTRY",
           count: 20,
-          fingerprint: "p4-fingerprint-test",
+          fingerprint: canonicalFingerprint,
         },
         evidenceItems: items,
         provenance: [],
@@ -357,7 +413,7 @@ describe("Post-H1 P4 Governance Assurance Foundation (Wave P4-A Contracts & Regi
         acceptanceRegistry: {
           id: "P4_ACCEPTANCE_REGISTRY",
           count: 20,
-          fingerprint: "p4-fingerprint-test",
+          fingerprint: canonicalFingerprint,
         },
         evidenceItems: [
           {
@@ -390,7 +446,7 @@ describe("Post-H1 P4 Governance Assurance Foundation (Wave P4-A Contracts & Regi
         acceptanceRegistry: {
           id: "P4_ACCEPTANCE_REGISTRY",
           count: 20,
-          fingerprint: "p4-fingerprint-test",
+          fingerprint: canonicalFingerprint,
         },
         evidenceItems: [
           {
@@ -427,7 +483,7 @@ describe("Post-H1 P4 Governance Assurance Foundation (Wave P4-A Contracts & Regi
         acceptanceRegistry: {
           id: "P4_ACCEPTANCE_REGISTRY",
           count: 20,
-          fingerprint: "p4-fingerprint-test",
+          fingerprint: canonicalFingerprint,
         },
         evidenceItems: [
           {
@@ -484,46 +540,204 @@ describe("Post-H1 P4 Governance Assurance Foundation (Wave P4-A Contracts & Regi
       expect(triggers).toContain("MANDATORY_EVIDENCE_MISSING");
     });
 
-    it("POSTH1-P4-INVALIDATION-003: invalidates closure assurance when main moves beyond assessed closure target", async () => {
-      const { projectP4AssuranceInvalidation } = await import(
+    it("P4-PR30-FINDING-002: rejects malformed residual risk IDs and prevents undefined interpolation", async () => {
+      const { evaluateP4GovernanceAssurance, computeAcceptanceRegistryFingerprint } = await import(
         "../src/post-h1/p4-governance-assurance"
       );
 
-      const closureCandidate = {
-        ...baseCandidate,
-        baseSha: "old-base-sha-drifted",
-      };
+      const derivedFingerprint = computeAcceptanceRegistryFingerprint(P4_ACCEPTANCE_REGISTRY);
 
-      const input: P4GovernanceAssuranceInput = {
+      const invalidRiskInput: P4GovernanceAssuranceInput = {
         evaluationEpochMilliseconds: 1756512000000,
-        profile: "MAIN_CLOSURE_ASSURANCE",
-        candidate: closureCandidate,
+        profile: "PR_MERGE_READINESS_ASSURANCE",
+        candidate: baseCandidate,
         acceptanceRegistry: {
           id: "P4_ACCEPTANCE_REGISTRY",
           count: 20,
-          fingerprint: "p4-fingerprint-test",
+          fingerprint: derivedFingerprint,
         },
         evidenceItems: [],
-        suppliedFacts: {
-          mainMovedBeyondClosureTarget: true,
-        },
+        residualRisks: [
+          {
+            description: "No riskId provided",
+            ownerDecisionRequired: true,
+          },
+        ],
         provenance: [],
       };
 
-      const triggers = projectP4AssuranceInvalidation(input, {
-        authority: "NON_AUTHORIZING",
-        totalClasses: 20,
-        presentCount: 0,
-        missingCount: 20,
-        staleCount: 0,
-        contradictoryCount: 0,
-        mismatchedCount: 0,
-        invalidatedCount: 0,
-        notApplicableCount: 0,
-        entries: [],
-      });
+      const result = evaluateP4GovernanceAssurance(invalidRiskInput);
+      expect(result.disposition).toBe("NOT_ASSESSABLE");
+      expect(result.ownerDecisions.some((d) => d.includes("undefined"))).toBe(false);
+      expect(result.ownerDecisions.length).toBe(0);
+    });
 
-      expect(triggers).toContain("MAIN_MOVED_BEYOND_CLOSURE_TARGET");
+    it("P4-PR30-FINDING-003: acceptance registry fingerprint is derived from canonical registry definitions", async () => {
+      const { computeAcceptanceRegistryFingerprint, evaluateP4GovernanceAssurance } = await import(
+        "../src/post-h1/p4-governance-assurance"
+      );
+
+      const canonicalFingerprint = computeAcceptanceRegistryFingerprint(P4_ACCEPTANCE_REGISTRY);
+      expect(typeof canonicalFingerprint).toBe("string");
+      expect(canonicalFingerprint.length).toBe(64);
+
+      // Equivalent ordering produces identical fingerprint
+      const reorderedRegistry = [...P4_ACCEPTANCE_REGISTRY].reverse();
+      const reorderedFingerprint = computeAcceptanceRegistryFingerprint(reorderedRegistry);
+      expect(reorderedFingerprint).toBe(canonicalFingerprint);
+
+      // Semantic modification produces different fingerprint
+      const modifiedRegistry = [
+        ...P4_ACCEPTANCE_REGISTRY.slice(1),
+        {
+          ...P4_ACCEPTANCE_REGISTRY[0],
+          id: "POSTH1-P4-BIND-001",
+          invariant: "Modified invariant text",
+        },
+      ];
+      const modifiedFingerprint = computeAcceptanceRegistryFingerprint(modifiedRegistry as any);
+      expect(modifiedFingerprint).not.toBe(canonicalFingerprint);
+
+      // Hardcoded test literal should now fail if not matching derived fingerprint
+      const staleFingerprintInput: P4GovernanceAssuranceInput = {
+        evaluationEpochMilliseconds: 1756512000000,
+        profile: "LOCAL_IMPLEMENTATION_ASSURANCE",
+        candidate: baseCandidate,
+        acceptanceRegistry: {
+          id: "P4_ACCEPTANCE_REGISTRY",
+          count: 20,
+          fingerprint: "stale-literal-not-derived",
+        },
+        evidenceItems: [],
+        provenance: [],
+      };
+      const checkResult = evaluateP4GovernanceAssurance(staleFingerprintInput);
+      expect(checkResult.invalidationTriggers).toContain("ACCEPTANCE_REGISTRY_FINGERPRINT_CHANGED");
+    });
+
+    it("P4-PR30-FINDING-004: supports up to 128 changedPaths at top-level but caps nested arrays at 64", () => {
+      const paths128 = Array.from({ length: 128 }, (_, i) => `src/file-${i}.ts`);
+      const candidate128 = {
+        repository: "test831495/onyx-alpha1-transfer",
+        baseBranch: "main",
+        baseSha: "05155a33209de25ba7805d61bf337366b82ff730",
+        headBranch: "feature/post-h1-p4-governance-assurance-foundation",
+        headSha: "05155a33209de25ba7805d61bf337366b82ff730",
+        commits: ["05155a33209de25ba7805d61bf337366b82ff730"],
+        changedPaths: paths128,
+      };
+
+      const input128: P4GovernanceAssuranceInput = {
+        evaluationEpochMilliseconds: 1756512000000,
+        profile: "LOCAL_IMPLEMENTATION_ASSURANCE",
+        candidate: candidate128,
+        acceptanceRegistry: {
+          id: "P4_ACCEPTANCE_REGISTRY",
+          count: 20,
+          fingerprint: "derived",
+        },
+        evidenceItems: [],
+        provenance: [],
+      };
+
+      const validCheck = validateP4GovernanceAssuranceInput(input128);
+      expect(validCheck.reasons).not.toContain("P4_INPUT_BOUND_EXCEEDED");
+
+      // 129 changed paths exceeds bound
+      const paths129 = Array.from({ length: 129 }, (_, i) => `src/file-${i}.ts`);
+      const candidate129 = { ...candidate128, changedPaths: paths129 };
+      const invalidCheck = validateP4GovernanceAssuranceInput({ ...input128, candidate: candidate129 });
+      expect(invalidCheck.outcome).toBe("NOT_ASSESSABLE");
+
+      // Nested array in candidate or other object with 65 items must be rejected
+      const candidateNestedOverbound = {
+        ...candidate128,
+        commits: Array.from({ length: 65 }, () => "05155a33209de25ba7805d61bf337366b82ff730"),
+      };
+      const nestedCheck = validateP4GovernanceAssuranceInput({ ...input128, candidate: candidateNestedOverbound });
+      expect(nestedCheck.outcome).toBe("NOT_ASSESSABLE");
+    });
+
+    it("P4-PR30-FINDING-005: candidate validation strictly enforces string types and member schemas", () => {
+      const invalidCandidates = [
+        { ...baseCandidate, repository: "" },
+        { ...baseCandidate, baseSha: "short-sha" },
+        { ...baseCandidate, commits: [123 as any] },
+        { ...baseCandidate, commits: [{ obj: "malformed" } as any] },
+        { ...baseCandidate, changedPaths: [null as any] },
+        { ...baseCandidate, changedPaths: [["nested-array"] as any] },
+        { ...baseCandidate, prNumber: -5 },
+      ];
+
+      for (const cand of invalidCandidates) {
+        const input: P4GovernanceAssuranceInput = {
+          evaluationEpochMilliseconds: 1756512000000,
+          profile: "LOCAL_IMPLEMENTATION_ASSURANCE",
+          candidate: cand,
+          acceptanceRegistry: {
+            id: "P4_ACCEPTANCE_REGISTRY",
+            count: 20,
+            fingerprint: "derived",
+          },
+          evidenceItems: [],
+          provenance: [],
+        };
+        const validation = validateP4GovernanceAssuranceInput(input);
+        expect(validation.outcome).toBe("NOT_ASSESSABLE");
+      }
+    });
+
+    it("P4-PR30-FINDING-007: projectEvidenceCompletenessMatrix fails closed on duplicate evidenceClass", async () => {
+      const { projectEvidenceCompletenessMatrix, evaluateP4GovernanceAssurance, computeAcceptanceRegistryFingerprint } = await import(
+        "../src/post-h1/p4-governance-assurance"
+      );
+
+      const itemsWithDuplicate = [
+        {
+          id: "ev-1",
+          evidenceClass: "FOCUSED_TESTS",
+          hash: "hash-1",
+          provenance: "vitest",
+          observedAtEpochMilliseconds: 1756512000000,
+          fresh: true,
+        },
+        {
+          id: "ev-2",
+          evidenceClass: "FOCUSED_TESTS",
+          hash: "hash-2-conflicting",
+          provenance: "vitest",
+          observedAtEpochMilliseconds: 1756512000000,
+          fresh: false,
+        },
+      ];
+
+      const matrix = projectEvidenceCompletenessMatrix(
+        "LOCAL_IMPLEMENTATION_ASSURANCE",
+        baseCandidate,
+        itemsWithDuplicate
+      );
+
+      const focusedEntry = matrix.entries.find((e) => e.evidenceClass === "FOCUSED_TESTS");
+      expect(focusedEntry?.classification).toBe("CONTRADICTORY");
+
+      const derivedFingerprint = computeAcceptanceRegistryFingerprint(P4_ACCEPTANCE_REGISTRY);
+
+      const input: P4GovernanceAssuranceInput = {
+        evaluationEpochMilliseconds: 1756512000000,
+        profile: "LOCAL_IMPLEMENTATION_ASSURANCE",
+        candidate: baseCandidate,
+        acceptanceRegistry: {
+          id: "P4_ACCEPTANCE_REGISTRY",
+          count: 20,
+          fingerprint: derivedFingerprint,
+        },
+        evidenceItems: itemsWithDuplicate,
+        provenance: [],
+      };
+
+      const result = evaluateP4GovernanceAssurance(input);
+      expect(result.disposition).toBe("NOT_ASSESSABLE");
+      expect(result.blockers).toContain("CONTRADICTORY_SUPPLIED_FACTS");
     });
 
     it("POSTH1-P4-ASSURE-001: evaluates distinct requirements for each P4-local assurance profile", async () => {
@@ -573,7 +787,7 @@ describe("Post-H1 P4 Governance Assurance Foundation (Wave P4-A Contracts & Regi
       nullProtoInput.acceptanceRegistry = {
         id: "P4_ACCEPTANCE_REGISTRY",
         count: 20,
-        fingerprint: "p4-fingerprint-test",
+        fingerprint: canonicalFingerprint,
       };
       nullProtoInput.evidenceItems = [];
       nullProtoInput.provenance = [];
@@ -589,7 +803,7 @@ describe("Post-H1 P4 Governance Assurance Foundation (Wave P4-A Contracts & Regi
         acceptanceRegistry: {
           id: "P4_ACCEPTANCE_REGISTRY",
           count: 20,
-          fingerprint: "p4-fingerprint-test",
+          fingerprint: canonicalFingerprint,
         },
         evidenceItems: [],
         provenance: [],

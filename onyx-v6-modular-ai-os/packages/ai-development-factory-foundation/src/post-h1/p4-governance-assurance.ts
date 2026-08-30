@@ -1,5 +1,6 @@
 import { cloneFreeze, inspectRecordSnapshot } from "../factory-constitution";
 import { sha256 } from "./p2-evidence-normalization";
+import { P4_ACCEPTANCE_REGISTRY } from "./p4-acceptance-registry";
 import {
   P4_BOUNDS,
   P4_EVIDENCE_CLASSES,
@@ -37,6 +38,32 @@ export type P4GovernanceAssuranceResult = Readonly<{
 
 const stableStrings = (items: readonly string[]): readonly string[] =>
   Object.freeze([...new Set(items)].sort());
+
+export const computeAcceptanceRegistryFingerprint = (
+  registry: readonly unknown[]
+): string => {
+  const canonical = [...registry]
+    .map((item) => {
+      const inspected = inspectRecordSnapshot(item);
+      if (!inspected.valid) return { id: "" };
+      const r = inspected.snapshot as Record<string, unknown>;
+      return {
+        id: typeof r.id === "string" ? r.id : "",
+        family: typeof r.family === "string" ? r.family : "",
+        invariant: typeof r.invariant === "string" ? r.invariant : "",
+        predecessorDependency:
+          typeof r.predecessorDependency === "string"
+            ? r.predecessorDependency
+            : "",
+        implementationWave:
+          typeof r.implementationWave === "string" ? r.implementationWave : "",
+        testTitles: Array.isArray(r.testTitles) ? [...r.testTitles].sort() : [],
+        testFiles: Array.isArray(r.testFiles) ? [...r.testFiles].sort() : [],
+      };
+    })
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  return sha256(JSON.stringify(canonical));
+};
 
 export const computeCandidateIdentityHash = (candidate: P4CandidateIdentity): string => {
   const canonical = {
@@ -118,12 +145,17 @@ export const projectEvidenceCompletenessMatrix = (
   suppliedFacts?: unknown
 ): P4EvidenceCompletenessMatrix => {
   const applicable = getApplicableClasses(profile);
+  const classCountMap = new Map<string, number>();
   const itemsMap = new Map<string, Record<string, unknown>>();
 
   for (const item of evidenceItems) {
     const inspected = inspectRecordSnapshot(item);
     if (inspected.valid && typeof inspected.snapshot.evidenceClass === "string") {
-      itemsMap.set(inspected.snapshot.evidenceClass as string, inspected.snapshot as Record<string, unknown>);
+      const cls = inspected.snapshot.evidenceClass as string;
+      classCountMap.set(cls, (classCountMap.get(cls) ?? 0) + 1);
+      if (!itemsMap.has(cls)) {
+        itemsMap.set(cls, inspected.snapshot as Record<string, unknown>);
+      }
     }
   }
 
@@ -150,6 +182,19 @@ export const projectEvidenceCompletenessMatrix = (
         })
       );
       notApplicableCount += 1;
+      continue;
+    }
+
+    const count = classCountMap.get(evidenceClass) ?? 0;
+    if (count > 1) {
+      entries.push(
+        Object.freeze({
+          evidenceClass,
+          classification: "CONTRADICTORY",
+          details: `Duplicate evidence items supplied for single-cardinality class ${evidenceClass}`,
+        })
+      );
+      contradictoryCount += 1;
       continue;
     }
 
@@ -312,11 +357,12 @@ export const projectP4AssuranceInvalidation = (
 ): readonly string[] => {
   const triggers: string[] = [];
 
+  const canonicalFingerprint = computeAcceptanceRegistryFingerprint(P4_ACCEPTANCE_REGISTRY);
   const regInspected = inspectRecordSnapshot(input.acceptanceRegistry);
   if (
     !regInspected.valid ||
     regInspected.snapshot.id !== "P4_ACCEPTANCE_REGISTRY" ||
-    regInspected.snapshot.fingerprint !== "p4-fingerprint-test"
+    regInspected.snapshot.fingerprint !== canonicalFingerprint
   ) {
     triggers.push("ACCEPTANCE_REGISTRY_FINGERPRINT_CHANGED");
   }
@@ -419,15 +465,46 @@ export const evaluateP4GovernanceAssurance = (
   const candidate = input.candidate;
   const candidateHash = computeCandidateIdentityHash(candidate);
 
-  const isCrossTarget =
-    candidate.repository !== "test831495/onyx-alpha1-transfer" ||
-    (candidate.headSha && candidate.headSha.length !== 40);
+  let isCrossTarget = false;
+  if (!candidate.headSha || candidate.headSha.length !== 40) {
+    isCrossTarget = true;
+  }
+  if (input.targetLock !== undefined) {
+    const tlInspected = inspectRecordSnapshot(input.targetLock);
+    if (tlInspected.valid) {
+      const tl = tlInspected.snapshot as Record<string, unknown>;
+      if (typeof tl.repository === "string" && tl.repository.length > 0 && tl.repository !== candidate.repository) {
+        isCrossTarget = true;
+      }
+      if (typeof tl.baseBranch === "string" && tl.baseBranch.length > 0 && tl.baseBranch !== candidate.baseBranch) {
+        isCrossTarget = true;
+      }
+      if (typeof tl.headSha === "string" && tl.headSha.length === 40 && tl.headSha !== candidate.headSha) {
+        isCrossTarget = true;
+      }
+    }
+  }
+  if (input.reconciliationInput !== undefined) {
+    const reconInspected = inspectRecordSnapshot(input.reconciliationInput);
+    if (reconInspected.valid) {
+      const recon = reconInspected.snapshot as Record<string, unknown>;
+      const repoFactsInspected = inspectRecordSnapshot(recon.repositoryFacts);
+      if (repoFactsInspected.valid) {
+        const rf = repoFactsInspected.snapshot as Record<string, unknown>;
+        const expectedRepo = `${rf.owner}/${rf.repository}`;
+        if (rf.owner && rf.repository && candidate.repository !== expectedRepo) {
+          isCrossTarget = true;
+        }
+      }
+    }
+  }
 
+  const canonicalFingerprint = computeAcceptanceRegistryFingerprint(P4_ACCEPTANCE_REGISTRY);
   const regInspected = inspectRecordSnapshot(input.acceptanceRegistry);
   const isRegistryUnverified =
     !regInspected.valid ||
     regInspected.snapshot.id !== "P4_ACCEPTANCE_REGISTRY" ||
-    regInspected.snapshot.fingerprint !== "p4-fingerprint-test";
+    regInspected.snapshot.fingerprint !== canonicalFingerprint;
 
   const matrix = projectEvidenceCompletenessMatrix(
     input.profile,
@@ -466,9 +543,14 @@ export const evaluateP4GovernanceAssurance = (
     const rInspected = inspectRecordSnapshot(risk);
     if (rInspected.valid) {
       const r = rInspected.snapshot as Record<string, unknown>;
+      const riskId = typeof r.riskId === "string" && r.riskId.trim().length > 0 ? r.riskId.trim() : "";
+      if (!riskId) {
+        blockers.push("MALFORMED_RESIDUAL_RISK_ID");
+        continue;
+      }
       residualRisks.push(
         Object.freeze({
-          riskId: typeof r.riskId === "string" ? r.riskId : "RISK-UNKNOWN",
+          riskId,
           description: typeof r.description === "string" ? r.description : "",
           affectedProfile: (typeof r.affectedProfile === "string"
             ? r.affectedProfile
@@ -492,8 +574,10 @@ export const evaluateP4GovernanceAssurance = (
         })
       );
       if (r.ownerDecisionRequired === true) {
-        ownerDecisions.push(`RESIDUAL_RISK_OWNER_DECISION_REQUIRED:${r.riskId}`);
+        ownerDecisions.push(`RESIDUAL_RISK_OWNER_DECISION_REQUIRED:${riskId}`);
       }
+    } else {
+      blockers.push("MALFORMED_RESIDUAL_RISK");
     }
   }
 

@@ -182,21 +182,29 @@ const validationResult = (
     reasons: Object.freeze([...reasons].sort()),
   });
 
-const withinBounds = (value: unknown, depth = 0): boolean => {
+const withinBounds = (value: unknown, depth = 0, currentKey?: string): boolean => {
   if (value === null || typeof value === "boolean") return true;
   if (typeof value === "string") return value.length <= P4_BOUNDS.MAX_STRING_LENGTH;
   if (typeof value === "number") return Number.isFinite(value);
   if (typeof value !== "object" || depth > P4_BOUNDS.MAX_DEPTH) return false;
   if (Array.isArray(value)) {
+    const maxItems =
+      currentKey === "changedPaths"
+        ? P4_BOUNDS.MAX_CHANGED_PATHS
+        : currentKey === "commits"
+        ? P4_BOUNDS.MAX_COMMITS
+        : currentKey === "evidenceItems"
+        ? P4_BOUNDS.MAX_EVIDENCE_ITEMS
+        : P4_BOUNDS.MAX_COLLECTION_ITEMS;
     return (
-      value.length <= P4_BOUNDS.MAX_COLLECTION_ITEMS &&
-      value.every((entry) => withinBounds(entry, depth + 1))
+      value.length <= maxItems &&
+      value.every((entry) => withinBounds(entry, depth + 1, undefined))
     );
   }
   const keys = Object.keys(value as Record<string, unknown>);
   return (
     keys.length <= P4_BOUNDS.MAX_OBJECT_KEYS &&
-    keys.every((key) => withinBounds((value as Record<string, unknown>)[key], depth + 1))
+    keys.every((key) => withinBounds((value as Record<string, unknown>)[key], depth + 1, key))
   );
 };
 
@@ -208,6 +216,54 @@ const uniqueItemIds = (items: readonly unknown[]): boolean => {
       : "";
   });
   return ids.every(Boolean) && new Set(ids).size === ids.length;
+};
+
+const validateCandidateIdentityShape = (candidate: unknown): boolean => {
+  const inspected = inspectRecordSnapshot(candidate);
+  if (!inspected.valid) return false;
+  const c = inspected.snapshot as Record<string, unknown>;
+
+  if (typeof c.repository !== "string" || c.repository.trim().length === 0 || c.repository.length > P4_BOUNDS.MAX_STRING_LENGTH) {
+    return false;
+  }
+  if (typeof c.baseBranch !== "string" || c.baseBranch.trim().length === 0 || c.baseBranch.length > P4_BOUNDS.MAX_STRING_LENGTH) {
+    return false;
+  }
+  if (typeof c.headBranch !== "string" || c.headBranch.trim().length === 0 || c.headBranch.length > P4_BOUNDS.MAX_STRING_LENGTH) {
+    return false;
+  }
+  if (typeof c.baseSha !== "string" || !/^[0-9a-fA-F]{40}$/.test(c.baseSha)) {
+    return false;
+  }
+  if (typeof c.headSha !== "string" || !/^[0-9a-fA-F]{40}$/.test(c.headSha)) {
+    return false;
+  }
+  if (c.prNumber !== undefined && (typeof c.prNumber !== "number" || !Number.isInteger(c.prNumber) || c.prNumber < 1)) {
+    return false;
+  }
+  if (c.targetLockFingerprint !== undefined && (typeof c.targetLockFingerprint !== "string" || c.targetLockFingerprint.length > P4_BOUNDS.MAX_STRING_LENGTH)) {
+    return false;
+  }
+
+  if (!Array.isArray(c.commits) || c.commits.length > P4_BOUNDS.MAX_COMMITS) {
+    return false;
+  }
+  for (const commit of c.commits) {
+    if (typeof commit !== "string" || commit.trim().length === 0 || commit.length > P4_BOUNDS.MAX_STRING_LENGTH) {
+      return false;
+    }
+  }
+
+  if (!Array.isArray(c.changedPaths) || c.changedPaths.length > P4_BOUNDS.MAX_CHANGED_PATHS) {
+    return false;
+  }
+  for (const p of c.changedPaths) {
+    if (typeof p !== "string" || p.trim().length === 0 || p.length > P4_BOUNDS.MAX_STRING_LENGTH) {
+      return false;
+    }
+  }
+
+  return true;
 };
 
 export const validateP4GovernanceAssuranceInput = (
@@ -227,6 +283,9 @@ export const validateP4GovernanceAssuranceInput = (
   }
   if (!withinBounds(value)) {
     return validationResult("NOT_ASSESSABLE", ["P4_INPUT_BOUND_EXCEEDED"]);
+  }
+  if (!validateCandidateIdentityShape(value.candidate)) {
+    return validationResult("NOT_ASSESSABLE", ["P4_CANDIDATE_INVALID"]);
   }
   if (
     typeof value.evaluationEpochMilliseconds !== "number" ||
@@ -251,12 +310,24 @@ export const validateP4GovernanceAssuranceInput = (
   ) {
     return validationResult("NOT_ASSESSABLE", ["P4_PROVENANCE_INVALID"]);
   }
-  if (
-    value.residualRisks !== undefined &&
-    (!Array.isArray(value.residualRisks) ||
-      value.residualRisks.length > P4_BOUNDS.MAX_RESIDUAL_RISKS)
-  ) {
-    return validationResult("NOT_ASSESSABLE", ["P4_RESIDUAL_RISKS_INVALID"]);
+  if (value.residualRisks !== undefined) {
+    if (
+      !Array.isArray(value.residualRisks) ||
+      value.residualRisks.length > P4_BOUNDS.MAX_RESIDUAL_RISKS
+    ) {
+      return validationResult("NOT_ASSESSABLE", ["P4_RESIDUAL_RISKS_INVALID"]);
+    }
+    for (const risk of value.residualRisks) {
+      const rInspected = inspectRecordSnapshot(risk);
+      if (
+        !rInspected.valid ||
+        typeof rInspected.snapshot.riskId !== "string" ||
+        rInspected.snapshot.riskId.trim().length === 0 ||
+        rInspected.snapshot.riskId.length > P4_BOUNDS.MAX_STRING_LENGTH
+      ) {
+        return validationResult("NOT_ASSESSABLE", ["P4_RESIDUAL_RISKS_INVALID"]);
+      }
+    }
   }
   return validationResult("PASS", []);
 };

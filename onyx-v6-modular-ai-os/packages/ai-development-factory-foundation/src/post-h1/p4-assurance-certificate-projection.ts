@@ -104,6 +104,7 @@ export const projectP4MergeReadinessCertificate = (
 
     const matrix = assuranceResult.evidenceCompletenessMatrix;
     const isFresh = matrix.staleCount === 0;
+    const totalRequired = matrix.totalClasses - matrix.notApplicableCount;
 
     const certPayload = {
       authority: "NON_AUTHORIZING" as const,
@@ -120,9 +121,9 @@ export const projectP4MergeReadinessCertificate = (
       reopeningTriggers: assuranceResult.invalidationTriggers,
       evidenceCompletenessMatrix: matrix,
       acceptanceCoverage: {
-        totalRequired: 20,
+        totalRequired,
         validatedCount: matrix.presentCount,
-        complete: matrix.missingCount === 0,
+        complete: matrix.missingCount === 0 && matrix.presentCount === totalRequired,
       },
       blockers: assuranceResult.blockers,
       warnings: assuranceResult.warnings,
@@ -203,6 +204,7 @@ export const projectP4MainClosureCertificate = (
     const monorepoTypecheckPassed = facts.monorepoTypecheckPassed === true;
 
     const matrix = assuranceResult.evidenceCompletenessMatrix;
+    const totalRequired = matrix.totalClasses - matrix.notApplicableCount;
 
     const certPayload = {
       authority: "NON_AUTHORIZING" as const,
@@ -226,9 +228,9 @@ export const projectP4MainClosureCertificate = (
         monorepoTypecheckPassed,
       },
       acceptanceCoverage: {
-        totalRequired: 20,
+        totalRequired,
         validatedCount: matrix.presentCount,
-        complete: matrix.missingCount === 0,
+        complete: matrix.missingCount === 0 && matrix.presentCount === totalRequired,
       },
       residualRisks: assuranceResult.residualRisks,
       blockers: assuranceResult.blockers,

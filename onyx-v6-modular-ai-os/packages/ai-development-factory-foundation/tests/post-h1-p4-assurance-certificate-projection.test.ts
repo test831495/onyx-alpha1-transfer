@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  computeAcceptanceRegistryFingerprint,
   evaluateP4GovernanceAssurance,
   type P4GovernanceAssuranceResult,
 } from "../src/post-h1/p4-governance-assurance";
+import {
+  P4_ACCEPTANCE_REGISTRY,
+} from "../src/post-h1/p4-acceptance-registry";
 import {
   projectP4AssuranceReport,
   projectP4MainClosureCertificate,
@@ -11,6 +15,8 @@ import {
 import type { P4CandidateIdentity, P4GovernanceAssuranceInput } from "../src/post-h1/p4-governance-assurance-contracts";
 
 describe("Post-H1 P4 Assurance Certificate & Report Projection (Wave P4-C & P4-D)", () => {
+  const canonicalFingerprint = computeAcceptanceRegistryFingerprint(P4_ACCEPTANCE_REGISTRY);
+
   const testCandidate: P4CandidateIdentity = Object.freeze({
     repository: "test831495/onyx-alpha1-transfer",
     baseBranch: "main",
@@ -34,7 +40,7 @@ describe("Post-H1 P4 Assurance Certificate & Report Projection (Wave P4-C & P4-D
     acceptanceRegistry: {
       id: "P4_ACCEPTANCE_REGISTRY",
       count: 20,
-      fingerprint: "p4-fingerprint-test",
+      fingerprint: canonicalFingerprint,
     },
     evidenceItems: [
       {
@@ -141,6 +147,31 @@ describe("Post-H1 P4 Assurance Certificate & Report Projection (Wave P4-C & P4-D
     // Verify deterministic reportHash for identical input
     const report2 = projectP4AssuranceReport(assurance);
     expect(report.reportHash).toBe(report2.reportHash);
+  });
+
+  it("P4-PR30-FINDING-006: certificate acceptance coverage dynamically computes profile-required totals", () => {
+    const localAssurance = evaluateP4GovernanceAssurance(
+      createAssuranceInput("LOCAL_IMPLEMENTATION_ASSURANCE")
+    );
+    const prAssurance = evaluateP4GovernanceAssurance(
+      createAssuranceInput("PR_MERGE_READINESS_ASSURANCE")
+    );
+    const closureAssurance = evaluateP4GovernanceAssurance(
+      createAssuranceInput("MAIN_CLOSURE_ASSURANCE")
+    );
+
+    const localCert = projectP4MergeReadinessCertificate(localAssurance);
+    const prCert = projectP4MergeReadinessCertificate(prAssurance);
+    const closureCert = projectP4MainClosureCertificate(closureAssurance);
+
+    // Local profile has 7 not applicable classes -> 13 required
+    expect(localCert.acceptanceCoverage.totalRequired).toBe(13);
+
+    // PR merge readiness profile has 4 not applicable classes -> 16 required
+    expect(prCert.acceptanceCoverage.totalRequired).toBe(16);
+
+    // Main closure profile has 0 not applicable classes -> 20 required
+    expect(closureCert.acceptanceCoverage.totalRequired).toBe(20);
   });
 
   it("POSTH1-P4-SAFE-001: attaches NON_AUTHORIZING authority marker to every public P4 output", () => {
