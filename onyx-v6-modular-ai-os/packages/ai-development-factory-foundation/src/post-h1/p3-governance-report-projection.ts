@@ -10,7 +10,7 @@ const stableById = (items: readonly unknown[]): readonly unknown[] => [...items]
   const leftRecord = inspectRecordSnapshot(left); const rightRecord = inspectRecordSnapshot(right);
   const leftId = leftRecord.valid && typeof leftRecord.snapshot.id === "string" ? leftRecord.snapshot.id : "";
   const rightId = rightRecord.valid && typeof rightRecord.snapshot.id === "string" ? rightRecord.snapshot.id : "";
-  return leftId.localeCompare(rightId);
+  return leftId < rightId ? -1 : leftId > rightId ? 1 : 0;
 });
 const stableStrings = (items: readonly string[]): readonly string[] => [...new Set(items)].sort();
 
@@ -33,7 +33,7 @@ export const projectP3GovernanceReport = (candidate: P3GovernanceAutomationResul
     ].join("\n") : undefined;
     const prBodyProposal = proposalText && proposalText.length <= P3_BOUNDS.MAX_PR_BODY_LENGTH ? { authority: "NON_AUTHORIZING" as const, status: "PROPOSED" as const, body: proposalText, hash: sha256(proposalText) } : undefined;
     const hashInput = { authority: "NON_AUTHORIZING" as const, disposition: candidate.disposition, target: candidate.target, lifecycleState: candidate.lifecycle.state, readinessOutcome: candidate.predecessor.readiness.outcome, closureOutcome: candidate.predecessor.closure.outcome, blockers, warnings, nextGate: candidate.nextGate, reopeningTriggers, evidenceReferences, provenance, evidenceManifestHash: manifest?.manifestHash, prBodyProposal };
-    return cloneFreeze({ ...hashInput, evidenceManifestHash: manifest?.manifestHash, prBodyProposal, reportHash: sha256(JSON.stringify(hashInput)) });
+    return cloneFreeze({ ...hashInput, reportHash: sha256(JSON.stringify(hashInput)) });
   } catch {
     return cloneFreeze({ authority: "NON_AUTHORIZING" as const, disposition: "NOT_ASSESSABLE" as const, target: { repository: "", baseBranch: "", headSha: "", prNumber: 0 }, lifecycleState: "NOT_ASSESSABLE", readinessOutcome: "NOT_ASSESSABLE", closureOutcome: "NOT_ASSESSABLE", blockers: ["EVIDENCE_UNAVAILABLE"], warnings: [], nextGate: "PROVIDE_CURRENT_EVIDENCE", reopeningTriggers: ["EVIDENCE_UNAVAILABLE"], evidenceReferences: [], provenance: [], reportHash: sha256("P3_REPORT_NOT_ASSESSABLE") });
   }
