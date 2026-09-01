@@ -18,7 +18,7 @@ function validateProvenance(validation: ValidationProvenance | undefined): Valid
   if (validation.result !== "PASS") throw new TypeError("validation provenance must pass before evidence can claim coverage");
   if (validation.ppt.expected.length !== EXPECTED_PPT_IDS.length || validation.ppt.expected.some((id, index) => id !== EXPECTED_PPT_IDS[index])) throw new TypeError("validation provenance must bind exact PPT IDs");
   if (validation.ppt.passed.length !== EXPECTED_PPT_IDS.length || validation.ppt.passed.some((id, index) => id !== EXPECTED_PPT_IDS[index])) throw new TypeError("validation provenance must prove all PPT IDs passed");
-  if (validation.acceptanceFamilies.length !== ACCEPTANCE_FAMILIES.length || validation.acceptanceFamilies.some((family) => !(ACCEPTANCE_FAMILIES as readonly string[]).includes(family))) throw new TypeError("validation provenance must bind all acceptance families");
+  if (validation.acceptanceFamilies.length !== ACCEPTANCE_FAMILIES.length || new Set(validation.acceptanceFamilies).size !== validation.acceptanceFamilies.length || validation.acceptanceFamilies.some((family, index) => family !== ACCEPTANCE_FAMILIES[index])) throw new TypeError("validation provenance must bind the exact acceptance family set in order without duplicates or omissions");
   if (validation.commands.length === 0 || validation.commands.some((command) => command.exitCode !== 0)) throw new TypeError("validation provenance commands must pass");
   return validation;
 }
@@ -69,8 +69,22 @@ export const POST_ALPHA_VALIDATION_PROFILE = deepFreeze({ packageTests: "ALL_POS
 export const PROHIBITED_EFFECTS = deepFreeze({ runtimeActivation: false as const, gitAction: false as const, externalComposition: false as const, paidProvider: false as const, networkAccess: false as const, externalMutation: false as const, persistence: false as const, liveVoice: false as const, tvRuntime: false as const });
 
 const PACKAGE_PREFIX = "onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice/";
+
+// Pure lexical containment: no filesystem access and no symlink resolution.
+function isInsidePackage(path: unknown): boolean {
+  if (typeof path !== "string" || path.length === 0) return false;
+  if (path.includes("\\")) return false;
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u001f\u007f]/.test(path)) return false;
+  if (path.startsWith("/")) return false;
+  if (!path.startsWith(PACKAGE_PREFIX)) return false;
+  const segments = path.slice(PACKAGE_PREFIX.length).split("/");
+  if (segments.length === 0) return false;
+  return segments.every((segment) => segment.length > 0 && segment !== "." && segment !== "..");
+}
+
 export function validatePackagePaths(paths: readonly string[]): true {
-  if (paths.some((path) => !path.startsWith(PACKAGE_PREFIX))) throw new TypeError("Path escapes the PA-PRESENCE package allowlist");
+  if (paths.some((path) => !isInsidePackage(path))) throw new TypeError("Path escapes the PA-PRESENCE package allowlist");
   return true;
 }
 

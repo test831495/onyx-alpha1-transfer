@@ -6,7 +6,7 @@
     "head": "d8c93d5a9cfccb2cb2fb9a0beef0961ed6ff2714",
     "tree": "35173f8f2b9ede4171c559900199e1f86f8dd46d"
   },
-  "generatedAt": "2026-09-01T00:00:00.000Z",
+  "generatedAt": "2026-09-01T20:30:16.000Z",
   "freshness": {
     "status": "CURRENT",
     "dependencies": [
@@ -36,7 +36,7 @@
       "OWNER_SCOPE_CHANGE",
       "SUPERSEDING_EVIDENCE"
     ],
-    "generatedAt": "2026-09-01T00:00:00.000Z",
+    "generatedAt": "2026-09-01T20:30:16.000Z",
     "validUntil": "2026-09-08T00:00:00.000Z"
   },
   "freshnessBindings": {
@@ -247,13 +247,13 @@
         "PPT-062",
         "PPT-063"
       ],
-      "acceptanceRegistrySha256": "89a86dd22676bdc796edc50c5cf2eeddbb043ea21e75ceb8e7bca57ddb38dff3",
+      "acceptanceRegistrySha256": "f3ef72ca086c2a0b191d0d7bd21de6b1f7f087f0a16373e7cb9c1c13d0fb6b31",
       "sourceOfTruth": "generator familyMap and discovered PPT tests",
       "hashAlgorithm": "SHA-256",
       "validationMethod": "canonical registry projection digest and exact PPT/family comparison",
       "invalidationTrigger": "ACCEPTANCE_FAMILY_TEST_MAPPING_SOURCE_SYMBOL_EXPECTATION_LIMITATION_OR_PPT_RANGE_CHANGE",
       "observedResult": "PASS",
-      "sha256": "22d8755391635ed1d9f148a0a777a52c0f51c5ab8d784e6bac7c08ce8f2ad054"
+      "sha256": "5d416fef5860ea26972451efd2a5082065d7e752590902cb6afe52f4381c06a4"
     },
     "TOOLCHAIN_ENVIRONMENT": {
       "bindingId": "TOOLCHAIN_ENVIRONMENT",
@@ -316,7 +316,7 @@
           "activationState": "INACTIVE",
           "sourceSymbol": "projectStatusTool",
           "sourcePath": "onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice/src/orchestrator.ts",
-          "sourceFileSha256": "37de8ba223b58e852f30d329205f856527e35de5371d2be8e43a721259b38ab0",
+          "sourceFileSha256": "268e2ecde02c3e53bcf77ed9e7c48face211b9282337f705c1fba473a916a971",
           "capabilityClass": "TOOL",
           "networkAccess": false,
           "persistence": false,
@@ -422,7 +422,7 @@
           "invalidationTrigger": "ADAPTER_SOURCE_SYMBOL_SOURCE_FILE_HASH_MODE_CAPABILITY_OR_ACTIVATION_STATE_CHANGE"
         }
       ],
-      "sha256": "6ef26e813a6442a19be39b14ca7beb7dd7fbaf140f546c7eb8fc9ed2a8d78e25"
+      "sha256": "b99d93ec9c2593dae665bf148a46c85f2ceab8078ca8ec9167520acc80add148"
     },
     "PA_ASSURE_VALIDATION_PROFILE": {
       "bindingId": "PA_ASSURE_VALIDATION_PROFILE",
@@ -570,43 +570,43 @@
   "artifacts": [
     {
       "path": "onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice/evidence/pa-presence-01.json",
-      "sha256": "fcac398d561ff4edf242b95b2754f2c189fb70e4d1afb53d3765ca866634dbc2"
+      "sha256": "12c336b284dc6e98a0ccb10b7a06854ab3cdc8f2cf967a3032bdb63481815220"
     },
     {
       "path": "onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice/evidence/acceptance-reconciliation.json",
-      "sha256": "43cad8feeb0f9aeb13ba531f398e8dbdac97b1ef192ac4f208c3420fe8b6c876"
+      "sha256": "838d89b2e03952df4b95f30ef0c46ef7878f8f7ff5ecf201df9c3ebba4e9442f"
     },
     {
       "path": "onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice/evidence/lifecycle-report.json",
-      "sha256": "c606faa8dfca15a2dabc5a00bea4a96f70def8d21468720fbecc7005237110fc"
+      "sha256": "3589f21a65422e2d47883bfc6173c0fdf752552095bfd779a727f4a2c819478f"
     },
     {
       "path": "onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice/evidence/presentation-compatibility.json",
-      "sha256": "c2ff992c19d17822d4eb1a7585212342217ee396343dd049ad9e16bfc1c4f6e5"
+      "sha256": "2f174b770a14c3493df9856757995dc735811f32c1b636b489c2771e4ea7888f"
     },
     {
       "path": "onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice/evidence/privacy-accessibility-report.json",
-      "sha256": "5007aea7de836629d59e506c4e3fd8f713ac9d795cf8a647b40145ffad2b3a79"
+      "sha256": "30304a154a2e1871ca9fa3000956bb9a5d3a2edf1e505cdc88decff564a729e6"
     },
     {
       "path": "onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice/evidence/feature-flag-report.json",
-      "sha256": "bc94c2dc85eeb9ee4d5a12c19184c2249c0d3c5a3e8f942caed5d4a5644c9235"
+      "sha256": "631697f325d1021b14500f4b32822c01b26c0a9157a5d4ef187c1bb973a3af23"
     },
     {
       "path": "onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice/evidence/rollback-report.json",
-      "sha256": "cefb63c79a431a08b5ee0a94c32f0ac2f44e5c51401c78f35ba73c80938ef226"
+      "sha256": "1dc49d91323037a7efbcc058513e7c0383d94cf87e1eb6001ed2896440636f4e"
     },
     {
       "path": "onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice/evidence/drift-report.json",
-      "sha256": "2abea520086413a1528f80d35de0990d82d929da52f4e9351dbb2b9cc5d693bb"
+      "sha256": "9808408ac6aff83928a3ac3b969dfb630967ada64b6d89a79a4131941184bc4d"
     },
     {
       "path": "onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice/evidence/owner-briefing.json",
-      "sha256": "250f76c9d653d0a57ac2d67e04888ac08f3dcd8d20d3c1bdb2c41de9ce97610d"
+      "sha256": "eeb290fd3b73b51662f22157fe012439af68de868b9378233196eb1211a9313b"
     }
   ],
-  "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-  "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+  "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+  "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
   "runtimeActivation": false,
   "gitClosure": false,
   "externalMutation": false

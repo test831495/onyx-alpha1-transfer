@@ -1,5 +1,6 @@
 import type { PresenceContextInput } from "./context";
 import type { MemoryRecord, OrchestrationInput } from "./orchestrator";
+import type { PrivacyInput } from "./privacy";
 import type { SyntheticModelRequest } from "./adapters";
 
 const candidate = { head: "d8c93d5a9cfccb2cb2fb9a0beef0961ed6ff2714", tree: "35173f8f2b9ede4171c559900199e1f86f8dd46d" } as const;
@@ -24,9 +25,30 @@ const memoryRecords: readonly MemoryRecord[] = [
 
 const modelRequest: SyntheticModelRequest = { interactionId: "interaction-001", prompt: "Summarize project status.", evidenceReferences: ["pa-intel-01"], cancelled: false, maxOutputCharacters: 80 };
 
-export const FIXTURES: { readonly contextInput: PresenceContextInput; readonly memoryRecords: readonly MemoryRecord[]; readonly modelRequest: SyntheticModelRequest; readonly orchestrationInput: OrchestrationInput } = {
+const trustedPrivacy: PrivacyInput = { disposition: "PRIVATE", text: "Summarize project status." };
+const sharedRoomPrivacy: PrivacyInput = { disposition: "SHARED_ROOM_SAFE", text: "Summarize project status." };
+const restrictedPrivacy: PrivacyInput = { disposition: "MISSING", text: "" };
+const tool = { projectId: "onyx", cancelled: false, available: true } as const;
+
+export const FIXTURES: {
+  readonly contextInput: PresenceContextInput;
+  readonly memoryRecords: readonly MemoryRecord[];
+  readonly modelRequest: SyntheticModelRequest;
+  readonly trustedPrivacy: PrivacyInput;
+  readonly sharedRoomPrivacy: PrivacyInput;
+  readonly restrictedPrivacy: PrivacyInput;
+  readonly orchestrationInput: OrchestrationInput;
+  readonly sharedRoomOrchestrationInput: OrchestrationInput;
+  readonly restrictedOrchestrationInput: OrchestrationInput;
+} = {
   contextInput,
   memoryRecords,
   modelRequest,
-  orchestrationInput: { request: modelRequest, memory: memoryRecords, tool: { projectId: "onyx", cancelled: false, available: true } },
+  trustedPrivacy,
+  sharedRoomPrivacy,
+  restrictedPrivacy,
+  // Trusted privacy is stated explicitly so the non-restricted path is exercised rather than inferred.
+  orchestrationInput: { request: modelRequest, memory: memoryRecords, tool, privacy: trustedPrivacy },
+  sharedRoomOrchestrationInput: { request: modelRequest, memory: memoryRecords, tool, privacy: sharedRoomPrivacy },
+  restrictedOrchestrationInput: { request: modelRequest, memory: memoryRecords, tool, privacy: restrictedPrivacy },
 };

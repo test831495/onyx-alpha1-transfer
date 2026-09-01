@@ -57,26 +57,26 @@
   ],
   "validationProvenance": {
     "path": "onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice/validation/validation-results.json",
-    "sha256": "656a4067398e2d1456a2130ba4a1e793a2250b300ff497bbea8cf92cb71e8908",
+    "sha256": "91d8ac411ce30dad0720473730a747cc1661c07035687ee7be6ba40fbf84073e",
     "result": "PASS",
-    "generatedAt": "2026-09-01T00:00:00.000Z"
+    "generatedAt": "2026-09-01T20:30:16.000Z"
   },
   "commands": [
     {
       "command": "pnpm --filter @onyx/post-alpha-onyx-presence-thin-slice test",
       "exitCode": 0,
-      "startedAt": "2026-09-01T18:23:19.316Z",
-      "completedAt": "2026-09-01T18:23:22.769Z",
-      "stdoutSha256": "cf29533e4ef596c62fe2e8b9cf4cde0c5f626643e833a59c93cb781c870fe0b6",
+      "startedAt": "2026-09-01T20:30:17.629Z",
+      "completedAt": "2026-09-01T20:30:20.899Z",
+      "stdoutSha256": "182bbb585b3a146404db85299eef021773b974b1e6ad6bee8adb195343a6af8c",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdoutTail": "\n> @onyx/post-alpha-onyx-presence-thin-slice@0.1.0 test /workspaces/onyx-alpha1-transfer/onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice\n> vitest run\n\n\n RUN  v3.2.7 /workspaces/onyx-alpha1-transfer/onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice\n\n ✓ tests/evidence.test.ts (8 tests) 35ms\n ✓ tests/context-memory-tool.test.ts (10 tests) 10ms\n ✓ tests/lifecycle.test.ts (10 tests) 9ms\n ✓ tests/orchestration.test.ts (10 tests) 8ms\n ✓ tests/contracts.test.ts (9 tests) 10ms\n ✓ tests/presentation.test.ts (8 tests) 6ms\n ✓ tests/integration.test.ts (4 tests) 6ms\n ✓ tests/privacy-accessibility.test.ts (4 tests) 6ms\n\n Test Files  8 passed (8)\n      Tests  63 passed (63)\n   Start at  18:23:20\n   Duration  2.51s (transform 215ms, setup 0ms, collect 422ms, tests 90ms, environment 2ms, prepare 678ms)\n\n",
+      "stdoutTail": "\n> @onyx/post-alpha-onyx-presence-thin-slice@0.1.0 test /workspaces/onyx-alpha1-transfer/onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice\n> vitest run\n\n\n RUN  v3.2.7 /workspaces/onyx-alpha1-transfer/onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice\n\n ✓ tests/evidence.test.ts (9 tests) 27ms\n ✓ tests/orchestration.test.ts (10 tests) 11ms\n ✓ tests/lifecycle.test.ts (10 tests) 10ms\n ✓ tests/context-memory-tool.test.ts (10 tests) 10ms\n ✓ tests/contracts.test.ts (9 tests) 8ms\n ✓ tests/presentation.test.ts (8 tests) 8ms\n ✓ tests/privacy-accessibility.test.ts (4 tests) 9ms\n ✓ tests/integration.test.ts (4 tests) 5ms\n\n Test Files  8 passed (8)\n      Tests  64 passed (64)\n   Start at  20:30:18\n   Duration  2.38s (transform 215ms, setup 0ms, collect 480ms, tests 88ms, environment 2ms, prepare 606ms)\n\n",
       "stderrTail": ""
     },
     {
       "command": "pnpm --filter @onyx/post-alpha-onyx-presence-thin-slice typecheck",
       "exitCode": 0,
-      "startedAt": "2026-09-01T18:23:22.769Z",
-      "completedAt": "2026-09-01T18:23:25.249Z",
+      "startedAt": "2026-09-01T20:30:20.899Z",
+      "completedAt": "2026-09-01T20:30:23.428Z",
       "stdoutSha256": "d0949e2d7e8854a3ed241989e20a6ccd1f016d57c4abe2043f6081c476df74c4",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "stdoutTail": "\n> @onyx/post-alpha-onyx-presence-thin-slice@0.1.0 typecheck /workspaces/onyx-alpha1-transfer/onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice\n> tsc --noEmit\n\n",
@@ -480,8 +480,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -496,8 +496,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -512,8 +512,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -528,8 +528,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -544,8 +544,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -560,8 +560,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -576,8 +576,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -592,8 +592,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -608,8 +608,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -624,8 +624,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -640,8 +640,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -656,8 +656,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -672,8 +672,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -688,8 +688,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -704,8 +704,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -720,8 +720,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -736,8 +736,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -752,8 +752,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -768,8 +768,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -784,8 +784,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -800,8 +800,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -816,8 +816,8 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
@@ -832,17 +832,17 @@
       "observedResult": "PASS",
       "validationResult": "PASS",
       "evidenceArtifact": "acceptance-reconciliation.json",
-      "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-      "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+      "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+      "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
       "freshness": "CURRENT",
       "coverageStatus": "COVERED",
       "limitation": null
     }
   ],
   "fingerprints": {
-    "source": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-    "tests": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
-    "validationResults": "656a4067398e2d1456a2130ba4a1e793a2250b300ff497bbea8cf92cb71e8908",
+    "source": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+    "tests": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
+    "validationResults": "91d8ac411ce30dad0720473730a747cc1661c07035687ee7be6ba40fbf84073e",
     "predecessors": {
       "post-alpha-governance-foundation": "588f1efbec7347018af60b8effbfd4371b92b08528d01218c21dd4da030703f7",
       "post-alpha-intelligence-foundation": "abb957d653a36aa3b4d1a9e5cb22079a6fd4e19f251f93364ce1633e39c29df8",
@@ -850,7 +850,7 @@
       "post-alpha-assurance-foundation": "4b6faf753ffaa9380029cdc8d3e550f4e6202474d64ce175b8061f9d8170bdd3"
     },
     "dependencyLock": "c1f2483d4001a63d166a84c9af9aefb91a5ff852c17025e61a971a53045ae5c2",
-    "fixture": "bffdbbc23cf5642489881afb1767bb762ec5249e88786302c202a0f68ac97017"
+    "fixture": "1a56bbc16c8b74162622fefaaf1993f71bcd99c2e784b6f96c60ca6b308e1bea"
   },
   "featureFlags": {
     "owner_override_runtime": "OFF",
@@ -898,7 +898,7 @@
       "OWNER_SCOPE_CHANGE",
       "SUPERSEDING_EVIDENCE"
     ],
-    "generatedAt": "2026-09-01T00:00:00.000Z",
+    "generatedAt": "2026-09-01T20:30:16.000Z",
     "validUntil": "2026-09-08T00:00:00.000Z"
   },
   "freshnessBindings": {
@@ -1109,13 +1109,13 @@
         "PPT-062",
         "PPT-063"
       ],
-      "acceptanceRegistrySha256": "89a86dd22676bdc796edc50c5cf2eeddbb043ea21e75ceb8e7bca57ddb38dff3",
+      "acceptanceRegistrySha256": "f3ef72ca086c2a0b191d0d7bd21de6b1f7f087f0a16373e7cb9c1c13d0fb6b31",
       "sourceOfTruth": "generator familyMap and discovered PPT tests",
       "hashAlgorithm": "SHA-256",
       "validationMethod": "canonical registry projection digest and exact PPT/family comparison",
       "invalidationTrigger": "ACCEPTANCE_FAMILY_TEST_MAPPING_SOURCE_SYMBOL_EXPECTATION_LIMITATION_OR_PPT_RANGE_CHANGE",
       "observedResult": "PASS",
-      "sha256": "22d8755391635ed1d9f148a0a777a52c0f51c5ab8d784e6bac7c08ce8f2ad054"
+      "sha256": "5d416fef5860ea26972451efd2a5082065d7e752590902cb6afe52f4381c06a4"
     },
     "TOOLCHAIN_ENVIRONMENT": {
       "bindingId": "TOOLCHAIN_ENVIRONMENT",
@@ -1178,7 +1178,7 @@
           "activationState": "INACTIVE",
           "sourceSymbol": "projectStatusTool",
           "sourcePath": "onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice/src/orchestrator.ts",
-          "sourceFileSha256": "37de8ba223b58e852f30d329205f856527e35de5371d2be8e43a721259b38ab0",
+          "sourceFileSha256": "268e2ecde02c3e53bcf77ed9e7c48face211b9282337f705c1fba473a916a971",
           "capabilityClass": "TOOL",
           "networkAccess": false,
           "persistence": false,
@@ -1284,7 +1284,7 @@
           "invalidationTrigger": "ADAPTER_SOURCE_SYMBOL_SOURCE_FILE_HASH_MODE_CAPABILITY_OR_ACTIVATION_STATE_CHANGE"
         }
       ],
-      "sha256": "6ef26e813a6442a19be39b14ca7beb7dd7fbaf140f546c7eb8fc9ed2a8d78e25"
+      "sha256": "b99d93ec9c2593dae665bf148a46c85f2ceab8078ca8ec9167520acc80add148"
     },
     "PA_ASSURE_VALIDATION_PROFILE": {
       "bindingId": "PA_ASSURE_VALIDATION_PROFILE",

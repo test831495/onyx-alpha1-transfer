@@ -6,7 +6,7 @@
     "head": "d8c93d5a9cfccb2cb2fb9a0beef0961ed6ff2714",
     "tree": "35173f8f2b9ede4171c559900199e1f86f8dd46d"
   },
-  "generatedAt": "2026-09-01T00:00:00.000Z",
+  "generatedAt": "2026-09-01T20:30:16.000Z",
   "freshness": {
     "status": "CURRENT",
     "dependencies": [
@@ -36,7 +36,7 @@
       "OWNER_SCOPE_CHANGE",
       "SUPERSEDING_EVIDENCE"
     ],
-    "generatedAt": "2026-09-01T00:00:00.000Z",
+    "generatedAt": "2026-09-01T20:30:16.000Z",
     "validUntil": "2026-09-08T00:00:00.000Z"
   },
   "freshnessBindings": {
@@ -247,13 +247,13 @@
         "PPT-062",
         "PPT-063"
       ],
-      "acceptanceRegistrySha256": "89a86dd22676bdc796edc50c5cf2eeddbb043ea21e75ceb8e7bca57ddb38dff3",
+      "acceptanceRegistrySha256": "f3ef72ca086c2a0b191d0d7bd21de6b1f7f087f0a16373e7cb9c1c13d0fb6b31",
       "sourceOfTruth": "generator familyMap and discovered PPT tests",
       "hashAlgorithm": "SHA-256",
       "validationMethod": "canonical registry projection digest and exact PPT/family comparison",
       "invalidationTrigger": "ACCEPTANCE_FAMILY_TEST_MAPPING_SOURCE_SYMBOL_EXPECTATION_LIMITATION_OR_PPT_RANGE_CHANGE",
       "observedResult": "PASS",
-      "sha256": "22d8755391635ed1d9f148a0a777a52c0f51c5ab8d784e6bac7c08ce8f2ad054"
+      "sha256": "5d416fef5860ea26972451efd2a5082065d7e752590902cb6afe52f4381c06a4"
     },
     "TOOLCHAIN_ENVIRONMENT": {
       "bindingId": "TOOLCHAIN_ENVIRONMENT",
@@ -316,7 +316,7 @@
           "activationState": "INACTIVE",
           "sourceSymbol": "projectStatusTool",
           "sourcePath": "onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice/src/orchestrator.ts",
-          "sourceFileSha256": "37de8ba223b58e852f30d329205f856527e35de5371d2be8e43a721259b38ab0",
+          "sourceFileSha256": "268e2ecde02c3e53bcf77ed9e7c48face211b9282337f705c1fba473a916a971",
           "capabilityClass": "TOOL",
           "networkAccess": false,
           "persistence": false,
@@ -422,7 +422,7 @@
           "invalidationTrigger": "ADAPTER_SOURCE_SYMBOL_SOURCE_FILE_HASH_MODE_CAPABILITY_OR_ACTIVATION_STATE_CHANGE"
         }
       ],
-      "sha256": "6ef26e813a6442a19be39b14ca7beb7dd7fbaf140f546c7eb8fc9ed2a8d78e25"
+      "sha256": "b99d93ec9c2593dae665bf148a46c85f2ceab8078ca8ec9167520acc80add148"
     },
     "PA_ASSURE_VALIDATION_PROFILE": {
       "bindingId": "PA_ASSURE_VALIDATION_PROFILE",
@@ -574,8 +574,8 @@
     "avatar": "COMPATIBLE",
     "assurance": "EXTERNAL_VERIFIER_COMPATIBLE"
   },
-  "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-  "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+  "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+  "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
   "predecessorFingerprints": {
     "post-alpha-governance-foundation": "588f1efbec7347018af60b8effbfd4371b92b08528d01218c21dd4da030703f7",
     "post-alpha-intelligence-foundation": "abb957d653a36aa3b4d1a9e5cb22079a6fd4e19f251f93364ce1633e39c29df8",

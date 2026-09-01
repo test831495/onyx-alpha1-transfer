@@ -63,7 +63,8 @@ export interface OrchestrationInput {
 
 export function orchestratePresence(input: OrchestrationInput) {
   const cancelled = input.request.cancelled;
-  const privacyProjection = input.privacy ? projectPrivacy(input.privacy) : projectPrivacy({ disposition: "PRIVATE", text: input.request.prompt });
+  // Absence of a privacy envelope is treated as MISSING so Presence fails closed instead of inferring trust.
+  const privacyProjection = projectPrivacy(input.privacy ?? { disposition: "MISSING", text: "" });
   const privacyRestricted = privacyProjection.mode === "PRIVACY_RESTRICTED";
   const closed = cancelled || privacyRestricted;
   const memoryProjection = closed || !input.memory ? null : composeMemoryFixture(input.memory);

@@ -73,7 +73,7 @@ const networkCheck = allTextEntries.filter(([path]) => path !== `${packagePrefix
 const secretCheck = allTextEntries.every(([, text]) => !/(gh[pousr]_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN (?:RSA |OPENSSH |EC )?PRIVATE KEY-----)/.test(text));
 const privacyCheck = allTextEntries.some(([, text]) => text.includes("PRIVACY_RESTRICTED")) && allTextEntries.some(([, text]) => text.includes("SHARED_ROOM_REDACTED")) && allTextEntries.some(([, text]) => text.includes("CONFLICTING"));
 const packageAllowlistCheck = packageFiles.every((path) => relative(repositoryRoot, path).startsWith(packagePrefix));
-const result = exactPpt && commands.every((command) => command.exitCode === 0) ? "PASS" : "FAIL";
+const commandsPassed = commands.every((command) => command.exitCode === 0);
 const checks = {
   packageAllowlist: packageAllowlistCheck,
   dependencyAllowlist: dependencyCheck,
@@ -87,17 +87,20 @@ const checks = {
   externalMutation: false,
   featureFlagPromotion: false,
 };
+const checksPassed = Object.entries(checks).every(([key, value]) => ["runtimeActivation", "networkAccess", "credentialsUsed", "externalMutation", "featureFlagPromotion"].includes(key) ? value === false : value === true);
+// Single source of truth for the persisted artifact, the log line, and the exit status.
+const finalResult = exactPpt && commandsPassed && checksPassed ? "PASS" : "FAIL";
 const artifact = {
   schemaVersion: "PA_PRESENCE_VALIDATION_RESULTS_V1",
   workstream: "PA-PRESENCE-01",
   generatedAt,
   trustedTime,
-  result,
+  result: finalResult,
   environment: { nodeVersion: process.version, platform: platform(), osRelease: release(), architecture: arch(), packageManager: packageJson.packageManager ?? "pnpm workspace" },
   commands,
-  ppt: { expected: expectedPptIds, discovered: testCases, passed: result === "PASS" ? expectedPptIds : [], exact: exactPpt, count: testCases.length },
+  ppt: { expected: expectedPptIds, discovered: testCases, passed: finalResult === "PASS" ? expectedPptIds : [], exact: exactPpt, count: testCases.length },
   acceptanceFamilies,
-  counts: { presencePpt: exactPpt && result === "PASS" ? 63 : 0, acceptanceFamilies: acceptanceFamilies.length },
+  counts: { presencePpt: exactPpt && finalResult === "PASS" ? 63 : 0, acceptanceFamilies: acceptanceFamilies.length },
   hashes: {
     sourceFingerprint: await aggregateFingerprint(sourceFiles),
     testFingerprint: await aggregateFingerprint(testFiles),
@@ -108,11 +111,10 @@ const artifact = {
   authorizing: false,
 };
 
-if (!Object.entries(checks).every(([key, value]) => ["runtimeActivation", "networkAccess", "credentialsUsed", "externalMutation", "featureFlagPromotion"].includes(key) ? value === false : value === true)) artifact.result = "FAIL";
-
 await mkdir(validationRoot, { recursive: true });
+
 const content = `${JSON.stringify(artifact, null, 2)}\n`;
 await writeFile(join(validationRoot, "validation-results.json"), content, "utf8");
 await writeFile(join(validationRoot, "validation-results.json.sha256"), `${sha256(content)}  ${packagePrefix}validation/validation-results.json\n`, "utf8");
-console.log(`Validation ${result}: wrote validation-results.json and sidecar.`);
-if (artifact.result !== "PASS") process.exit(1);
+console.log(`Validation ${finalResult}: wrote validation-results.json and sidecar.`);
+if (finalResult !== "PASS") process.exit(1);

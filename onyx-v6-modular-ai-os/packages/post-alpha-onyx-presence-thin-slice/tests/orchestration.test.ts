@@ -4,6 +4,13 @@ import { createSyntheticModelAdapter, FIXTURES, INPUT_BOUNDARY, orchestratePrese
 describe("ONYX-only bounded orchestration", () => {
   it("PPT-030 ONYX role", () => {
     expect(orchestratePresence(FIXTURES.orchestrationInput)).toMatchObject({ mode: "ONYX_ONLY", role: "ONYX", authorizing: false });
+    // The non-restricted path is only exercised when the fixture states trusted privacy explicitly.
+    expect(FIXTURES.orchestrationInput.privacy).toMatchObject({ disposition: "PRIVATE" });
+    const trusted = orchestratePresence(FIXTURES.orchestrationInput);
+    expect(trusted.privacyProjection.mode).toBe("TRUSTED_PRIVATE");
+    expect(trusted).toMatchObject({ modelResponses: 1, memoryProjections: 1, toolCalls: 1, responseSuppressed: false, speechSuppressed: false });
+    expect(orchestratePresence(FIXTURES.sharedRoomOrchestrationInput).privacyProjection.mode).toBe("SHARED_ROOM_REDACTED");
+    expect(orchestratePresence(FIXTURES.restrictedOrchestrationInput)).toMatchObject({ modelResponses: 0, memoryProjections: 0, toolCalls: 0, responseSuppressed: true });
   });
 
   it("PPT-031 NOVA inactive", () => {

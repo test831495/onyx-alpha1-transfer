@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createAccessibilityProjection, createDesktopProjection, createTvProjection, projectPrivacy } from "../src/index";
+import { createAccessibilityProjection, createDesktopProjection, createTvProjection, FIXTURES, orchestratePresence, projectPrivacy } from "../src/index";
 
 describe("Presence privacy and accessibility", () => {
   it("PPT-045 shared-room privacy", () => {
@@ -7,6 +7,18 @@ describe("Presence privacy and accessibility", () => {
     expect(projectPrivacy({ established: false, environment: "TRUSTED_PRIVATE", text: "detail" }).mode).toBe("PRIVACY_RESTRICTED");
     expect(projectPrivacy({ disposition: "UNKNOWN", text: "Private project detail" }).mode).toBe("PRIVACY_RESTRICTED");
     expect(projectPrivacy({ disposition: "CONFLICTING", established: true, environment: "TRUSTED_PRIVATE", text: "Private project detail" }).mode).toBe("PRIVACY_RESTRICTED");
+    for (const disposition of ["MISSING", "MALFORMED"] as const) {
+      expect(projectPrivacy({ disposition, text: "Private project detail" }).mode).toBe("PRIVACY_RESTRICTED");
+    }
+    const omitted = orchestratePresence({ request: FIXTURES.modelRequest, memory: FIXTURES.memoryRecords, tool: { projectId: "onyx", cancelled: false, available: true } });
+    expect(omitted.privacyProjection.mode).toBe("PRIVACY_RESTRICTED");
+    expect(omitted).toMatchObject({ modelResponses: 0, memoryProjections: 0, toolCalls: 0, responseSuppressed: true, presentationSuppressed: true, speechSuppressed: true, authorizing: false });
+    expect(omitted.model.text).toBeNull();
+    expect(omitted.memoryProjection).toBeNull();
+    expect(omitted.toolProjection).toBeNull();
+    const malformed = orchestratePresence({ request: FIXTURES.modelRequest, privacy: { text: "detail" } });
+    expect(malformed.privacyProjection.mode).toBe("PRIVACY_RESTRICTED");
+    expect(malformed.responseSuppressed).toBe(true);
   });
 
   it("PPT-046 captions", () => {

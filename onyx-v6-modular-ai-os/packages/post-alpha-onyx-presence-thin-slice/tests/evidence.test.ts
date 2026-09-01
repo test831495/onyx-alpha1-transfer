@@ -117,11 +117,51 @@ describe("Presence evidence, traceability, and rollback", () => {
     expect(registry.every((row) => row.coverageStatus === "COVERED" && EXPECTED_PPT_IDS.includes(row.testId))).toBe(true);
     expect(registry.every((row) => row.validationResult === "PASS")).toBe(true);
     expect(new Set(registry.map((row) => row.family)).size).toBe(ACCEPTANCE_FAMILIES.length);
+    const withValidation = (families: readonly string[]) => createAcceptanceRegistry("source", "test", { ...validation, acceptanceFamilies: families } as never);
+    const duplicateMaskingOmission = [...ACCEPTANCE_FAMILIES.slice(0, 22), ACCEPTANCE_FAMILIES[0]!];
+    expect(duplicateMaskingOmission).toHaveLength(ACCEPTANCE_FAMILIES.length);
+    expect(() => withValidation(duplicateMaskingOmission)).toThrow(/acceptance famil/i);
+    expect(() => withValidation([...ACCEPTANCE_FAMILIES.slice(0, 21), ACCEPTANCE_FAMILIES[0]!, ACCEPTANCE_FAMILIES[1]!])).toThrow(/acceptance famil/i);
+    expect(() => withValidation([...ACCEPTANCE_FAMILIES].reverse())).toThrow(/acceptance famil/i);
+    expect(() => withValidation([...ACCEPTANCE_FAMILIES, ACCEPTANCE_FAMILIES[0]!])).toThrow(/acceptance famil/i);
+    expect(() => withValidation(ACCEPTANCE_FAMILIES.slice(0, 22))).toThrow(/acceptance famil/i);
+    expect(() => withValidation([...ACCEPTANCE_FAMILIES.slice(0, 22), "PA-PRESENCE-FAKE"])).toThrow(/acceptance famil/i);
   });
 
   it("PPT-059 package allowlist compliance", () => {
-    expect(validatePackagePaths(["onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice/src/index.ts"])).toBe(true);
+    const prefix = "onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice/";
+    expect(validatePackagePaths([`${prefix}src/index.ts`])).toBe(true);
+    expect(validatePackagePaths([`${prefix}evidence/pa-presence-01.json`, `${prefix}validation/validation-results.json`])).toBe(true);
     expect(() => validatePackagePaths(["onyx-v6-modular-ai-os/package.json"])).toThrow();
+    const rejected = [
+      `${prefix}../../../etc/passwd`,
+      `${prefix}./../../root.json`,
+      `${prefix}src/../../escape.ts`,
+      `${prefix}src//..//../x.ts`,
+      `${prefix}..\\..\\win.ts`,
+      `${prefix}src/..\\../mixed.ts`,
+      `${prefix}src\\index.ts`,
+      `${prefix}./src/index.ts`,
+      `${prefix}src//index.ts`,
+      `${prefix}`,
+      "onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice-evil/x.ts",
+      "/etc/passwd",
+      `/${prefix}src/index.ts`,
+      "",
+      `${prefix}src/\u0000index.ts`,
+    ];
+    for (const path of rejected) expect(() => validatePackagePaths([path])).toThrow();
+  });
+
+  it("validation runner reports a single final result to log, artifact, and exit status", () => {
+    const runner = readFileSync(join(packageRoot, "scripts/run-validation.mjs"), "utf8");
+    const logged = runner.match(/console\.log\(`Validation \$\{(\w+(?:\.\w+)*)\}/);
+    const exited = runner.match(/if \((\w+(?:\.\w+)*) !== "PASS"\) process\.exit\(1\)/);
+    const persisted = runner.match(/result: (\w+(?:\.\w+)*),/);
+    expect(logged?.[1]).toBeDefined();
+    expect(exited?.[1]).toBe(logged?.[1]);
+    expect(persisted?.[1]).toBe(logged?.[1]);
+    expect(runner).not.toMatch(/artifact\.result = "FAIL"/);
   });
 
 });

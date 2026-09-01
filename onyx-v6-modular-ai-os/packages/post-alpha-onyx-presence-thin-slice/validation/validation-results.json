@@ -1,7 +1,7 @@
 {
   "schemaVersion": "PA_PRESENCE_VALIDATION_RESULTS_V1",
   "workstream": "PA-PRESENCE-01",
-  "generatedAt": "2026-09-01T00:00:00.000Z",
+  "generatedAt": "2026-09-01T20:30:16.000Z",
   "trustedTime": "OWNER_SUPPLIED_GENERATED_AT",
   "result": "PASS",
   "environment": {
@@ -15,18 +15,18 @@
     {
       "command": "pnpm --filter @onyx/post-alpha-onyx-presence-thin-slice test",
       "exitCode": 0,
-      "startedAt": "2026-09-01T18:23:19.316Z",
-      "completedAt": "2026-09-01T18:23:22.769Z",
-      "stdoutSha256": "cf29533e4ef596c62fe2e8b9cf4cde0c5f626643e833a59c93cb781c870fe0b6",
+      "startedAt": "2026-09-01T20:30:17.629Z",
+      "completedAt": "2026-09-01T20:30:20.899Z",
+      "stdoutSha256": "182bbb585b3a146404db85299eef021773b974b1e6ad6bee8adb195343a6af8c",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdoutTail": "\n> @onyx/post-alpha-onyx-presence-thin-slice@0.1.0 test /workspaces/onyx-alpha1-transfer/onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice\n> vitest run\n\n\n RUN  v3.2.7 /workspaces/onyx-alpha1-transfer/onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice\n\n ✓ tests/evidence.test.ts (8 tests) 35ms\n ✓ tests/context-memory-tool.test.ts (10 tests) 10ms\n ✓ tests/lifecycle.test.ts (10 tests) 9ms\n ✓ tests/orchestration.test.ts (10 tests) 8ms\n ✓ tests/contracts.test.ts (9 tests) 10ms\n ✓ tests/presentation.test.ts (8 tests) 6ms\n ✓ tests/integration.test.ts (4 tests) 6ms\n ✓ tests/privacy-accessibility.test.ts (4 tests) 6ms\n\n Test Files  8 passed (8)\n      Tests  63 passed (63)\n   Start at  18:23:20\n   Duration  2.51s (transform 215ms, setup 0ms, collect 422ms, tests 90ms, environment 2ms, prepare 678ms)\n\n",
+      "stdoutTail": "\n> @onyx/post-alpha-onyx-presence-thin-slice@0.1.0 test /workspaces/onyx-alpha1-transfer/onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice\n> vitest run\n\n\n RUN  v3.2.7 /workspaces/onyx-alpha1-transfer/onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice\n\n ✓ tests/evidence.test.ts (9 tests) 27ms\n ✓ tests/orchestration.test.ts (10 tests) 11ms\n ✓ tests/lifecycle.test.ts (10 tests) 10ms\n ✓ tests/context-memory-tool.test.ts (10 tests) 10ms\n ✓ tests/contracts.test.ts (9 tests) 8ms\n ✓ tests/presentation.test.ts (8 tests) 8ms\n ✓ tests/privacy-accessibility.test.ts (4 tests) 9ms\n ✓ tests/integration.test.ts (4 tests) 5ms\n\n Test Files  8 passed (8)\n      Tests  64 passed (64)\n   Start at  20:30:18\n   Duration  2.38s (transform 215ms, setup 0ms, collect 480ms, tests 88ms, environment 2ms, prepare 606ms)\n\n",
       "stderrTail": ""
     },
     {
       "command": "pnpm --filter @onyx/post-alpha-onyx-presence-thin-slice typecheck",
       "exitCode": 0,
-      "startedAt": "2026-09-01T18:23:22.769Z",
-      "completedAt": "2026-09-01T18:23:25.249Z",
+      "startedAt": "2026-09-01T20:30:20.899Z",
+      "completedAt": "2026-09-01T20:30:23.428Z",
       "stdoutSha256": "d0949e2d7e8854a3ed241989e20a6ccd1f016d57c4abe2043f6081c476df74c4",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "stdoutTail": "\n> @onyx/post-alpha-onyx-presence-thin-slice@0.1.0 typecheck /workspaces/onyx-alpha1-transfer/onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice\n> tsc --noEmit\n\n",
@@ -514,8 +514,8 @@
     "acceptanceFamilies": 23
   },
   "hashes": {
-    "sourceFingerprint": "0d0c948d2d3259bb4398c81771d135faab34d2a00d9fc8b6bf52011511dac203",
-    "testFingerprint": "411d4d4449f7e1d5d66cfc58880a9e38dd6c4fcac844c6616542e1fc7d2c0e9f",
+    "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+    "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
     "packageJson": "57441ed00aadf1d341e0c86e88c20ea2cd84bc3ec7bd8fdafd9b426e22afbdab",
     "tsconfig": "f475fb9288cfbee913829c4f26a07348f2ac12099cd042926b8fa9a5f0e72fd8"
   },
