@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "PA_EVIDENCE_V1",
+  "workstreamId": "PA-ASSURE-01",
+  "lane": "ASSURANCE",
+  "lifecycle": "LOCALLY_VALIDATED",
+  "correctionGate": "POST_ALPHA_PARALLEL_FOUNDATIONS_ACCEPTANCE_COVERAGE_COMPLETION_AND_REVALIDATION_V2",
+  "correctionCyclesUsedThisGate": 1,
+  "correctionCyclesPriorGate": 1,
+  "candidate": {
+    "branch": "feature/post-alpha-parallel-foundations-v1",
+    "head": "d8c93d5a9cfccb2cb2fb9a0beef0961ed6ff2714",
+    "tree": "35173f8f2b9ede4171c559900199e1f86f8dd46d"
+  },
+  "allowedPath": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/**",
+  "allowedPathCompliance": true,
+  "commands": [
+    {
+      "profile": "package-tests",
+      "exitCode": 0,
+      "testsPassed": 14,
+      "testsFailed": 0
+    },
+    {
+      "profile": "package-typecheck",
+      "exitCode": 0
+    },
+    {
+      "profile": "mapped-cross-lane",
+      "exitCode": 0,
+      "testsPassed": 8
+    }
+  ],
+  "acceptanceCoverage": [
+    "PA-ASSURE-WORKSTREAM",
+    "PA-ASSURE-ACCEPTANCE",
+    "PA-ASSURE-EVIDENCE",
+    "PA-ASSURE-HASHING",
+    "PA-ASSURE-FRESHNESS",
+    "PA-ASSURE-DRIFT",
+    "PA-ASSURE-COMPATIBILITY",
+    "PA-ASSURE-BRIEFING",
+    "PA-ASSURE-LIFECYCLE",
+    "PA-ASSURE-INTEGRATION-ELIGIBILITY"
+  ],
+  "acceptanceTraceability": [
+    {
+      "workstreamId": "PA-ASSURE-01",
+      "familyId": "PA-ASSURE-COMPATIBILITY",
+      "requirement": "Mapped cross-lane compatibility remains external, non-authorizing, and test-only.",
+      "sourceContract": "projectIntegrationEligibility; reconcileWorkstreams",
+      "testFile": "tests/cross-lane.test.ts",
+      "testName": "keeps token-budget, registry, and sync corrections compatible without runtime activation",
+      "fixtureName": "keeps token-budget, registry, and sync corrections compatible without runtime activation",
+      "expectedResult": "newly covered product lane contracts remain compatible and all flags OFF",
+      "observedResult": "matches expected",
+      "evidenceArtifactId": "PA-ASSURE-01",
+      "sourceFingerprint": "5b773f32415508f8c32c8dac48d1923994a41aba0af6e2a6f5f93524c7406432",
+      "testFingerprint": "0d39c301ab1e1828e64442cf2c25c1ebca639eadb8bd72dbfeae6045396457bc",
+      "candidateHead": "d8c93d5a9cfccb2cb2fb9a0beef0961ed6ff2714",
+      "candidateTree": "35173f8f2b9ede4171c559900199e1f86f8dd46d",
+      "freshnessStatus": "CURRENT",
+      "coverageStatus": "COVERED",
+      "limitation": null
+    }
+  ],
+  "contractFingerprints": {
+    "src/index.ts": "5b773f32415508f8c32c8dac48d1923994a41aba0af6e2a6f5f93524c7406432",
+    "tests/assurance.test.ts": "e208406058b040e504e332a7c70ef67bd0b9872d73a1a5def4a2009ccff45e9a",
+    "tests/cross-lane.test.ts": "0d39c301ab1e1828e64442cf2c25c1ebca639eadb8bd72dbfeae6045396457bc"
+  },
+  "featureFlags": {
+    "operations_center_runtime": "OFF"
+  },
+  "freshness": "CURRENT",
+  "drift": [
+    "EXPECTED_ADDITIVE_DRIFT"
+  ],
+  "freshnessDependencies": [
+    "CANDIDATE_HEAD_AND_TREE",
+    "PROTECTED_SOURCE_AND_TEST_FINGERPRINTS",
+    "POLICY_VERSION",
+    "ACCEPTANCE_REGISTRY_VERSION",
+    "DEPENDENCY_LOCK_BINDING",
+    "TOOLCHAIN_AND_VALIDATION_PROFILE",
+    "ENVIRONMENT_PROFILE",
+    "FEATURE_FLAG_SNAPSHOT",
+    "DEPENDENT_EVIDENCE_IDS",
+    "GENERATION_TIMESTAMP",
+    "VALIDITY_WINDOW"
+  ],
+  "invalidationTriggers": [
+    "CANDIDATE_HEAD_OR_TREE_CHANGE",
+    "PROTECTED_HASH_CHANGE",
+    "POLICY_VERSION_CHANGE",
+    "ACCEPTANCE_REGISTRY_CHANGE",
+    "DEPENDENCY_LOCK_CHANGE",
+    "TOOLCHAIN_OR_PROFILE_CHANGE",
+    "ENVIRONMENT_PROFILE_CHANGE",
+    "FEATURE_FLAG_SNAPSHOT_CHANGE",
+    "CONFLICTING_CURRENT_EVIDENCE",
+    "SECURITY_INCIDENT",
+    "OWNER_SCOPE_CHANGE",
+    "SUPERSEDING_ACCEPTED_EVIDENCE"
+  ],
+  "policyVersion": "v2",
+  "acceptanceRegistryVersion": "post-alpha-acceptance-coverage-completion-v2",
+  "dependencyLockBinding": "UNCHANGED_BASELINE_NO_LOCKFILE_MODIFICATION",
+  "toolchainProfile": "node20+typescript5.9.2+vitest3.2.7",
+  "environmentProfile": "local-devcontainer-no-paid-services",
+  "generatedAt": "2026-09-01T00:00:00.000Z",
+  "limitations": [
+    "Assurance remains external verifier and non-authorizing; no product runtime import or PA-PRESENCE implementation."
+  ],
+  "rollbackReady": true,
+  "authorityExpanded": false,
+  "integrationEligibility": "INTEGRATION_ELIGIBLE"
+}

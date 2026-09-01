@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "PA_COMPATIBILITY_V1",
+  "correctionGate": "POST_ALPHA_PARALLEL_FOUNDATIONS_ACCEPTANCE_COVERAGE_COMPLETION_AND_REVALIDATION_V2",
+  "candidate": {
+    "branch": "feature/post-alpha-parallel-foundations-v1",
+    "head": "d8c93d5a9cfccb2cb2fb9a0beef0961ed6ff2714",
+    "tree": "35173f8f2b9ede4171c559900199e1f86f8dd46d"
+  },
+  "freshness": "CURRENT",
+  "blockingDrift": [],
+  "featureFlagsAllOff": true,
+  "authorityExpanded": false,
+  "projections": [
+    {
+      "source": "PA-GOV-01",
+      "target": "PA-INTEL-01",
+      "status": "COMPATIBLE",
+      "basis": "Closed governance vocabularies consumed structurally; protected decisions require Rahul; recommendations are advisory; no authorization creation, circular dependency, or PA-ASSURE runtime dependency."
+    },
+    {
+      "source": "PA-GOV-01",
+      "target": "PA-AVATAR-01",
+      "status": "COMPATIBLE",
+      "basis": "Presentation does not imply approval; avatar identity and renderer selection do not determine authority."
+    },
+    {
+      "source": "PA-INTEL-01",
+      "target": "PA-AVATAR-01",
+      "status": "COMPATIBLE",
+      "basis": "Closed semantic vocabulary; unknown values fail closed; renderer-independent meaning; Presentation Envelope excludes raw memory, secrets, credentials, tokens, and unrestricted evidence."
+    },
+    {
+      "source": "PRODUCT_LANES",
+      "target": "PA-ASSURE-01",
+      "status": "COMPATIBLE",
+      "basis": "Assurance remains external verifier; no product source imports PA-ASSURE runtime behavior; assurance is non-authorizing."
+    },
+    {
+      "source": "ALL_FOUNDATIONS",
+      "target": "PA-PRESENCE-01",
+      "status": "FUTURE_REVIEW_COMPATIBLE_NOT_AUTHORIZED",
+      "basis": "No PA-PRESENCE package, implementation, file, flag, composition root, or runtime was created."
+    }
+  ],
+  "acceptanceFamilyGate": {
+    "rule": "Integration eligibility requires COVERED for every family in implemented scope",
+    "PA-GOV-01": {
+      "coveredFamilies": 13,
+      "partiallyCoveredFamilies": 0,
+      "notCoveredFamilies": 0,
+      "gateResult": "MET"
+    },
+    "PA-INTEL-01": {
+      "coveredFamilies": 13,
+      "partiallyCoveredFamilies": 0,
+      "notCoveredFamilies": 0,
+      "gateResult": "MET"
+    },
+    "PA-AVATAR-01": {
+      "coveredFamilies": 14,
+      "partiallyCoveredFamilies": 0,
+      "notCoveredFamilies": 0,
+      "gateResult": "MET"
+    }
+  },
+  "result": "CROSS_LANE_INTEGRATION_ELIGIBLE"
+}

@@ -1,0 +1,138 @@
+{
+  "schemaVersion": "PA_EVIDENCE_MANIFEST_V1",
+  "correctionGate": "POST_ALPHA_PARALLEL_FOUNDATIONS_ACCEPTANCE_COVERAGE_COMPLETION_AND_REVALIDATION_V2",
+  "candidate": {
+    "branch": "feature/post-alpha-parallel-foundations-v1",
+    "head": "d8c93d5a9cfccb2cb2fb9a0beef0961ed6ff2714",
+    "tree": "35173f8f2b9ede4171c559900199e1f86f8dd46d"
+  },
+  "generatedAt": "2026-09-01T00:00:00.000Z",
+  "startingCandidatePathCount": 28,
+  "finalCandidatePathCount": 43,
+  "candidatePathsScopedToAllowlist": true,
+  "outsideAllowlistPaths": [],
+  "stagedPaths": [],
+  "pathsCreatedThisGate": [
+    "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/acceptance-reconciliation.json",
+    "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/coverage-report.json",
+    "onyx-v6-modular-ai-os/packages/post-alpha-governance-foundation/evidence/pa-gov-01.json.sha256",
+    "onyx-v6-modular-ai-os/packages/post-alpha-intelligence-foundation/evidence/pa-intel-01.json.sha256",
+    "onyx-v6-modular-ai-os/packages/post-alpha-avatar-foundation/evidence/pa-avatar-01.json.sha256",
+    "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/acceptance-reconciliation.json.sha256",
+    "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/coverage-report.json.sha256",
+    "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/contract-fingerprints.json.sha256",
+    "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/cross-lane-compatibility.json.sha256",
+    "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/drift-report.json.sha256",
+    "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/feature-flag-ownership.json.sha256",
+    "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/pa-assure-01.json.sha256",
+    "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/owner-briefing.json.sha256",
+    "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/evidence-manifest.json.sha256"
+  ],
+  "pathsModifiedThisGate": [
+    "onyx-v6-modular-ai-os/packages/post-alpha-governance-foundation/evidence/pa-gov-01.json",
+    "onyx-v6-modular-ai-os/packages/post-alpha-intelligence-foundation/evidence/pa-intel-01.json",
+    "onyx-v6-modular-ai-os/packages/post-alpha-avatar-foundation/evidence/pa-avatar-01.json",
+    "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/contract-fingerprints.json",
+    "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/cross-lane-compatibility.json",
+    "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/drift-report.json",
+    "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/feature-flag-ownership.json",
+    "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/pa-assure-01.json",
+    "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/owner-briefing.json"
+  ],
+  "pathsDeletedThisGate": [],
+  "artifacts": [
+    {
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-governance-foundation/evidence/pa-gov-01.json",
+      "sha256": "4793f37494746cb1312888389fa192a4756f67bc04eec1631a91307a6f588a26",
+      "sha256Sidecar": "onyx-v6-modular-ai-os/packages/post-alpha-governance-foundation/evidence/pa-gov-01.json.sha256"
+    },
+    {
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-intelligence-foundation/evidence/pa-intel-01.json",
+      "sha256": "1c4081d31e65c6a00e3bc03e2cbfa15129f707fb2161859ae22d48ba587edf51",
+      "sha256Sidecar": "onyx-v6-modular-ai-os/packages/post-alpha-intelligence-foundation/evidence/pa-intel-01.json.sha256"
+    },
+    {
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-avatar-foundation/evidence/pa-avatar-01.json",
+      "sha256": "c10b9b4548508058a212d848ca7768781433dfe2220512b037a6091d669b33a1",
+      "sha256Sidecar": "onyx-v6-modular-ai-os/packages/post-alpha-avatar-foundation/evidence/pa-avatar-01.json.sha256"
+    },
+    {
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/acceptance-reconciliation.json",
+      "sha256": "3b7826888985eddd5386d897aa65739a2a21cccde5d375e8988ffdb248be9174",
+      "sha256Sidecar": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/acceptance-reconciliation.json.sha256"
+    },
+    {
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/coverage-report.json",
+      "sha256": "4d5552a41d3b84110a67d3882eed628be7c76bbe389a4bb6c81f89393d2c2ed9",
+      "sha256Sidecar": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/coverage-report.json.sha256"
+    },
+    {
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/contract-fingerprints.json",
+      "sha256": "4a960aba560dc75a6926a07a264d78c4855b2e10fa497aea0c02161f2ccd7f90",
+      "sha256Sidecar": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/contract-fingerprints.json.sha256"
+    },
+    {
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/cross-lane-compatibility.json",
+      "sha256": "e3ab2d416d0405df15577bf962b2898cc4d20f8792f2eb7a8b68691b6238d4bf",
+      "sha256Sidecar": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/cross-lane-compatibility.json.sha256"
+    },
+    {
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/drift-report.json",
+      "sha256": "518491d7b785d5787d44afb531468b1b9d7eef50b486292ee46c1f0c4862f5b2",
+      "sha256Sidecar": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/drift-report.json.sha256"
+    },
+    {
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/feature-flag-ownership.json",
+      "sha256": "46e3961e471893e1e636470ca521b1a30c6ae50d6509b50403813d5762ac3b89",
+      "sha256Sidecar": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/feature-flag-ownership.json.sha256"
+    },
+    {
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/pa-assure-01.json",
+      "sha256": "bd0692d2500093ee96469127a7d7341dc7b87520a8c6352d8f1d19d8dc4f17c3",
+      "sha256Sidecar": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/pa-assure-01.json.sha256"
+    },
+    {
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/owner-briefing.json",
+        "sha256": "27b24025362799af7e56313f9d71c9953a61a0aa723844265c52e28a08f54e85",
+      "sha256Sidecar": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/owner-briefing.json.sha256"
+    }
+  ],
+  "validationResults": [
+    {
+      "command": "npm test && npm run typecheck",
+      "cwd": "onyx-v6-modular-ai-os/packages/post-alpha-governance-foundation",
+      "exitCode": 0,
+      "testsPassed": 8,
+      "testsFailed": 0
+    },
+    {
+      "command": "npm test && npm run typecheck",
+      "cwd": "onyx-v6-modular-ai-os/packages/post-alpha-intelligence-foundation",
+      "exitCode": 0,
+      "testsPassed": 11,
+      "testsFailed": 0
+    },
+    {
+      "command": "npm test && npm run typecheck",
+      "cwd": "onyx-v6-modular-ai-os/packages/post-alpha-avatar-foundation",
+      "exitCode": 0,
+      "testsPassed": 9,
+      "testsFailed": 0
+    },
+    {
+      "command": "npm test && npm run typecheck",
+      "cwd": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation",
+      "exitCode": 0,
+      "testsPassed": 14,
+      "testsFailed": 0
+    }
+  ],
+  "correctionCyclesUsedThisGate": {
+    "PA-GOV-01": 1,
+    "PA-INTEL-01": 1,
+    "PA-AVATAR-01": 1,
+    "PA-ASSURE-01": 1
+  },
+  "result": "ALL_IMPLEMENTED_ACCEPTANCE_FAMILIES_COVERED_CROSS_LANE_INTEGRATION_ELIGIBLE",
+  "sha256Sidecar": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/evidence/evidence-manifest.json.sha256"
+}

@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "PA_FEATURE_FLAG_OWNERSHIP_V1",
+  "correctionGate": "POST_ALPHA_PARALLEL_FOUNDATIONS_ACCEPTANCE_COVERAGE_COMPLETION_AND_REVALIDATION_V2",
+  "candidate": {
+    "branch": "feature/post-alpha-parallel-foundations-v1",
+    "head": "d8c93d5a9cfccb2cb2fb9a0beef0961ed6ff2714",
+    "tree": "35173f8f2b9ede4171c559900199e1f86f8dd46d"
+  },
+  "generatedAt": "2026-09-01T00:00:00.000Z",
+  "flags": {
+    "PA-GOV-01": {
+      "owner_override_runtime": "OFF"
+    },
+    "PA-INTEL-01": {
+      "conversation_director": "OFF",
+      "context_envelope_builder": "OFF",
+      "evidence_resolver": "OFF",
+      "conflict_engine": "OFF",
+      "memory_runtime": "OFF",
+      "model_gateway_v2": "OFF",
+      "nova_runtime": "OFF"
+    },
+    "PA-AVATAR-01": {
+      "avatar_runtime": "OFF",
+      "tv_presence_runtime": "OFF",
+      "ambient_world_engine": "OFF",
+      "threejs_adapter": "OFF",
+      "renderer_adapter_v2": "OFF"
+    },
+    "PA-ASSURE-01": {
+      "operations_center_runtime": "OFF"
+    }
+  },
+  "ownershipPreserved": true,
+  "allFlagsOff": true,
+  "paPresenceOwnsFlags": false,
+  "result": "PASS"
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "PA_DRIFT_REPORT_V1",
+  "correctionGate": "POST_ALPHA_PARALLEL_FOUNDATIONS_ACCEPTANCE_COVERAGE_COMPLETION_AND_REVALIDATION_V2",
+  "candidate": {
+    "branch": "feature/post-alpha-parallel-foundations-v1",
+    "head": "d8c93d5a9cfccb2cb2fb9a0beef0961ed6ff2714",
+    "tree": "35173f8f2b9ede4171c559900199e1f86f8dd46d"
+  },
+  "generatedAt": "2026-09-01T00:00:00.000Z",
+  "allowedVocabulary": [
+    "NO_DRIFT",
+    "EXPECTED_ADDITIVE_DRIFT",
+    "ACCEPTED_VERSIONED_CHANGE",
+    "POTENTIAL_DRIFT",
+    "MATERIAL_DRIFT",
+    "BREAKING_DRIFT",
+    "AUTHORITY_DRIFT",
+    "SECURITY_DRIFT",
+    "EXPERIENCE_DRIFT",
+    "NOT_ASSESSABLE"
+  ],
+  "laneDrift": {
+    "PA-GOV-01": "EXPECTED_ADDITIVE_DRIFT",
+    "PA-INTEL-01": "EXPECTED_ADDITIVE_DRIFT",
+    "PA-AVATAR-01": "EXPECTED_ADDITIVE_DRIFT"
+  },
+  "blockingDrift": [],
+  "adjudication": "EXPECTED_ADDITIVE_DRIFT_ACCEPTED_AS_NON_AUTHORIZING_IN_SCOPE",
+  "result": "NO_BLOCKING_DRIFT"
+}
