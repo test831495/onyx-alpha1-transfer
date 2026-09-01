@@ -502,6 +502,58 @@ importers:
         specifier: workspace:*
         version: link:../contracts
 
+  packages/post-alpha-assurance-foundation:
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.7
+        version: 3.2.7(@types/node@26.2.0)(tsx@4.23.12)
+
+  packages/post-alpha-avatar-foundation:
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.7
+        version: 3.2.7(@types/node@26.2.0)(tsx@4.23.12)
+
+  packages/post-alpha-governance-foundation:
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.7
+        version: 3.2.7(@types/node@26.2.0)(tsx@4.23.12)
+
+  packages/post-alpha-intelligence-foundation:
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.7
+        version: 3.2.7(@types/node@26.2.0)(tsx@4.23.12)
+
+  packages/post-alpha-onyx-presence-thin-slice:
+    dependencies:
+      '@onyx/post-alpha-avatar-foundation':
+        specifier: workspace:*
+        version: link:../post-alpha-avatar-foundation
+      '@onyx/post-alpha-intelligence-foundation':
+        specifier: workspace:*
+        version: link:../post-alpha-intelligence-foundation
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.7
+        version: 3.2.7(@types/node@26.2.0)(tsx@4.23.12)
+
   packages/privacy:
     dependencies:
       '@onyx/contracts':

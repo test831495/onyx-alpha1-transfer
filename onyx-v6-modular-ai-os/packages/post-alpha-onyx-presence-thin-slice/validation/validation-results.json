@@ -1,0 +1,536 @@
+{
+  "schemaVersion": "PA_PRESENCE_VALIDATION_RESULTS_V1",
+  "workstream": "PA-PRESENCE-01",
+  "generatedAt": "2026-09-01T20:30:16.000Z",
+  "trustedTime": "OWNER_SUPPLIED_GENERATED_AT",
+  "result": "PASS",
+  "environment": {
+    "nodeVersion": "v24.14.0",
+    "platform": "linux",
+    "osRelease": "6.8.0-1052-azure",
+    "architecture": "x64",
+    "packageManager": "pnpm workspace"
+  },
+  "commands": [
+    {
+      "command": "pnpm --filter @onyx/post-alpha-onyx-presence-thin-slice test",
+      "exitCode": 0,
+      "startedAt": "2026-09-01T20:30:17.629Z",
+      "completedAt": "2026-09-01T20:30:20.899Z",
+      "stdoutSha256": "182bbb585b3a146404db85299eef021773b974b1e6ad6bee8adb195343a6af8c",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutTail": "\n> @onyx/post-alpha-onyx-presence-thin-slice@0.1.0 test /workspaces/onyx-alpha1-transfer/onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice\n> vitest run\n\n\n RUN  v3.2.7 /workspaces/onyx-alpha1-transfer/onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice\n\n ✓ tests/evidence.test.ts (9 tests) 27ms\n ✓ tests/orchestration.test.ts (10 tests) 11ms\n ✓ tests/lifecycle.test.ts (10 tests) 10ms\n ✓ tests/context-memory-tool.test.ts (10 tests) 10ms\n ✓ tests/contracts.test.ts (9 tests) 8ms\n ✓ tests/presentation.test.ts (8 tests) 8ms\n ✓ tests/privacy-accessibility.test.ts (4 tests) 9ms\n ✓ tests/integration.test.ts (4 tests) 5ms\n\n Test Files  8 passed (8)\n      Tests  64 passed (64)\n   Start at  20:30:18\n   Duration  2.38s (transform 215ms, setup 0ms, collect 480ms, tests 88ms, environment 2ms, prepare 606ms)\n\n",
+      "stderrTail": ""
+    },
+    {
+      "command": "pnpm --filter @onyx/post-alpha-onyx-presence-thin-slice typecheck",
+      "exitCode": 0,
+      "startedAt": "2026-09-01T20:30:20.899Z",
+      "completedAt": "2026-09-01T20:30:23.428Z",
+      "stdoutSha256": "d0949e2d7e8854a3ed241989e20a6ccd1f016d57c4abe2043f6081c476df74c4",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutTail": "\n> @onyx/post-alpha-onyx-presence-thin-slice@0.1.0 typecheck /workspaces/onyx-alpha1-transfer/onyx-v6-modular-ai-os/packages/post-alpha-onyx-presence-thin-slice\n> tsc --noEmit\n\n",
+      "stderrTail": ""
+    }
+  ],
+  "ppt": {
+    "expected": [
+      "PPT-001",
+      "PPT-002",
+      "PPT-003",
+      "PPT-004",
+      "PPT-005",
+      "PPT-006",
+      "PPT-007",
+      "PPT-008",
+      "PPT-009",
+      "PPT-010",
+      "PPT-011",
+      "PPT-012",
+      "PPT-013",
+      "PPT-014",
+      "PPT-015",
+      "PPT-016",
+      "PPT-017",
+      "PPT-018",
+      "PPT-019",
+      "PPT-020",
+      "PPT-021",
+      "PPT-022",
+      "PPT-023",
+      "PPT-024",
+      "PPT-025",
+      "PPT-026",
+      "PPT-027",
+      "PPT-028",
+      "PPT-029",
+      "PPT-030",
+      "PPT-031",
+      "PPT-032",
+      "PPT-033",
+      "PPT-034",
+      "PPT-035",
+      "PPT-036",
+      "PPT-037",
+      "PPT-038",
+      "PPT-039",
+      "PPT-040",
+      "PPT-041",
+      "PPT-042",
+      "PPT-043",
+      "PPT-044",
+      "PPT-045",
+      "PPT-046",
+      "PPT-047",
+      "PPT-048",
+      "PPT-049",
+      "PPT-050",
+      "PPT-051",
+      "PPT-052",
+      "PPT-053",
+      "PPT-054",
+      "PPT-055",
+      "PPT-056",
+      "PPT-057",
+      "PPT-058",
+      "PPT-059",
+      "PPT-060",
+      "PPT-061",
+      "PPT-062",
+      "PPT-063"
+    ],
+    "discovered": [
+      {
+        "id": "PPT-001",
+        "name": "PPT-001 schema validation",
+        "file": "tests/contracts.test.ts"
+      },
+      {
+        "id": "PPT-002",
+        "name": "PPT-002 closed lifecycle vocabulary",
+        "file": "tests/contracts.test.ts"
+      },
+      {
+        "id": "PPT-003",
+        "name": "PPT-003 closed flag vocabulary",
+        "file": "tests/contracts.test.ts"
+      },
+      {
+        "id": "PPT-004",
+        "name": "PPT-004 dependency allowlist",
+        "file": "tests/contracts.test.ts"
+      },
+      {
+        "id": "PPT-005",
+        "name": "PPT-005 Owner authorization boundary",
+        "file": "tests/contracts.test.ts"
+      },
+      {
+        "id": "PPT-006",
+        "name": "PPT-006 inactive by default",
+        "file": "tests/contracts.test.ts"
+      },
+      {
+        "id": "PPT-007",
+        "name": "PPT-007 immutable contracts",
+        "file": "tests/contracts.test.ts"
+      },
+      {
+        "id": "PPT-008",
+        "name": "PPT-008 deterministic projection",
+        "file": "tests/contracts.test.ts"
+      },
+      {
+        "id": "PPT-009",
+        "name": "PPT-009 all-state non-authority",
+        "file": "tests/contracts.test.ts"
+      },
+      {
+        "id": "PPT-010",
+        "name": "PPT-010 baseline lifecycle flow",
+        "file": "tests/lifecycle.test.ts"
+      },
+      {
+        "id": "PPT-011",
+        "name": "PPT-011 invalid transitions reject",
+        "file": "tests/lifecycle.test.ts"
+      },
+      {
+        "id": "PPT-012",
+        "name": "PPT-012 STOPPED terminal behavior",
+        "file": "tests/lifecycle.test.ts"
+      },
+      {
+        "id": "PPT-013",
+        "name": "PPT-013 cancellation",
+        "file": "tests/lifecycle.test.ts"
+      },
+      {
+        "id": "PPT-014",
+        "name": "PPT-014 interruption",
+        "file": "tests/lifecycle.test.ts"
+      },
+      {
+        "id": "PPT-015",
+        "name": "PPT-015 timeout recovery",
+        "file": "tests/lifecycle.test.ts"
+      },
+      {
+        "id": "PPT-016",
+        "name": "PPT-016 model failure recovery",
+        "file": "tests/lifecycle.test.ts"
+      },
+      {
+        "id": "PPT-017",
+        "name": "PPT-017 tool failure recovery",
+        "file": "tests/lifecycle.test.ts"
+      },
+      {
+        "id": "PPT-018",
+        "name": "PPT-018 renderer/TV failure recovery",
+        "file": "tests/lifecycle.test.ts"
+      },
+      {
+        "id": "PPT-019",
+        "name": "PPT-019 privacy failure flow",
+        "file": "tests/lifecycle.test.ts"
+      },
+      {
+        "id": "PPT-020",
+        "name": "PPT-020 bounded Context Envelope",
+        "file": "tests/context-memory-tool.test.ts"
+      },
+      {
+        "id": "PPT-021",
+        "name": "PPT-021 token budget valid path",
+        "file": "tests/context-memory-tool.test.ts"
+      },
+      {
+        "id": "PPT-022",
+        "name": "PPT-022 token budget invalid path",
+        "file": "tests/context-memory-tool.test.ts"
+      },
+      {
+        "id": "PPT-023",
+        "name": "PPT-023 evidence current path",
+        "file": "tests/context-memory-tool.test.ts"
+      },
+      {
+        "id": "PPT-024",
+        "name": "PPT-024 evidence missing path",
+        "file": "tests/context-memory-tool.test.ts"
+      },
+      {
+        "id": "PPT-025",
+        "name": "PPT-025 evidence stale/conflicting path",
+        "file": "tests/context-memory-tool.test.ts"
+      },
+      {
+        "id": "PPT-026",
+        "name": "PPT-026 one-memory maximum",
+        "file": "tests/context-memory-tool.test.ts"
+      },
+      {
+        "id": "PPT-027",
+        "name": "PPT-027 no memory persistence/admission",
+        "file": "tests/context-memory-tool.test.ts"
+      },
+      {
+        "id": "PPT-028",
+        "name": "PPT-028 read-only tool success",
+        "file": "tests/context-memory-tool.test.ts"
+      },
+      {
+        "id": "PPT-029",
+        "name": "PPT-029 read-only tool unavailable/NOT_ASSESSABLE",
+        "file": "tests/context-memory-tool.test.ts"
+      },
+      {
+        "id": "PPT-030",
+        "name": "PPT-030 ONYX role",
+        "file": "tests/orchestration.test.ts"
+      },
+      {
+        "id": "PPT-031",
+        "name": "PPT-031 NOVA inactive",
+        "file": "tests/orchestration.test.ts"
+      },
+      {
+        "id": "PPT-032",
+        "name": "PPT-032 Rahul sole authority",
+        "file": "tests/orchestration.test.ts"
+      },
+      {
+        "id": "PPT-033",
+        "name": "PPT-033 model adapter deterministic",
+        "file": "tests/orchestration.test.ts"
+      },
+      {
+        "id": "PPT-034",
+        "name": "PPT-034 model cancellation",
+        "file": "tests/orchestration.test.ts"
+      },
+      {
+        "id": "PPT-035",
+        "name": "PPT-035 no model/tool authorization",
+        "file": "tests/orchestration.test.ts"
+      },
+      {
+        "id": "PPT-036",
+        "name": "PPT-036 no network/provider dependency",
+        "file": "tests/orchestration.test.ts"
+      },
+      {
+        "id": "PPT-037",
+        "name": "PPT-037 no credentials/secrets",
+        "file": "tests/orchestration.test.ts"
+      },
+      {
+        "id": "PPT-038",
+        "name": "PPT-038 text input baseline",
+        "file": "tests/orchestration.test.ts"
+      },
+      {
+        "id": "PPT-039",
+        "name": "PPT-039 synthetic push-to-talk contract only",
+        "file": "tests/orchestration.test.ts"
+      },
+      {
+        "id": "PPT-040",
+        "name": "PPT-040 ONYX presentation fixture",
+        "file": "tests/presentation.test.ts"
+      },
+      {
+        "id": "PPT-041",
+        "name": "PPT-041 semantic state projection",
+        "file": "tests/presentation.test.ts"
+      },
+      {
+        "id": "PPT-042",
+        "name": "PPT-042 desktop projection",
+        "file": "tests/presentation.test.ts"
+      },
+      {
+        "id": "PPT-043",
+        "name": "PPT-043 TV first-class inactive projection",
+        "file": "tests/presentation.test.ts"
+      },
+      {
+        "id": "PPT-044",
+        "name": "PPT-044 canonical identity desktop/TV",
+        "file": "tests/presentation.test.ts"
+      },
+      {
+        "id": "PPT-045",
+        "name": "PPT-045 shared-room privacy",
+        "file": "tests/privacy-accessibility.test.ts"
+      },
+      {
+        "id": "PPT-046",
+        "name": "PPT-046 captions",
+        "file": "tests/privacy-accessibility.test.ts"
+      },
+      {
+        "id": "PPT-047",
+        "name": "PPT-047 reduced motion equivalence",
+        "file": "tests/privacy-accessibility.test.ts"
+      },
+      {
+        "id": "PPT-048",
+        "name": "PPT-048 high contrast/text fallback",
+        "file": "tests/privacy-accessibility.test.ts"
+      },
+      {
+        "id": "PPT-049",
+        "name": "PPT-049 renderer replacement invariant",
+        "file": "tests/presentation.test.ts"
+      },
+      {
+        "id": "PPT-050",
+        "name": "PPT-050 ambient world presentation-only",
+        "file": "tests/presentation.test.ts"
+      },
+      {
+        "id": "PPT-051",
+        "name": "PPT-051 ambient world reduced-motion fallback",
+        "file": "tests/presentation.test.ts"
+      },
+      {
+        "id": "PPT-052",
+        "name": "PPT-052 Presence flag OFF",
+        "file": "tests/evidence.test.ts"
+      },
+      {
+        "id": "PPT-053",
+        "name": "PPT-053 predecessor flags remain OFF",
+        "file": "tests/evidence.test.ts"
+      },
+      {
+        "id": "PPT-054",
+        "name": "PPT-054 rollback projection",
+        "file": "tests/evidence.test.ts"
+      },
+      {
+        "id": "PPT-055",
+        "name": "PPT-055 recovery projections",
+        "file": "tests/evidence.test.ts"
+      },
+      {
+        "id": "PPT-056",
+        "name": "PPT-056 evidence deterministic generation",
+        "file": "tests/evidence.test.ts"
+      },
+      {
+        "id": "PPT-057",
+        "name": "PPT-057 manifest nonrecursive hashing",
+        "file": "tests/evidence.test.ts"
+      },
+      {
+        "id": "PPT-058",
+        "name": "PPT-058 acceptance traceability complete",
+        "file": "tests/evidence.test.ts"
+      },
+      {
+        "id": "PPT-059",
+        "name": "PPT-059 package allowlist compliance",
+        "file": "tests/evidence.test.ts"
+      },
+      {
+        "id": "PPT-060",
+        "name": "PPT-060 predecessor foundation regressions",
+        "file": "tests/integration.test.ts"
+      },
+      {
+        "id": "PPT-061",
+        "name": "PPT-061 all Post-Alpha package regressions",
+        "file": "tests/integration.test.ts"
+      },
+      {
+        "id": "PPT-062",
+        "name": "PPT-062 monorepo typecheck and Factory regression",
+        "file": "tests/integration.test.ts"
+      },
+      {
+        "id": "PPT-063",
+        "name": "PPT-063 no runtime activation, Git action, PA-PRESENCE external composition, or paid provider",
+        "file": "tests/integration.test.ts"
+      }
+    ],
+    "passed": [
+      "PPT-001",
+      "PPT-002",
+      "PPT-003",
+      "PPT-004",
+      "PPT-005",
+      "PPT-006",
+      "PPT-007",
+      "PPT-008",
+      "PPT-009",
+      "PPT-010",
+      "PPT-011",
+      "PPT-012",
+      "PPT-013",
+      "PPT-014",
+      "PPT-015",
+      "PPT-016",
+      "PPT-017",
+      "PPT-018",
+      "PPT-019",
+      "PPT-020",
+      "PPT-021",
+      "PPT-022",
+      "PPT-023",
+      "PPT-024",
+      "PPT-025",
+      "PPT-026",
+      "PPT-027",
+      "PPT-028",
+      "PPT-029",
+      "PPT-030",
+      "PPT-031",
+      "PPT-032",
+      "PPT-033",
+      "PPT-034",
+      "PPT-035",
+      "PPT-036",
+      "PPT-037",
+      "PPT-038",
+      "PPT-039",
+      "PPT-040",
+      "PPT-041",
+      "PPT-042",
+      "PPT-043",
+      "PPT-044",
+      "PPT-045",
+      "PPT-046",
+      "PPT-047",
+      "PPT-048",
+      "PPT-049",
+      "PPT-050",
+      "PPT-051",
+      "PPT-052",
+      "PPT-053",
+      "PPT-054",
+      "PPT-055",
+      "PPT-056",
+      "PPT-057",
+      "PPT-058",
+      "PPT-059",
+      "PPT-060",
+      "PPT-061",
+      "PPT-062",
+      "PPT-063"
+    ],
+    "exact": true,
+    "count": 63
+  },
+  "acceptanceFamilies": [
+    "PA-PRESENCE-SCOPE",
+    "PA-PRESENCE-DEPENDENCY",
+    "PA-PRESENCE-LIFECYCLE",
+    "PA-PRESENCE-ONYX",
+    "PA-PRESENCE-INPUT",
+    "PA-PRESENCE-CONTEXT",
+    "PA-PRESENCE-EVIDENCE",
+    "PA-PRESENCE-MEMORY",
+    "PA-PRESENCE-TOOL",
+    "PA-PRESENCE-PRESENTATION",
+    "PA-PRESENCE-AVATAR",
+    "PA-PRESENCE-AMBIENT",
+    "PA-PRESENCE-DESKTOP",
+    "PA-PRESENCE-TV",
+    "PA-PRESENCE-PRIVACY",
+    "PA-PRESENCE-ACCESSIBILITY",
+    "PA-PRESENCE-INTERRUPTION",
+    "PA-PRESENCE-RECOVERY",
+    "PA-PRESENCE-FLAG",
+    "PA-PRESENCE-ROLLBACK",
+    "PA-PRESENCE-NONAUTHORITY",
+    "PA-PRESENCE-EVIDENCE-GENERATION",
+    "PA-PRESENCE-INTEGRATION"
+  ],
+  "counts": {
+    "presencePpt": 63,
+    "acceptanceFamilies": 23
+  },
+  "hashes": {
+    "sourceFingerprint": "65c96ebc2bf6e8daf3cf4a235fcc63bd9b9e7bd81d6ca4cc34895f31f3340d46",
+    "testFingerprint": "8035bf97971f850e1df6bae7d46feaa8d9c6c0598d797ca3db57a619b216880e",
+    "packageJson": "57441ed00aadf1d341e0c86e88c20ea2cd84bc3ec7bd8fdafd9b426e22afbdab",
+    "tsconfig": "f475fb9288cfbee913829c4f26a07348f2ac12099cd042926b8fa9a5f0e72fd8"
+  },
+  "checks": {
+    "packageAllowlist": true,
+    "dependencyAllowlist": true,
+    "runtimeActivation": false,
+    "runtimeActivationScanPassed": true,
+    "networkAccess": false,
+    "networkScanPassed": true,
+    "credentialsUsed": false,
+    "secretScanPassed": true,
+    "privacyFailClosedCovered": true,
+    "externalMutation": false,
+    "featureFlagPromotion": false
+  },
+  "authorizing": false
+}

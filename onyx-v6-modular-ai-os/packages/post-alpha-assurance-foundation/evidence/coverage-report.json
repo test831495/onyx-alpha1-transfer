@@ -1,0 +1,220 @@
+{
+  "schemaVersion": "PA_COVERAGE_REPORT_V1",
+  "correctionGate": "POST_ALPHA_PARALLEL_FOUNDATIONS_ACCEPTANCE_COVERAGE_COMPLETION_AND_REVALIDATION_V2",
+  "candidate": {
+    "branch": "feature/post-alpha-parallel-foundations-v1",
+    "head": "d8c93d5a9cfccb2cb2fb9a0beef0961ed6ff2714",
+    "tree": "35173f8f2b9ede4171c559900199e1f86f8dd46d"
+  },
+  "generatedAt": "2026-09-01T00:00:00.000Z",
+  "coverageByLane": {
+    "PA-GOV-01": [
+      {
+        "familyId": "PA-GOV-AUTHORITY",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-GOV-01"
+      },
+      {
+        "familyId": "PA-GOV-DECISION",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-GOV-01"
+      },
+      {
+        "familyId": "PA-GOV-RISK",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-GOV-01"
+      },
+      {
+        "familyId": "PA-GOV-OVERRIDE",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-GOV-01"
+      },
+      {
+        "familyId": "PA-GOV-OVERRIDE-LIFECYCLE",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-GOV-01"
+      },
+      {
+        "familyId": "PA-GOV-CONSEQUENCE",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-GOV-01"
+      },
+      {
+        "familyId": "PA-GOV-CONFLICT",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-GOV-01"
+      },
+      {
+        "familyId": "PA-GOV-CONCURRENCY",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-GOV-01"
+      },
+      {
+        "familyId": "PA-GOV-SESSION",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-GOV-01"
+      },
+      {
+        "familyId": "PA-GOV-LEASE",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-GOV-01"
+      },
+      {
+        "familyId": "PA-GOV-AUDIT",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-GOV-01"
+      },
+      {
+        "familyId": "PA-GOV-FRESHNESS",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-GOV-01"
+      },
+      {
+        "familyId": "PA-GOV-TRUTH-PRESERVATION",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-GOV-01"
+      }
+    ],
+    "PA-INTEL-01": [
+      {
+        "familyId": "PA-INTEL-CHARACTER",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-ASSURE-01"
+      },
+      {
+        "familyId": "PA-INTEL-MODEL-GATEWAY",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-INTEL-01"
+      },
+      {
+        "familyId": "PA-INTEL-ROUTING",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-INTEL-01"
+      },
+      {
+        "familyId": "PA-INTEL-CONTEXT",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-INTEL-01"
+      },
+      {
+        "familyId": "PA-INTEL-TOKEN-BUDGET",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-INTEL-01"
+      },
+      {
+        "familyId": "PA-INTEL-EVIDENCE",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-INTEL-01"
+      },
+      {
+        "familyId": "PA-INTEL-CONFLICT",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-INTEL-01"
+      },
+      {
+        "familyId": "PA-INTEL-MEMORY",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-INTEL-01"
+      },
+      {
+        "familyId": "PA-INTEL-INTERRUPTION",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-INTEL-01"
+      },
+      {
+        "familyId": "PA-INTEL-SEMANTIC-EVENT",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-INTEL-01"
+      },
+      {
+        "familyId": "PA-INTEL-GOVERNANCE-CONSUMPTION",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-INTEL-01"
+      },
+      {
+        "familyId": "PA-INTEL-FRESHNESS",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-INTEL-01"
+      },
+      {
+        "familyId": "PA-INTEL-OWNER-AUTHORITY",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-INTEL-01"
+      }
+    ],
+    "PA-AVATAR-01": [
+      {
+        "familyId": "PA-AVATAR-CHARACTER",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-AVATAR-01"
+      },
+      {
+        "familyId": "PA-AVATAR-REGISTRY",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-AVATAR-01"
+      },
+      {
+        "familyId": "PA-AVATAR-SELECTION",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-AVATAR-01"
+      },
+      {
+        "familyId": "PA-AVATAR-SYNC",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-AVATAR-01"
+      },
+      {
+        "familyId": "PA-AVATAR-STATE",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-AVATAR-01"
+      },
+      {
+        "familyId": "PA-AVATAR-PRESENTATION",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-AVATAR-01"
+      },
+      {
+        "familyId": "PA-AVATAR-PRESENTATION-ENVELOPE",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-AVATAR-01"
+      },
+      {
+        "familyId": "PA-AVATAR-RENDERER",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-ASSURE-01"
+      },
+      {
+        "familyId": "PA-AVATAR-TV",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-AVATAR-01"
+      },
+      {
+        "familyId": "PA-AVATAR-PRIVACY",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-AVATAR-01"
+      },
+      {
+        "familyId": "PA-AVATAR-ACCESSIBILITY",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-AVATAR-01"
+      },
+      {
+        "familyId": "PA-AVATAR-FALLBACK",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-AVATAR-01"
+      },
+      {
+        "familyId": "PA-AVATAR-INTEGRITY",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-AVATAR-01"
+      },
+      {
+        "familyId": "PA-AVATAR-FRESHNESS",
+        "coverageStatus": "COVERED",
+        "evidenceArtifactId": "PA-AVATAR-01"
+      }
+    ]
+  },
+  "limitation": null,
+  "result": "COVERED"
+}

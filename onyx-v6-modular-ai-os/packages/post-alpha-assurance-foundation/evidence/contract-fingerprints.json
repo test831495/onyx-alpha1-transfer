@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "PA_CONTRACT_FINGERPRINT_V1",
+  "correctionGate": "POST_ALPHA_PARALLEL_FOUNDATIONS_ACCEPTANCE_COVERAGE_COMPLETION_AND_REVALIDATION_V2",
+  "candidate": {
+    "branch": "feature/post-alpha-parallel-foundations-v1",
+    "head": "d8c93d5a9cfccb2cb2fb9a0beef0961ed6ff2714",
+    "tree": "35173f8f2b9ede4171c559900199e1f86f8dd46d"
+  },
+  "fingerprints": [
+    {
+      "workstreamId": "PA-ASSURE-01",
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/src/index.ts",
+      "sha256": "5b773f32415508f8c32c8dac48d1923994a41aba0af6e2a6f5f93524c7406432"
+    },
+    {
+      "workstreamId": "PA-ASSURE-01",
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/tests/assurance.test.ts",
+      "sha256": "e208406058b040e504e332a7c70ef67bd0b9872d73a1a5def4a2009ccff45e9a"
+    },
+    {
+      "workstreamId": "PA-ASSURE-01",
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-assurance-foundation/tests/cross-lane.test.ts",
+      "sha256": "0d39c301ab1e1828e64442cf2c25c1ebca639eadb8bd72dbfeae6045396457bc"
+    },
+    {
+      "workstreamId": "PA-GOV-01",
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-governance-foundation/src/index.ts",
+      "sha256": "81a2ba7d3d16358155b51e3ed661c3a1bcc4097b0c950cdc4981a8882ca69262"
+    },
+    {
+      "workstreamId": "PA-GOV-01",
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-governance-foundation/tests/governance.test.ts",
+      "sha256": "0b2f8d1b89e2175ec2db344aff620d861060ab8075747c69f467ec0a3671dfdc"
+    },
+    {
+      "workstreamId": "PA-INTEL-01",
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-intelligence-foundation/src/index.ts",
+      "sha256": "a46a6e66b940b7db4702fa91fa5c9035f0f42260c6671ce0f0596568357609dc"
+    },
+    {
+      "workstreamId": "PA-INTEL-01",
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-intelligence-foundation/tests/intelligence.test.ts",
+      "sha256": "6b24594df1ceb4be5c02a51adf6f3457e9a372dd52820d6c22aaae36b5e8a302"
+    },
+    {
+      "workstreamId": "PA-AVATAR-01",
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-avatar-foundation/src/index.ts",
+      "sha256": "72b23f3f2f6313999d35a3a570283e13e6ca57c3995610cbbacc63fc799b08d9"
+    },
+    {
+      "workstreamId": "PA-AVATAR-01",
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-avatar-foundation/tests/avatar.test.ts",
+      "sha256": "c5dd4e2509221f98bbcac4570dafd2398941bfb3dae9cd3f847f361c999f90cc"
+    }
+  ],
+  "generatedAt": "2026-09-01T00:00:00.000Z"
+}
