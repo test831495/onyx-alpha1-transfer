@@ -1,0 +1,53 @@
+{
+  "package": "@onyx/post-alpha-avatar-runtime-preview",
+  "families": {
+    "PA-AVATAR-REGISTRY-PREVIEW": {
+      "idRange": [
+        1,
+        16
+      ],
+      "status": "EXECUTABLE_TEST"
+    },
+    "PA-AVATAR-RESOLVER": {
+      "idRange": [
+        1,
+        20
+      ],
+      "status": "EXECUTABLE_TEST"
+    },
+    "PA-AVATAR-COMPOSITION": {
+      "idRange": [
+        1,
+        20
+      ],
+      "status": "EXECUTABLE_TEST"
+    },
+    "PA-AVATAR-PREVIEW-FIXTURE": {
+      "idRange": [
+        1,
+        18
+      ],
+      "status": "EXECUTABLE_TEST"
+    },
+    "PA-AVATAR-PREVIEW-EVIDENCE": {
+      "idRange": [
+        1,
+        10
+      ],
+      "status": "EVIDENCE_VALIDATION"
+    },
+    "PA-AVATAR-LEGACY-BRIDGE": {
+      "conditionalNotApplicable": [
+        1,
+        2
+      ],
+      "executableTest": [
+        3,
+        4,
+        5,
+        6
+      ]
+    }
+  },
+  "timestamp": "2026-09-02T06:17:08.600Z"
+}

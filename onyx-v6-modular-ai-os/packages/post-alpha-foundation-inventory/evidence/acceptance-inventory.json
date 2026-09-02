@@ -1,0 +1,665 @@
+{
+  "package": "@onyx/post-alpha-foundation-inventory",
+  "totalFamilies": 7,
+  "totalIds": 100,
+  "dispositions": {
+    "EXECUTABLE_TEST": 87,
+    "EVIDENCE_VALIDATION": 11,
+    "CONDITIONAL_NOT_APPLICABLE": 2,
+    "DEFERRED_FUTURE_EVIDENCE": 0
+  },
+  "families": {
+    "PA-INVENTORY": {
+      "range": [
+        1,
+        10
+      ],
+      "total": 10
+    },
+    "PA-AVATAR-REGISTRY-PREVIEW": {
+      "range": [
+        1,
+        16
+      ],
+      "total": 16
+    },
+    "PA-AVATAR-RESOLVER": {
+      "range": [
+        1,
+        20
+      ],
+      "total": 20
+    },
+    "PA-AVATAR-COMPOSITION": {
+      "range": [
+        1,
+        20
+      ],
+      "total": 20
+    },
+    "PA-AVATAR-PREVIEW-FIXTURE": {
+      "range": [
+        1,
+        18
+      ],
+      "total": 18
+    },
+    "PA-AVATAR-PREVIEW-EVIDENCE": {
+      "range": [
+        1,
+        10
+      ],
+      "total": 10
+    },
+    "PA-AVATAR-LEGACY-BRIDGE": {
+      "range": [
+        1,
+        6
+      ],
+      "total": 6
+    }
+  },
+  "mapping": [
+    {
+      "acceptanceId": "PA-INVENTORY-001",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "inventory.test.ts",
+      "verificationName": "Inventory structure and sealed package tests"
+    },
+    {
+      "acceptanceId": "PA-INVENTORY-002",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "inventory.test.ts",
+      "verificationName": "Inventory structure and sealed package tests"
+    },
+    {
+      "acceptanceId": "PA-INVENTORY-003",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "inventory.test.ts",
+      "verificationName": "Inventory structure and sealed package tests"
+    },
+    {
+      "acceptanceId": "PA-INVENTORY-004",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "inventory.test.ts",
+      "verificationName": "Inventory structure and sealed package tests"
+    },
+    {
+      "acceptanceId": "PA-INVENTORY-005",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "inventory.test.ts",
+      "verificationName": "Inventory structure and sealed package tests"
+    },
+    {
+      "acceptanceId": "PA-INVENTORY-006",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "inventory.test.ts",
+      "verificationName": "Inventory structure and sealed package tests"
+    },
+    {
+      "acceptanceId": "PA-INVENTORY-007",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "inventory.test.ts",
+      "verificationName": "Inventory structure and sealed package tests"
+    },
+    {
+      "acceptanceId": "PA-INVENTORY-008",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "inventory.test.ts",
+      "verificationName": "Inventory structure and sealed package tests"
+    },
+    {
+      "acceptanceId": "PA-INVENTORY-009",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "inventory.test.ts",
+      "verificationName": "Inventory structure and sealed package tests"
+    },
+    {
+      "acceptanceId": "PA-INVENTORY-010",
+      "disposition": "EVIDENCE_VALIDATION",
+      "verificationId": "acceptance-inventory.json",
+      "verificationName": "Acceptance inventory SHA-256 integrity"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-REGISTRY-PREVIEW-001",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Registry fixture and character binding tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-REGISTRY-PREVIEW-002",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Registry fixture and character binding tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-REGISTRY-PREVIEW-003",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Registry fixture and character binding tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-REGISTRY-PREVIEW-004",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Registry fixture and character binding tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-REGISTRY-PREVIEW-005",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Registry fixture and character binding tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-REGISTRY-PREVIEW-006",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Registry fixture and character binding tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-REGISTRY-PREVIEW-007",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Registry fixture and character binding tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-REGISTRY-PREVIEW-008",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Registry fixture and character binding tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-REGISTRY-PREVIEW-009",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Registry fixture and character binding tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-REGISTRY-PREVIEW-010",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Registry fixture and character binding tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-REGISTRY-PREVIEW-011",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Registry fixture and character binding tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-REGISTRY-PREVIEW-012",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Registry fixture and character binding tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-REGISTRY-PREVIEW-013",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Registry fixture and character binding tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-REGISTRY-PREVIEW-014",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Registry fixture and character binding tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-REGISTRY-PREVIEW-015",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Registry fixture and character binding tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-REGISTRY-PREVIEW-016",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Registry fixture and character binding tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-RESOLVER-001",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Resolver character and ACTIVE-only lifecycle tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-RESOLVER-002",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Resolver character and ACTIVE-only lifecycle tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-RESOLVER-003",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Resolver character and ACTIVE-only lifecycle tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-RESOLVER-004",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Resolver character and ACTIVE-only lifecycle tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-RESOLVER-005",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Resolver character and ACTIVE-only lifecycle tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-RESOLVER-006",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Resolver character and ACTIVE-only lifecycle tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-RESOLVER-007",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Resolver character and ACTIVE-only lifecycle tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-RESOLVER-008",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Resolver character and ACTIVE-only lifecycle tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-RESOLVER-009",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Resolver character and ACTIVE-only lifecycle tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-RESOLVER-010",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Resolver character and ACTIVE-only lifecycle tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-RESOLVER-011",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Resolver character and ACTIVE-only lifecycle tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-RESOLVER-012",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Resolver character and ACTIVE-only lifecycle tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-RESOLVER-013",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Resolver character and ACTIVE-only lifecycle tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-RESOLVER-014",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Resolver character and ACTIVE-only lifecycle tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-RESOLVER-015",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Resolver character and ACTIVE-only lifecycle tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-RESOLVER-016",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Resolver character and ACTIVE-only lifecycle tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-RESOLVER-017",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Resolver character and ACTIVE-only lifecycle tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-RESOLVER-018",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Resolver character and ACTIVE-only lifecycle tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-RESOLVER-019",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Resolver character and ACTIVE-only lifecycle tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-RESOLVER-020",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "registry-resolver.test.ts",
+      "verificationName": "Resolver character and ACTIVE-only lifecycle tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-COMPOSITION-001",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "composition-adapter.test.ts",
+      "verificationName": "Desktop and TV composition adapter tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-COMPOSITION-002",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "composition-adapter.test.ts",
+      "verificationName": "Desktop and TV composition adapter tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-COMPOSITION-003",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "composition-adapter.test.ts",
+      "verificationName": "Desktop and TV composition adapter tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-COMPOSITION-004",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "composition-adapter.test.ts",
+      "verificationName": "Desktop and TV composition adapter tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-COMPOSITION-005",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "composition-adapter.test.ts",
+      "verificationName": "Desktop and TV composition adapter tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-COMPOSITION-006",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "composition-adapter.test.ts",
+      "verificationName": "Desktop and TV composition adapter tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-COMPOSITION-007",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "composition-adapter.test.ts",
+      "verificationName": "Desktop and TV composition adapter tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-COMPOSITION-008",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "composition-adapter.test.ts",
+      "verificationName": "Desktop and TV composition adapter tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-COMPOSITION-009",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "composition-adapter.test.ts",
+      "verificationName": "Desktop and TV composition adapter tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-COMPOSITION-010",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "composition-adapter.test.ts",
+      "verificationName": "Desktop and TV composition adapter tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-COMPOSITION-011",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "composition-adapter.test.ts",
+      "verificationName": "Desktop and TV composition adapter tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-COMPOSITION-012",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "composition-adapter.test.ts",
+      "verificationName": "Desktop and TV composition adapter tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-COMPOSITION-013",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "composition-adapter.test.ts",
+      "verificationName": "Desktop and TV composition adapter tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-COMPOSITION-014",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "composition-adapter.test.ts",
+      "verificationName": "Desktop and TV composition adapter tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-COMPOSITION-015",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "composition-adapter.test.ts",
+      "verificationName": "Desktop and TV composition adapter tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-COMPOSITION-016",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "composition-adapter.test.ts",
+      "verificationName": "Desktop and TV composition adapter tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-COMPOSITION-017",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "composition-adapter.test.ts",
+      "verificationName": "Desktop and TV composition adapter tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-COMPOSITION-018",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "composition-adapter.test.ts",
+      "verificationName": "Desktop and TV composition adapter tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-COMPOSITION-019",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "composition-adapter.test.ts",
+      "verificationName": "Desktop and TV composition adapter tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-COMPOSITION-020",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "composition-adapter.test.ts",
+      "verificationName": "Desktop and TV composition adapter tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-FIXTURE-001",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "desktop-fixtures.test.ts",
+      "verificationName": "ONYX and package-local NOVA fixture tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-FIXTURE-002",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "desktop-fixtures.test.ts",
+      "verificationName": "ONYX and package-local NOVA fixture tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-FIXTURE-003",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "desktop-fixtures.test.ts",
+      "verificationName": "ONYX and package-local NOVA fixture tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-FIXTURE-004",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "desktop-fixtures.test.ts",
+      "verificationName": "ONYX and package-local NOVA fixture tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-FIXTURE-005",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "desktop-fixtures.test.ts",
+      "verificationName": "ONYX and package-local NOVA fixture tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-FIXTURE-006",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "desktop-fixtures.test.ts",
+      "verificationName": "ONYX and package-local NOVA fixture tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-FIXTURE-007",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "desktop-fixtures.test.ts",
+      "verificationName": "ONYX and package-local NOVA fixture tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-FIXTURE-008",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "desktop-fixtures.test.ts",
+      "verificationName": "ONYX and package-local NOVA fixture tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-FIXTURE-009",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "desktop-fixtures.test.ts",
+      "verificationName": "ONYX and package-local NOVA fixture tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-FIXTURE-010",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "desktop-fixtures.test.ts",
+      "verificationName": "ONYX and package-local NOVA fixture tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-FIXTURE-011",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "desktop-fixtures.test.ts",
+      "verificationName": "ONYX and package-local NOVA fixture tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-FIXTURE-012",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "desktop-fixtures.test.ts",
+      "verificationName": "ONYX and package-local NOVA fixture tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-FIXTURE-013",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "desktop-fixtures.test.ts",
+      "verificationName": "ONYX and package-local NOVA fixture tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-FIXTURE-014",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "desktop-fixtures.test.ts",
+      "verificationName": "ONYX and package-local NOVA fixture tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-FIXTURE-015",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "desktop-fixtures.test.ts",
+      "verificationName": "ONYX and package-local NOVA fixture tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-FIXTURE-016",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "desktop-fixtures.test.ts",
+      "verificationName": "ONYX and package-local NOVA fixture tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-FIXTURE-017",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "desktop-fixtures.test.ts",
+      "verificationName": "ONYX and package-local NOVA fixture tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-FIXTURE-018",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "desktop-fixtures.test.ts",
+      "verificationName": "ONYX and package-local NOVA fixture tests"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-EVIDENCE-001",
+      "disposition": "EVIDENCE_VALIDATION",
+      "verificationId": "evidence-sidecars",
+      "verificationName": "Fixture, provenance, and coverage evidence integrity"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-EVIDENCE-002",
+      "disposition": "EVIDENCE_VALIDATION",
+      "verificationId": "evidence-sidecars",
+      "verificationName": "Fixture, provenance, and coverage evidence integrity"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-EVIDENCE-003",
+      "disposition": "EVIDENCE_VALIDATION",
+      "verificationId": "evidence-sidecars",
+      "verificationName": "Fixture, provenance, and coverage evidence integrity"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-EVIDENCE-004",
+      "disposition": "EVIDENCE_VALIDATION",
+      "verificationId": "evidence-sidecars",
+      "verificationName": "Fixture, provenance, and coverage evidence integrity"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-EVIDENCE-005",
+      "disposition": "EVIDENCE_VALIDATION",
+      "verificationId": "evidence-sidecars",
+      "verificationName": "Fixture, provenance, and coverage evidence integrity"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-EVIDENCE-006",
+      "disposition": "EVIDENCE_VALIDATION",
+      "verificationId": "evidence-sidecars",
+      "verificationName": "Fixture, provenance, and coverage evidence integrity"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-EVIDENCE-007",
+      "disposition": "EVIDENCE_VALIDATION",
+      "verificationId": "evidence-sidecars",
+      "verificationName": "Fixture, provenance, and coverage evidence integrity"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-EVIDENCE-008",
+      "disposition": "EVIDENCE_VALIDATION",
+      "verificationId": "evidence-sidecars",
+      "verificationName": "Fixture, provenance, and coverage evidence integrity"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-EVIDENCE-009",
+      "disposition": "EVIDENCE_VALIDATION",
+      "verificationId": "evidence-sidecars",
+      "verificationName": "Fixture, provenance, and coverage evidence integrity"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-PREVIEW-EVIDENCE-010",
+      "disposition": "EVIDENCE_VALIDATION",
+      "verificationId": "evidence-sidecars",
+      "verificationName": "Fixture, provenance, and coverage evidence integrity"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-LEGACY-BRIDGE-001",
+      "disposition": "CONDITIONAL_NOT_APPLICABLE",
+      "verificationId": "no-bridge-boundary",
+      "verificationName": "No bridge module, import, or input path exists"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-LEGACY-BRIDGE-002",
+      "disposition": "CONDITIONAL_NOT_APPLICABLE",
+      "verificationId": "no-bridge-boundary",
+      "verificationName": "No bridge module, import, or input path exists"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-LEGACY-BRIDGE-003",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "legacy-boundary.test.ts",
+      "verificationName": "Legacy package, Command Center, and bridge coupling boundary checks"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-LEGACY-BRIDGE-004",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "legacy-boundary.test.ts",
+      "verificationName": "Legacy package, Command Center, and bridge coupling boundary checks"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-LEGACY-BRIDGE-005",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "legacy-boundary.test.ts",
+      "verificationName": "Legacy package, Command Center, and bridge coupling boundary checks"
+    },
+    {
+      "acceptanceId": "PA-AVATAR-LEGACY-BRIDGE-006",
+      "disposition": "EXECUTABLE_TEST",
+      "verificationId": "legacy-boundary.test.ts",
+      "verificationName": "Legacy package, Command Center, and bridge coupling boundary checks"
+    }
+  ],
+  "timestamp": "2026-09-02T06:17:07.662Z"
+}

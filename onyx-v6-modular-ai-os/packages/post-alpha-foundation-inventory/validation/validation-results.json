@@ -1,0 +1,11 @@
+{
+  "package": "@onyx/post-alpha-foundation-inventory",
+  "testCommand": "pnpm exec vitest run --reporter=json",
+  "typecheckCommand": "pnpm exec tsc --noEmit",
+  "testFiles": 3,
+  "testCount": 20,
+  "passed": 20,
+  "failed": 0,
+  "typecheckPassed": true,
+  "timestamp": "2026-09-02T06:17:23.966Z"
+}
