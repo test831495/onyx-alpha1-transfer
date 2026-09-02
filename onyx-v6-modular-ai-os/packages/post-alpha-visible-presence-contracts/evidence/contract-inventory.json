@@ -1,0 +1,915 @@
+{
+  "schemaVersion": "VP_CONTRACT_INVENTORY_V1",
+  "contracts": [
+    {
+      "name": "AccessibilityPresentationProfile",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "AccessibilityPresentationProfile",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-01"
+      ]
+    },
+    {
+      "name": "AmbientAudioIntent",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "AmbientAudioIntent",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-02"
+      ]
+    },
+    {
+      "name": "AmbientAudioProjection",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "AmbientAudioProjection",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-03"
+      ]
+    },
+    {
+      "name": "AudioRendererAdapterContract",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "AudioRendererAdapterContract",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-04"
+      ]
+    },
+    {
+      "name": "CaptionPresentationProjection",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "CaptionPresentationProjection",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-05"
+      ]
+    },
+    {
+      "name": "CharacterStageInput",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "CharacterStageInput",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-06"
+      ]
+    },
+    {
+      "name": "CharacterStageProjection",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "CharacterStageProjection",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-07"
+      ]
+    },
+    {
+      "name": "DesktopPresentationProfile",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "DesktopPresentationProfile",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-08"
+      ]
+    },
+    {
+      "name": "DevicePresentationProfile",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "DevicePresentationProfile",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-09"
+      ]
+    },
+    {
+      "name": "DriftFinding",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "DriftFinding",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-10"
+      ]
+    },
+    {
+      "name": "FocusNavigationProjection",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "FocusNavigationProjection",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-11"
+      ]
+    },
+    {
+      "name": "GovernancePresentationProjection",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "HIGH",
+      "descriptor": {
+        "contract": "GovernancePresentationProjection",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-12"
+      ]
+    },
+    {
+      "name": "IntegratedExperienceFixture",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "IntegratedExperienceFixture",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-13"
+      ]
+    },
+    {
+      "name": "IntelligencePresentationProjection",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "IntelligencePresentationProjection",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-14"
+      ]
+    },
+    {
+      "name": "LaneContractFingerprint",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "LaneContractFingerprint",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-15"
+      ]
+    },
+    {
+      "name": "LaneIntegrationManifest",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "LaneIntegrationManifest",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-16"
+      ]
+    },
+    {
+      "name": "PerformanceBudgetProfile",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "PerformanceBudgetProfile",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-17"
+      ]
+    },
+    {
+      "name": "PerformanceDegradationDecision",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "PerformanceDegradationDecision",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-18"
+      ]
+    },
+    {
+      "name": "PresenceCompositionInput",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "PresenceCompositionInput",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-19"
+      ]
+    },
+    {
+      "name": "PresenceCompositionOutput",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "PresenceCompositionOutput",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-20"
+      ]
+    },
+    {
+      "name": "PrivacyPresentationProjection",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "HIGH",
+      "descriptor": {
+        "contract": "PrivacyPresentationProjection",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-21"
+      ]
+    },
+    {
+      "name": "RendererAdapterContract",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "RendererAdapterContract",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-22"
+      ]
+    },
+    {
+      "name": "RendererCapabilityProfile",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "RendererCapabilityProfile",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-23"
+      ]
+    },
+    {
+      "name": "SafeFallbackProjection",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "SafeFallbackProjection",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-24"
+      ]
+    },
+    {
+      "name": "SemanticPresentationState",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "SemanticPresentationState",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-25"
+      ]
+    },
+    {
+      "name": "SemanticTransitionIntent",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "SemanticTransitionIntent",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-26"
+      ]
+    },
+    {
+      "name": "TrainEvidenceEnvelope",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "TrainEvidenceEnvelope",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-27"
+      ]
+    },
+    {
+      "name": "TransitionOrchestrationPlan",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "TransitionOrchestrationPlan",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-28"
+      ]
+    },
+    {
+      "name": "TvPresentationProfile",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "TvPresentationProfile",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-29"
+      ]
+    },
+    {
+      "name": "VisiblePresenceRenderModel",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "VisiblePresenceRenderModel",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-30"
+      ]
+    },
+    {
+      "name": "VisualEvidenceDescriptor",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "VisualEvidenceDescriptor",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-31"
+      ]
+    },
+    {
+      "name": "WorldPresentationIntent",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "WorldPresentationIntent",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-32"
+      ]
+    },
+    {
+      "name": "WorldRegistryCandidate",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "WorldRegistryCandidate",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-33"
+      ]
+    },
+    {
+      "name": "WorldRendererAdapterContract",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "WorldRendererAdapterContract",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-34"
+      ]
+    },
+    {
+      "name": "WorldSceneProjection",
+      "schemaVersion": "VP_CONTRACT_V1",
+      "ownerPackage": "@onyx/post-alpha-visible-presence-contracts",
+      "producerLanes": [
+        "VISIBLE-RUNTIME-01"
+      ],
+      "consumerLanes": [
+        "VISIBLE-RUNTIME-01",
+        "VISIBLE-ASSURE-01"
+      ],
+      "predecessorDependencies": [],
+      "riskTier": "MEDIUM",
+      "descriptor": {
+        "contract": "WorldSceneProjection",
+        "fields": [
+          "schemaVersion",
+          "nonAuthorizing"
+        ]
+      },
+      "compatibilityPolicy": "ADDITIVE_ONLY",
+      "reopeningTrigger": "contract schema or invariant changes",
+      "acceptanceIds": [
+        "VP-CONTRACT-35"
+      ]
+    }
+  ]
+}
