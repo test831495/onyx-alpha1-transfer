@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "VP_CONTRACT_VALIDATION_V1",
+  "contractCount": 35,
+  "validationErrors": [],
+  "result": "PASS",
+  "exitCode": 0,
+  "summary": "PASS: 0 validation errors"
+}

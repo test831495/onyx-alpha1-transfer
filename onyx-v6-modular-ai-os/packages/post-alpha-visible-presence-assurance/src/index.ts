@@ -1,0 +1,58 @@
+import { ACCEPTANCE_MAPPINGS, REQUIREMENTS, type AcceptanceMapping, type Family, type LaneId } from "./requirements.js";
+
+export { ACCEPTANCE_MAPPINGS, REQUIREMENTS } from "./requirements.js";
+export type { AcceptanceMapping, Family, LaneId, Requirement } from "./requirements.js";
+
+export type AcceptanceFamily = "VP-CONTRACT" | "VP-RUNTIME" | "VP-RENDERER" | "VP-STATE" | "VP-PRIVACY" | "VP-ACCESSIBILITY" | "VP-WORLD" | "VP-AUDIO" | "VP-TV" | "VP-PERFORMANCE" | "VP-EVIDENCE" | "VP-DRIFT" | "VP-INTEGRATION" | "VP-BOUNDARY";
+export const BASELINE_SHA = "d414560bdd497d00ad14667606ca95097a04e177";
+export const FLAGS_OFF = "OFF";
+export const ACTIVATION_NONE = "NONE";
+
+const familyCounts: Readonly<Record<AcceptanceFamily, number>> = { "VP-CONTRACT": 35, "VP-RUNTIME": 15, "VP-RENDERER": 15, "VP-STATE": 8, "VP-PRIVACY": 12, "VP-ACCESSIBILITY": 14, "VP-WORLD": 14, "VP-AUDIO": 8, "VP-TV": 14, "VP-PERFORMANCE": 10, "VP-EVIDENCE": 12, "VP-DRIFT": 15, "VP-INTEGRATION": 12, "VP-BOUNDARY": 6 };
+const laneFor = (family: AcceptanceFamily): LaneId => family === "VP-RENDERER" ? "VISIBLE-RENDERER-01" : family === "VP-WORLD" || family === "VP-AUDIO" ? "VISIBLE-WORLD-01" : family === "VP-TV" ? "VISIBLE-TV-01" : family === "VP-RUNTIME" || family === "VP-STATE" || family === "VP-PRIVACY" || family === "VP-ACCESSIBILITY" || family === "VP-PERFORMANCE" ? "VISIBLE-RUNTIME-01" : "VISIBLE-ASSURE-01";
+
+export type AcceptanceRecord = AcceptanceMapping;
+export const ACCEPTANCE_REGISTRY = ACCEPTANCE_MAPPINGS;
+
+export interface LaneManifest { readonly laneId: LaneId; readonly baselineSha: string; readonly purpose: string; readonly futurePackagePaths: readonly string[]; readonly futureFileAllowlist: readonly string[]; readonly prohibitedPaths: readonly string[]; readonly publicPredecessorDependencies: readonly string[]; readonly sharedContractDependencies: readonly string[]; readonly requirementIds: readonly string[]; readonly acceptanceIds: readonly string[]; readonly riskTiers: readonly string[]; readonly integrationWaves: readonly string[]; readonly plannedEvidence: readonly string[]; readonly contractFingerprintLock: string; readonly branchName: string; readonly worktreePath: string; readonly rollbackMethod: string; readonly stopConditions: readonly string[]; readonly currentState: "PROVISIONED_NOT_IMPLEMENTED"; readonly flags: "OFF"; readonly activation: "NONE"; }
+const futureRoot: Readonly<Record<LaneId, string>> = { "VISIBLE-RUNTIME-01": "packages/post-alpha-presentation-runtime-shell/**", "VISIBLE-RENDERER-01": "packages/post-alpha-character-renderer-native/**", "VISIBLE-WORLD-01": "packages/post-alpha-ambient-experience-foundation/**", "VISIBLE-TV-01": "packages/post-alpha-tv-presence-runtime/**", "VISIBLE-ASSURE-01": "packages/post-alpha-visible-presence-assurance/**" };
+const branchSuffix: Readonly<Record<LaneId, string>> = { "VISIBLE-RUNTIME-01": "runtime", "VISIBLE-RENDERER-01": "renderer", "VISIBLE-WORLD-01": "world", "VISIBLE-TV-01": "tv", "VISIBLE-ASSURE-01": "assure" };
+export const LANE_MANIFESTS: readonly LaneManifest[] = (Object.keys(futureRoot) as LaneId[]).map((laneId) => ({ laneId, baselineSha: BASELINE_SHA, purpose: "Bounded future lane; no implementation is present in Wave 1.", futurePackagePaths: [futureRoot[laneId]], futureFileAllowlist: [futureRoot[laneId]], prohibitedPaths: ["packages/post-alpha-visible-presence-integration/**", "apps/command-center/**"], publicPredecessorDependencies: [], sharedContractDependencies: ["@onyx/post-alpha-visible-presence-contracts"], requirementIds: REQUIREMENTS.filter((requirement) => requirement.owningLane === laneId).map((requirement) => requirement.requirementId), acceptanceIds: ACCEPTANCE_MAPPINGS.filter((mapping) => mapping.owningLane === laneId).map((mapping) => mapping.acceptanceId), riskTiers: ["RISK_TIER_1", "RISK_TIER_2"], integrationWaves: ["WAVE_2", "WAVE_3", "WAVE_4"], plannedEvidence: [`evidence:${laneId.toLowerCase()}`], contractFingerprintLock: "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25", branchName: `feature/visible-presence-${branchSuffix[laneId]}-v1`, worktreePath: `/workspaces/visible-presence-train/${branchSuffix[laneId]}`, rollbackMethod: "Remove uncommitted lane work only; do not alter baseline.", stopConditions: ["contract fingerprint mismatch", "flags not OFF", "activation not NONE"], currentState: "PROVISIONED_NOT_IMPLEMENTED", flags: FLAGS_OFF, activation: ACTIVATION_NONE }));
+
+export const TRAIN_MANIFEST = { trainId: "POST_ALPHA_VISIBLE_PRESENCE_INTEGRATED_TRAIN", schemaVersion: "VP_TRAIN_MANIFEST_V1", baselineSha: BASELINE_SHA, mergedPredecessorPr: 35, outcome: "GOVERNED_INTEGRATION_SUBSTRATE", lanes: LANE_MANIFESTS.map((lane) => lane.laneId), waves: ["WAVE_1", "WAVE_2", "WAVE_3", "WAVE_4"], packageOwnership: ["@onyx/post-alpha-visible-presence-contracts", "@onyx/post-alpha-visible-presence-assurance"], sharedContractCount: 35, compatibilityFingerprint: "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25", requirementCount: 190, acceptanceCount: 190, acceptedAdjudicationCount: 190, acceptanceFamilyCount: 14, protectedPaths: ["packages/post-alpha-*/**", "packages/avatar-runtime/**", "apps/command-center/**", ".github/**"], branchWorktreePolicy: "baseline-only isolated local worktrees", evidenceSchemaVersion: "VP_EVIDENCE_NODE_V1", flags: FLAGS_OFF, activation: ACTIVATION_NONE, status: "WAVE1_FOUNDATION_LOCAL_CANDIDATE", nonGoals: ["runtime visibility", "release", "deployment", "activation"] } as const;
+export const EVIDENCE_GRAPH = { schemaVersion: "VP_EVIDENCE_GRAPH_V1", nodes: ["baseline-lock", "contract-inventory", "contract-fingerprint", "train-manifest", "lane-manifests", "acceptance-registry", "acceptance-arithmetic", "dependency-lockfile", "flags", "activation", "tests", "typecheck", "file-scope", "protected-paths", "worktree-provisioning"].map((evidenceId) => ({ evidenceId, schemaVersion: "VP_EVIDENCE_NODE_V1", producer: "VISIBLE-ASSURE-01", baselineFingerprint: BASELINE_SHA, affectedPaths: [], acceptanceIds: [], riskTier: "MEDIUM", inputEvidenceIds: [], sourceFingerprint: BASELINE_SHA, flags: FLAGS_OFF, activation: ACTIVATION_NONE, environmentProfile: "LOCAL_DRY_RUN", result: "PENDING", freshnessStatus: "CURRENT", invalidationTriggers: ["baseline change"], timestamp: "2026-09-02T00:00:00.000Z", sensitivity: "INTERNAL", retention: "RETAIN", nonAuthorizing: true })) } as const;
+
+export function validateTrainManifest(manifest: typeof TRAIN_MANIFEST): string[] { return manifest.baselineSha === BASELINE_SHA && manifest.sharedContractCount === 35 && manifest.flags === FLAGS_OFF && manifest.activation === ACTIVATION_NONE ? [] : ["invalid train manifest"]; }
+export function validateLaneManifests(manifests: readonly LaneManifest[]): string[] { return manifests.length === 5 && new Set(manifests.map((manifest) => manifest.laneId)).size === 5 && manifests.every((manifest) => manifest.currentState === "PROVISIONED_NOT_IMPLEMENTED" && manifest.flags === FLAGS_OFF && manifest.activation === ACTIVATION_NONE) ? [] : ["invalid lane manifests"]; }
+export function validateAcceptanceRegistry(records: readonly AcceptanceRecord[]): string[] {
+  const expected = Object.values(familyCounts).reduce((sum, count) => sum + count, 0);
+  const errors: string[] = [];
+  if (records.length !== expected) errors.push(`expected ${expected} records, received ${records.length}`);
+  if (new Set(records.map((record) => record.acceptanceId)).size !== records.length) errors.push("acceptance IDs must be unique");
+  for (const [family, count] of Object.entries(familyCounts) as [AcceptanceFamily, number][]) {
+    if (records.filter((record) => record.family === family).length !== count) errors.push(`${family} count must be ${count}`);
+  }
+  for (const record of records) {
+    if (!record.requirementSummary || !record.owningLane || !record.testMapping || !record.evidenceMapping || !record.freshnessKeys.length || !record.reopeningTrigger || !record.rationale) errors.push(`incomplete record: ${record.acceptanceId}`);
+    if (record.currentStatus === "EXECUTED_ACCEPTED" && record.testMapping.startsWith("test:")) errors.push(`planned mapping represented as executed: ${record.acceptanceId}`);
+  }
+  return errors;
+}
+export function validateEvidenceGraph(graph: typeof EVIDENCE_GRAPH): string[] { return graph.nodes.length === 15 && graph.nodes.every((node) => node.nonAuthorizing && node.flags === FLAGS_OFF && node.activation === ACTIVATION_NONE) ? [] : ["invalid evidence graph"]; }
+export type DriftOutcome = "NO_DRIFT" | "EXPECTED_ADDITIVE_DRIFT" | "REVIEW_REQUIRED" | "INTEGRATION_BLOCKED" | "OWNER_DECISION_REQUIRED";
+export const DRIFT_CATEGORIES = ["CONTRACT_DRIFT", "ACCEPTANCE_DRIFT", "FILE_SCOPE_DRIFT", "DEPENDENCY_DRIFT", "LOCKFILE_DRIFT", "EVIDENCE_DRIFT", "VISUAL_STATE_DRIFT", "ACCESSIBILITY_DRIFT", "PERFORMANCE_DRIFT", "PRIVACY_DRIFT", "FLAG_DRIFT", "ACTIVATION_DRIFT", "PROVENANCE_DRIFT", "BASELINE_DRIFT", "CROSS_LANE_ASSUMPTION_DRIFT"] as const;
+export function validateDrift(category: string, valid: boolean): DriftOutcome { return DRIFT_CATEGORIES.includes(category as typeof DRIFT_CATEGORIES[number]) && valid ? "NO_DRIFT" : "INTEGRATION_BLOCKED"; }
+
+export const SYNTHETIC_FIXTURES = {
+  schemaVersion: "VP_SYNTHETIC_FIXTURES_V1", metadataOnly: true, nonAuthorizing: true,
+  characters: ["ONYX", "NOVA"], semanticStates: ["IDLE", "LISTENING", "UNDERSTANDING", "THINKING", "SPEAKING", "APPROVAL_REQUIRED", "PRIVACY_RESTRICTED", "RECOVERING"],
+  deviceProfiles: ["DESKTOP_STANDARD", "DESKTOP_COMPACT", "TV_16_9", "TV_OVERSCAN_SAFE", "LOW_POWER"], accessibilityProfiles: ["STANDARD_MOTION", "REDUCED_MOTION", "STANDARD_CONTRAST", "HIGH_CONTRAST", "CAPTIONS_ENABLED", "TEXT_ONLY_FALLBACK", "KEYBOARD_FOCUS", "REMOTE_FOCUS"],
+  privacyStates: ["PRIVATE_ALLOWED", "SHARED_ROOM_RESTRICTED", "PRIVACY_UNKNOWN", "PRIVACY_MALFORMED", "PRIVACY_STALE", "PRIVACY_CONFLICTING"], worlds: ["NEUTRAL_FALLBACK", "OPERATIONS_CENTER", "FUTURE_CITY", "NATURE", "SPACE", "REDUCED_MOTION_WORLD", "LOW_POWER_WORLD"],
+  capabilities: ["MISSING_RENDERER", "MISSING_WORLD", "MISSING_AUDIO", "STATIC_CHARACTER", "STATIC_WORLD", "TEXT_ONLY_SAFE_FALLBACK"], flags: FLAGS_OFF, activation: ACTIVATION_NONE,
+} as const;
+export function validateSyntheticFixtures(fixtures: typeof SYNTHETIC_FIXTURES): string[] {
+  return fixtures.metadataOnly && fixtures.nonAuthorizing && fixtures.characters.length === 2 && fixtures.semanticStates.length === 8 && fixtures.privacyStates.length === 6 && fixtures.capabilities.includes("TEXT_ONLY_SAFE_FALLBACK") && fixtures.flags === FLAGS_OFF && fixtures.activation === ACTIVATION_NONE ? [] : ["invalid synthetic fixtures"];
+}
+
+export const DRIFT_BASELINE = { schemaVersion: "VP_DRIFT_BASELINE_V1", categories: DRIFT_CATEGORIES, allowedOutcomes: ["NO_DRIFT", "EXPECTED_ADDITIVE_DRIFT", "REVIEW_REQUIRED", "INTEGRATION_BLOCKED", "OWNER_DECISION_REQUIRED"], baselineSha: BASELINE_SHA, flags: FLAGS_OFF, activation: ACTIVATION_NONE, nonAuthorizing: true } as const;
+export const LANE_HANDOFFS = LANE_MANIFESTS.map((manifest) => ({ laneId: manifest.laneId, branchName: manifest.branchName, worktreePath: manifest.worktreePath, baselineSha: BASELINE_SHA, laneManifestLock: manifest.contractFingerprintLock, futureFileAllowlist: manifest.futureFileAllowlist, prohibitedPaths: manifest.prohibitedPaths, requirementIds: REQUIREMENTS.filter((requirement) => requirement.owningLane === manifest.laneId).map((requirement) => requirement.requirementId), acceptanceIds: ACCEPTANCE_MAPPINGS.filter((mapping) => mapping.owningLane === manifest.laneId).map((mapping) => mapping.acceptanceId), flags: FLAGS_OFF, activation: ACTIVATION_NONE, state: "PROVISIONED_NOT_IMPLEMENTED", nonAuthorizing: true }));
