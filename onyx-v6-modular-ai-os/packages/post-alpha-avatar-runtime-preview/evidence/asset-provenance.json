@@ -1,0 +1,29 @@
+{
+  "package": "@onyx/post-alpha-avatar-runtime-preview",
+  "assets": [
+    {
+      "id": "preview-onyx-desktop-001",
+      "character": "ONYX",
+      "recordCreator": "@onyx/post-alpha-avatar-runtime-preview",
+      "assetCreator": "UNKNOWN",
+      "aiGenerationDisclosure": "NOT_ESTABLISHED",
+      "licenseStatus": "NOT_ESTABLISHED",
+      "provenanceStatus": "INCOMPLETE_PLACEHOLDER",
+      "assetStatus": "METADATA_ONLY",
+      "runtimeCandidate": false
+    },
+    {
+      "id": "preview-nova-desktop-001",
+      "character": "NOVA",
+      "recordCreator": "@onyx/post-alpha-avatar-runtime-preview",
+      "assetCreator": "UNKNOWN",
+      "aiGenerationDisclosure": "NOT_ESTABLISHED",
+      "licenseStatus": "NOT_ESTABLISHED",
+      "provenanceStatus": "INCOMPLETE_PLACEHOLDER",
+      "assetStatus": "METADATA_ONLY",
+      "runtimeCandidate": false
+    }
+  ],
+  "timestamp": "2026-09-02T04:56:54.868Z",
+  "metadataRecordHash": "ccd173aa9f2fed2d7d17d84cbcf5817d743e31f08cf4972bad7edb80c64bfbdd"
+}

@@ -1,0 +1,11 @@
+{
+  "package": "@onyx/post-alpha-avatar-runtime-preview",
+  "testCommand": "pnpm exec vitest run --reporter=json",
+  "typecheckCommand": "pnpm exec tsc --noEmit",
+  "testFiles": 7,
+  "testCount": 37,
+  "passed": 37,
+  "failed": 0,
+  "typecheckPassed": true,
+  "timestamp": "2026-09-02T04:58:03.950Z"
+}
