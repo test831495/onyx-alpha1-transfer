@@ -15,4 +15,9 @@ describe("independent requirement adjudication", () => {
     const results = adjudicateRequirements([REQUIREMENTS[0]!, generic, duplicate]);
     expect(results.map((result) => result.classification)).toEqual(["ACCEPTED_CONCRETE", "REJECTED_GENERIC", "REJECTED_DUPLICATE"]);
   });
+
+  it("rejects malformed boundary input that is not non-authorizing", () => {
+    const malformed = { ...REQUIREMENTS[0]!, nonAuthorizing: false };
+    expect(adjudicateRequirements([malformed]).map((result) => result.classification)).toEqual(["REJECTED_AUTHORITY_RISK"]);
+  });
 });
