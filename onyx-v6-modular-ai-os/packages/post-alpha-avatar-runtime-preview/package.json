@@ -11,10 +11,10 @@
     "test": "vitest run",
     "validate": "node scripts/run-validation.mjs"
   },
-    "dependencies": {
-      "@onyx/post-alpha-avatar-foundation": "workspace:*",
-      "@onyx/post-alpha-onyx-presence-thin-slice": "workspace:*"
-    },
+  "dependencies": {
+    "@onyx/post-alpha-avatar-foundation": "workspace:*",
+    "@onyx/post-alpha-onyx-presence-thin-slice": "workspace:*"
+  },
   "devDependencies": {
     "typescript": "^5.9.2",
     "vitest": "^3.2.7"

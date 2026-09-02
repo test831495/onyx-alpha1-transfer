@@ -33,10 +33,19 @@ describe("Sealed Packages Inventory", () => {
     );
   });
 
-  it("should return deeply frozen inventory", () => {
+  it("should return a deeply frozen immutable inventory projection", () => {
     const inventory = getFoundationInventory();
     expect(Object.isFrozen(inventory)).toBe(true);
-      expect(Array.isArray(inventory.sealed)).toBe(true);
-      expect(inventory.sealed.length).toBe(5);
+    expect(Object.isFrozen(inventory.sealed)).toBe(true);
+    expect(inventory.sealed.every(Object.isFrozen)).toBe(true);
+    expect(Object.isFrozen(inventory.legacy)).toBe(true);
+    expect(Object.isFrozen(inventory.baseline)).toBe(true);
+    expect(Object.isFrozen(inventory.markers)).toBe(true);
+    expect(Object.values(inventory.markers).every(Object.isFrozen)).toBe(true);
+    expect(() => {
+      (inventory.sealed as Array<{ name: string }>).push({ name: "unexpected" });
+    }).toThrow();
+    expect(inventory.sealed).toHaveLength(5);
+    expect(getFoundationInventory()).toEqual(inventory);
   });
 });

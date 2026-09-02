@@ -64,11 +64,27 @@ export const GOVERNANCE_MARKERS = Object.freeze({
   },
 });
 
+function deepFreeze<T extends object>(value: T, seen = new WeakSet<object>()): T {
+  if (seen.has(value)) {
+    return value;
+  }
+
+  seen.add(value);
+  for (const nestedValue of Object.values(value)) {
+    if (nestedValue !== null && typeof nestedValue === "object") {
+      deepFreeze(nestedValue, seen);
+    }
+  }
+  return Object.freeze(value);
+}
+
 export function getFoundationInventory() {
-  return Object.freeze({
-    sealed: [...SEALED_POST_ALPHA_FOUNDATIONS],
-    legacy: LEGACY_OWNERSHIP,
-    baseline: BASELINE_REPOSITORY_STATE,
-    markers: GOVERNANCE_MARKERS,
+  return deepFreeze({
+    sealed: SEALED_POST_ALPHA_FOUNDATIONS.map((foundation) => ({ ...foundation })),
+    legacy: { ...LEGACY_OWNERSHIP },
+    baseline: { ...BASELINE_REPOSITORY_STATE },
+    markers: Object.fromEntries(
+      Object.entries(GOVERNANCE_MARKERS).map(([key, marker]) => [key, { ...marker }])
+    ),
   });
 }
