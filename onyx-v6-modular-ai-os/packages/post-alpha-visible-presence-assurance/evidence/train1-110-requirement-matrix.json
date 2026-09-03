@@ -1,0 +1,4033 @@
+{
+  "baselineSha": "71f631f79aab57777425c9812235cedc7f2fd3c0",
+  "requirementCount": 110,
+  "rows": [
+    {
+      "ACCEPTANCE_ID": "VP-RUNTIME-01",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-runtime-1"
+      ],
+      "FAMILY": "VP-RUNTIME",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RUNTIME-01-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The runtime shell must consume only contract-validated presentation models.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RUNTIME-01-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RUNTIME-01",
+      "TITLE": "Validated models"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RUNTIME-02",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-runtime-2"
+      ],
+      "FAMILY": "VP-RUNTIME",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RUNTIME-02-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The runtime shell must not own or infer identity.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RUNTIME-02-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RUNTIME-02",
+      "TITLE": "Identity boundary"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RUNTIME-03",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-runtime-3"
+      ],
+      "FAMILY": "VP-RUNTIME",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RUNTIME-03-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The runtime shell must orchestrate only supplied semantic presentation states.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RUNTIME-03-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RUNTIME-03",
+      "TITLE": "State orchestration"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RUNTIME-04",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-runtime-4"
+      ],
+      "FAMILY": "VP-RUNTIME",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RUNTIME-04-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The runtime shell must select the privacy-safe projection when privacy conflicts with presentation preference.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RUNTIME-04-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RUNTIME-04",
+      "TITLE": "Privacy dominance"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RUNTIME-05",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-runtime-5"
+      ],
+      "FAMILY": "VP-RUNTIME",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RUNTIME-05-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The runtime shell must render governance projections as non-authorizing information.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RUNTIME-05-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RUNTIME-05",
+      "TITLE": "Governance projection"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RUNTIME-06",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-runtime-6"
+      ],
+      "FAMILY": "VP-RUNTIME",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RUNTIME-06-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The runtime shell must render intelligence projections as non-authorizing information.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RUNTIME-06-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RUNTIME-06",
+      "TITLE": "Intelligence projection"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RUNTIME-07",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-runtime-7"
+      ],
+      "FAMILY": "VP-RUNTIME",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RUNTIME-07-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The runtime shell must coordinate captions through the caption projection.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RUNTIME-07-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RUNTIME-07",
+      "TITLE": "Caption coordination"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RUNTIME-08",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-runtime-8"
+      ],
+      "FAMILY": "VP-RUNTIME",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RUNTIME-08-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The runtime shell must consume transition orchestration plans deterministically.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RUNTIME-08-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RUNTIME-08",
+      "TITLE": "Transition coordination"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RUNTIME-09",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-runtime-9"
+      ],
+      "FAMILY": "VP-RUNTIME",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RUNTIME-09-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The runtime shell must present interruption state without implying execution authority.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RUNTIME-09-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RUNTIME-09",
+      "TITLE": "Interruption presentation"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RUNTIME-10",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-runtime-10"
+      ],
+      "FAMILY": "VP-RUNTIME",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RUNTIME-10-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The runtime shell must present recovery state without asserting successful recovery.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RUNTIME-10-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RUNTIME-10",
+      "TITLE": "Recovery presentation"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RUNTIME-11",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-runtime-11"
+      ],
+      "FAMILY": "VP-RUNTIME",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RUNTIME-11-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The runtime shell must select only the supplied device presentation profile.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RUNTIME-11-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RUNTIME-11",
+      "TITLE": "Device selection"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RUNTIME-12",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-runtime-12"
+      ],
+      "FAMILY": "VP-RUNTIME",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RUNTIME-12-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The runtime shell must apply supplied accessibility profile facts before optional presentation.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RUNTIME-12-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RUNTIME-12",
+      "TITLE": "Accessibility coordination"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RUNTIME-13",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-runtime-13"
+      ],
+      "FAMILY": "VP-RUNTIME",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RUNTIME-13-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The runtime shell must consume the supplied performance degradation decision.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RUNTIME-13-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RUNTIME-13",
+      "TITLE": "Performance consumption"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RUNTIME-14",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-runtime-14"
+      ],
+      "FAMILY": "VP-RUNTIME",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RUNTIME-14-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The runtime shell must select an explicit deterministic safe fallback when capability is missing.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RUNTIME-14-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RUNTIME-14",
+      "TITLE": "Safe fallback"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RUNTIME-15",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-runtime-15"
+      ],
+      "FAMILY": "VP-RUNTIME",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RUNTIME-15-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The runtime shell fixture harness must remain metadata-only with flags OFF and activation NONE.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RUNTIME-15-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RUNTIME-15",
+      "TITLE": "Synthetic harness"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RENDERER-01",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-renderer-1"
+      ],
+      "FAMILY": "VP-RENDERER",
+      "FRESHNESS_INPUTS": [
+        "VP-RENDERER-1"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-character-renderer-native/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-character-renderer-native/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RENDERER-01-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The renderer contract must preserve ONYX as a distinct character binding.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RENDERER-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RENDERER-01-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RENDERER-01",
+      "TITLE": "ONYX distinction"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RENDERER-02",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-renderer-2"
+      ],
+      "FAMILY": "VP-RENDERER",
+      "FRESHNESS_INPUTS": [
+        "VP-RENDERER-2"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-character-renderer-native/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-character-renderer-native/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RENDERER-02-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The renderer contract must preserve NOVA as a distinct character binding.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RENDERER-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RENDERER-02-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RENDERER-02",
+      "TITLE": "NOVA distinction"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RENDERER-03",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-renderer-3"
+      ],
+      "FAMILY": "VP-RENDERER",
+      "FRESHNESS_INPUTS": [
+        "VP-RENDERER-3"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-character-renderer-native/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-character-renderer-native/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RENDERER-03-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The renderer must preserve canonical identity and version across device variants.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RENDERER-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RENDERER-03-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RENDERER-03",
+      "TITLE": "Canonical identity"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RENDERER-04",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-renderer-4"
+      ],
+      "FAMILY": "VP-RENDERER",
+      "FRESHNESS_INPUTS": [
+        "VP-RENDERER-4"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-character-renderer-native/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-character-renderer-native/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RENDERER-04-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The renderer must use the renderer adapter contract without direct provider coupling.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RENDERER-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RENDERER-04-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RENDERER-04",
+      "TITLE": "Adapter boundary"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RENDERER-05",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-renderer-5"
+      ],
+      "FAMILY": "VP-RENDERER",
+      "FRESHNESS_INPUTS": [
+        "VP-RENDERER-5"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-character-renderer-native/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-character-renderer-native/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RENDERER-05-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The renderer plan must cover all eight semantic states.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RENDERER-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RENDERER-05-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RENDERER-05",
+      "TITLE": "Eight states"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RENDERER-06",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-renderer-6"
+      ],
+      "FAMILY": "VP-RENDERER",
+      "FRESHNESS_INPUTS": [
+        "VP-RENDERER-6"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-character-renderer-native/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-character-renderer-native/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RENDERER-06-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The renderer plan must make idle motion optional and non-semantic.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RENDERER-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RENDERER-06-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RENDERER-06",
+      "TITLE": "Idle motion"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RENDERER-07",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-renderer-7"
+      ],
+      "FAMILY": "VP-RENDERER",
+      "FRESHNESS_INPUTS": [
+        "VP-RENDERER-7"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-character-renderer-native/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-character-renderer-native/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RENDERER-07-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The renderer plan must use transition intent rather than operational events.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RENDERER-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RENDERER-07-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RENDERER-07",
+      "TITLE": "Transition behavior"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RENDERER-08",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-renderer-8"
+      ],
+      "FAMILY": "VP-RENDERER",
+      "FRESHNESS_INPUTS": [
+        "VP-RENDERER-8"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-character-renderer-native/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-character-renderer-native/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RENDERER-08-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The renderer plan must prioritize APPROVAL_REQUIRED presentation without granting approval.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RENDERER-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RENDERER-08-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RENDERER-08",
+      "TITLE": "Approval priority"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RENDERER-09",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-renderer-9"
+      ],
+      "FAMILY": "VP-RENDERER",
+      "FRESHNESS_INPUTS": [
+        "VP-RENDERER-9"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-character-renderer-native/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-character-renderer-native/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RENDERER-09-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The renderer plan must prioritize PRIVACY_RESTRICTED presentation over appearance.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RENDERER-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RENDERER-09-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RENDERER-09",
+      "TITLE": "Privacy priority"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RENDERER-10",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-renderer-10"
+      ],
+      "FAMILY": "VP-RENDERER",
+      "FRESHNESS_INPUTS": [
+        "VP-RENDERER-10"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-character-renderer-native/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-character-renderer-native/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RENDERER-10-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The renderer plan must distinguish RECOVERING without claiming recovery completion.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RENDERER-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RENDERER-10-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RENDERER-10",
+      "TITLE": "Recovery treatment"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RENDERER-11",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-renderer-11"
+      ],
+      "FAMILY": "VP-RENDERER",
+      "FRESHNESS_INPUTS": [
+        "VP-RENDERER-11"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-character-renderer-native/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-character-renderer-native/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RENDERER-11-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The renderer plan must remove nonessential motion when reduced motion is supplied.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RENDERER-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RENDERER-11-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RENDERER-11",
+      "TITLE": "Reduced motion"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RENDERER-12",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-renderer-12"
+      ],
+      "FAMILY": "VP-RENDERER",
+      "FRESHNESS_INPUTS": [
+        "VP-RENDERER-12"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-character-renderer-native/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-character-renderer-native/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RENDERER-12-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The renderer plan must preserve state distinction under high contrast.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RENDERER-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RENDERER-12-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RENDERER-12",
+      "TITLE": "High contrast"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RENDERER-13",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-renderer-13"
+      ],
+      "FAMILY": "VP-RENDERER",
+      "FRESHNESS_INPUTS": [
+        "VP-RENDERER-13"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-character-renderer-native/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-character-renderer-native/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RENDERER-13-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The renderer plan must provide text-only fallback when rendering is unavailable.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RENDERER-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RENDERER-13-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RENDERER-13",
+      "TITLE": "Text fallback"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RENDERER-14",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-renderer-14"
+      ],
+      "FAMILY": "VP-RENDERER",
+      "FRESHNESS_INPUTS": [
+        "VP-RENDERER-14"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-character-renderer-native/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-character-renderer-native/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RENDERER-14-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The renderer plan must preserve character semantics on desktop and TV variants.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RENDERER-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RENDERER-14-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RENDERER-14",
+      "TITLE": "Variant consistency"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-RENDERER-15",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-renderer-15"
+      ],
+      "FAMILY": "VP-RENDERER",
+      "FRESHNESS_INPUTS": [
+        "VP-RENDERER-15"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-character-renderer-native/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-character-renderer-native/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-RENDERER-15-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The renderer plan must require no MetaHuman, likeness, or external provider dependency.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RENDERER-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-RENDERER-15-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-RENDERER-15",
+      "TITLE": "Provider exclusion"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-STATE-01",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-state-1"
+      ],
+      "FAMILY": "VP-STATE",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-STATE-01-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "IDLE must communicate inactive presentation without inferring availability or authority.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-STATE-01-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-STATE-01",
+      "TITLE": "IDLE"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-STATE-02",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-state-2"
+      ],
+      "FAMILY": "VP-STATE",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-STATE-02-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "LISTENING must communicate a presentation state without recognition or authentication inference.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-STATE-02-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-STATE-02",
+      "TITLE": "LISTENING"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-STATE-03",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-state-3"
+      ],
+      "FAMILY": "VP-STATE",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-STATE-03-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "UNDERSTANDING must communicate semantic processing presentation without operational truth.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-STATE-03-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-STATE-03",
+      "TITLE": "UNDERSTANDING"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-STATE-04",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-state-4"
+      ],
+      "FAMILY": "VP-STATE",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-STATE-04-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "THINKING must communicate pending presentation without asserting a decision.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-STATE-04-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-STATE-04",
+      "TITLE": "THINKING"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-STATE-05",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-state-5"
+      ],
+      "FAMILY": "VP-STATE",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-STATE-05-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "SPEAKING must communicate presentation speech state without production voice execution.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-STATE-05-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-STATE-05",
+      "TITLE": "SPEAKING"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-STATE-06",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-state-6"
+      ],
+      "FAMILY": "VP-STATE",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-STATE-06-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "APPROVAL_REQUIRED must communicate a request without granting authorization or approval.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-STATE-06-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-STATE-06",
+      "TITLE": "APPROVAL_REQUIRED"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-STATE-07",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-state-7"
+      ],
+      "FAMILY": "VP-STATE",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-STATE-07-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "PRIVACY_RESTRICTED must communicate restriction and suppress less-private presentation.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-STATE-07-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-STATE-07",
+      "TITLE": "PRIVACY_RESTRICTED"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-STATE-08",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-state-8"
+      ],
+      "FAMILY": "VP-STATE",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-STATE-08-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "RECOVERING must communicate recovery presentation without asserting a completed restore.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-STATE-08-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-STATE-08",
+      "TITLE": "RECOVERING"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PRIVACY-01",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-privacy-1"
+      ],
+      "FAMILY": "VP-PRIVACY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PRIVACY-01-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "PRIVATE_ALLOWED may permit the least restrictive supplied presentation projection.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PRIVACY-01-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PRIVACY-01",
+      "TITLE": "Private allowed"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PRIVACY-02",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-privacy-2"
+      ],
+      "FAMILY": "VP-PRIVACY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PRIVACY-02-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "SHARED_ROOM_RESTRICTED must select a shared-room-safe presentation projection.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PRIVACY-02-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PRIVACY-02",
+      "TITLE": "Shared room"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PRIVACY-03",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-privacy-3"
+      ],
+      "FAMILY": "VP-PRIVACY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PRIVACY-03-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "PRIVACY_UNKNOWN must fail closed to a safe fallback.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PRIVACY-03-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PRIVACY-03",
+      "TITLE": "Unknown"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PRIVACY-04",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-privacy-4"
+      ],
+      "FAMILY": "VP-PRIVACY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PRIVACY-04-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "PRIVACY_MALFORMED must fail closed to a safe fallback.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PRIVACY-04-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PRIVACY-04",
+      "TITLE": "Malformed"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PRIVACY-05",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-privacy-5"
+      ],
+      "FAMILY": "VP-PRIVACY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PRIVACY-05-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "PRIVACY_STALE must fail closed to a safe fallback.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PRIVACY-05-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PRIVACY-05",
+      "TITLE": "Stale"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PRIVACY-06",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-privacy-6"
+      ],
+      "FAMILY": "VP-PRIVACY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PRIVACY-06-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "PRIVACY_CONFLICTING must fail closed to a safe fallback.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PRIVACY-06-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PRIVACY-06",
+      "TITLE": "Conflicting"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PRIVACY-07",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-privacy-7"
+      ],
+      "FAMILY": "VP-PRIVACY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PRIVACY-07-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Restricted privacy must redact captions before caption presentation.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PRIVACY-07-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PRIVACY-07",
+      "TITLE": "Caption redaction"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PRIVACY-08",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-privacy-8"
+      ],
+      "FAMILY": "VP-PRIVACY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PRIVACY-08-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Restricted privacy must use a coarse projection on TV.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PRIVACY-08-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PRIVACY-08",
+      "TITLE": "TV coarse projection"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PRIVACY-09",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-privacy-9"
+      ],
+      "FAMILY": "VP-PRIVACY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PRIVACY-09-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Restricted privacy must suppress approval detail.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PRIVACY-09-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PRIVACY-09",
+      "TITLE": "Approval suppression"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PRIVACY-10",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-privacy-10"
+      ],
+      "FAMILY": "VP-PRIVACY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PRIVACY-10-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "World metadata must remain separate from privacy-sensitive presentation detail.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PRIVACY-10-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PRIVACY-10",
+      "TITLE": "World separation"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PRIVACY-11",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-privacy-11"
+      ],
+      "FAMILY": "VP-PRIVACY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PRIVACY-11-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Animation metadata must not reveal restricted privacy detail.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PRIVACY-11-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PRIVACY-11",
+      "TITLE": "Animation separation"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PRIVACY-12",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-privacy-12"
+      ],
+      "FAMILY": "VP-PRIVACY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PRIVACY-12-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Privacy projection must not depend on camera or recognition capability.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PRIVACY-12-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PRIVACY-12",
+      "TITLE": "No camera dependency"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-ACCESSIBILITY-01",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-accessibility-1"
+      ],
+      "FAMILY": "VP-ACCESSIBILITY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-ACCESSIBILITY-01-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Reduced motion must remove nonessential animation.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-ACCESSIBILITY-01-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-ACCESSIBILITY-01",
+      "TITLE": "Reduced motion"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-ACCESSIBILITY-02",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-accessibility-2"
+      ],
+      "FAMILY": "VP-ACCESSIBILITY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-ACCESSIBILITY-02-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "High contrast must preserve semantic state discrimination.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-ACCESSIBILITY-02-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-ACCESSIBILITY-02",
+      "TITLE": "High contrast"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-ACCESSIBILITY-03",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-accessibility-3"
+      ],
+      "FAMILY": "VP-ACCESSIBILITY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-ACCESSIBILITY-03-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Captions must be coordinated through the caption projection.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-ACCESSIBILITY-03-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-ACCESSIBILITY-03",
+      "TITLE": "Captions"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-ACCESSIBILITY-04",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-accessibility-4"
+      ],
+      "FAMILY": "VP-ACCESSIBILITY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-ACCESSIBILITY-04-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Text-only fallback must be available when richer presentation is unavailable.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-ACCESSIBILITY-04-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-ACCESSIBILITY-04",
+      "TITLE": "Text-only"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-ACCESSIBILITY-05",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-accessibility-5"
+      ],
+      "FAMILY": "VP-ACCESSIBILITY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-ACCESSIBILITY-05-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Keyboard focus metadata must provide a deterministic navigation target.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-ACCESSIBILITY-05-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-ACCESSIBILITY-05",
+      "TITLE": "Keyboard focus"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-ACCESSIBILITY-06",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-accessibility-6"
+      ],
+      "FAMILY": "VP-ACCESSIBILITY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-ACCESSIBILITY-06-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Remote focus metadata must provide a deterministic navigation target.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-ACCESSIBILITY-06-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-ACCESSIBILITY-06",
+      "TITLE": "Remote focus"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-ACCESSIBILITY-07",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-accessibility-7"
+      ],
+      "FAMILY": "VP-ACCESSIBILITY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-ACCESSIBILITY-07-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Focused state must remain visibly distinguishable.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-ACCESSIBILITY-07-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-ACCESSIBILITY-07",
+      "TITLE": "Focus visibility"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-ACCESSIBILITY-08",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-accessibility-8"
+      ],
+      "FAMILY": "VP-ACCESSIBILITY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-ACCESSIBILITY-08-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "TV text metadata must support 10-foot readability.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-ACCESSIBILITY-08-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-ACCESSIBILITY-08",
+      "TITLE": "Ten-foot readability"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-ACCESSIBILITY-09",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-accessibility-9"
+      ],
+      "FAMILY": "VP-ACCESSIBILITY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-ACCESSIBILITY-09-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "TV presentation metadata must reserve the overscan safe zone.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-ACCESSIBILITY-09-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-ACCESSIBILITY-09",
+      "TITLE": "Overscan safe zone"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-ACCESSIBILITY-10",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-accessibility-10"
+      ],
+      "FAMILY": "VP-ACCESSIBILITY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-ACCESSIBILITY-10-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Accessibility presentation must distinguish all semantic states.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-ACCESSIBILITY-10-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-ACCESSIBILITY-10",
+      "TITLE": "Semantic distinction"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-ACCESSIBILITY-11",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-accessibility-11"
+      ],
+      "FAMILY": "VP-ACCESSIBILITY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-ACCESSIBILITY-11-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Accessibility presentation must distinguish restricted privacy state.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-ACCESSIBILITY-11-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-ACCESSIBILITY-11",
+      "TITLE": "Privacy distinction"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-ACCESSIBILITY-12",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-accessibility-12"
+      ],
+      "FAMILY": "VP-ACCESSIBILITY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-ACCESSIBILITY-12-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Accessibility presentation must distinguish approval-required state without approving.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-ACCESSIBILITY-12-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-ACCESSIBILITY-12",
+      "TITLE": "Approval distinction"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-ACCESSIBILITY-13",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-accessibility-13"
+      ],
+      "FAMILY": "VP-ACCESSIBILITY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-ACCESSIBILITY-13-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Accessibility presentation must reduce sensory load when requested.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-ACCESSIBILITY-13-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-ACCESSIBILITY-13",
+      "TITLE": "Sensory reduction"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-ACCESSIBILITY-14",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-accessibility-14"
+      ],
+      "FAMILY": "VP-ACCESSIBILITY",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-ACCESSIBILITY-14-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Fallback must preserve accessibility and privacy constraints.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-ACCESSIBILITY-14-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-ACCESSIBILITY-14",
+      "TITLE": "Fallback preservation"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-WORLD-01",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-world-1"
+      ],
+      "FAMILY": "VP-WORLD",
+      "FRESHNESS_INPUTS": [
+        "VP-WORLD-1"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-WORLD-01-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The world registry must enumerate metadata-only world candidates.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-WORLD-01-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-WORLD-01",
+      "TITLE": "World Registry"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-WORLD-02",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-world-2"
+      ],
+      "FAMILY": "VP-WORLD",
+      "FRESHNESS_INPUTS": [
+        "VP-WORLD-2"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-WORLD-02-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The theme intent resolver must select worlds from supplied intent only.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-WORLD-02-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-WORLD-02",
+      "TITLE": "Theme resolver"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-WORLD-03",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-world-3"
+      ],
+      "FAMILY": "VP-WORLD",
+      "FRESHNESS_INPUTS": [
+        "VP-WORLD-3"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-WORLD-03-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Level 1 worlds must support static theme metadata.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-WORLD-03-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-WORLD-03",
+      "TITLE": "Static themes"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-WORLD-04",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-world-4"
+      ],
+      "FAMILY": "VP-WORLD",
+      "FRESHNESS_INPUTS": [
+        "VP-WORLD-4"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-WORLD-04-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Level 2 worlds must describe native motion as optional metadata.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-WORLD-04-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-WORLD-04",
+      "TITLE": "Native motion"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-WORLD-05",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-world-5"
+      ],
+      "FAMILY": "VP-WORLD",
+      "FRESHNESS_INPUTS": [
+        "VP-WORLD-5"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-WORLD-05-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Level 3 worlds must isolate local WebM behind an adapter boundary.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-WORLD-05-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-WORLD-05",
+      "TITLE": "WebM adapter"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-WORLD-06",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-world-6"
+      ],
+      "FAMILY": "VP-WORLD",
+      "FRESHNESS_INPUTS": [
+        "VP-WORLD-6"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-WORLD-06-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The Operations Center fixture must be metadata only.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-WORLD-06-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-WORLD-06",
+      "TITLE": "Operations Center"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-WORLD-07",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-world-7"
+      ],
+      "FAMILY": "VP-WORLD",
+      "FRESHNESS_INPUTS": [
+        "VP-WORLD-7"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-WORLD-07-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The Future City fixture must be metadata only.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-WORLD-07-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-WORLD-07",
+      "TITLE": "Future City"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-WORLD-08",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-world-8"
+      ],
+      "FAMILY": "VP-WORLD",
+      "FRESHNESS_INPUTS": [
+        "VP-WORLD-8"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-WORLD-08-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The nature fixture must be metadata only.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-WORLD-08-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-WORLD-08",
+      "TITLE": "Nature"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-WORLD-09",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-world-9"
+      ],
+      "FAMILY": "VP-WORLD",
+      "FRESHNESS_INPUTS": [
+        "VP-WORLD-9"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-WORLD-09-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "The space fixture must be metadata only.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-WORLD-09-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-WORLD-09",
+      "TITLE": "Space"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-WORLD-10",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-world-10"
+      ],
+      "FAMILY": "VP-WORLD",
+      "FRESHNESS_INPUTS": [
+        "VP-WORLD-10"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-WORLD-10-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Reduced-motion world projection must suppress optional motion.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-WORLD-10-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-WORLD-10",
+      "TITLE": "Reduced motion"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-WORLD-11",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-world-11"
+      ],
+      "FAMILY": "VP-WORLD",
+      "FRESHNESS_INPUTS": [
+        "VP-WORLD-11"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-WORLD-11-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Low-power world projection must select static or safe fallback.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-WORLD-11-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-WORLD-11",
+      "TITLE": "Low power"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-WORLD-12",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-world-12"
+      ],
+      "FAMILY": "VP-WORLD",
+      "FRESHNESS_INPUTS": [
+        "VP-WORLD-12"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-WORLD-12-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "World transition sequences must follow supplied orchestration intent.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-WORLD-12-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-WORLD-12",
+      "TITLE": "Transition sequence"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-WORLD-13",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-world-13"
+      ],
+      "FAMILY": "VP-WORLD",
+      "FRESHNESS_INPUTS": [
+        "VP-WORLD-13"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-WORLD-13-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "World promotion must require provenance-controlled evidence.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-WORLD-13-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-WORLD-13",
+      "TITLE": "Provenance promotion"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-WORLD-14",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-world-14"
+      ],
+      "FAMILY": "VP-WORLD",
+      "FRESHNESS_INPUTS": [
+        "VP-WORLD-14"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-WORLD-14-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "World presentation must not claim operational truth.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-WORLD-14-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-WORLD-14",
+      "TITLE": "Operational truth"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-AUDIO-01",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-audio-1"
+      ],
+      "FAMILY": "VP-AUDIO",
+      "FRESHNESS_INPUTS": [
+        "VP-AUDIO-1"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-AUDIO-01-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Ambient audio must begin as a non-executing audio intent.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-AUDIO-01-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-AUDIO-01",
+      "TITLE": "Audio intent"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-AUDIO-02",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-audio-2"
+      ],
+      "FAMILY": "VP-AUDIO",
+      "FRESHNESS_INPUTS": [
+        "VP-AUDIO-2"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-AUDIO-02-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Audio projection must use supplied availability facts only.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-AUDIO-02-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-AUDIO-02",
+      "TITLE": "Availability"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-AUDIO-03",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-audio-3"
+      ],
+      "FAMILY": "VP-AUDIO",
+      "FRESHNESS_INPUTS": [
+        "VP-AUDIO-3"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-AUDIO-03-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Audio intent may describe speech-aware ducking without controlling speech.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-AUDIO-03-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-AUDIO-03",
+      "TITLE": "Ducking"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-AUDIO-04",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-audio-4"
+      ],
+      "FAMILY": "VP-AUDIO",
+      "FRESHNESS_INPUTS": [
+        "VP-AUDIO-4"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-AUDIO-04-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Mute intent must suppress ambient audio projection.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-AUDIO-04-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-AUDIO-04",
+      "TITLE": "Mute"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-AUDIO-05",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-audio-5"
+      ],
+      "FAMILY": "VP-AUDIO",
+      "FRESHNESS_INPUTS": [
+        "VP-AUDIO-5"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-AUDIO-05-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Stop intent must suppress ambient audio projection.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-AUDIO-05-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-AUDIO-05",
+      "TITLE": "Stop"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-AUDIO-06",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-audio-6"
+      ],
+      "FAMILY": "VP-AUDIO",
+      "FRESHNESS_INPUTS": [
+        "VP-AUDIO-6"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-AUDIO-06-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Sensory reduction must suppress optional ambient audio.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-AUDIO-06-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-AUDIO-06",
+      "TITLE": "Sensory reduction"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-AUDIO-07",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-audio-7"
+      ],
+      "FAMILY": "VP-AUDIO",
+      "FRESHNESS_INPUTS": [
+        "VP-AUDIO-7"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-AUDIO-07-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Unavailable audio must select an explicit silent fallback.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-AUDIO-07-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-AUDIO-07",
+      "TITLE": "Unavailable fallback"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-AUDIO-08",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-audio-8"
+      ],
+      "FAMILY": "VP-AUDIO",
+      "FRESHNESS_INPUTS": [
+        "VP-AUDIO-8"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-ambient-experience-foundation/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-ambient-experience-foundation/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-AUDIO-08-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Ambient audio must not require a voice provider or authority coupling.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-WORLD-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-AUDIO-08-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-AUDIO-08",
+      "TITLE": "Provider boundary"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-TV-01",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-tv-1"
+      ],
+      "FAMILY": "VP-TV",
+      "FRESHNESS_INPUTS": [
+        "VP-TV-1"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-tv-presence-runtime/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-tv-presence-runtime/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-TV-01-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "TV must be modeled as a first-class interface, not casting.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-TV-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-TV-01-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-TV-01",
+      "TITLE": "First class"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-TV-02",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-tv-2"
+      ],
+      "FAMILY": "VP-TV",
+      "FRESHNESS_INPUTS": [
+        "VP-TV-2"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-tv-presence-runtime/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-tv-presence-runtime/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-TV-02-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "TV must use an explicit 16:9 profile.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-TV-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-TV-02-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-TV-02",
+      "TITLE": "16:9"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-TV-03",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-tv-3"
+      ],
+      "FAMILY": "VP-TV",
+      "FRESHNESS_INPUTS": [
+        "VP-TV-3"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-tv-presence-runtime/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-tv-presence-runtime/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-TV-03-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "TV must use an explicit overscan profile.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-TV-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-TV-03-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-TV-03",
+      "TITLE": "Overscan"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-TV-04",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-tv-4"
+      ],
+      "FAMILY": "VP-TV",
+      "FRESHNESS_INPUTS": [
+        "VP-TV-4"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-tv-presence-runtime/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-tv-presence-runtime/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-TV-04-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "TV projections must retain 10-foot readable metadata.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-TV-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-TV-04-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-TV-04",
+      "TITLE": "Readability"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-TV-05",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-tv-5"
+      ],
+      "FAMILY": "VP-TV",
+      "FRESHNESS_INPUTS": [
+        "VP-TV-5"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-tv-presence-runtime/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-tv-presence-runtime/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-TV-05-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "TV projections must support remote focus metadata.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-TV-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-TV-05-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-TV-05",
+      "TITLE": "Remote focus"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-TV-06",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-tv-6"
+      ],
+      "FAMILY": "VP-TV",
+      "FRESHNESS_INPUTS": [
+        "VP-TV-6"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-tv-presence-runtime/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-tv-presence-runtime/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-TV-06-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "TV projections must distinguish selected state.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-TV-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-TV-06-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-TV-06",
+      "TITLE": "Selected state"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-TV-07",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-tv-7"
+      ],
+      "FAMILY": "VP-TV",
+      "FRESHNESS_INPUTS": [
+        "VP-TV-7"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-tv-presence-runtime/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-tv-presence-runtime/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-TV-07-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "TV projections must support large captions.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-TV-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-TV-07-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-TV-07",
+      "TITLE": "Large captions"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-TV-08",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-tv-8"
+      ],
+      "FAMILY": "VP-TV",
+      "FRESHNESS_INPUTS": [
+        "VP-TV-8"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-tv-presence-runtime/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-tv-presence-runtime/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-TV-08-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "TV projections must enforce shared-room privacy.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-TV-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-TV-08-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-TV-08",
+      "TITLE": "Shared room"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-TV-09",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-tv-9"
+      ],
+      "FAMILY": "VP-TV",
+      "FRESHNESS_INPUTS": [
+        "VP-TV-9"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-tv-presence-runtime/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-tv-presence-runtime/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-TV-09-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "TV projections must support reduced information density.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-TV-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-TV-09-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-TV-09",
+      "TITLE": "Reduced density"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-TV-10",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-tv-10"
+      ],
+      "FAMILY": "VP-TV",
+      "FRESHNESS_INPUTS": [
+        "VP-TV-10"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-tv-presence-runtime/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-tv-presence-runtime/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-TV-10-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "TV approval-required state must dominate optional presentation without granting approval.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-TV-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-TV-10-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-TV-10",
+      "TITLE": "Approval dominance"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-TV-11",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-tv-11"
+      ],
+      "FAMILY": "VP-TV",
+      "FRESHNESS_INPUTS": [
+        "VP-TV-11"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-tv-presence-runtime/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-tv-presence-runtime/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-TV-11-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "TV privacy restriction must dominate optional presentation.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-TV-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-TV-11-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-TV-11",
+      "TITLE": "Privacy dominance"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-TV-12",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-tv-12"
+      ],
+      "FAMILY": "VP-TV",
+      "FRESHNESS_INPUTS": [
+        "VP-TV-12"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-tv-presence-runtime/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-tv-presence-runtime/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-TV-12-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "TV must select low-power fallback from supplied performance facts.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-TV-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-TV-12-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-TV-12",
+      "TITLE": "Low power"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-TV-13",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-tv-13"
+      ],
+      "FAMILY": "VP-TV",
+      "FRESHNESS_INPUTS": [
+        "VP-TV-13"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-tv-presence-runtime/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-tv-presence-runtime/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-TV-13-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "TV must select text fallback when video capability is absent.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-TV-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-TV-13-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-TV-13",
+      "TITLE": "No video"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-TV-14",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-tv-14"
+      ],
+      "FAMILY": "VP-TV",
+      "FRESHNESS_INPUTS": [
+        "VP-TV-14"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-tv-presence-runtime/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-tv-presence-runtime/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-TV-14-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "TV must preserve canonical avatar variant semantics.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-TV-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-TV-14-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-TV-14",
+      "TITLE": "Variant consistency"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PERFORMANCE-01",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-performance-1"
+      ],
+      "FAMILY": "VP-PERFORMANCE",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PERFORMANCE-01-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Performance selection must use supplied device facts only.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PERFORMANCE-01-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PERFORMANCE-01",
+      "TITLE": "Device facts"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PERFORMANCE-02",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-performance-2"
+      ],
+      "FAMILY": "VP-PERFORMANCE",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PERFORMANCE-02-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Performance selection must use supplied capability facts only.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PERFORMANCE-02-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PERFORMANCE-02",
+      "TITLE": "Capability facts"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PERFORMANCE-03",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-performance-3"
+      ],
+      "FAMILY": "VP-PERFORMANCE",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PERFORMANCE-03-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "PREMIUM_MOTION must remain an explicit optional degradation class.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PERFORMANCE-03-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PERFORMANCE-03",
+      "TITLE": "Premium motion"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PERFORMANCE-04",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-performance-4"
+      ],
+      "FAMILY": "VP-PERFORMANCE",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PERFORMANCE-04-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "STANDARD_MOTION must remain an explicit degradation class.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PERFORMANCE-04-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PERFORMANCE-04",
+      "TITLE": "Standard motion"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PERFORMANCE-05",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-performance-5"
+      ],
+      "FAMILY": "VP-PERFORMANCE",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PERFORMANCE-05-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "REDUCED_MOTION must honor accessibility motion reduction.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PERFORMANCE-05-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PERFORMANCE-05",
+      "TITLE": "Reduced motion"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PERFORMANCE-06",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-performance-6"
+      ],
+      "FAMILY": "VP-PERFORMANCE",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PERFORMANCE-06-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "STATIC_CHARACTER must retain character binding while removing motion.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PERFORMANCE-06-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PERFORMANCE-06",
+      "TITLE": "Static character"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PERFORMANCE-07",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-performance-7"
+      ],
+      "FAMILY": "VP-PERFORMANCE",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PERFORMANCE-07-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "STATIC_WORLD must retain world intent while removing motion.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PERFORMANCE-07-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PERFORMANCE-07",
+      "TITLE": "Static world"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PERFORMANCE-08",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-performance-8"
+      ],
+      "FAMILY": "VP-PERFORMANCE",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PERFORMANCE-08-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "TEXT_ONLY_SAFE_FALLBACK must be explicit and deterministic.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PERFORMANCE-08-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PERFORMANCE-08",
+      "TITLE": "Text fallback"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PERFORMANCE-09",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-performance-9"
+      ],
+      "FAMILY": "VP-PERFORMANCE",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PERFORMANCE-09-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Privacy and accessibility constraints must precede performance preference.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PERFORMANCE-09-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PERFORMANCE-09",
+      "TITLE": "Precedence"
+    },
+    {
+      "ACCEPTANCE_ID": "VP-PERFORMANCE-10",
+      "ACCESSIBILITY_OBLIGATION": "preserve supplied accessibility facts and fallback semantics",
+      "COMPATIBILITY_OBLIGATION": "preserve frozen shared-contract fingerprint",
+      "COMPLETION_STATE": "IMPLEMENTED_AND_TESTED",
+      "CURRENT_CLASSIFICATION": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_PATHS": [
+        "evidence:vp-performance-10"
+      ],
+      "FAMILY": "VP-PERFORMANCE",
+      "FRESHNESS_INPUTS": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "GAP_DESCRIPTION": "Independently verified implementation and executable positive/negative row assertions.",
+      "IMPLEMENTATION_EXPORT_OR_DELIVERABLE": "packages/post-alpha-presentation-runtime-shell/**",
+      "IMPLEMENTATION_PATHS": [
+        "packages/post-alpha-presentation-runtime-shell/**"
+      ],
+      "INVALIDATION_TRIGGERS": [
+        "requirement source, contract, baseline, or invariant changes"
+      ],
+      "NEGATIVE_OR_ADVERSARIAL_TEST_IDS": [
+        "VP-PERFORMANCE-10-NEG-001"
+      ],
+      "NORMATIVE_REQUIREMENT": "Performance degradation must not silently change identity or semantic state.",
+      "NO_AUTHORITY_OBLIGATION": "non-authorizing presentation only",
+      "OWNER_LANE": "VISIBLE-RUNTIME-01",
+      "PERFORMANCE_OBLIGATION": "deterministic degradation; physical metrics NOT_MEASURED",
+      "POSITIVE_TEST_IDS": [
+        "VP-PERFORMANCE-10-POS-001"
+      ],
+      "PRIVACY_OBLIGATION": "fail closed and minimize protected detail",
+      "REQUIREMENT_ID": "VP-PERFORMANCE-10",
+      "TITLE": "Semantic preservation"
+    }
+  ]
+}

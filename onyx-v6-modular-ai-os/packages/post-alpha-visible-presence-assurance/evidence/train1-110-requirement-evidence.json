@@ -1,0 +1,2985 @@
+{
+  "schemaVersion": "VP_TRAIN1_REQUIREMENT_EVIDENCE_V1",
+  "baselineSha": "71f631f79aab57777425c9812235cedc7f2fd3c0",
+  "compatibilityFingerprint": "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+  "canonicalAlgorithmId": "VP_CANDIDATE_CONTENT_BUNDLE_SHA256_V1",
+  "rowEvidenceHashAlgorithmId": "VP_ROW_EVIDENCE_SHA256_V1",
+  "requirements": 110,
+  "rows": [
+    {
+      "requirementId": "VP-RUNTIME-01",
+      "family": "VP-RUNTIME",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-RUNTIME-01",
+      "normativeRequirement": "The runtime shell must consume only contract-validated presentation models.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-RUNTIME-01-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RUNTIME-01-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "f1fa814f3facda1b485ab95912aa862696afa733cd14d69ec4fece162b8d7fd4",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RUNTIME-02",
+      "family": "VP-RUNTIME",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-RUNTIME-02",
+      "normativeRequirement": "The runtime shell must not own or infer identity.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-RUNTIME-02-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RUNTIME-02-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "6b368cdb974544eb0361978efe528f886b5f0dbb6fe6f59aaa90f5cc99b63c35",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RUNTIME-03",
+      "family": "VP-RUNTIME",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-RUNTIME-03",
+      "normativeRequirement": "The runtime shell must orchestrate only supplied semantic presentation states.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-RUNTIME-03-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RUNTIME-03-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "9198729ccdeb6ca0acaf124bcf0611d296845e0fbb327b0b4ff7593b5921e844",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RUNTIME-04",
+      "family": "VP-RUNTIME",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-RUNTIME-04",
+      "normativeRequirement": "The runtime shell must select the privacy-safe projection when privacy conflicts with presentation preference.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-RUNTIME-04-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RUNTIME-04-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "482f2c7acf69f27199bc0020e81f4ce0e2923d24024a8510c33350c9698ca83b",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RUNTIME-05",
+      "family": "VP-RUNTIME",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-RUNTIME-05",
+      "normativeRequirement": "The runtime shell must render governance projections as non-authorizing information.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-RUNTIME-05-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RUNTIME-05-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "1f4bbac0529aba966555be84c9efb213e0fca151e241929c7c2a38060b60eaec",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RUNTIME-06",
+      "family": "VP-RUNTIME",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-RUNTIME-06",
+      "normativeRequirement": "The runtime shell must render intelligence projections as non-authorizing information.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-RUNTIME-06-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RUNTIME-06-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "966dd86d283624934fbb001d12268b8323eb9b60234cbd453d06ca2541d2a69a",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RUNTIME-07",
+      "family": "VP-RUNTIME",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-RUNTIME-07",
+      "normativeRequirement": "The runtime shell must coordinate captions through the caption projection.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-RUNTIME-07-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RUNTIME-07-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "8ce2dff1a8e838eb70a59be4052fbe4c4dce978ef201c59540cd64fc234b48ad",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RUNTIME-08",
+      "family": "VP-RUNTIME",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-RUNTIME-08",
+      "normativeRequirement": "The runtime shell must consume transition orchestration plans deterministically.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-RUNTIME-08-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RUNTIME-08-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "68f918efcf23feccf7e78f256b84847794acd939e8a72b93e1872d875f225540",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RUNTIME-09",
+      "family": "VP-RUNTIME",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-RUNTIME-09",
+      "normativeRequirement": "The runtime shell must present interruption state without implying execution authority.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-RUNTIME-09-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RUNTIME-09-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "0c67416561f127b0c3e6037cf208a59186b47e2dee002fc92ff2477831a19a71",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RUNTIME-10",
+      "family": "VP-RUNTIME",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-RUNTIME-10",
+      "normativeRequirement": "The runtime shell must present recovery state without asserting successful recovery.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-RUNTIME-10-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RUNTIME-10-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "82c0d1c926d0d77ea421b805cb4eedbf08878200e41e2c6a7c28d81fc8f652e9",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RUNTIME-11",
+      "family": "VP-RUNTIME",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-RUNTIME-11",
+      "normativeRequirement": "The runtime shell must select only the supplied device presentation profile.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-RUNTIME-11-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RUNTIME-11-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "4f6eaa7f99eb645db4b424e2a4f0713c4bcd01e8f40b70eb8ca5b4863a8ef603",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RUNTIME-12",
+      "family": "VP-RUNTIME",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-RUNTIME-12",
+      "normativeRequirement": "The runtime shell must apply supplied accessibility profile facts before optional presentation.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-RUNTIME-12-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RUNTIME-12-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "10f829a19dc0899af3161f0802470f90a8e3efa8e5af0d4cacf57f74e129ca47",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RUNTIME-13",
+      "family": "VP-RUNTIME",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-RUNTIME-13",
+      "normativeRequirement": "The runtime shell must consume the supplied performance degradation decision.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-RUNTIME-13-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RUNTIME-13-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "d07e881c0a6f724e366329b30cc9ff0113e5dcf530ad5e0fccb96134e65872df",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RUNTIME-14",
+      "family": "VP-RUNTIME",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-RUNTIME-14",
+      "normativeRequirement": "The runtime shell must select an explicit deterministic safe fallback when capability is missing.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-RUNTIME-14-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RUNTIME-14-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "b85106d31c063376ab4918df94489219307543d88fa35bd8e09d3a7926c77364",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RUNTIME-15",
+      "family": "VP-RUNTIME",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-RUNTIME-15",
+      "normativeRequirement": "The runtime shell fixture harness must remain metadata-only with flags OFF and activation NONE.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-RUNTIME-15-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RUNTIME-15-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "bfba5e2beb2a27ac1944e7a0784d61b2b5ee3bdaec4b3c028601fbf90d526806",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RENDERER-01",
+      "family": "VP-RENDERER",
+      "ownerLane": "VISIBLE-RENDERER-01",
+      "acceptanceId": "VP-RENDERER-01",
+      "normativeRequirement": "The renderer contract must preserve ONYX as a distinct character binding.",
+      "implementationPath": "packages/post-alpha-character-renderer-native/src/index.ts",
+      "implementationFileSha256": "b7c1a93b411916e2a6bcb76fefc4ca3b4e7350605d4305b24aab63d73649dbf7",
+      "positiveTestIds": [
+        "VP-RENDERER-01-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RENDERER-01-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-character-renderer-native/tests/requirement-rows.test.ts",
+      "testFileSha256": "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "e72ce27564c0668c251824e3c3cf8f38bfbd59ea8a199b7dc36bbae5d1440590",
+        "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "eb99d3888ddf458cc13531e81830a5a75e609100aaed4fd4d29083f3c2a588a2",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RENDERER-02",
+      "family": "VP-RENDERER",
+      "ownerLane": "VISIBLE-RENDERER-01",
+      "acceptanceId": "VP-RENDERER-02",
+      "normativeRequirement": "The renderer contract must preserve NOVA as a distinct character binding.",
+      "implementationPath": "packages/post-alpha-character-renderer-native/src/index.ts",
+      "implementationFileSha256": "b7c1a93b411916e2a6bcb76fefc4ca3b4e7350605d4305b24aab63d73649dbf7",
+      "positiveTestIds": [
+        "VP-RENDERER-02-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RENDERER-02-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-character-renderer-native/tests/requirement-rows.test.ts",
+      "testFileSha256": "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "e72ce27564c0668c251824e3c3cf8f38bfbd59ea8a199b7dc36bbae5d1440590",
+        "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "1ad1f1984d8db48a67558d7d576d82dc5952b3b128c92c4e1ea22d9875418123",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RENDERER-03",
+      "family": "VP-RENDERER",
+      "ownerLane": "VISIBLE-RENDERER-01",
+      "acceptanceId": "VP-RENDERER-03",
+      "normativeRequirement": "The renderer must preserve canonical identity and version across device variants.",
+      "implementationPath": "packages/post-alpha-character-renderer-native/src/index.ts",
+      "implementationFileSha256": "b7c1a93b411916e2a6bcb76fefc4ca3b4e7350605d4305b24aab63d73649dbf7",
+      "positiveTestIds": [
+        "VP-RENDERER-03-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RENDERER-03-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-character-renderer-native/tests/requirement-rows.test.ts",
+      "testFileSha256": "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "e72ce27564c0668c251824e3c3cf8f38bfbd59ea8a199b7dc36bbae5d1440590",
+        "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "959cf65d73cfad1165aaaa439038bc856c693b80825e69f8d32030f8e821b176",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RENDERER-04",
+      "family": "VP-RENDERER",
+      "ownerLane": "VISIBLE-RENDERER-01",
+      "acceptanceId": "VP-RENDERER-04",
+      "normativeRequirement": "The renderer must use the renderer adapter contract without direct provider coupling.",
+      "implementationPath": "packages/post-alpha-character-renderer-native/src/index.ts",
+      "implementationFileSha256": "b7c1a93b411916e2a6bcb76fefc4ca3b4e7350605d4305b24aab63d73649dbf7",
+      "positiveTestIds": [
+        "VP-RENDERER-04-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RENDERER-04-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-character-renderer-native/tests/requirement-rows.test.ts",
+      "testFileSha256": "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "e72ce27564c0668c251824e3c3cf8f38bfbd59ea8a199b7dc36bbae5d1440590",
+        "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "5842d43e281c9e2ce553d637225ecbf5d07d49ff1b0e3b24159ebe1c03f7889f",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RENDERER-05",
+      "family": "VP-RENDERER",
+      "ownerLane": "VISIBLE-RENDERER-01",
+      "acceptanceId": "VP-RENDERER-05",
+      "normativeRequirement": "The renderer plan must cover all eight semantic states.",
+      "implementationPath": "packages/post-alpha-character-renderer-native/src/index.ts",
+      "implementationFileSha256": "b7c1a93b411916e2a6bcb76fefc4ca3b4e7350605d4305b24aab63d73649dbf7",
+      "positiveTestIds": [
+        "VP-RENDERER-05-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RENDERER-05-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-character-renderer-native/tests/requirement-rows.test.ts",
+      "testFileSha256": "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "e72ce27564c0668c251824e3c3cf8f38bfbd59ea8a199b7dc36bbae5d1440590",
+        "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "429db60c28d0bb886087ec9de241bfee9d74f053727de1647fd59a44c985908f",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RENDERER-06",
+      "family": "VP-RENDERER",
+      "ownerLane": "VISIBLE-RENDERER-01",
+      "acceptanceId": "VP-RENDERER-06",
+      "normativeRequirement": "The renderer plan must make idle motion optional and non-semantic.",
+      "implementationPath": "packages/post-alpha-character-renderer-native/src/index.ts",
+      "implementationFileSha256": "b7c1a93b411916e2a6bcb76fefc4ca3b4e7350605d4305b24aab63d73649dbf7",
+      "positiveTestIds": [
+        "VP-RENDERER-06-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RENDERER-06-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-character-renderer-native/tests/requirement-rows.test.ts",
+      "testFileSha256": "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "e72ce27564c0668c251824e3c3cf8f38bfbd59ea8a199b7dc36bbae5d1440590",
+        "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "540d00def124e28116320eea57c76683296b5f82d6f22032b0fc1eec0dee00e0",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RENDERER-07",
+      "family": "VP-RENDERER",
+      "ownerLane": "VISIBLE-RENDERER-01",
+      "acceptanceId": "VP-RENDERER-07",
+      "normativeRequirement": "The renderer plan must use transition intent rather than operational events.",
+      "implementationPath": "packages/post-alpha-character-renderer-native/src/index.ts",
+      "implementationFileSha256": "b7c1a93b411916e2a6bcb76fefc4ca3b4e7350605d4305b24aab63d73649dbf7",
+      "positiveTestIds": [
+        "VP-RENDERER-07-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RENDERER-07-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-character-renderer-native/tests/requirement-rows.test.ts",
+      "testFileSha256": "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "e72ce27564c0668c251824e3c3cf8f38bfbd59ea8a199b7dc36bbae5d1440590",
+        "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "f4f96b9b2a76d0c024d145555482bfedbc57db9dd697f657c50df52723745a73",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RENDERER-08",
+      "family": "VP-RENDERER",
+      "ownerLane": "VISIBLE-RENDERER-01",
+      "acceptanceId": "VP-RENDERER-08",
+      "normativeRequirement": "The renderer plan must prioritize APPROVAL_REQUIRED presentation without granting approval.",
+      "implementationPath": "packages/post-alpha-character-renderer-native/src/index.ts",
+      "implementationFileSha256": "b7c1a93b411916e2a6bcb76fefc4ca3b4e7350605d4305b24aab63d73649dbf7",
+      "positiveTestIds": [
+        "VP-RENDERER-08-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RENDERER-08-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-character-renderer-native/tests/requirement-rows.test.ts",
+      "testFileSha256": "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "e72ce27564c0668c251824e3c3cf8f38bfbd59ea8a199b7dc36bbae5d1440590",
+        "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "372f017e8c11e6848513e01930936061090df6faeecc137032e509a30efb9af6",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RENDERER-09",
+      "family": "VP-RENDERER",
+      "ownerLane": "VISIBLE-RENDERER-01",
+      "acceptanceId": "VP-RENDERER-09",
+      "normativeRequirement": "The renderer plan must prioritize PRIVACY_RESTRICTED presentation over appearance.",
+      "implementationPath": "packages/post-alpha-character-renderer-native/src/index.ts",
+      "implementationFileSha256": "b7c1a93b411916e2a6bcb76fefc4ca3b4e7350605d4305b24aab63d73649dbf7",
+      "positiveTestIds": [
+        "VP-RENDERER-09-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RENDERER-09-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-character-renderer-native/tests/requirement-rows.test.ts",
+      "testFileSha256": "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "e72ce27564c0668c251824e3c3cf8f38bfbd59ea8a199b7dc36bbae5d1440590",
+        "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "4e4ff314f02aeeb4e31997d715822eda3bd8b1defc3b474180f6ec92efe9a631",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RENDERER-10",
+      "family": "VP-RENDERER",
+      "ownerLane": "VISIBLE-RENDERER-01",
+      "acceptanceId": "VP-RENDERER-10",
+      "normativeRequirement": "The renderer plan must distinguish RECOVERING without claiming recovery completion.",
+      "implementationPath": "packages/post-alpha-character-renderer-native/src/index.ts",
+      "implementationFileSha256": "b7c1a93b411916e2a6bcb76fefc4ca3b4e7350605d4305b24aab63d73649dbf7",
+      "positiveTestIds": [
+        "VP-RENDERER-10-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RENDERER-10-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-character-renderer-native/tests/requirement-rows.test.ts",
+      "testFileSha256": "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "e72ce27564c0668c251824e3c3cf8f38bfbd59ea8a199b7dc36bbae5d1440590",
+        "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "bb5d0d9d5858759c5b75d912ba3b9ec8ae44db72bfd0ec445b63b4b2c25f1080",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RENDERER-11",
+      "family": "VP-RENDERER",
+      "ownerLane": "VISIBLE-RENDERER-01",
+      "acceptanceId": "VP-RENDERER-11",
+      "normativeRequirement": "The renderer plan must remove nonessential motion when reduced motion is supplied.",
+      "implementationPath": "packages/post-alpha-character-renderer-native/src/index.ts",
+      "implementationFileSha256": "b7c1a93b411916e2a6bcb76fefc4ca3b4e7350605d4305b24aab63d73649dbf7",
+      "positiveTestIds": [
+        "VP-RENDERER-11-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RENDERER-11-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-character-renderer-native/tests/requirement-rows.test.ts",
+      "testFileSha256": "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "e72ce27564c0668c251824e3c3cf8f38bfbd59ea8a199b7dc36bbae5d1440590",
+        "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "86db8e52a5f9138ff9a2f32245743b4b2d4643d453a6d3bf30ded38af7d8144d",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RENDERER-12",
+      "family": "VP-RENDERER",
+      "ownerLane": "VISIBLE-RENDERER-01",
+      "acceptanceId": "VP-RENDERER-12",
+      "normativeRequirement": "The renderer plan must preserve state distinction under high contrast.",
+      "implementationPath": "packages/post-alpha-character-renderer-native/src/index.ts",
+      "implementationFileSha256": "b7c1a93b411916e2a6bcb76fefc4ca3b4e7350605d4305b24aab63d73649dbf7",
+      "positiveTestIds": [
+        "VP-RENDERER-12-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RENDERER-12-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-character-renderer-native/tests/requirement-rows.test.ts",
+      "testFileSha256": "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "e72ce27564c0668c251824e3c3cf8f38bfbd59ea8a199b7dc36bbae5d1440590",
+        "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "e9b35dd5eeea2f8449b025564af9510b02d52a94ab427888621de4fc27f06405",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RENDERER-13",
+      "family": "VP-RENDERER",
+      "ownerLane": "VISIBLE-RENDERER-01",
+      "acceptanceId": "VP-RENDERER-13",
+      "normativeRequirement": "The renderer plan must provide text-only fallback when rendering is unavailable.",
+      "implementationPath": "packages/post-alpha-character-renderer-native/src/index.ts",
+      "implementationFileSha256": "b7c1a93b411916e2a6bcb76fefc4ca3b4e7350605d4305b24aab63d73649dbf7",
+      "positiveTestIds": [
+        "VP-RENDERER-13-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RENDERER-13-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-character-renderer-native/tests/requirement-rows.test.ts",
+      "testFileSha256": "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "e72ce27564c0668c251824e3c3cf8f38bfbd59ea8a199b7dc36bbae5d1440590",
+        "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "7839aa91a86697c0d995cfd6a95820f0bea4e100f19935fb96589bc399cb8b42",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RENDERER-14",
+      "family": "VP-RENDERER",
+      "ownerLane": "VISIBLE-RENDERER-01",
+      "acceptanceId": "VP-RENDERER-14",
+      "normativeRequirement": "The renderer plan must preserve character semantics on desktop and TV variants.",
+      "implementationPath": "packages/post-alpha-character-renderer-native/src/index.ts",
+      "implementationFileSha256": "b7c1a93b411916e2a6bcb76fefc4ca3b4e7350605d4305b24aab63d73649dbf7",
+      "positiveTestIds": [
+        "VP-RENDERER-14-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RENDERER-14-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-character-renderer-native/tests/requirement-rows.test.ts",
+      "testFileSha256": "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "e72ce27564c0668c251824e3c3cf8f38bfbd59ea8a199b7dc36bbae5d1440590",
+        "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "dd4c3da3d9d2047fad59276c6c9351ecd5adbcdfbdaefdd30c5af3143a1a212b",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-RENDERER-15",
+      "family": "VP-RENDERER",
+      "ownerLane": "VISIBLE-RENDERER-01",
+      "acceptanceId": "VP-RENDERER-15",
+      "normativeRequirement": "The renderer plan must require no MetaHuman, likeness, or external provider dependency.",
+      "implementationPath": "packages/post-alpha-character-renderer-native/src/index.ts",
+      "implementationFileSha256": "b7c1a93b411916e2a6bcb76fefc4ca3b4e7350605d4305b24aab63d73649dbf7",
+      "positiveTestIds": [
+        "VP-RENDERER-15-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-RENDERER-15-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-character-renderer-native/tests/requirement-rows.test.ts",
+      "testFileSha256": "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "e72ce27564c0668c251824e3c3cf8f38bfbd59ea8a199b7dc36bbae5d1440590",
+        "6eee6d2f612b23422fb327e0965f63d55fc0676371920415278008e0d9a54f32"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "9f9132f9c9a0cf1870861793e7c350a34dcb52ab3fa43507774a7ecc1b37914f",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-STATE-01",
+      "family": "VP-STATE",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-STATE-01",
+      "normativeRequirement": "IDLE must communicate inactive presentation without inferring availability or authority.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-STATE-01-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-STATE-01-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "e8aacfb8f603dca767c25dfd0edb0857ec4db06122284f0189c93eac3fa85376",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-STATE-02",
+      "family": "VP-STATE",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-STATE-02",
+      "normativeRequirement": "LISTENING must communicate a presentation state without recognition or authentication inference.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-STATE-02-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-STATE-02-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "e9f3e392cd89d426daf54d8a1708ae5c32f449244546d0169515d635bf1be21e",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-STATE-03",
+      "family": "VP-STATE",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-STATE-03",
+      "normativeRequirement": "UNDERSTANDING must communicate semantic processing presentation without operational truth.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-STATE-03-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-STATE-03-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "a54955abbfc81eec349dfdb5e9e79c3ab23c3c41f61eecaa34b7960d84959ad1",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-STATE-04",
+      "family": "VP-STATE",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-STATE-04",
+      "normativeRequirement": "THINKING must communicate pending presentation without asserting a decision.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-STATE-04-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-STATE-04-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "d84b29e0e7130f40fe5123dd8b3e573ace303fc9ca83b3991b6e722a2a713f67",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-STATE-05",
+      "family": "VP-STATE",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-STATE-05",
+      "normativeRequirement": "SPEAKING must communicate presentation speech state without production voice execution.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-STATE-05-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-STATE-05-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "63648187192dfcec8cd2559d4decb1cda6229129dad3b6ca0a0591ccc244cfb6",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-STATE-06",
+      "family": "VP-STATE",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-STATE-06",
+      "normativeRequirement": "APPROVAL_REQUIRED must communicate a request without granting authorization or approval.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-STATE-06-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-STATE-06-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "6bfdb0af38e840bb4b8c7d130979937edd245be30bf75a1cb25ed756a36a1c72",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-STATE-07",
+      "family": "VP-STATE",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-STATE-07",
+      "normativeRequirement": "PRIVACY_RESTRICTED must communicate restriction and suppress less-private presentation.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-STATE-07-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-STATE-07-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "1907a5d5c662767033885f0ce10ca8adb815dd8e36de9bb68fb96726f5bbcd9d",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-STATE-08",
+      "family": "VP-STATE",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-STATE-08",
+      "normativeRequirement": "RECOVERING must communicate recovery presentation without asserting a completed restore.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-STATE-08-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-STATE-08-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "907650c5f007f65baee9ba61d3a2a0f090c2605c928c4ebac67332c0476bf1e2",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PRIVACY-01",
+      "family": "VP-PRIVACY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PRIVACY-01",
+      "normativeRequirement": "PRIVATE_ALLOWED may permit the least restrictive supplied presentation projection.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PRIVACY-01-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PRIVACY-01-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "baff53fe5d1e0582b583c3c2ecb72adb420c7b8d8a8c664bde4bb2f3fb7487db",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PRIVACY-02",
+      "family": "VP-PRIVACY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PRIVACY-02",
+      "normativeRequirement": "SHARED_ROOM_RESTRICTED must select a shared-room-safe presentation projection.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PRIVACY-02-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PRIVACY-02-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "8be6aa5ee7131a39a6b350186f49056d88b206d8851f05fdd0378c9d44ddf141",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PRIVACY-03",
+      "family": "VP-PRIVACY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PRIVACY-03",
+      "normativeRequirement": "PRIVACY_UNKNOWN must fail closed to a safe fallback.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PRIVACY-03-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PRIVACY-03-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "64ba9a5d3254acd24d75a55b174b3949cb3f263b8129287934cffbd26564f642",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PRIVACY-04",
+      "family": "VP-PRIVACY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PRIVACY-04",
+      "normativeRequirement": "PRIVACY_MALFORMED must fail closed to a safe fallback.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PRIVACY-04-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PRIVACY-04-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "75a9e83bf5d05408835ef2d1c7417dfd14ea40f032f75db507bd382c9bd04602",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PRIVACY-05",
+      "family": "VP-PRIVACY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PRIVACY-05",
+      "normativeRequirement": "PRIVACY_STALE must fail closed to a safe fallback.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PRIVACY-05-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PRIVACY-05-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "bef1281a787a84474e9fc266b58dae47f361d097907134b0cf0880b920159268",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PRIVACY-06",
+      "family": "VP-PRIVACY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PRIVACY-06",
+      "normativeRequirement": "PRIVACY_CONFLICTING must fail closed to a safe fallback.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PRIVACY-06-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PRIVACY-06-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "6d08f1e7287895bad3505ca786d3083782e6f9e61760c66aeaeaaee559c60ee4",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PRIVACY-07",
+      "family": "VP-PRIVACY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PRIVACY-07",
+      "normativeRequirement": "Restricted privacy must redact captions before caption presentation.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PRIVACY-07-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PRIVACY-07-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "6d8bbc2c7d6fd35e0bade65609569f1936d11687b3e9c04e6948052e42c5a77b",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PRIVACY-08",
+      "family": "VP-PRIVACY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PRIVACY-08",
+      "normativeRequirement": "Restricted privacy must use a coarse projection on TV.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PRIVACY-08-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PRIVACY-08-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "ff7e19f2cd48c4a085b030b718a016bdc5a5122cfcf9f16d924b6dbac22c1439",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PRIVACY-09",
+      "family": "VP-PRIVACY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PRIVACY-09",
+      "normativeRequirement": "Restricted privacy must suppress approval detail.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PRIVACY-09-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PRIVACY-09-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "3b6180d75e4dbc46896b2e3e0d564cce8edddf093ea75d9d8dd84fc12209a7f3",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PRIVACY-10",
+      "family": "VP-PRIVACY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PRIVACY-10",
+      "normativeRequirement": "World metadata must remain separate from privacy-sensitive presentation detail.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PRIVACY-10-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PRIVACY-10-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "c8dd3c729b5021cc0d48288bdcc0e28c8a03e34c756536800098749a46feeb9c",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PRIVACY-11",
+      "family": "VP-PRIVACY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PRIVACY-11",
+      "normativeRequirement": "Animation metadata must not reveal restricted privacy detail.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PRIVACY-11-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PRIVACY-11-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "6dc482c9d366e2d205d2d510d7e5560188693890837cc3fb17e8ae5dcb024535",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PRIVACY-12",
+      "family": "VP-PRIVACY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PRIVACY-12",
+      "normativeRequirement": "Privacy projection must not depend on camera or recognition capability.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PRIVACY-12-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PRIVACY-12-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "21c80554c715bc64deed705c4f81d5b75a9b87a64ca88288bcd51c3194475c66",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-ACCESSIBILITY-01",
+      "family": "VP-ACCESSIBILITY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-ACCESSIBILITY-01",
+      "normativeRequirement": "Reduced motion must remove nonessential animation.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-ACCESSIBILITY-01-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-ACCESSIBILITY-01-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "6515c7f0eb2a44e39d1ee88738e02a2b3b9d6b9a6b3fc58c9ab4ef69b78a65ca",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-ACCESSIBILITY-02",
+      "family": "VP-ACCESSIBILITY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-ACCESSIBILITY-02",
+      "normativeRequirement": "High contrast must preserve semantic state discrimination.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-ACCESSIBILITY-02-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-ACCESSIBILITY-02-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "4545918c5b87dc90992d8b299c9c42a086ec86ab47d9fe07797802e27e3ad385",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-ACCESSIBILITY-03",
+      "family": "VP-ACCESSIBILITY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-ACCESSIBILITY-03",
+      "normativeRequirement": "Captions must be coordinated through the caption projection.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-ACCESSIBILITY-03-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-ACCESSIBILITY-03-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "0951e040d2c411cfa6f096f549bcd8341b3b9c10bd81806a9d7ee8d27594473d",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-ACCESSIBILITY-04",
+      "family": "VP-ACCESSIBILITY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-ACCESSIBILITY-04",
+      "normativeRequirement": "Text-only fallback must be available when richer presentation is unavailable.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-ACCESSIBILITY-04-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-ACCESSIBILITY-04-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "522541f220082e6f5aef84dbb20f173e46e4e13bb1985bb8c1bb2bde50e95a96",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-ACCESSIBILITY-05",
+      "family": "VP-ACCESSIBILITY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-ACCESSIBILITY-05",
+      "normativeRequirement": "Keyboard focus metadata must provide a deterministic navigation target.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-ACCESSIBILITY-05-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-ACCESSIBILITY-05-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "88d8bb7afb2cfcfc60f62ec6565858fb92e7416e906d60ca1fd6355b99d8286e",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-ACCESSIBILITY-06",
+      "family": "VP-ACCESSIBILITY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-ACCESSIBILITY-06",
+      "normativeRequirement": "Remote focus metadata must provide a deterministic navigation target.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-ACCESSIBILITY-06-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-ACCESSIBILITY-06-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "cd3b3c720c54eb0833ee9090489aad6d0a495c027391e58898fa99e0db146ed6",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-ACCESSIBILITY-07",
+      "family": "VP-ACCESSIBILITY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-ACCESSIBILITY-07",
+      "normativeRequirement": "Focused state must remain visibly distinguishable.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-ACCESSIBILITY-07-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-ACCESSIBILITY-07-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "de0360d5c14b9c7727ccbedf760313fc76f56b05660d68e65687ebdc13e3bea4",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-ACCESSIBILITY-08",
+      "family": "VP-ACCESSIBILITY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-ACCESSIBILITY-08",
+      "normativeRequirement": "TV text metadata must support 10-foot readability.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-ACCESSIBILITY-08-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-ACCESSIBILITY-08-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "7a3d0a84dd40c807bbe1fea80431c348da58f8324182499c3def364557d180e7",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-ACCESSIBILITY-09",
+      "family": "VP-ACCESSIBILITY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-ACCESSIBILITY-09",
+      "normativeRequirement": "TV presentation metadata must reserve the overscan safe zone.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-ACCESSIBILITY-09-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-ACCESSIBILITY-09-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "35d9b8c0c266a0184dff95a84b91751f0752688919a1ed766da97fa998b8c1fc",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-ACCESSIBILITY-10",
+      "family": "VP-ACCESSIBILITY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-ACCESSIBILITY-10",
+      "normativeRequirement": "Accessibility presentation must distinguish all semantic states.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-ACCESSIBILITY-10-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-ACCESSIBILITY-10-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "31902bcd9d751678089e789c88722ec7b99e9f59e57c9f7e4080dbaef54cccd3",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-ACCESSIBILITY-11",
+      "family": "VP-ACCESSIBILITY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-ACCESSIBILITY-11",
+      "normativeRequirement": "Accessibility presentation must distinguish restricted privacy state.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-ACCESSIBILITY-11-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-ACCESSIBILITY-11-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "d24cc43bd80b2c9101f097910ca8ff39882a4ea5b667851b9ecee2c8ff9a743d",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-ACCESSIBILITY-12",
+      "family": "VP-ACCESSIBILITY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-ACCESSIBILITY-12",
+      "normativeRequirement": "Accessibility presentation must distinguish approval-required state without approving.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-ACCESSIBILITY-12-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-ACCESSIBILITY-12-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "63ed878fc16c58a70b5e135bcc7ac8dad9568c41ecf0ea521660e12aa8184f95",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-ACCESSIBILITY-13",
+      "family": "VP-ACCESSIBILITY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-ACCESSIBILITY-13",
+      "normativeRequirement": "Accessibility presentation must reduce sensory load when requested.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-ACCESSIBILITY-13-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-ACCESSIBILITY-13-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "a6179d2d28e85497db3834dda8588adfc405c04204ef8f550f8d803185b3753f",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-ACCESSIBILITY-14",
+      "family": "VP-ACCESSIBILITY",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-ACCESSIBILITY-14",
+      "normativeRequirement": "Fallback must preserve accessibility and privacy constraints.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-ACCESSIBILITY-14-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-ACCESSIBILITY-14-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "f70964988b64c2eecbfc9f78fb60bdc622b2e9d05a855c06c8f4f43ad5effd93",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-WORLD-01",
+      "family": "VP-WORLD",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-WORLD-01",
+      "normativeRequirement": "The world registry must enumerate metadata-only world candidates.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-WORLD-01-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-WORLD-01-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "3bf9f5786323acf5759ddda5c79ef156b915f771353fb3cc91e067054b837f96",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-WORLD-02",
+      "family": "VP-WORLD",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-WORLD-02",
+      "normativeRequirement": "The theme intent resolver must select worlds from supplied intent only.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-WORLD-02-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-WORLD-02-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "698fa760940a24c9b7c334097ab8f1846583ac85c0d2667ef269cb4c83453ec3",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-WORLD-03",
+      "family": "VP-WORLD",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-WORLD-03",
+      "normativeRequirement": "Level 1 worlds must support static theme metadata.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-WORLD-03-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-WORLD-03-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "08ade79fe322a587b713fc3a8cf2deab960653f8d243c36529cdc7bbfeebd49d",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-WORLD-04",
+      "family": "VP-WORLD",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-WORLD-04",
+      "normativeRequirement": "Level 2 worlds must describe native motion as optional metadata.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-WORLD-04-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-WORLD-04-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "8d07afb0efd3284001538761f02eb8e81ed7f40e2a39333a0c81267384343fd1",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-WORLD-05",
+      "family": "VP-WORLD",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-WORLD-05",
+      "normativeRequirement": "Level 3 worlds must isolate local WebM behind an adapter boundary.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-WORLD-05-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-WORLD-05-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "fa817a9028a2dc4701e0f520b0ac8ba1f3baa0fed4e0e0a537272545c5116200",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-WORLD-06",
+      "family": "VP-WORLD",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-WORLD-06",
+      "normativeRequirement": "The Operations Center fixture must be metadata only.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-WORLD-06-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-WORLD-06-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "d517c9b7d2d269ca7f809dd7593414a0853a2dff6776c90da746b27e246c9fd0",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-WORLD-07",
+      "family": "VP-WORLD",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-WORLD-07",
+      "normativeRequirement": "The Future City fixture must be metadata only.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-WORLD-07-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-WORLD-07-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "f795d6d514e483a523ef4e6f01168ac03cf3fdf5d093318e8ffe82cbe864537c",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-WORLD-08",
+      "family": "VP-WORLD",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-WORLD-08",
+      "normativeRequirement": "The nature fixture must be metadata only.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-WORLD-08-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-WORLD-08-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "ab465449988d6db9f12b39f5fdd9d7ac78836536219319eddf55adbf6bedcdc0",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-WORLD-09",
+      "family": "VP-WORLD",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-WORLD-09",
+      "normativeRequirement": "The space fixture must be metadata only.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-WORLD-09-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-WORLD-09-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "2c9823dac94e8cb683089a56bb8f816f3f2d9f7a8ef89706255f66825308fb29",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-WORLD-10",
+      "family": "VP-WORLD",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-WORLD-10",
+      "normativeRequirement": "Reduced-motion world projection must suppress optional motion.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-WORLD-10-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-WORLD-10-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "13d1009e9149131d248300e525c02bce53da95f777a08e5eedd98d21faa12325",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-WORLD-11",
+      "family": "VP-WORLD",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-WORLD-11",
+      "normativeRequirement": "Low-power world projection must select static or safe fallback.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-WORLD-11-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-WORLD-11-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "ed2e61b422aee640097dd483900cb0edebbed52a81341c95810e3771210cc5c6",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-WORLD-12",
+      "family": "VP-WORLD",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-WORLD-12",
+      "normativeRequirement": "World transition sequences must follow supplied orchestration intent.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-WORLD-12-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-WORLD-12-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "5f1e9501533c9c263fb4198676363f2bf964f20a6b5c4896b4335531f43f3f0f",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-WORLD-13",
+      "family": "VP-WORLD",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-WORLD-13",
+      "normativeRequirement": "World promotion must require provenance-controlled evidence.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-WORLD-13-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-WORLD-13-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "a638d5872834e6512fa0a458d200f3b53f76fdca331294e3cbd97cd2126b3d70",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-WORLD-14",
+      "family": "VP-WORLD",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-WORLD-14",
+      "normativeRequirement": "World presentation must not claim operational truth.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-WORLD-14-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-WORLD-14-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "7d1aa01879f59c84483e9bafb0c64e256207dcaf28d67eee20f5ebd2aa9ba184",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-AUDIO-01",
+      "family": "VP-AUDIO",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-AUDIO-01",
+      "normativeRequirement": "Ambient audio must begin as a non-executing audio intent.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-AUDIO-01-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-AUDIO-01-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "9be271888711aaae48ccb61f0ea4d3223d23f57505abbd70eb7d2f0540cfadfb",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-AUDIO-02",
+      "family": "VP-AUDIO",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-AUDIO-02",
+      "normativeRequirement": "Audio projection must use supplied availability facts only.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-AUDIO-02-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-AUDIO-02-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "095e0ae53d23da48b22bb588b685d9e5a19c93962676accbe373329502436846",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-AUDIO-03",
+      "family": "VP-AUDIO",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-AUDIO-03",
+      "normativeRequirement": "Audio intent may describe speech-aware ducking without controlling speech.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-AUDIO-03-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-AUDIO-03-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "13a81f129250e39ef8312386cb49650b77a19105ec000915522adaf9c206d81f",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-AUDIO-04",
+      "family": "VP-AUDIO",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-AUDIO-04",
+      "normativeRequirement": "Mute intent must suppress ambient audio projection.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-AUDIO-04-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-AUDIO-04-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "60a7322a603f676611099f40b575ce3e8318f15f243f5ed9ed37344d8f3bd4ed",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-AUDIO-05",
+      "family": "VP-AUDIO",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-AUDIO-05",
+      "normativeRequirement": "Stop intent must suppress ambient audio projection.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-AUDIO-05-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-AUDIO-05-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "f64eb12da635902ae458f3a9cbc033edb7b5f3a63edc9fd743f8c244a6d7477f",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-AUDIO-06",
+      "family": "VP-AUDIO",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-AUDIO-06",
+      "normativeRequirement": "Sensory reduction must suppress optional ambient audio.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-AUDIO-06-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-AUDIO-06-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "f29b29531662f15692dfe79a5282b2a3a1d8a17dc95341c145a0ec50591d53f4",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-AUDIO-07",
+      "family": "VP-AUDIO",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-AUDIO-07",
+      "normativeRequirement": "Unavailable audio must select an explicit silent fallback.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-AUDIO-07-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-AUDIO-07-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "22cae5ddbe419956f349f7709b2021840cf9f04e66347bfd6ff3e3198318a88e",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-AUDIO-08",
+      "family": "VP-AUDIO",
+      "ownerLane": "VISIBLE-WORLD-01",
+      "acceptanceId": "VP-AUDIO-08",
+      "normativeRequirement": "Ambient audio must not require a voice provider or authority coupling.",
+      "implementationPath": "packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "implementationFileSha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c",
+      "positiveTestIds": [
+        "VP-AUDIO-08-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-AUDIO-08-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-ambient-experience-foundation/tests/requirement-rows.test.ts",
+      "testFileSha256": "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "569e7bf39eb3ccac1f747b225694aaafe9297b8ac1e09a147e978e771597bfbd",
+        "b383fbfa2206b8f2485c454d80a63e1149d27bd67d359cac0f536b9314b71e12"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "730867a2a6ae1d0d7f8903c5f0507a6557c771c9a583b879ae8bfed4469ddd57",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-TV-01",
+      "family": "VP-TV",
+      "ownerLane": "VISIBLE-TV-01",
+      "acceptanceId": "VP-TV-01",
+      "normativeRequirement": "TV must be modeled as a first-class interface, not casting.",
+      "implementationPath": "packages/post-alpha-tv-presence-runtime/src/index.ts",
+      "implementationFileSha256": "cd9a5bcf26146e58798242380bbe4378886b3390aff2acca1755f7542aeee65d",
+      "positiveTestIds": [
+        "VP-TV-01-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-TV-01-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-tv-presence-runtime/tests/requirement-rows.test.ts",
+      "testFileSha256": "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "98d000ef880635ed78d5637a74902f2badc2efaae03bea42a8571f5f4d15e096",
+        "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "da2f2d5456a9bd552aecd553f8d24b7d573104b50dfcc8fb71f075bd20cda949",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-TV-02",
+      "family": "VP-TV",
+      "ownerLane": "VISIBLE-TV-01",
+      "acceptanceId": "VP-TV-02",
+      "normativeRequirement": "TV must use an explicit 16:9 profile.",
+      "implementationPath": "packages/post-alpha-tv-presence-runtime/src/index.ts",
+      "implementationFileSha256": "cd9a5bcf26146e58798242380bbe4378886b3390aff2acca1755f7542aeee65d",
+      "positiveTestIds": [
+        "VP-TV-02-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-TV-02-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-tv-presence-runtime/tests/requirement-rows.test.ts",
+      "testFileSha256": "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "98d000ef880635ed78d5637a74902f2badc2efaae03bea42a8571f5f4d15e096",
+        "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "4514c7115f10b114b1a977a52918f31c23cbcabe45c78b9e6858a7241b47e0c2",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-TV-03",
+      "family": "VP-TV",
+      "ownerLane": "VISIBLE-TV-01",
+      "acceptanceId": "VP-TV-03",
+      "normativeRequirement": "TV must use an explicit overscan profile.",
+      "implementationPath": "packages/post-alpha-tv-presence-runtime/src/index.ts",
+      "implementationFileSha256": "cd9a5bcf26146e58798242380bbe4378886b3390aff2acca1755f7542aeee65d",
+      "positiveTestIds": [
+        "VP-TV-03-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-TV-03-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-tv-presence-runtime/tests/requirement-rows.test.ts",
+      "testFileSha256": "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "98d000ef880635ed78d5637a74902f2badc2efaae03bea42a8571f5f4d15e096",
+        "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "721ce3cad7c3ceb70b7962637ffeec6ac5ab5b13a03bd872d650fb589ccfe3e3",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-TV-04",
+      "family": "VP-TV",
+      "ownerLane": "VISIBLE-TV-01",
+      "acceptanceId": "VP-TV-04",
+      "normativeRequirement": "TV projections must retain 10-foot readable metadata.",
+      "implementationPath": "packages/post-alpha-tv-presence-runtime/src/index.ts",
+      "implementationFileSha256": "cd9a5bcf26146e58798242380bbe4378886b3390aff2acca1755f7542aeee65d",
+      "positiveTestIds": [
+        "VP-TV-04-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-TV-04-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-tv-presence-runtime/tests/requirement-rows.test.ts",
+      "testFileSha256": "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "98d000ef880635ed78d5637a74902f2badc2efaae03bea42a8571f5f4d15e096",
+        "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "08089abdf774ac32ca1400722dd03224b6779a6868a092bd6e05298398104880",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-TV-05",
+      "family": "VP-TV",
+      "ownerLane": "VISIBLE-TV-01",
+      "acceptanceId": "VP-TV-05",
+      "normativeRequirement": "TV projections must support remote focus metadata.",
+      "implementationPath": "packages/post-alpha-tv-presence-runtime/src/index.ts",
+      "implementationFileSha256": "cd9a5bcf26146e58798242380bbe4378886b3390aff2acca1755f7542aeee65d",
+      "positiveTestIds": [
+        "VP-TV-05-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-TV-05-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-tv-presence-runtime/tests/requirement-rows.test.ts",
+      "testFileSha256": "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "98d000ef880635ed78d5637a74902f2badc2efaae03bea42a8571f5f4d15e096",
+        "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "509b3170e3cd7cd54cfbf416a30e8c734c7da6a832581d2620a8dbc912d9d312",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-TV-06",
+      "family": "VP-TV",
+      "ownerLane": "VISIBLE-TV-01",
+      "acceptanceId": "VP-TV-06",
+      "normativeRequirement": "TV projections must distinguish selected state.",
+      "implementationPath": "packages/post-alpha-tv-presence-runtime/src/index.ts",
+      "implementationFileSha256": "cd9a5bcf26146e58798242380bbe4378886b3390aff2acca1755f7542aeee65d",
+      "positiveTestIds": [
+        "VP-TV-06-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-TV-06-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-tv-presence-runtime/tests/requirement-rows.test.ts",
+      "testFileSha256": "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "98d000ef880635ed78d5637a74902f2badc2efaae03bea42a8571f5f4d15e096",
+        "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "92a54abc4e79ec9d5f3bfdbe62ca8cb760aef4167066b17b226cb198067ac067",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-TV-07",
+      "family": "VP-TV",
+      "ownerLane": "VISIBLE-TV-01",
+      "acceptanceId": "VP-TV-07",
+      "normativeRequirement": "TV projections must support large captions.",
+      "implementationPath": "packages/post-alpha-tv-presence-runtime/src/index.ts",
+      "implementationFileSha256": "cd9a5bcf26146e58798242380bbe4378886b3390aff2acca1755f7542aeee65d",
+      "positiveTestIds": [
+        "VP-TV-07-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-TV-07-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-tv-presence-runtime/tests/requirement-rows.test.ts",
+      "testFileSha256": "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "98d000ef880635ed78d5637a74902f2badc2efaae03bea42a8571f5f4d15e096",
+        "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "3766afba6d3882964fc1c5041e900f6a53517ef872ed98f8861e6b9000af07ca",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-TV-08",
+      "family": "VP-TV",
+      "ownerLane": "VISIBLE-TV-01",
+      "acceptanceId": "VP-TV-08",
+      "normativeRequirement": "TV projections must enforce shared-room privacy.",
+      "implementationPath": "packages/post-alpha-tv-presence-runtime/src/index.ts",
+      "implementationFileSha256": "cd9a5bcf26146e58798242380bbe4378886b3390aff2acca1755f7542aeee65d",
+      "positiveTestIds": [
+        "VP-TV-08-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-TV-08-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-tv-presence-runtime/tests/requirement-rows.test.ts",
+      "testFileSha256": "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "98d000ef880635ed78d5637a74902f2badc2efaae03bea42a8571f5f4d15e096",
+        "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "1a9836327550f717028e0a4c8bae0663ccdc9b3862da31a359e31997ef96c32d",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-TV-09",
+      "family": "VP-TV",
+      "ownerLane": "VISIBLE-TV-01",
+      "acceptanceId": "VP-TV-09",
+      "normativeRequirement": "TV projections must support reduced information density.",
+      "implementationPath": "packages/post-alpha-tv-presence-runtime/src/index.ts",
+      "implementationFileSha256": "cd9a5bcf26146e58798242380bbe4378886b3390aff2acca1755f7542aeee65d",
+      "positiveTestIds": [
+        "VP-TV-09-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-TV-09-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-tv-presence-runtime/tests/requirement-rows.test.ts",
+      "testFileSha256": "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "98d000ef880635ed78d5637a74902f2badc2efaae03bea42a8571f5f4d15e096",
+        "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "3728c7c5f683e55d66061a7d61a188732bad14798f3018a1dedc7865e77dbf45",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-TV-10",
+      "family": "VP-TV",
+      "ownerLane": "VISIBLE-TV-01",
+      "acceptanceId": "VP-TV-10",
+      "normativeRequirement": "TV approval-required state must dominate optional presentation without granting approval.",
+      "implementationPath": "packages/post-alpha-tv-presence-runtime/src/index.ts",
+      "implementationFileSha256": "cd9a5bcf26146e58798242380bbe4378886b3390aff2acca1755f7542aeee65d",
+      "positiveTestIds": [
+        "VP-TV-10-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-TV-10-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-tv-presence-runtime/tests/requirement-rows.test.ts",
+      "testFileSha256": "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "98d000ef880635ed78d5637a74902f2badc2efaae03bea42a8571f5f4d15e096",
+        "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "cc0bde904c8aa8e0e35738adaa66802bbf2db7c0621ffbea1c4501e03918c305",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-TV-11",
+      "family": "VP-TV",
+      "ownerLane": "VISIBLE-TV-01",
+      "acceptanceId": "VP-TV-11",
+      "normativeRequirement": "TV privacy restriction must dominate optional presentation.",
+      "implementationPath": "packages/post-alpha-tv-presence-runtime/src/index.ts",
+      "implementationFileSha256": "cd9a5bcf26146e58798242380bbe4378886b3390aff2acca1755f7542aeee65d",
+      "positiveTestIds": [
+        "VP-TV-11-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-TV-11-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-tv-presence-runtime/tests/requirement-rows.test.ts",
+      "testFileSha256": "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "98d000ef880635ed78d5637a74902f2badc2efaae03bea42a8571f5f4d15e096",
+        "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "1c3c364baa08e222b89a0160ebb87ee654d3771ad787773251274faaccfb3d67",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-TV-12",
+      "family": "VP-TV",
+      "ownerLane": "VISIBLE-TV-01",
+      "acceptanceId": "VP-TV-12",
+      "normativeRequirement": "TV must select low-power fallback from supplied performance facts.",
+      "implementationPath": "packages/post-alpha-tv-presence-runtime/src/index.ts",
+      "implementationFileSha256": "cd9a5bcf26146e58798242380bbe4378886b3390aff2acca1755f7542aeee65d",
+      "positiveTestIds": [
+        "VP-TV-12-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-TV-12-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-tv-presence-runtime/tests/requirement-rows.test.ts",
+      "testFileSha256": "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "98d000ef880635ed78d5637a74902f2badc2efaae03bea42a8571f5f4d15e096",
+        "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "2cf50d791dc6ec9930467407961519d7ad7e194f8f8123632914ac74637400fe",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-TV-13",
+      "family": "VP-TV",
+      "ownerLane": "VISIBLE-TV-01",
+      "acceptanceId": "VP-TV-13",
+      "normativeRequirement": "TV must select text fallback when video capability is absent.",
+      "implementationPath": "packages/post-alpha-tv-presence-runtime/src/index.ts",
+      "implementationFileSha256": "cd9a5bcf26146e58798242380bbe4378886b3390aff2acca1755f7542aeee65d",
+      "positiveTestIds": [
+        "VP-TV-13-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-TV-13-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-tv-presence-runtime/tests/requirement-rows.test.ts",
+      "testFileSha256": "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "98d000ef880635ed78d5637a74902f2badc2efaae03bea42a8571f5f4d15e096",
+        "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "0a84996d989f2c61e580ebc38067c4fea3e1c28f2ec4405b5e549f16643983f3",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-TV-14",
+      "family": "VP-TV",
+      "ownerLane": "VISIBLE-TV-01",
+      "acceptanceId": "VP-TV-14",
+      "normativeRequirement": "TV must preserve canonical avatar variant semantics.",
+      "implementationPath": "packages/post-alpha-tv-presence-runtime/src/index.ts",
+      "implementationFileSha256": "cd9a5bcf26146e58798242380bbe4378886b3390aff2acca1755f7542aeee65d",
+      "positiveTestIds": [
+        "VP-TV-14-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-TV-14-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-tv-presence-runtime/tests/requirement-rows.test.ts",
+      "testFileSha256": "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "98d000ef880635ed78d5637a74902f2badc2efaae03bea42a8571f5f4d15e096",
+        "3ae9d6482eb89c9251c57e388c75070222b1d294a1dbbd3dd5d95b0dc6bf4774"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "30c859e666b2d73fff2c1ff881843d4541e619734d976d758622c651bfa91269",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PERFORMANCE-01",
+      "family": "VP-PERFORMANCE",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PERFORMANCE-01",
+      "normativeRequirement": "Performance selection must use supplied device facts only.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PERFORMANCE-01-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PERFORMANCE-01-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "3f13b3c9de025a82c75edb2030ef4eadcd3512093bb152f0e519bbc77f7f1ac9",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PERFORMANCE-02",
+      "family": "VP-PERFORMANCE",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PERFORMANCE-02",
+      "normativeRequirement": "Performance selection must use supplied capability facts only.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PERFORMANCE-02-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PERFORMANCE-02-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "9137f3a66319cec3dbe20cda1a666ec50db23f46f53dbaae19a97a149de363a9",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PERFORMANCE-03",
+      "family": "VP-PERFORMANCE",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PERFORMANCE-03",
+      "normativeRequirement": "PREMIUM_MOTION must remain an explicit optional degradation class.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PERFORMANCE-03-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PERFORMANCE-03-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "08cf228d37194c82eccd356722c3c4c2e7999c912edf79f071cda96b19000c0c",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PERFORMANCE-04",
+      "family": "VP-PERFORMANCE",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PERFORMANCE-04",
+      "normativeRequirement": "STANDARD_MOTION must remain an explicit degradation class.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PERFORMANCE-04-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PERFORMANCE-04-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "ca985964e81621666744aa2f605aaa118a241d93dadc37ca2d4b78c6f4d100b1",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PERFORMANCE-05",
+      "family": "VP-PERFORMANCE",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PERFORMANCE-05",
+      "normativeRequirement": "REDUCED_MOTION must honor accessibility motion reduction.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PERFORMANCE-05-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PERFORMANCE-05-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "d6b8ee06ba5769ebff945d5bb0b58b7261aa10efdeae0d79059c39a109c9dd95",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PERFORMANCE-06",
+      "family": "VP-PERFORMANCE",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PERFORMANCE-06",
+      "normativeRequirement": "STATIC_CHARACTER must retain character binding while removing motion.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PERFORMANCE-06-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PERFORMANCE-06-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "92f9866e9c2249197a09f9ba0eb5d25aa3a6e96faa96f44b7bd67c0463c5eee1",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PERFORMANCE-07",
+      "family": "VP-PERFORMANCE",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PERFORMANCE-07",
+      "normativeRequirement": "STATIC_WORLD must retain world intent while removing motion.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PERFORMANCE-07-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PERFORMANCE-07-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "a92f77823af0ff162c56c7ca9e56b7017447bea70d514c937700629fe298c707",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PERFORMANCE-08",
+      "family": "VP-PERFORMANCE",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PERFORMANCE-08",
+      "normativeRequirement": "TEXT_ONLY_SAFE_FALLBACK must be explicit and deterministic.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PERFORMANCE-08-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PERFORMANCE-08-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "ef1f597860313e866a081520043b0e7c4273babe4adc58ba5db23f0b996c1845",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PERFORMANCE-09",
+      "family": "VP-PERFORMANCE",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PERFORMANCE-09",
+      "normativeRequirement": "Privacy and accessibility constraints must precede performance preference.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PERFORMANCE-09-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PERFORMANCE-09-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "ac5c5155a1ab75cab867fd7ad270f5fcff12b1741c8a08ef2cd07e8529759802",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    },
+    {
+      "requirementId": "VP-PERFORMANCE-10",
+      "family": "VP-PERFORMANCE",
+      "ownerLane": "VISIBLE-RUNTIME-01",
+      "acceptanceId": "VP-PERFORMANCE-10",
+      "normativeRequirement": "Performance degradation must not silently change identity or semantic state.",
+      "implementationPath": "packages/post-alpha-presentation-runtime-shell/src/index.ts",
+      "implementationFileSha256": "0029f066a2929cc2cec76c07b7d3a014cde72c0c5654e0c3f6927d743755e838",
+      "positiveTestIds": [
+        "VP-PERFORMANCE-10-POS-001"
+      ],
+      "negativeTestIds": [
+        "VP-PERFORMANCE-10-NEG-001"
+      ],
+      "testFile": "packages/post-alpha-presentation-runtime-shell/tests/requirement-rows.test.ts",
+      "testFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+      "evidencePath": "evidence/train1-110-requirement-evidence.json",
+      "freshnessInputs": [
+        "71f631f79aab57777425c9812235cedc7f2fd3c0",
+        "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
+        "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",
+        "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505"
+      ],
+      "completionState": "IMPLEMENTED_AND_TESTED",
+      "EVIDENCE_SHA256": "39cc91c576c540ff648bf7fe628e7d0103086a101ee8bc8d3a53f01df26767cc",
+      "evidenceSha256": "SEE:EVIDENCE_SHA256"
+    }
+  ],
+  "flags": "OFF",
+  "activation": "NONE",
+  "status": "IMPLEMENTED_AND_TESTED",
+  "runtimeTestFileSha256": "50d591b7feee557a7b67f4f774a90aa0e8693c6e6bc0d1b1cba83d82095db505",
+  "runtimeCanonicalHash": "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9"
+}
