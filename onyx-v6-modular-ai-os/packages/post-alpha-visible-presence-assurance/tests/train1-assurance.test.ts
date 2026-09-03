@@ -12,6 +12,7 @@ describe("Train 1 additive assurance", () => {
   it("accepts only validated lane evidence and excludes lockfile drift", () => {
     const lanes: LaneEvidence[] = ["runtime", "renderer", "world", "tv", "assure"].map((lane) => ({ lane, allowlist: lane, changedPaths: [`packages/${lane}/src/index.ts`], lockfileDrift: "accepted-importer-only", tests: "PASS", typecheck: "PASS", flags: "OFF", activation: "NONE" }));
     expect(assureTrain1(lanes).accepted).toBe(true);
+    expect(assureTrain1([{ ...lanes[0]!, allowlist: "not-runtime" }, ...lanes.slice(1)]).accepted).toBe(false);
     expect(assureTrain1([{ ...lanes[0]!, changedPaths: ["pnpm-lock.yaml"] }, ...lanes.slice(1)]).accepted).toBe(false);
   });
 });

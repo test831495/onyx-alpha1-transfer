@@ -12,7 +12,7 @@ export function assureTrain1(lanes: readonly LaneEvidence[]): AssuranceResult {
     if (lane.flags !== "OFF" || lane.activation !== "NONE") errors.push(`${lane.lane} activation boundary changed`);
     if (lane.lockfileDrift === "material") errors.push(`${lane.lane} material lockfile drift`);
     if (lane.changedPaths.some((path) => path === "pnpm-lock.yaml" || path.endsWith("/pnpm-lock.yaml"))) errors.push(`${lane.lane} lockfile included in candidate paths`);
-    if (!lane.allowlist.includes(lane.lane)) errors.push(`${lane.lane} allowlist mismatch`);
+    if (lane.allowlist !== lane.lane) errors.push(`${lane.lane} allowlist mismatch`);
   }
   return Object.freeze({ accepted: errors.length === 0, requirements: 110, states: TRAIN1_STATES.length, characters: TRAIN1_CHARACTERS.length, worlds: TRAIN1_WORLDS.length, noAuthority: true, noExternalIo: true, flags: "OFF", activation: "NONE", errors: Object.freeze(errors) });
 }

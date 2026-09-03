@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { validateCandidateAssuranceMetadata, validateFinalRequirements, type FinalRequirementRow, type FinalValidationContext } from "../src/final-validator.js";
 
 const row = (overrides: Partial<FinalRequirementRow> = {}): FinalRequirementRow => ({
@@ -57,21 +59,22 @@ describe("fail-closed final requirement validator", () => {
   it("rejects the six accepted corruptions against a trusted verification context", () => {
     const artifact = JSON.parse(readFileSync("evidence/train1-110-requirement-evidence.json", "utf8")) as { rows: FinalRequirementRow[] };
     const validRows = artifact.rows;
+    const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
     const context: FinalValidationContext = {
       expectedBaselineSha: "71f631f79aab57777425c9812235cedc7f2fd3c0",
       expectedCompatibilityFingerprint: "057c6175204f1fef1e6b03339a46664fb40e8a9e983a36a22daf46e14125fe25",
       expectedOwnerLaneCounts: { "VISIBLE-RUNTIME-01": 59, "VISIBLE-RENDERER-01": 15, "VISIBLE-WORLD-01": 22, "VISIBLE-TV-01": 14 },
       candidateRoots: {
-        "VISIBLE-RUNTIME-01": "/workspaces/visible-presence-train/runtime/onyx-v6-modular-ai-os",
-        "VISIBLE-RENDERER-01": "/workspaces/visible-presence-train/renderer/onyx-v6-modular-ai-os",
-        "VISIBLE-WORLD-01": "/workspaces/visible-presence-train/world/onyx-v6-modular-ai-os",
-        "VISIBLE-TV-01": "/workspaces/visible-presence-train/tv/onyx-v6-modular-ai-os",
+        "VISIBLE-RUNTIME-01": repositoryRoot,
+        "VISIBLE-RENDERER-01": repositoryRoot,
+        "VISIBLE-WORLD-01": repositoryRoot,
+        "VISIBLE-TV-01": repositoryRoot,
       },
       candidatePackageRoots: {
-        "VISIBLE-RUNTIME-01": "/workspaces/visible-presence-train/runtime/onyx-v6-modular-ai-os/packages/post-alpha-presentation-runtime-shell",
-        "VISIBLE-RENDERER-01": "/workspaces/visible-presence-train/renderer/onyx-v6-modular-ai-os/packages/post-alpha-character-renderer-native",
-        "VISIBLE-WORLD-01": "/workspaces/visible-presence-train/world/onyx-v6-modular-ai-os/packages/post-alpha-ambient-experience-foundation",
-        "VISIBLE-TV-01": "/workspaces/visible-presence-train/tv/onyx-v6-modular-ai-os/packages/post-alpha-tv-presence-runtime",
+        "VISIBLE-RUNTIME-01": join(repositoryRoot, "packages/post-alpha-presentation-runtime-shell"),
+        "VISIBLE-RENDERER-01": join(repositoryRoot, "packages/post-alpha-character-renderer-native"),
+        "VISIBLE-WORLD-01": join(repositoryRoot, "packages/post-alpha-ambient-experience-foundation"),
+        "VISIBLE-TV-01": join(repositoryRoot, "packages/post-alpha-tv-presence-runtime"),
       },
       expectedCanonicalHashes: {
         "VISIBLE-RUNTIME-01": "582a6f77e1413b4705b15badc92145b8d5a5ee00fe044964cb9dadb5a22bbbd9",

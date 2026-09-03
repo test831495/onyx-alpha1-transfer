@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 // @ts-expect-error Cross-worktree Vitest harness imports real candidate source.
-import * as runtime from "/workspaces/visible-presence-train/runtime/onyx-v6-modular-ai-os/packages/post-alpha-presentation-runtime-shell/src/index.ts";
+import * as runtime from "../../post-alpha-presentation-runtime-shell/src/index.ts";
 // @ts-expect-error Cross-worktree Vitest harness imports real candidate source.
-import * as renderer from "/workspaces/visible-presence-train/renderer/onyx-v6-modular-ai-os/packages/post-alpha-character-renderer-native/src/index.ts";
+import * as renderer from "../../post-alpha-character-renderer-native/src/index.ts";
 // @ts-expect-error Cross-worktree Vitest harness imports real candidate source.
-import * as world from "/workspaces/visible-presence-train/world/onyx-v6-modular-ai-os/packages/post-alpha-ambient-experience-foundation/src/index.ts";
+import * as world from "../../post-alpha-ambient-experience-foundation/src/index.ts";
 // @ts-expect-error Cross-worktree Vitest harness imports real candidate source.
-import * as tv from "/workspaces/visible-presence-train/tv/onyx-v6-modular-ai-os/packages/post-alpha-tv-presence-runtime/src/index.ts";
+import * as tv from "../../post-alpha-tv-presence-runtime/src/index.ts";
 
 describe("executable Train 1 composition", () => {
   it("executes the real 64-cell character, state, world, and device matrix", () => {

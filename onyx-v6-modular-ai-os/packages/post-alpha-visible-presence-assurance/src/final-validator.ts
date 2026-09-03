@@ -126,6 +126,7 @@ export type FinalValidation = {
     let freshnessVerified = 0;
     let implementationFileHashesVerified = 0;
     let testFileHashesVerified = 0;
+    const canonicalHashes = new Map<string, string | undefined>();
     if (rows.length !== 110) errors.push(`expected 110 rows, received ${rows.length}`);
     for (const row of rows) {
       const id = row.requirementId;
@@ -155,7 +156,9 @@ export type FinalValidation = {
         const testHash = row.testFileSha256;
         if (!canonical || !testHash || !freshness.includes(context.expectedBaselineSha) || !freshness.includes(context.expectedCompatibilityFingerprint) || !freshness.includes(canonical ?? "") || !freshness.includes(testHash ?? "")) errors.push(error("FRESHNESS_INPUT_MISSING", id));
         else {
-          const actualCanonical = canonicalCandidateHash(packageRoot ?? "");
+          const canonicalRoot = packageRoot ?? "";
+          const actualCanonical = canonicalHashes.has(canonicalRoot) ? canonicalHashes.get(canonicalRoot) : canonicalCandidateHash(canonicalRoot);
+          canonicalHashes.set(canonicalRoot, actualCanonical);
           if (!actualCanonical || actualCanonical !== canonical) errors.push(error("OWNER_LANE_CANONICAL_HASH_MISMATCH", id));
           else freshnessVerified++;
         }
