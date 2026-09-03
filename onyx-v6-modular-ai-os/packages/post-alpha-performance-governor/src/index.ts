@@ -86,7 +86,7 @@ export function choosePerformanceTier(signals: unknown, previousTier: unknown): 
     reasons.push("MILD_FRAME_PRESSURE");
   }
 
-  if (typed.memoryPressure) {
+  if (typed.memoryPressure === true) {
     pressure += 1;
     reasons.push("MEMORY_PRESSURE");
   }
@@ -94,7 +94,7 @@ export function choosePerformanceTier(signals: unknown, previousTier: unknown): 
     pressure += 1;
     reasons.push("JOURNAL_PRESSURE");
   }
-  if (typed.tv && (typed.activeMiniAgentCount ?? 0) > 12) {
+  if (typed.tv === true && (typed.activeMiniAgentCount ?? 0) > 12) {
     pressure += 1;
     reasons.push("TV_AGENT_DENSITY");
   }

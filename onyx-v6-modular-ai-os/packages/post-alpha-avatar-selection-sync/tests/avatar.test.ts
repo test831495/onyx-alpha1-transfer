@@ -40,7 +40,7 @@ describe("T2-AVATAR-SYNC-001 selection policy", () => {
     expect(applyAvatarSelection(null, onyx, authed).reason).toBe("MALFORMED_INPUT");
     expect(applyAvatarSelection(onyx, { nope: true }, authed).reason).toBe("MALFORMED_INPUT");
     expect(applyAvatarSelection(onyx, { ...onyx, character: "NOVA", version: 2 }, authed).reason).toBe("CHARACTER_MISMATCH");
-    expect(applyAvatarSelection(onyx, { ...onyx, version: 2, hash: "" }, authed).reason).toBe("HASH_MISSING");
+    expect(applyAvatarSelection(onyx, { ...onyx, version: 2, hash: "" }, authed).reason).toBe("MALFORMED_INPUT");
     expect(applyAvatarSelection(onyx, { ...onyx, version: 2, revoked: true }, authed).reason).toBe("REVOKED_CANDIDATE");
     expect(applyAvatarSelection(onyx, { ...onyx, accountId: "b", version: 2 }, authed).reason).toBe("ACCOUNT_MISMATCH");
   });
@@ -113,6 +113,27 @@ describe("T2-AVATAR-SYNC-003 rollback and T2-AVATAR-SYNC-004 revocation", () => 
   it("never mutates identity, role, session, or authorization", () => {
     const result = applyAvatarSelection(onyx, { ...onyx, avatarId: "v2", version: 2, hash: "h2" }, authed);
     expect(Object.keys(result.selection).sort()).toEqual(["accountId", "avatarId", "character", "hash", "revoked", "version"]);
+  });
+});
+
+describe("PR38 Finding A required hash validation", () => {
+  it("A_HASHLESS_CURRENT_REJECTED", () => {
+    const hashless = { accountId: "a", character: "ONYX", avatarId: "v1", version: 1, revoked: false };
+    expect(applyAvatarSelection(hashless, { ...onyx, version: 2, hash: "h2" }, authed).reason).toBe("MALFORMED_INPUT");
+  });
+
+  it("A_HASHLESS_ROLLBACK_TARGET_REJECTED", () => {
+    const hashless = { accountId: "a", character: "ONYX" as const, avatarId: "v1", version: 1, revoked: false };
+    expect(rollbackAvatarSelection({ ...onyx, version: 3 }, [hashless as AccountCharacterAvatarSelection], 1, authed).reason).toBe("MALFORMED_INPUT");
+  });
+
+  it("A_HASHLESS_REVOKE_INPUT_NEVER_EMITS_INVALID_SELECTION", () => {
+    const hashless = { accountId: "a", character: "ONYX", avatarId: "v1", version: 1, revoked: false };
+    expect(() => revokeAvatarSelection(hashless as AccountCharacterAvatarSelection, "v1")).toThrow("MALFORMED_SELECTION");
+  });
+
+  it("A_VALID_HASHED_SELECTION_PRESERVED", () => {
+    expect(applyAvatarSelection(onyx, { ...onyx, version: 2, hash: "h2" }, authed).ok).toBe(true);
   });
 });
 

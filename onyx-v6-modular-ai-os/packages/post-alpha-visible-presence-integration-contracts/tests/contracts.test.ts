@@ -74,6 +74,26 @@ describe("Train 2 contracts", () => {
   });
 });
 
+describe("PR38 Finding D closed integration envelope schema", () => {
+  it("D_UNKNOWN_FIELD_REJECTED", () => {
+    expect(validateIntegrationEnvelope({ ...base, smuggled: true }).errors).toContain("UNKNOWN_FIELD:smuggled");
+  });
+
+  it("D_MULTIPLE_UNKNOWN_FIELDS_SORTED_DETERMINISTICALLY", () => {
+    expect(validateIntegrationEnvelope({ ...base, zebra: 1, alpha: 2 }).errors).toEqual(["UNKNOWN_FIELD:alpha", "UNKNOWN_FIELD:zebra"]);
+  });
+
+  it("D_AUTHORITY_FIELD_REJECTION_PRECEDENCE_PRESERVED", () => {
+    const errors = validateIntegrationEnvelope({ ...base, approval: true }).errors;
+    expect(errors).toContain("AUTHORITY_FIELD_FORBIDDEN:approval");
+    expect(errors).not.toContain("UNKNOWN_FIELD:approval");
+  });
+
+  it("D_KNOWN_FIELDS_AND_EXISTING_VALID_ENVELOPE_PRESERVED", () => {
+    expect(validateIntegrationEnvelope({ ...base, character: "ONYX", state: "SPEAKING", world: "FUTURE_CITY", deviceClass: "tv", tier: "BALANCED", integrityHash: "a".repeat(64), items: ["one"] })).toEqual({ valid: true, errors: [] });
+  });
+});
+
 describe("T2-CONTRACT-001 envelope vocabulary and bounds", () => {
   it("T2-CONTRACT-001-POS: accepts every closed vocabulary value", () => {
     for (const state of SEMANTIC_STATES) {

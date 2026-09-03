@@ -75,3 +75,28 @@ describe("T2-CANVA-ASSET-002 duplicates and registry candidates", () => {
     expect(rejected.reason).toContain("NOT_RUNTIME_CANDIDATE");
   });
 });
+
+describe("PR38 Finding B bounded duplicate detection", () => {
+  const sameKey = Array.from({ length: 65 }, (_, index) => ({
+    id: `asset-${index}`,
+    sha256: "a".repeat(64),
+    perceptualHash: "p",
+    intendedUse: "avatar",
+  }));
+
+  it("B_OVER_BOUND_INPUT_CAPS_PROCESSED_ENTRIES", () => {
+    expect(detectDuplicates(sameKey).exactGroups[0]).toHaveLength(64);
+  });
+
+  it("B_OVER_BOUND_INPUT_REPORTS_BOUNDED_FALSE", () => {
+    expect(detectDuplicates(sameKey).bounded).toBe(false);
+  });
+
+  it("B_DUPLICATE_GROUPS_REMAIN_DETERMINISTIC", () => {
+    expect(detectDuplicates(sameKey)).toEqual(detectDuplicates(sameKey));
+  });
+
+  it("B_WITHIN_BOUND_BEHAVIOR_PRESERVED", () => {
+    expect(detectDuplicates(sameKey.slice(0, 2)).exactGroups).toEqual([["asset-0", "asset-1"]]);
+  });
+});

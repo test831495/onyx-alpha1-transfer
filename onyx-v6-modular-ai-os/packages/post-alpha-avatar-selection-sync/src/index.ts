@@ -46,6 +46,7 @@ function isSelection(value: unknown): value is AccountCharacterAvatarSelection {
     isBoundedString(value["accountId"], MAX_IDENTIFIER_LENGTH) &&
     isMember(CHARACTERS, value["character"]) &&
     isBoundedString(value["avatarId"], MAX_IDENTIFIER_LENGTH) &&
+    isBoundedString(value["hash"], MAX_IDENTIFIER_LENGTH) &&
     typeof value["version"] === "number" &&
     Number.isInteger(value["version"]) &&
     (value["version"] as number) > 0 &&
@@ -59,6 +60,10 @@ function reject(
   idempotent = false,
 ): SelectionChangeResult {
   return deepFreeze({ ok: false, reason, idempotent, selection: current });
+}
+
+function malformedSelection(): AccountCharacterAvatarSelection {
+  return deepFreeze({ accountId: "", character: "ONYX", avatarId: "", version: 0, hash: "", revoked: true });
 }
 
 /**
@@ -134,6 +139,9 @@ export function rollbackAvatarSelection(
   targetVersion: number,
   facts: SessionFacts,
 ): SelectionChangeResult {
+  if (!isSelection(current) || !priorAllowed.every(isSelection)) {
+    return reject(isSelection(current) ? current : malformedSelection(), "MALFORMED_INPUT");
+  }
   if (!facts.authenticated || facts.accountId !== current.accountId) return reject(current, "UNAUTHENTICATED");
   const target = priorAllowed.find(
     (entry) =>
@@ -155,6 +163,7 @@ export function revokeAvatarSelection(
   current: AccountCharacterAvatarSelection,
   revokedAvatarId: string,
 ): Readonly<{ revoked: boolean; selection: AccountCharacterAvatarSelection }> {
+  if (!isSelection(current)) throw new TypeError("MALFORMED_SELECTION");
   const revoked = current.avatarId === revokedAvatarId;
   return deepFreeze({
     revoked,

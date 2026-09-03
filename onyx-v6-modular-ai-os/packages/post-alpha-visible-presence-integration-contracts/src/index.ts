@@ -81,6 +81,21 @@ export const FORBIDDEN_AUTHORITY_KEYS = [
   "biometric",
 ] as const;
 
+export const ENVELOPE_ALLOWED_KEYS = new Set([
+  "schemaVersion",
+  "accountId",
+  "deviceId",
+  "cursor",
+  "character",
+  "state",
+  "world",
+  "deviceClass",
+  "tier",
+  "integrityHash",
+  "items",
+  ...FORBIDDEN_AUTHORITY_KEYS,
+]);
+
 export type ValidationOutcome = Readonly<{ valid: boolean; errors: readonly string[] }>;
 
 export function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -159,6 +174,9 @@ export function validateIntegrationEnvelope(input: unknown): ValidationOutcome {
   }
 
   for (const key of findAuthorityKeys(input)) errors.push(`AUTHORITY_FIELD_FORBIDDEN:${key}`);
+  for (const key of Object.keys(input).sort()) {
+    if (!ENVELOPE_ALLOWED_KEYS.has(key)) errors.push(`UNKNOWN_FIELD:${key}`);
+  }
 
   return outcome(errors);
 }

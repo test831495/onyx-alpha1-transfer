@@ -57,3 +57,26 @@ describe("T2-PERFORMANCE-001 tier boundaries", () => {
     expect(tv.reasons).toContain("TV_AGENT_DENSITY");
   });
 });
+
+describe("PR38 Finding C strict boolean signals", () => {
+  it("C_MEMORY_PRESSURE_STRING_DOES_NOT_CHANGE_TIER", () => {
+    expect(choosePerformanceTier({ ...healthy, memoryPressure: "yes" } as never, "PREMIUM_CINEMATIC").tier).toBe("PREMIUM_CINEMATIC");
+  });
+
+  it("C_TV_STRING_DOES_NOT_ADD_TV_DENSITY", () => {
+    expect(choosePerformanceTier({ ...healthy, tv: "yes", activeMiniAgentCount: 20 } as never, "PREMIUM_CINEMATIC").reasons).not.toContain("TV_AGENT_DENSITY");
+  });
+
+  it("C_BOOLEAN_TRUE_MEMORY_PRESSURE_STILL_APPLIES", () => {
+    expect(choosePerformanceTier({ ...healthy, memoryPressure: true }, "PREMIUM_CINEMATIC").tier).toBe("BALANCED");
+  });
+
+  it("C_BOOLEAN_TRUE_TV_STILL_APPLIES", () => {
+    expect(choosePerformanceTier({ ...healthy, tv: true, activeMiniAgentCount: 20 }, "PREMIUM_CINEMATIC").reasons).toContain("TV_AGENT_DENSITY");
+  });
+
+  it("C_ALIVE_INVARIANT_AND_REDUCED_MOTION_CEILING_PRESERVED", () => {
+    expect(choosePerformanceTier({ ...healthy, memoryPressure: "yes" } as never, "PREMIUM_CINEMATIC").alive).toBe(true);
+    expect(choosePerformanceTier({ ...healthy, reducedMotion: true }, "PREMIUM_CINEMATIC").tier).toBe("REDUCED_MOTION");
+  });
+});

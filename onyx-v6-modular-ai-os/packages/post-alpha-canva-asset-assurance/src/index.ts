@@ -154,7 +154,9 @@ export function detectDuplicates(assets: readonly unknown[]): Readonly<{
   functionalDuplicates: readonly (readonly string[])[];
   bounded: boolean;
 }> {
-  const valid = (Array.isArray(assets) ? assets : []).filter(
+  const input = Array.isArray(assets) ? assets : [];
+  const bounded = input.length <= MAX_COLLECTION_SIZE;
+  const valid = input.slice(0, MAX_COLLECTION_SIZE).filter(
     (asset): asset is Record<string, unknown> => isPlainObject(asset) && isBoundedString(asset["id"]),
   );
 
@@ -165,13 +167,25 @@ export function detectDuplicates(assets: readonly unknown[]): Readonly<{
   for (const asset of valid) {
     const id = asset["id"] as string;
     const hash = typeof asset["sha256"] === "string" ? asset["sha256"] : "";
-    if (isSha256Hex(hash)) byHash.set(hash, [...(byHash.get(hash) ?? []), id]);
+    if (isSha256Hex(hash)) {
+      const group = byHash.get(hash) ?? [];
+      group.push(id);
+      byHash.set(hash, group);
+    }
 
     const perceptual = typeof asset["perceptualHash"] === "string" ? asset["perceptualHash"] : "";
-    if (perceptual.length > 0) byPerceptual.set(perceptual, [...(byPerceptual.get(perceptual) ?? []), id]);
+    if (perceptual.length > 0) {
+      const group = byPerceptual.get(perceptual) ?? [];
+      group.push(id);
+      byPerceptual.set(perceptual, group);
+    }
 
     const purpose = typeof asset["intendedUse"] === "string" ? asset["intendedUse"] : "";
-    if (purpose.length > 0) byPurpose.set(purpose, [...(byPurpose.get(purpose) ?? []), id]);
+    if (purpose.length > 0) {
+      const group = byPurpose.get(purpose) ?? [];
+      group.push(id);
+      byPurpose.set(purpose, group);
+    }
   }
 
   const groupsOf = (map: Map<string, string[]>): readonly (readonly string[])[] =>
@@ -181,7 +195,7 @@ export function detectDuplicates(assets: readonly unknown[]): Readonly<{
     exactGroups: groupsOf(byHash),
     nearDuplicates: groupsOf(byPerceptual),
     functionalDuplicates: groupsOf(byPurpose),
-    bounded: valid.length <= MAX_COLLECTION_SIZE,
+    bounded,
   });
 }
 
