@@ -1,0 +1,547 @@
+{
+  "accepted": true,
+  "activation": "NONE",
+  "baselineSha": "71f631f79aab57777425c9812235cedc7f2fd3c0",
+  "cellCount": 64,
+  "cells": [
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "IDLE",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "IDLE",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "IDLE",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "IDLE",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "LISTENING",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "LISTENING",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "LISTENING",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "LISTENING",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "UNDERSTANDING",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "UNDERSTANDING",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "UNDERSTANDING",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "UNDERSTANDING",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "THINKING",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "THINKING",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "THINKING",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "THINKING",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "SPEAKING",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "SPEAKING",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "SPEAKING",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "SPEAKING",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "APPROVAL_REQUIRED",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "APPROVAL_REQUIRED",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "APPROVAL_REQUIRED",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "APPROVAL_REQUIRED",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "PRIVACY_RESTRICTED",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "PRIVACY_RESTRICTED",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "PRIVACY_RESTRICTED",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "PRIVACY_RESTRICTED",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "RECOVERING",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "RECOVERING",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "RECOVERING",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "ONYX",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "RECOVERING",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "IDLE",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "IDLE",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "IDLE",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "IDLE",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "LISTENING",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "LISTENING",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "LISTENING",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "LISTENING",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "UNDERSTANDING",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "UNDERSTANDING",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "UNDERSTANDING",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "UNDERSTANDING",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "THINKING",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "THINKING",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "THINKING",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "THINKING",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "SPEAKING",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "SPEAKING",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "SPEAKING",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "SPEAKING",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "APPROVAL_REQUIRED",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "APPROVAL_REQUIRED",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "APPROVAL_REQUIRED",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "APPROVAL_REQUIRED",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "PRIVACY_RESTRICTED",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "PRIVACY_RESTRICTED",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "PRIVACY_RESTRICTED",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "PRIVACY_RESTRICTED",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "RECOVERING",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "RECOVERING",
+      "world": "OPERATIONS_CENTER"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "DESKTOP",
+      "semanticSource": "real candidate exports",
+      "state": "RECOVERING",
+      "world": "FUTURE_CITY"
+    },
+    {
+      "character": "NOVA",
+      "deterministic": true,
+      "device": "TV",
+      "semanticSource": "real candidate exports",
+      "state": "RECOVERING",
+      "world": "FUTURE_CITY"
+    }
+  ],
+  "characters": [
+    "ONYX",
+    "NOVA"
+  ],
+  "expectedCellCount": 64,
+  "externalIo": false,
+  "flags": "OFF",
+  "nonAuthorizing": true,
+  "primaryDeviceProjections": [
+    "DESKTOP",
+    "TV"
+  ],
+  "schemaVersion": "VP_CINEMATIC_COVERAGE_MATRIX_V1",
+  "states": [
+    "IDLE",
+    "LISTENING",
+    "UNDERSTANDING",
+    "THINKING",
+    "SPEAKING",
+    "APPROVAL_REQUIRED",
+    "PRIVACY_RESTRICTED",
+    "RECOVERING"
+  ],
+  "worlds": [
+    "OPERATIONS_CENTER",
+    "FUTURE_CITY"
+  ]
+}

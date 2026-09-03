@@ -579,6 +579,16 @@ importers:
         specifier: ^3.2.7
         version: 3.2.7(@types/node@26.2.0)(tsx@4.23.12)
 
+  packages/post-alpha-ambient-experience-foundation: {}
+
+  packages/post-alpha-character-renderer-native: {}
+
+  packages/post-alpha-presentation-runtime-shell: {}
+
+  packages/post-alpha-tv-presence-runtime: {}
+
+  packages/post-alpha-visible-presence-assurance: {}
+
   packages/privacy:
     dependencies:
       '@onyx/contracts':

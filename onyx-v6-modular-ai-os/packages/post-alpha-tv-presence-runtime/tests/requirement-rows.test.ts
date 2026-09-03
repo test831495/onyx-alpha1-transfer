@@ -1,0 +1,33 @@
+import { describe, expect, it } from "vitest";
+import { getTVCapabilityProfile, getReadabilityForTenFoot, getSafeZone, validateBoundsInSafeZone, getFocusGraph, rejectInvalidFocusTarget, getPresentationMode, sharedRoomPrivacy, createCharacterBinding, captionsAvailable, accessibilityMode, performanceTier, isFirstClassTV, approvalCoordinationTV, privacyCoordinationTV, recoveryCoordinationTV } from "../src/requirement-coverage.js";
+
+describe("VP-TV requirement rows", () => {
+  it("VP-TV-01-POS-001: TV capability profile exists", () => { expect(getTVCapabilityProfile().profile).toBe("premium"); });
+  it("VP-TV-01-NEG-001: TV capability does not require casting", () => { expect(isFirstClassTV(true, false)).toBe(true); });
+  it("VP-TV-02-POS-001: readability supports ten-foot viewing", () => { expect(getReadabilityForTenFoot(getTVCapabilityProfile()).min_font_size).toBeGreaterThanOrEqual(16); });
+  it("VP-TV-02-NEG-001: reduced profile still has readable font", () => { expect(getReadabilityForTenFoot({ ...getTVCapabilityProfile(), profile: "reduced" }).min_font_size).toBeGreaterThanOrEqual(18); });
+  it("VP-TV-03-POS-001: safe zone has valid bounds", () => { expect(getSafeZone().valid).toBe(true); });
+  it("VP-TV-03-NEG-001: invalid bounds are rejected", () => { expect(validateBoundsInSafeZone(0, 0, 100, 100)).toBe(false); });
+  it("VP-TV-04-POS-001: focus graph exposes valid targets", () => { expect(getFocusGraph("IDLE").valid_targets.length).toBeGreaterThan(0); });
+  it("VP-TV-04-NEG-001: invalid focus target rejected", () => { expect(rejectInvalidFocusTarget("invalid", getFocusGraph("IDLE").valid_targets)).toBe(true); });
+  it("VP-TV-05-POS-001: IDLE state uses passive mode", () => { expect(getPresentationMode("IDLE").passive).toBe(true); });
+  it("VP-TV-05-NEG-001: SPEAKING state is active", () => { expect(getPresentationMode("SPEAKING").active_alt).toBe(true); });
+  it("VP-TV-06-POS-001: shared-room privacy is enforced", () => { expect(sharedRoomPrivacy("PRIVACY_RESTRICTED").privacy_level).toBe("full"); });
+  it("VP-TV-06-NEG-001: non-private state has no privacy elevation", () => { expect(sharedRoomPrivacy("IDLE").privacy_level).toBe("none"); });
+  it("VP-TV-07-POS-001: character binding is immutable", () => { expect(createCharacterBinding("ONYX", "operations-center-v1").mutable).toBe(false); });
+  it("VP-TV-07-NEG-001: binding preserves IDs exactly", () => { const b = createCharacterBinding("NOVA", "future-city-v1"); expect(b.character_id).toBe("NOVA"); expect(b.world_id).toBe("future-city-v1"); });
+  it("VP-TV-08-POS-001: captions available for speaking", () => { expect(captionsAvailable("SPEAKING")).toBe(true); });
+  it("VP-TV-08-NEG-001: captions not required for IDLE", () => { expect(captionsAvailable("IDLE")).toBe(false); });
+  it("VP-TV-09-POS-001: accessibility adapts for high contrast", () => { expect(accessibilityMode("IDLE", true, false).mode).toBe("adaptive"); });
+  it("VP-TV-09-NEG-001: standard accessibility remains standard", () => { expect(accessibilityMode("IDLE", false, false).mode).toBe("standard"); });
+  it("VP-TV-10-POS-001: performance full tier selected for bandwidth", () => { expect(performanceTier(20).tier).toBe("full"); });
+  it("VP-TV-10-NEG-001: minimal tier selected for low bandwidth", () => { expect(performanceTier(1).tier).toBe("minimal"); });
+  it("VP-TV-11-POS-001: TV is first-class when no casting required", () => { expect(isFirstClassTV(true, false)).toBe(true); });
+  it("VP-TV-11-NEG-001: casting requirement is not first-class", () => { expect(isFirstClassTV(true, true)).toBe(false); });
+  it("VP-TV-12-POS-001: approval is visible but not actionable", () => { const a = approvalCoordinationTV("APPROVAL_REQUIRED"); expect(a.approval_visible).toBe(true); expect(a.approval_actionable).toBe(false); });
+  it("VP-TV-12-NEG-001: IDLE has no approval request", () => { expect(approvalCoordinationTV("IDLE").approval_visible).toBe(false); });
+  it("VP-TV-13-POS-001: privacy state minimizes content and mutes audio", () => { const p = privacyCoordinationTV("PRIVACY_RESTRICTED"); expect(p.content_minimized).toBe(true); expect(p.audio_muted).toBe(true); });
+  it("VP-TV-13-NEG-001: IDLE does not enforce privacy minimization", () => { expect(privacyCoordinationTV("IDLE").privacy_enforced).toBe(false); });
+  it("VP-TV-14-POS-001: recovery exposes fallback", () => { expect(recoveryCoordinationTV("RECOVERING").fallback_active).toBe(true); });
+  it("VP-TV-14-NEG-001: non-recovery state has no active fallback", () => { expect(recoveryCoordinationTV("IDLE").fallback_active).toBe(false); });
+});

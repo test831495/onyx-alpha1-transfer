@@ -1,0 +1,9 @@
+import { PERFORMANCE_BUDGETS, TRAIN1_CHARACTERS, TRAIN1_STATES, TRAIN1_WORLDS } from "./train1-assurance.js";
+export type SliceFrame = { readonly step: number; readonly character: "ONYX" | "NOVA"; readonly state: typeof TRAIN1_STATES[number]; readonly world: typeof TRAIN1_WORLDS[number]; readonly desktop: true; readonly tv: true; readonly captions: boolean; readonly audio: "ambient" | "speaking-timing" | "muted"; readonly disclosure: "normal" | "minimized"; readonly nonAuthorizing: true };
+export type CinematicSlice = { readonly frames: readonly SliceFrame[]; readonly performance: typeof PERFORMANCE_BUDGETS; readonly accepted: boolean; readonly flags: "OFF"; readonly activation: "NONE"; readonly externalIo: false };
+export function buildCinematicSlice(): CinematicSlice {
+  const states = [...TRAIN1_STATES];
+  const frames: SliceFrame[] = states.map((state, index) => Object.freeze({ step: index + 1, character: "ONYX" as const, state, world: "OPERATIONS_CENTER" as const, desktop: true as const, tv: true as const, captions: state === "SPEAKING", audio: state === "SPEAKING" ? "speaking-timing" as const : state === "PRIVACY_RESTRICTED" ? "muted" as const : "ambient" as const, disclosure: state === "PRIVACY_RESTRICTED" ? "minimized" as const : "normal" as const, nonAuthorizing: true as const }));
+  frames.push(Object.freeze({ step: frames.length + 1, character: "NOVA", state: "IDLE", world: "FUTURE_CITY", desktop: true as const, tv: true as const, captions: false, audio: "ambient" as const, disclosure: "normal" as const, nonAuthorizing: true as const }));
+  return Object.freeze({ frames: Object.freeze(frames), performance: PERFORMANCE_BUDGETS, accepted: frames.length === 9 && TRAIN1_CHARACTERS.length === 2 && TRAIN1_WORLDS.length === 2, flags: "OFF", activation: "NONE", externalIo: false });
+}
