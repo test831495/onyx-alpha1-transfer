@@ -49,6 +49,11 @@ import {
   type ShellIntent,
 } from "./shellState";
 import { DetailDataContext } from "./appDetailRegistry";
+import {
+  loadCharacterSelection,
+  persistCharacterSelection,
+  subscribeToCharacterSelection,
+} from "./characterPersistence";
 
 const states: CoreState[] = [
   "wake-armed",
@@ -184,9 +189,9 @@ function normalizeCommand(raw: string): string {
 
 export function App() {
   const touch = matchMedia("(hover: none), (pointer: coarse)").matches;
-  const [mode, setMode] = useState<AssistantMode>("nova");
+  const [mode, setMode] = useState<AssistantMode>(() => loadCharacterSelection());
   const identityProfile = getAssistantProfile(mode);
-  const [requested, setRequested] = useState<AssistantMode>("nova");
+  const [requested, setRequested] = useState<AssistantMode>(() => loadCharacterSelection());
   const [phase, setPhase] = useState<"idle" | "covered" | "revealing">(
     "idle",
   );
@@ -321,6 +326,7 @@ export function App() {
 
   const activate = useCallback(
     (next: AssistantMode) => {
+      persistCharacterSelection(next);
       voiceManager.current.stop();
       setRequested(next);
 
@@ -352,6 +358,23 @@ export function App() {
     },
     [reset],
   );
+
+  useEffect(() => {
+    return subscribeToCharacterSelection((next) => {
+      if (next === modeRef.current) return;
+      voiceManager.current.stop();
+      clearTimers();
+      setRequested(next);
+      setMode(next);
+      modeRef.current = next;
+      setShell((current) => ({
+        ...current,
+        currentCharacter: next,
+      }));
+      setActivePanel(null);
+      reset(next);
+    });
+  }, [reset]);
 
   const selectPanel = useCallback(
     (panel: Panel) => {
