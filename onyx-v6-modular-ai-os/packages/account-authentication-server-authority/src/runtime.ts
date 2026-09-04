@@ -1,5 +1,5 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
-import type { AcceptanceRegistryRecord, AccountRecordRepository, AuditEnvelope, AuditSink, AuthenticatedRequestContext, AuthenticationProvider, AuthorizationPolicy, EntraAdapterConfiguration, ProtectedRequest, ProtectedResponse, RateLimiter, ServerAuthorityCode, ServerAuthorityDecision, TokenClaims, TokenVerifier, VerificationDecision, VerifiedProof } from "./contracts";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import type { AcceptanceRegistryRecord, AccountRecordRepository, AuditEnvelope, AuditSink, AuthenticatedRequestContext, AuthenticationProvider, AuthorizationPolicy, EntraAdapterConfiguration, ProtectedRequest, ProtectedResponse, RateLimiter, RequestIdGenerator, ServerAuthorityCode, ServerAuthorityDecision, TokenClaims, TokenVerifier, VerificationDecision, VerifiedProof } from "./contracts";
 
 const MAX_BODY_BYTES = 4096;
 const header = { "cache-control": "no-store", "content-type": "application/json", "x-content-type-options": "nosniff" } as const;
@@ -8,6 +8,8 @@ const encode = (value: string) => Buffer.from(value).toString("base64url");
 const decode = (value: string): string | undefined => { try { return Buffer.from(value, "base64url").toString("utf8"); } catch { return undefined; } };
 const digest = (key: string, value: string) => createHmac("sha256", key).update(value).digest("base64url");
 const hash = (value: string) => createHmac("sha256", "account-authority-audit-v1").update(value).digest("hex");
+const requestIdPattern = /^request_[A-Za-z0-9_-]{1,96}$/;
+export const cryptoRequestIdGenerator: RequestIdGenerator = Object.freeze({ next: () => `request_${randomUUID()}` });
 
 interface JwtHeader { readonly alg?: string; readonly kid?: string; }
 
@@ -90,14 +92,16 @@ export class FixedWindowRateLimiter implements RateLimiter {
 }
 export const sameAccountPolicy = (available = true): AuthorizationPolicy => ({ available, allows: (context, targetScope) => context.opaqueAccountScope === targetScope });
 
-export function protectRequest(request: ProtectedRequest, provider: AuthenticationProvider, policy: AuthorizationPolicy, audit: AuditSink, limiter: RateLimiter, nowSeconds: number): ProtectedResponse {
+export function protectRequest(request: ProtectedRequest, provider: AuthenticationProvider, policy: AuthorizationPolicy, audit: AuditSink, limiter: RateLimiter, nowSeconds: number, requestIdGenerator: RequestIdGenerator = cryptoRequestIdGenerator): ProtectedResponse {
   const response = (status: number, code: ServerAuthorityCode): ProtectedResponse => Object.freeze({ status, code, headers: header, body: JSON.stringify({ code }) });
   if (request.method !== "POST") return response(405, "INVALID_REQUEST");
   if (request.contentType !== "application/json" || !request.body || Buffer.byteLength(request.body) > MAX_BODY_BYTES) return response(400, "INVALID_REQUEST");
   const proof = request.authorization?.startsWith("Bearer ") ? request.authorization.slice(7) : "";
   const verified = provider.verifyProof(proof, nowSeconds);
   if (!verified.allowed || !verified.proof) return response(401, verified.code);
-  const requestId = (request.requestId?.match(/^request_[A-Za-z0-9_-]{1,96}$/) ? request.requestId : `request_${hash(`${nowSeconds}:${request.action}`).slice(0, 24)}`) as `request_${string}`;
+  const candidateRequestId = request.requestId ?? requestIdGenerator.next();
+  if (!candidateRequestId || !requestIdPattern.test(candidateRequestId)) return response(503, "SERVICE_UNAVAILABLE");
+  const requestId = candidateRequestId as `request_${string}`;
   const context = provider.deriveAuthenticatedContext(verified.proof, requestId);
   if (!request.targetScope || !policy.available) return response(403, "POLICY_UNAVAILABLE");
   if (!policy.allows(context, request.targetScope)) return response(403, "ACCOUNT_MISMATCH");

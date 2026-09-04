@@ -53,6 +53,7 @@ export interface AuthorizationPolicy { readonly available: boolean; allows(conte
 export interface AuditEnvelope { readonly schemaVersion: "ACCOUNT_AUTHORITY_AUDIT_V1"; readonly eventId: `audit_${string}`; readonly requestId: string; readonly opaqueAccountScope: string; readonly sessionReference: string; readonly deviceReference: string; readonly action: string; readonly targetType: string; readonly policyVersion: string; readonly decision: ServerAuthorityCode; readonly reasonCode: string; readonly trustedTime: string; readonly integrityHash: string; }
 export interface AuditSink { readonly available: boolean; append(envelope: AuditEnvelope): void; }
 export interface RateLimiter { reserve(context: AuthenticatedRequestContext, requestId: string): boolean; }
+export interface RequestIdGenerator { next(): string | undefined; }
 export interface AccountRecordRepository { readAccountAuthority(scope: string): number | undefined; compareAndSetSessionRevocation(sessionId: string, expected: number, next: number): boolean; readRevocationVersion(sessionId: string): number; reserveIdempotency(operationId: string): boolean; appendAudit(envelope: AuditEnvelope): void; }
 
 export interface ProtectedRequest { readonly method: string; readonly contentType?: string; readonly body?: string; readonly authorization?: string; readonly requestId?: string; readonly targetScope?: string; readonly action: string; readonly governed: boolean; }
