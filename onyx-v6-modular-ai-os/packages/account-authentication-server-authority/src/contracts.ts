@@ -45,6 +45,7 @@ export interface AuthenticationProvider {
   verifyProof(proof: string, nowSeconds: number): VerificationDecision;
   deriveAuthenticatedContext(proof: VerifiedProof, requestId: `request_${string}`): AuthenticatedRequestContext;
   invalidateSessionProjection(sessionId: string): void;
+  invalidateDeviceProjection(deviceId: string): void;
   describeCapabilities(): readonly string[];
 }
 

@@ -74,7 +74,20 @@ export class InMemoryAccountRecordRepository implements AccountRecordRepository 
   public appendAudit(envelope: AuditEnvelope): void { this.audits.push(envelope); }
 }
 export class InMemoryAuditSink implements AuditSink { public readonly entries: AuditEnvelope[] = []; public constructor(public readonly available = true) {} public append(envelope: AuditEnvelope): void { if (this.available) this.entries.push(envelope); } }
-export class FixedWindowRateLimiter implements RateLimiter { private readonly requests = new Set<string>(); public constructor(private readonly maximum = 1) {} public reserve(context: AuthenticatedRequestContext, requestId: string): boolean { const key = `${context.opaqueAccountScope}:${requestId}`; if (this.requests.has(key) || this.requests.size >= this.maximum) return false; this.requests.add(key); return true; } }
+export class FixedWindowRateLimiter implements RateLimiter {
+  private readonly buckets = new Map<string, { epoch: number; requestIds: Set<string> }>();
+  public constructor(private readonly maximumPerScope = 1, private readonly maximumScopes = 128, private readonly windowSeconds = 60, private readonly nowSeconds: () => number = () => 0) {}
+  public reserve(context: AuthenticatedRequestContext, requestId: string): boolean {
+    if (!context.opaqueAccountScope.startsWith("account-scope_") || !/^request_[A-Za-z0-9_-]{1,96}$/.test(requestId) || this.maximumPerScope < 1 || this.maximumScopes < 1 || this.windowSeconds < 1) return false;
+    const epoch = Math.floor(this.nowSeconds() / this.windowSeconds); const existing = this.buckets.get(context.opaqueAccountScope);
+    if (existing && existing.epoch !== epoch) this.buckets.delete(context.opaqueAccountScope);
+    const oldestScope = this.buckets.keys().next().value;
+    if (!this.buckets.has(context.opaqueAccountScope) && this.buckets.size >= this.maximumScopes && oldestScope) this.buckets.delete(oldestScope);
+    const bucket = this.buckets.get(context.opaqueAccountScope) ?? { epoch, requestIds: new Set<string>() };
+    if (bucket.requestIds.has(requestId) || bucket.requestIds.size >= this.maximumPerScope) return false;
+    bucket.requestIds.add(requestId); this.buckets.set(context.opaqueAccountScope, bucket); return true;
+  }
+}
 export const sameAccountPolicy = (available = true): AuthorizationPolicy => ({ available, allows: (context, targetScope) => context.opaqueAccountScope === targetScope });
 
 export function protectRequest(request: ProtectedRequest, provider: AuthenticationProvider, policy: AuthorizationPolicy, audit: AuditSink, limiter: RateLimiter, nowSeconds: number): ProtectedResponse {
