@@ -128,8 +128,7 @@ export function decideEligibility(context: TrustedContextEnvelope, candidate: Ca
   if (context?.policyAvailable === false) reasons.push("POLICY_UNAVAILABLE");
   if (!finiteNonNegative(context?.trustedTime)) reasons.push("TRUSTED_TIME_UNAVAILABLE");
   if (!validSnapshot(candidate)) reasons.push("CANDIDATE_SNAPSHOT_INVALID");
-  if (candidate.lifecycle !== "ACTIVE") reasons.push(candidate.lifecycle === "DISABLED" ? "PROVIDER_DISABLED" : "CANDIDATE_UNHEALTHY");
-  if (candidate.health === "UNHEALTHY") reasons.push("CANDIDATE_UNHEALTHY");
+  if (candidate.lifecycle !== "ACTIVE") reasons.push("PROVIDER_DISABLED");
   if (context.region && candidate.region !== context.region) reasons.push("RESIDENCY_DENIED");
   if (context.requiredCapability && candidate.capability !== context.requiredCapability) reasons.push("CAPABILITY_MISMATCH");
   if (context.privacyPolicyAllowed === false) reasons.push("PRIVACY_POLICY_DENIED");
