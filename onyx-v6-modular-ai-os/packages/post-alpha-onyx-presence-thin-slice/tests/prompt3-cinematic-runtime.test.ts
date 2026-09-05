@@ -96,15 +96,16 @@ describe("Prompt 3 first cinematic runtime", () => {
     expect(composition.grantsAuthority).toBe(false);
   });
 
-  it("fails closed for a malformed device profile without claiming device evidence", () => {
-    const fallback = createUniversalDeviceProfile("HOSTILE_PROFILE" as never);
-    expect(fallback).toMatchObject({
-      profileId: "UNSUPPORTED",
-      fallbackRequirement: "TEXT_SAFE",
-      evidenceClass: "NOT_YET_AVAILABLE",
-      genuinePhysicalDeviceEvidence: false,
-      remoteAvailable: false,
-      hoverAvailable: false,
-    });
+  it("fails closed for inherited, hostile, and malformed device profile identifiers", () => {
+    for (const profileId of ["constructor", "toString", "valueOf", "__proto__", "hasOwnProperty", "HOSTILE_PROFILE", null, undefined, 7, {}]) {
+      expect(createUniversalDeviceProfile(profileId)).toMatchObject({
+        profileId: "UNSUPPORTED",
+        fallbackRequirement: "TEXT_SAFE",
+        evidenceClass: "NOT_YET_AVAILABLE",
+        genuinePhysicalDeviceEvidence: false,
+        remoteAvailable: false,
+        hoverAvailable: false,
+      });
+    }
   });
 });

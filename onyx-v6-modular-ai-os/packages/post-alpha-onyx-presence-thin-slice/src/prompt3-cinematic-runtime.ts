@@ -187,7 +187,7 @@ const UNSUPPORTED_DEVICE_PROFILE: UniversalDeviceProfile = Object.freeze({
 });
 
 export function createUniversalDeviceProfile(profileId: unknown): UniversalDeviceProfile {
-  return typeof profileId === "string" && profileId in UNIVERSAL_DEVICE_PROFILES
+  return typeof profileId === "string" && Object.prototype.hasOwnProperty.call(UNIVERSAL_DEVICE_PROFILES, profileId)
     ? UNIVERSAL_DEVICE_PROFILES[profileId as UniversalDeviceProfileId]
     : UNSUPPORTED_DEVICE_PROFILE;
 }
