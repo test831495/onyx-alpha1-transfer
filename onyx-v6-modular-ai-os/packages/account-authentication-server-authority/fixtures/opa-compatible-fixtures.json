@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "OPA_COMPATIBLE_PROMPT2_GOLDEN_DATASET_V1",
+  "fixtures": [
+    {
+      "id": "eligible-route",
+      "context": { "requestClassification": "summarize", "sessionAssurance": "strong", "approvalRequired": false, "approvalPresent": false, "operatingMode": "ASSISTED", "trustedTime": 1000, "region": "EU", "budget": 1, "requirements": { "quality": 0.5, "privacy": 0.5, "reliability": 0.5, "latency": 0.5, "cost": 0.1, "portability": 0.5 } },
+      "candidates": [
+        { "candidateId": "candidate-a", "capability": "text-generation", "lifecycle": "ACTIVE", "health": "HEALTHY", "region": "EU", "snapshotVersion": "snapshot-1", "evidence": { "quality": 0.9, "privacy": 0.9, "reliability": 0.9, "latency": 0.9, "cost": 0.1, "portability": 0.9, "freshAt": 1000 } }
+      ],
+      "expected": { "ok": true, "selectedCandidateId": "candidate-a", "fallbackClass": "NONE", "reasonCodes": [] }
+    },
+    {
+      "id": "ineligible-privacy",
+      "context": { "requestClassification": "private", "sessionAssurance": "strong", "approvalRequired": false, "approvalPresent": false, "operatingMode": "ASSISTED", "trustedTime": 1000, "region": "EU", "budget": 1, "privacyPolicyAllowed": false },
+      "candidates": [
+        { "candidateId": "candidate-b", "capability": "text-generation", "lifecycle": "ACTIVE", "health": "HEALTHY", "region": "EU", "snapshotVersion": "snapshot-1", "evidence": { "quality": 0.9, "privacy": 0.9, "reliability": 0.9, "latency": 0.9, "cost": 0.1, "portability": 0.9, "freshAt": 1000 } }
+      ],
+      "expected": { "ok": true, "selectedCandidateId": null, "fallbackClass": "NO_ELIGIBLE_CANDIDATE", "reasonCodes": ["PRIVACY_POLICY_DENIED"] }
+    },
+    {
+      "id": "not-assessable-policy-unavailable",
+      "context": { "requestClassification": "private", "sessionAssurance": "standard", "approvalRequired": false, "approvalPresent": false, "operatingMode": "ASSISTED", "trustedTime": 1000, "region": "EU", "budget": 1, "policyAvailable": false },
+      "candidates": [
+        { "candidateId": "candidate-c", "capability": "text-generation", "lifecycle": "ACTIVE", "health": "HEALTHY", "region": "EU", "snapshotVersion": "snapshot-1", "evidence": { "quality": 0.9, "privacy": 0.9, "reliability": 0.9, "latency": 0.9, "cost": 0.1, "portability": 0.9, "freshAt": 1000 } }
+      ],
+      "expected": { "ok": true, "selectedCandidateId": null, "fallbackClass": "NOT_ASSESSABLE", "reasonCodes": ["POLICY_UNAVAILABLE"] }
+    },
+    {
+      "id": "malformed-context",
+      "context": { "requestClassification": "x", "sessionAssurance": "strong", "approvalRequired": false, "approvalPresent": false, "operatingMode": "ASSISTED", "trustedTime": -1 },
+      "candidates": [],
+      "expected": { "ok": false, "selectedCandidateId": null, "fallbackClass": "NOT_ASSESSABLE", "reasonCodes": ["POLICY_CONTEXT_INVALID"] }
+    }
+  ]
+}
