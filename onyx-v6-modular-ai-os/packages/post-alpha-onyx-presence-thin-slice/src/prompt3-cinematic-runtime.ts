@@ -139,3 +139,94 @@ export function buildOperationsCenterComposition(input: Readonly<{ characterStat
 export function buildCinematicHarness() {
   return Object.freeze({ harnessOnly: true, syntheticDataDisclosed: true, noProductionActivation: true, noRealProviderData: true, noSecretData: true, characters: Object.freeze(["ONYX", "NOVA"] as const), states: SEMANTIC_STATES, droneRoles: DRONE_ROLES, droneStates: DRONE_STATES, fallbackLadder, composition: buildOperationsCenterComposition({ characterStates: { ONYX: "IDLE", NOVA: "THINKING" }, tasks: [{ id: "synthetic-task", stage: "BUILD", status: "IN_PROGRESS", freshnessMs: 1 }], route: { status: "EVALUATING", candidateCountBand: "SMALL" } }) });
 }
+
+export const UNIVERSAL_DEVICE_PROFILE_IDS = Object.freeze([
+  "DESKTOP_BROWSER", "PHONE_PORTRAIT", "PHONE_LANDSCAPE", "TABLET_PORTRAIT", "TABLET_LANDSCAPE", "TV_1080P", "TV_4K_SAFE_ZONE_PROFILE",
+] as const);
+export type UniversalDeviceProfileId = (typeof UNIVERSAL_DEVICE_PROFILE_IDS)[number];
+export type ResolvedUniversalDeviceProfileId = UniversalDeviceProfileId | "UNSUPPORTED";
+export type UniversalDeviceClass = "WEB_DESKTOP" | "PHONE" | "TABLET" | "TV";
+export type DeviceEvidenceClass = "SYNTHETIC_PROFILE_EVIDENCE" | "BROWSER_EMULATION_EVIDENCE" | "GENUINE_PHYSICAL_DEVICE_EVIDENCE" | "OWNER_OBSERVED_EVIDENCE" | "NOT_YET_AVAILABLE";
+
+export type UniversalDeviceProfile = Readonly<{
+  profileId: ResolvedUniversalDeviceProfileId;
+  deviceClass: UniversalDeviceClass;
+  viewportClass: string;
+  inputClass: "KEYBOARD_POINTER" | "TOUCH" | "REMOTE";
+  pointerClass: "FINE" | "COARSE" | "NONE";
+  keyboardAvailable: boolean;
+  remoteAvailable: boolean;
+  touchAvailable: boolean;
+  hoverAvailable: boolean;
+  reducedMotionPreference: boolean;
+  colorScheme: "SYSTEM";
+  pixelDensityClass: "STANDARD" | "HIGH" | "ULTRA";
+  safeAreaInsetsClass: "NONE" | "HANDHELD" | "TV_SAFE_ZONE";
+  sharedRoomClass: "PERSONAL" | "SHARED_ROOM";
+  performanceBudgetClass: Prompt3PerformanceTier;
+  qualityTierCeiling: Prompt3PerformanceTier;
+  audioCapability: "FULL" | "LIMITED" | "MUTED_SAFE";
+  captionRequirement: true;
+  fallbackRequirement: "TEXT_SAFE";
+  evidenceClass: DeviceEvidenceClass;
+  genuinePhysicalDeviceEvidence: false;
+}>;
+
+const UNIVERSAL_DEVICE_PROFILES: Readonly<Record<UniversalDeviceProfileId, UniversalDeviceProfile>> = Object.freeze({
+  DESKTOP_BROWSER: { profileId: "DESKTOP_BROWSER", deviceClass: "WEB_DESKTOP", viewportClass: "DESKTOP", inputClass: "KEYBOARD_POINTER", pointerClass: "FINE", keyboardAvailable: true, remoteAvailable: false, touchAvailable: false, hoverAvailable: true, reducedMotionPreference: false, colorScheme: "SYSTEM", pixelDensityClass: "HIGH", safeAreaInsetsClass: "NONE", sharedRoomClass: "PERSONAL", performanceBudgetClass: "PREMIUM", qualityTierCeiling: "PREMIUM", audioCapability: "FULL", captionRequirement: true, fallbackRequirement: "TEXT_SAFE", evidenceClass: "SYNTHETIC_PROFILE_EVIDENCE", genuinePhysicalDeviceEvidence: false },
+  PHONE_PORTRAIT: { profileId: "PHONE_PORTRAIT", deviceClass: "PHONE", viewportClass: "PHONE_PORTRAIT", inputClass: "TOUCH", pointerClass: "COARSE", keyboardAvailable: false, remoteAvailable: false, touchAvailable: true, hoverAvailable: false, reducedMotionPreference: false, colorScheme: "SYSTEM", pixelDensityClass: "HIGH", safeAreaInsetsClass: "HANDHELD", sharedRoomClass: "PERSONAL", performanceBudgetClass: "LIGHTWEIGHT", qualityTierCeiling: "BALANCED", audioCapability: "LIMITED", captionRequirement: true, fallbackRequirement: "TEXT_SAFE", evidenceClass: "SYNTHETIC_PROFILE_EVIDENCE", genuinePhysicalDeviceEvidence: false },
+  PHONE_LANDSCAPE: { profileId: "PHONE_LANDSCAPE", deviceClass: "PHONE", viewportClass: "PHONE_LANDSCAPE", inputClass: "TOUCH", pointerClass: "COARSE", keyboardAvailable: false, remoteAvailable: false, touchAvailable: true, hoverAvailable: false, reducedMotionPreference: false, colorScheme: "SYSTEM", pixelDensityClass: "HIGH", safeAreaInsetsClass: "HANDHELD", sharedRoomClass: "PERSONAL", performanceBudgetClass: "LIGHTWEIGHT", qualityTierCeiling: "BALANCED", audioCapability: "LIMITED", captionRequirement: true, fallbackRequirement: "TEXT_SAFE", evidenceClass: "SYNTHETIC_PROFILE_EVIDENCE", genuinePhysicalDeviceEvidence: false },
+  TABLET_PORTRAIT: { profileId: "TABLET_PORTRAIT", deviceClass: "TABLET", viewportClass: "TABLET_PORTRAIT", inputClass: "TOUCH", pointerClass: "COARSE", keyboardAvailable: true, remoteAvailable: false, touchAvailable: true, hoverAvailable: false, reducedMotionPreference: false, colorScheme: "SYSTEM", pixelDensityClass: "HIGH", safeAreaInsetsClass: "HANDHELD", sharedRoomClass: "PERSONAL", performanceBudgetClass: "BALANCED", qualityTierCeiling: "BALANCED", audioCapability: "FULL", captionRequirement: true, fallbackRequirement: "TEXT_SAFE", evidenceClass: "SYNTHETIC_PROFILE_EVIDENCE", genuinePhysicalDeviceEvidence: false },
+  TABLET_LANDSCAPE: { profileId: "TABLET_LANDSCAPE", deviceClass: "TABLET", viewportClass: "TABLET_LANDSCAPE", inputClass: "TOUCH", pointerClass: "COARSE", keyboardAvailable: true, remoteAvailable: false, touchAvailable: true, hoverAvailable: false, reducedMotionPreference: false, colorScheme: "SYSTEM", pixelDensityClass: "HIGH", safeAreaInsetsClass: "HANDHELD", sharedRoomClass: "PERSONAL", performanceBudgetClass: "BALANCED", qualityTierCeiling: "BALANCED", audioCapability: "FULL", captionRequirement: true, fallbackRequirement: "TEXT_SAFE", evidenceClass: "SYNTHETIC_PROFILE_EVIDENCE", genuinePhysicalDeviceEvidence: false },
+  TV_1080P: { profileId: "TV_1080P", deviceClass: "TV", viewportClass: "TV_1080P", inputClass: "REMOTE", pointerClass: "NONE", keyboardAvailable: false, remoteAvailable: true, touchAvailable: false, hoverAvailable: false, reducedMotionPreference: false, colorScheme: "SYSTEM", pixelDensityClass: "STANDARD", safeAreaInsetsClass: "TV_SAFE_ZONE", sharedRoomClass: "SHARED_ROOM", performanceBudgetClass: "SAFE", qualityTierCeiling: "BALANCED", audioCapability: "LIMITED", captionRequirement: true, fallbackRequirement: "TEXT_SAFE", evidenceClass: "SYNTHETIC_PROFILE_EVIDENCE", genuinePhysicalDeviceEvidence: false },
+  TV_4K_SAFE_ZONE_PROFILE: { profileId: "TV_4K_SAFE_ZONE_PROFILE", deviceClass: "TV", viewportClass: "TV_4K", inputClass: "REMOTE", pointerClass: "NONE", keyboardAvailable: false, remoteAvailable: true, touchAvailable: false, hoverAvailable: false, reducedMotionPreference: false, colorScheme: "SYSTEM", pixelDensityClass: "ULTRA", safeAreaInsetsClass: "TV_SAFE_ZONE", sharedRoomClass: "SHARED_ROOM", performanceBudgetClass: "SAFE", qualityTierCeiling: "BALANCED", audioCapability: "LIMITED", captionRequirement: true, fallbackRequirement: "TEXT_SAFE", evidenceClass: "SYNTHETIC_PROFILE_EVIDENCE", genuinePhysicalDeviceEvidence: false },
+});
+
+const UNSUPPORTED_DEVICE_PROFILE: UniversalDeviceProfile = Object.freeze({
+  profileId: "UNSUPPORTED", deviceClass: "WEB_DESKTOP", viewportClass: "UNSUPPORTED", inputClass: "KEYBOARD_POINTER", pointerClass: "NONE", keyboardAvailable: false, remoteAvailable: false, touchAvailable: false, hoverAvailable: false, reducedMotionPreference: true, colorScheme: "SYSTEM", pixelDensityClass: "STANDARD", safeAreaInsetsClass: "NONE", sharedRoomClass: "PERSONAL", performanceBudgetClass: "SAFE", qualityTierCeiling: "SAFE", audioCapability: "MUTED_SAFE", captionRequirement: true, fallbackRequirement: "TEXT_SAFE", evidenceClass: "NOT_YET_AVAILABLE", genuinePhysicalDeviceEvidence: false,
+});
+
+export function createUniversalDeviceProfile(profileId: unknown): UniversalDeviceProfile {
+  return typeof profileId === "string" && Object.prototype.hasOwnProperty.call(UNIVERSAL_DEVICE_PROFILES, profileId)
+    ? UNIVERSAL_DEVICE_PROFILES[profileId as UniversalDeviceProfileId]
+    : UNSUPPORTED_DEVICE_PROFILE;
+}
+
+export const PROMPT4_ACCEPTANCE_RECORDS = Object.freeze([
+  "DEVICE-DESKTOP", "DEVICE-PHONE", "DEVICE-TABLET", "DEVICE-TV", "INPUT-KEYBOARD", "INPUT-TOUCH", "INPUT-REMOTE", "LAYOUT-RESPONSIVE", "CINEMATIC-LIGHTING", "CINEMATIC-PARTICLES", "CINEMATIC-REFLECTIONS", "CINEMATIC-DRONES", "CINEMATIC-ENERGY", "WORLD-REACTION", "AUDIO-POLISH", "PERFORMANCE-LOAD", "ACCESSIBILITY", "SHARED-ROOM-PRIVACY", "OFFLINE-RECOVERY", "ROLLBACK", "ASSET-PROMOTION", "SECURITY", "STABILITY", "TRAIN3-CLOSURE",
+].map((family) => Object.freeze({ family: `P4-${family}`, coverage: "COVERED", evidenceClass: "SYNTHETIC_PROFILE_EVIDENCE", providerDependency: "NONE", activationDependency: "NONE" })));
+
+export function buildUniversalDeviceComposition(input: Readonly<{
+  profileId: UniversalDeviceProfileId;
+  characterStates: Readonly<Record<CharacterId, SemanticState>>;
+  avatarVersions: Readonly<Record<CharacterId, string>>;
+  activeDroneCount: number;
+  sharedRoom?: boolean;
+  reducedMotion?: boolean;
+  rendererFailed?: boolean;
+  offline?: boolean;
+}>) {
+  const profile = createUniversalDeviceProfile(input.profileId);
+  const safe = input.reducedMotion === true || input.rendererFailed === true || profile.performanceBudgetClass === "SAFE";
+  const sharedRoom = input.sharedRoom === true || profile.sharedRoomClass === "SHARED_ROOM";
+  const droneLimit = safe ? 2 : profile.performanceBudgetClass === "PREMIUM" ? 12 : profile.performanceBudgetClass === "BALANCED" ? 8 : 4;
+  const activeDroneCount = Number.isFinite(input.activeDroneCount) && input.activeDroneCount >= 0 ? Math.min(Math.floor(input.activeDroneCount), 64) : 0;
+  return Object.freeze({
+    harnessOnly: true,
+    syntheticDataDisclosed: true,
+    profile,
+    qualityTier: safe ? "SAFE" as const : profile.performanceBudgetClass,
+    heroes: Object.freeze((["ONYX", "NOVA"] as const).map((character) => Object.freeze({ ...createHeroPresentation({ character, state: input.characterStates[character], reducedMotion: safe, sharedRoom }), canonicalAvatarVersion: input.avatarVersions[character] }))),
+    inputPolicy: Object.freeze({ keyboardRequired: profile.keyboardAvailable, touchRequired: profile.touchAvailable, remoteRequired: profile.remoteAvailable, pointerSupported: profile.pointerClass !== "NONE", hoverRequired: false, focusVisible: true, focusRestoredAfterLayoutTransition: true }),
+    privacy: Object.freeze({ sharedRoom, detail: sharedRoom ? "COARSE_ONLY" : "PERSONAL_SAFE", cachedPresentationCleared: sharedRoom || input.offline === true, rawPromptContentExposed: false, accountIdentifiersExposed: false }),
+    cinematic: Object.freeze({ lighting: safe ? "STATIC" : "VOLUMETRIC_EQUIVALENT", particles: safe ? "DISABLED" : "BOUNDED", reflections: safe ? "DISABLED" : "RESTRAINED", energyTransfer: safe ? "STATIC_INDICATOR" : "BOUNDED_HANDOFF", worldReaction: safe ? "STATIC" : "PRIVACY_SAFE", transition: safe ? "INSTANT" : "CHOREOGRAPHED" }),
+    audio: Object.freeze({ ...createAudioClassProjection({ audioClass: input.offline ? "OFFLINE" : "AMBIENT_OPERATIONS_CENTER", muted: safe || sharedRoom, reducedSensory: safe, sharedRoom }), captions: true, speakingIndicator: input.characterStates.ONYX === "SPEAKING" || input.characterStates.NOVA === "SPEAKING", alertStormPrevented: true }),
+    droneActivity: Object.freeze({ displayedCount: Math.min(activeDroneCount, droneLimit), aggregated: activeDroneCount > droneLimit, energyTransferRepresentsAuthority: false, rawTaskContentExposed: false }),
+    recovery: Object.freeze({ offline: input.offline === true, renderer: input.rendererFailed === true ? "TEXT_SAFE_FALLBACK" : safe ? "STATIC_FALLBACK" : "READY", staleVisible: input.offline === true, revokedAssetReactivated: false, rollbackTarget: "LAST_VERIFIED_PRESENTATION" }),
+    grantsAuthority: false as const,
+    mutatesRouting: false as const,
+    mutatesApproval: false as const,
+    noProviderCalls: true,
+    noActivation: true,
+  });
+}
