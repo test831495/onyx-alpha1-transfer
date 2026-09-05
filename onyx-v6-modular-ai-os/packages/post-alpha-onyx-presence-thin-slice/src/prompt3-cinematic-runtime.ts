@@ -25,6 +25,9 @@ export type AudioClass = (typeof AUDIO_CLASSES)[number];
 const fallbackLadder = Object.freeze(["FULL_CINEMATIC", "REDUCED_CINEMATIC", "STATIC_CHARACTER", "TEXT_SAFE_PRESENCE"] as const);
 const allowedAssetStatuses = Object.freeze(["REFERENCE_ONLY", "DESIGN_ACCEPTED", "NON_FINAL_REFERENCE_PLACEHOLDER"] as const);
 const allowedPromotionStatuses = Object.freeze(["PLACEHOLDER_READY", "REFERENCE_ONLY", "DESIGN_ACCEPTED"] as const);
+const allowedProvenanceStatuses = Object.freeze(["REFERENCE_METADATA_INCOMPLETE", "PLACEHOLDER_PROVENANCE_RECORDED", "SOURCE_PROVENANCE_RECORDED"] as const);
+const allowedLicenseStatuses = Object.freeze(["NOT_PROMOTED", "REFERENCE_ONLY", "PLACEHOLDER_ONLY", "LICENSE_RECORDED"] as const);
+const allowedRevocationStatuses = Object.freeze(["NOT_REVOKED", "REVOKED"] as const);
 
 export const PROMPT3_ACCEPTANCE_RECORDS = Object.freeze(
   ["P3-HERO-RIVE", "P3-HERO-STATES", "P3-DRONE-DOTLOTTIE", "P3-DRONE-ROLE", "P3-OPERATIONS-CENTER", "P3-HUD", "P3-WORLD", "P3-AUDIO", "P3-PERFORMANCE", "P3-TV", "P3-ACCESSIBILITY", "P3-REDUCED-MOTION", "P3-OFFLINE-FALLBACK", "P3-ASSET-GOVERNANCE", "P3-PRIVACY", "P3-INTEGRATION", "P3-CINEMATIC-SLICE"].map((family) => Object.freeze({
@@ -80,14 +83,23 @@ export function mapHeroStateTokens(state: unknown, reducedMotion = false): HeroS
 }
 
 export function createHeroPresentation(input: Readonly<{ character: CharacterId; state: unknown; reducedMotion?: boolean; sharedRoom?: boolean }>) {
-  const state = isSemanticStateValue(input.state) ? input.state : "IDLE";
-  return Object.freeze({ character: input.character, canonicalAvatarId: `${input.character.toLowerCase()}-prompt3-canonical`, canonicalAvatarVersion: "1.0.0", state, tokens: mapHeroStateTokens(state, input.reducedMotion === true), sharedRoom: input.sharedRoom === true, grantsAuthority: false as const, mutatesRouting: false as const, mutatesApproval: false as const });
+  const state = isSemanticStateValue(input.state) ? input.state : "UNKNOWN";
+  return Object.freeze({ character: input.character, canonicalAvatarId: `${input.character.toLowerCase()}-prompt3-canonical`, canonicalAvatarVersion: "1.0.0", state, stateAccepted: state !== "UNKNOWN", tokens: mapHeroStateTokens(state, input.reducedMotion === true), sharedRoom: input.sharedRoom === true, grantsAuthority: false as const, mutatesRouting: false as const, mutatesApproval: false as const });
 }
 
 export type Prompt3AssetCandidate = Readonly<{ stableId: string; version: string; classification: string; provenanceStatus: string; licenseStatus: string; integrityHashOrPlaceholderHash: string; promotionStatus: string; revocationStatus: string }>;
 
 export function validatePrompt3AssetCandidate(candidate: Prompt3AssetCandidate) {
-  const accepted = allowedAssetStatuses.includes(candidate.classification as never) && allowedPromotionStatuses.includes(candidate.promotionStatus as never) && candidate.revocationStatus === "NOT_REVOKED" && candidate.provenanceStatus !== "UNKNOWN" && /^sha256:[a-f0-9]{64}$/.test(candidate.integrityHashOrPlaceholderHash);
+  const accepted =
+    /^[a-z0-9][a-z0-9-]{2,80}$/.test(candidate.stableId) &&
+    /^\d+\.\d+\.\d+$/.test(candidate.version) &&
+    (allowedAssetStatuses as readonly string[]).includes(candidate.classification) &&
+    (allowedPromotionStatuses as readonly string[]).includes(candidate.promotionStatus) &&
+    (allowedProvenanceStatuses as readonly string[]).includes(candidate.provenanceStatus) &&
+    (allowedLicenseStatuses as readonly string[]).includes(candidate.licenseStatus) &&
+    (allowedRevocationStatuses as readonly string[]).includes(candidate.revocationStatus) &&
+    candidate.revocationStatus === "NOT_REVOKED" &&
+    /^sha256:[a-f0-9]{64}$/.test(candidate.integrityHashOrPlaceholderHash);
   return Object.freeze({ accepted, candidate: Object.freeze({ ...candidate }), reasons: accepted ? [] : ["PROMPT3_ASSET_CANDIDATE_FAIL_CLOSED"] });
 }
 
@@ -100,7 +112,8 @@ export function createDroneProjection(input: Record<string, unknown>) {
   const role = isMember(DRONE_ROLES, input.role) ? input.role : "REPORTING";
   const state = isMember(DRONE_STATES, input.state) ? input.state : "OFFLINE";
   const stale = typeof input.freshnessMs !== "number" || input.freshnessMs > 60_000;
-  return Object.freeze({ role, state: stale ? "OFFLINE" : state, skin: Object.freeze({ colorClass: `drone-${role.toLowerCase()}`, icon: role.toLowerCase(), prop: "base-shell", aura: state.toLowerCase(), statusClass: `status-${state.toLowerCase()}` }), privateFieldsAccepted: false, grantsAuthority: false as const, rawPromptIncluded: false });
+  const effectiveState = stale ? "OFFLINE" : state;
+  return Object.freeze({ role, state: effectiveState, skin: Object.freeze({ colorClass: `drone-${role.toLowerCase()}`, icon: role.toLowerCase(), prop: "base-shell", aura: effectiveState.toLowerCase(), statusClass: `status-${effectiveState.toLowerCase()}` }), privateFieldsAccepted: false, grantsAuthority: false as const, rawPromptIncluded: false });
 }
 
 export function createWorldProjection(input: Readonly<{ world: "OPERATIONS_CENTER" | "FUTURE_CITY_REFERENCE_READY" | "STATIC_SAFE_WORLD" | "TEXT_SAFE_WORLD"; reducedMotion?: boolean; revoked?: boolean }>) {

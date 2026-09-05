@@ -12,6 +12,7 @@ describe("Prompt 3 first cinematic runtime", () => {
       expect(presentation.tokens.sharedRoomPrivacyClass).toMatch(/^shared-room-/);
     }
     expect(mapHeroStateTokens("UNKNOWN")).toMatchObject({ textSafeLabel: "Unknown presentation state", staticFallbackClass: "static-unknown" });
+    expect(createHeroPresentation({ character: "ONYX", state: "UNKNOWN" })).toMatchObject({ state: "UNKNOWN", stateAccepted: false });
   });
 
   it("keeps registry candidates truthful and rejects over-promotion or missing provenance", () => {
@@ -19,6 +20,8 @@ describe("Prompt 3 first cinematic runtime", () => {
     expect(valid.accepted).toBe(true);
     expect(validatePrompt3AssetCandidate({ ...valid.candidate, promotionStatus: "ACTIVE" }).accepted).toBe(false);
     expect(validatePrompt3AssetCandidate({ ...valid.candidate, provenanceStatus: "UNKNOWN" }).accepted).toBe(false);
+    expect(validatePrompt3AssetCandidate({ ...valid.candidate, licenseStatus: "UNKNOWN" }).accepted).toBe(false);
+    expect(validatePrompt3AssetCandidate({ ...valid.candidate, stableId: "P3 Hero" }).accepted).toBe(false);
   });
 
   it("provides governed Rive and dotLottie placeholder adapters without executable asset fabrication", () => {
@@ -29,6 +32,7 @@ describe("Prompt 3 first cinematic runtime", () => {
     expect(DRONE_ROLES).toHaveLength(12);
     expect(DRONE_STATES).toHaveLength(10);
     expect(createDroneProjection({ role: "SECURITY", state: "BLOCKED", freshnessMs: 1, extra: "raw prompt" })).toMatchObject({ role: "SECURITY", state: "BLOCKED", privateFieldsAccepted: false, grantsAuthority: false });
+    expect(createDroneProjection({ role: "BUILD", state: "WORKING", freshnessMs: 999_999 }).skin.statusClass).toBe("status-offline");
   });
 
   it("composes a bounded synthetic Operations Center with HUD, world, audio, TV, accessibility, and fallbacks", () => {
