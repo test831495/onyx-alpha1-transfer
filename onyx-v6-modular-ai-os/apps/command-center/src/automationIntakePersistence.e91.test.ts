@@ -25,7 +25,16 @@ describe("E.9.1 persistence", () => {
   beforeEach(() => {
     const localStorage = createStorage();
     vi.stubGlobal("localStorage", localStorage);
-    vi.stubGlobal("CustomEvent", class CustomEvent<T = unknown> extends Event { constructor(type: string, public readonly init?: CustomEventInit<T>) { super(type); } });
+    vi.stubGlobal(
+      "CustomEvent",
+      class CustomEvent<T = unknown> extends Event {
+        public readonly detail: T;
+        constructor(type: string, init?: CustomEventInit<T>) {
+          super(type, init);
+          this.detail = init?.detail as T;
+        }
+      },
+    );
     vi.stubGlobal("window", { localStorage, dispatchEvent: vi.fn() });
   });
 
