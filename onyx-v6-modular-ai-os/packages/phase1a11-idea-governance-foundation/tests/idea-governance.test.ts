@@ -404,7 +404,8 @@ describe("IDEA Governance Foundation - Preflight and Readiness Tests", () => {
     it("should have expiration time", () => {
       const readiness = FIXTURES.readiness();
       expect(readiness.validUntilTime).toBeDefined();
-      expect(readiness.validUntilTime > new Date()).toBe(true);
+      expect(readiness.validUntilTime > readiness.recordedAt).toBe(true);
+      expect(readiness.validUntilTime.getTime() - readiness.recordedAt.getTime()).toBe(7 * 24 * 60 * 60 * 1000);
     });
   });
 
