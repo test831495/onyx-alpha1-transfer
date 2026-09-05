@@ -129,6 +129,7 @@ export function decideEligibility(context: TrustedContextEnvelope, candidate: Ca
   if (!finiteNonNegative(context?.trustedTime)) reasons.push("TRUSTED_TIME_UNAVAILABLE");
   if (!validSnapshot(candidate)) reasons.push("CANDIDATE_SNAPSHOT_INVALID");
   if (candidate.lifecycle !== "ACTIVE") reasons.push("PROVIDER_DISABLED");
+  if (candidate.health === "UNHEALTHY") reasons.push("CANDIDATE_UNHEALTHY");
   if (context.region && candidate.region !== context.region) reasons.push("RESIDENCY_DENIED");
   if (context.requiredCapability && candidate.capability !== context.requiredCapability) reasons.push("CAPABILITY_MISMATCH");
   if (context.privacyPolicyAllowed === false) reasons.push("PRIVACY_POLICY_DENIED");
@@ -204,21 +205,28 @@ export class InMemoryCharacterSelectionProjection {
   private readonly history = new Map<string, CharacterSelectionDocument[]>();
   private readonly changes: ProjectionChange[] = [];
   private operationKey(document: Pick<CharacterSelectionDocument, "accountScope" | "characterId" | "operationId">): string { return `${document.accountScope}:${document.characterId}:${document.operationId}`; }
+  private documentId(document: Pick<CharacterSelectionDocument, "accountScope" | "characterId">): string | undefined { const id = deterministicDocumentId(document.accountScope, document.characterId); return id.ok ? id.value as string : undefined; }
   private validate(document: CharacterSelectionDocument): boolean { return !(!bounded(document.accountScope) || !["ONYX", "NOVA"].includes(document.characterId) || !bounded(document.avatarId) || !/^[0-9a-f]{64}$/.test(document.integrityHash) || !Number.isInteger(document.version) || document.version < 1 || !bounded(document.operationId) || !finiteNonNegative(document.trustedTime)); }
-  private appendChange(id: string, document: CharacterSelectionDocument): void { this.changes.push(deepFreeze({ cursor: `${this.changes.length + 1}`, operationId: document.operationId, documentId: id, version: document.version, status: document.status ?? "ACTIVE", trustedTime: document.trustedTime, auditReceiptId: document.auditReceiptId ?? `audit_${sha256(this.operationKey(document)).slice(0, 16)}` })); }
+  private validStatusTransition(document: CharacterSelectionDocument): boolean {
+    const rollbackOfVersion = document.rollbackOfVersion;
+    if (document.status === "ROLLED_BACK") return typeof rollbackOfVersion === "number" && Number.isInteger(rollbackOfVersion) && rollbackOfVersion > 0;
+    return document.rollbackOfVersion === undefined;
+  }
+  private appendChangeTo(changes: ProjectionChange[], id: string, document: CharacterSelectionDocument): void { changes.push(deepFreeze({ cursor: `${changes.length + 1}`, operationId: document.operationId, documentId: id, version: document.version, status: document.status ?? "ACTIVE", trustedTime: document.trustedTime, auditReceiptId: document.auditReceiptId ?? `audit_${sha256(this.operationKey(document)).slice(0, 16)}` })); }
+  private sameOperationDocument(left: CharacterSelectionDocument, right: CharacterSelectionDocument): boolean { return canonical(left) === canonical({ ...right, auditReceiptId: right.auditReceiptId ?? left.auditReceiptId, status: right.status ?? left.status, priorVersion: right.priorVersion ?? left.priorVersion }); }
   public compareAndSet(document: CharacterSelectionDocument, expectedVersion: number): ProjectionWriteResult {
-    if (!this.validate(document)) return deepFreeze({ ok: false, idempotent: false, reason: "INVALID_DOCUMENT" });
+    if (!this.validate(document) || !this.validStatusTransition(document)) return deepFreeze({ ok: false, idempotent: false, reason: "INVALID_DOCUMENT" });
     const operation = this.operations.get(this.operationKey(document));
     if (operation) return deepFreeze({ ok: true, idempotent: true, document: operation, auditReceiptId: operation.auditReceiptId });
-    const id = deterministicDocumentId(document.accountScope, document.characterId);
-    if (!id.ok) return deepFreeze({ ok: false, idempotent: false, reason: "INVALID_DOCUMENT" });
-    const current = this.documents.get(id.value as string);
+    const id = this.documentId(document);
+    if (!id) return deepFreeze({ ok: false, idempotent: false, reason: "INVALID_DOCUMENT" });
+    const current = this.documents.get(id);
     if ((current?.version ?? 0) !== expectedVersion) return deepFreeze({ ok: false, idempotent: false, reason: "STALE_VERSION", document: current });
     const stored = cloneFreeze({ ...document, status: document.status ?? "ACTIVE", priorVersion: current?.version, auditReceiptId: document.auditReceiptId ?? `audit_${sha256(this.operationKey(document)).slice(0, 16)}` });
-    this.documents.set(id.value as string, stored);
+    this.documents.set(id, stored);
     this.operations.set(this.operationKey(document), stored);
-    this.history.set(id.value as string, [...(this.history.get(id.value as string) ?? []), stored]);
-    this.appendChange(id.value as string, stored);
+    this.history.set(id, [...(this.history.get(id) ?? []), stored]);
+    this.appendChangeTo(this.changes, id, stored);
     return deepFreeze({ ok: true, idempotent: false, document: stored, auditReceiptId: stored.auditReceiptId });
   }
   public rollback(accountScope: string, characterId: CharacterId, targetVersion: number, operationId: string, trustedTime: number): ProjectionWriteResult {
@@ -237,13 +245,55 @@ export class InMemoryCharacterSelectionProjection {
     const id = deterministicDocumentId(accountScope, characterId);
     const current = id.ok ? this.documents.get(id.value as string) : undefined;
     if (!id.ok || !current) return deepFreeze({ ok: false, idempotent: false, reason: "NOT_FOUND" });
-    return this.compareAndSet({ ...current, version: current.version + 1, operationId, trustedTime, status }, current.version);
+    const { rollbackOfVersion: _rollbackOfVersion, ...document } = current;
+    return this.compareAndSet({ ...document, version: current.version + 1, operationId, trustedTime, status }, current.version);
   }
   public transactionalBatch(writes: readonly { document: CharacterSelectionDocument; expectedVersion: number }[], batchId: string): ProjectionWriteResult {
-    if (!bounded(batchId) || writes.length > 16 || writes.some((write) => !this.validate(write.document))) return deepFreeze({ ok: false, idempotent: false, reason: "INVALID_DOCUMENT" });
-    const results = writes.map((write) => this.compareAndSet({ ...write.document, auditReceiptId: write.document.auditReceiptId ?? `batch_${batchId}` }, write.expectedVersion));
-    const failed = results.find((result) => !result.ok);
-    return failed ?? deepFreeze({ ok: true, idempotent: results.every((result) => result.idempotent), document: results.at(-1)?.document, auditReceiptId: `batch_${batchId}` });
+    if (!bounded(batchId) || writes.length > 16 || writes.some((write) => !this.validate(write.document) || !this.validStatusTransition(write.document))) return deepFreeze({ ok: false, idempotent: false, reason: "INVALID_DOCUMENT" });
+    const stagedDocuments = new Map(this.documents);
+    const stagedOperations = new Map(this.operations);
+    const stagedHistory = new Map([...this.history.entries()].map(([id, entries]) => [id, [...entries]]));
+    const stagedChanges = [...this.changes];
+    const documentTargets = new Set<string>();
+    const operationTargets = new Set<string>();
+    const planned: CharacterSelectionDocument[] = [];
+    let replayed = 0;
+
+    for (const write of writes) {
+      const id = this.documentId(write.document);
+      if (!id) return deepFreeze({ ok: false, idempotent: false, reason: "INVALID_DOCUMENT" });
+      const operationKey = this.operationKey(write.document);
+      if (documentTargets.has(id) || operationTargets.has(operationKey)) return deepFreeze({ ok: false, idempotent: false, reason: "DUPLICATE_OPERATION" });
+      documentTargets.add(id);
+      operationTargets.add(operationKey);
+
+      const existingOperation = this.operations.get(operationKey);
+      if (existingOperation) {
+        if (!this.sameOperationDocument(existingOperation, write.document)) return deepFreeze({ ok: false, idempotent: false, reason: "DUPLICATE_OPERATION" });
+        replayed += 1;
+        planned.push(existingOperation);
+        continue;
+      }
+
+      const current = this.documents.get(id);
+      if ((current?.version ?? 0) !== write.expectedVersion) return deepFreeze({ ok: false, idempotent: false, reason: "STALE_VERSION", document: current });
+      const stored = cloneFreeze({ ...write.document, status: write.document.status ?? "ACTIVE", priorVersion: current?.version, auditReceiptId: write.document.auditReceiptId ?? `batch_${batchId}` });
+      stagedDocuments.set(id, stored);
+      stagedOperations.set(operationKey, stored);
+      stagedHistory.set(id, [...(stagedHistory.get(id) ?? []), stored]);
+      this.appendChangeTo(stagedChanges, id, stored);
+      planned.push(stored);
+    }
+
+    if (replayed > 0 && replayed !== writes.length) return deepFreeze({ ok: false, idempotent: false, reason: "DUPLICATE_OPERATION" });
+    this.documents.clear();
+    for (const [id, document] of stagedDocuments) this.documents.set(id, document);
+    this.operations.clear();
+    for (const [operationKey, document] of stagedOperations) this.operations.set(operationKey, document);
+    this.history.clear();
+    for (const [id, entries] of stagedHistory) this.history.set(id, entries);
+    this.changes.splice(0, this.changes.length, ...stagedChanges);
+    return deepFreeze({ ok: true, idempotent: replayed === writes.length && writes.length > 0, document: planned.at(-1), auditReceiptId: `batch_${batchId}` });
   }
   public read(accountScope: string, characterId: CharacterId): CharacterSelectionDocument | undefined { const id = deterministicDocumentId(accountScope, characterId); return id.ok ? cloneFreeze(this.documents.get(id.value as string)) : undefined; }
   public list(accountScope: string): readonly CharacterSelectionDocument[] { return [...this.documents.values()].filter((document) => document.accountScope === accountScope).map((document) => cloneFreeze(document)); }

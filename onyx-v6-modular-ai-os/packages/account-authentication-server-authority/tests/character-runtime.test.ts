@@ -94,6 +94,64 @@ describe("Prompt 2 character runtime foundation", () => {
     expect(store.transactionalBatch([{ document: { accountScope: "account-scope_a", characterId: "NOVA", avatarId: "nova-1", version: 1, integrityHash: "b".repeat(64), operationId: "op-nova", trustedTime: 1003 }, expectedVersion: 0 }], "batch-1").ok).toBe(true);
   });
 
+  it("keeps transactional batches atomic when a later stale version fails", () => {
+    const store = new InMemoryCharacterSelectionProjection();
+    const first = { accountScope: "batch-account", characterId: "ONYX" as const, avatarId: "onyx-1", version: 1, integrityHash: "a".repeat(64), operationId: "batch-op-1", trustedTime: 1000 };
+    const stale = { accountScope: "batch-account", characterId: "NOVA" as const, avatarId: "nova-1", version: 2, integrityHash: "b".repeat(64), operationId: "batch-op-2", trustedTime: 1000 };
+    expect(store.transactionalBatch([{ document: first, expectedVersion: 0 }, { document: stale, expectedVersion: 1 }], "batch-stale")).toMatchObject({ ok: false, reason: "STALE_VERSION" });
+    expect(store.read("batch-account", "ONYX")).toBeUndefined();
+    expect(store.compareAndSet(first, 0)).toMatchObject({ ok: true, idempotent: false });
+  });
+
+  it("keeps transactional batches atomic when a later invalid document fails", () => {
+    const store = new InMemoryCharacterSelectionProjection();
+    const valid = { accountScope: "batch-invalid", characterId: "ONYX" as const, avatarId: "onyx-1", version: 1, integrityHash: "a".repeat(64), operationId: "batch-op-valid", trustedTime: 1000 };
+    const invalid = { accountScope: "batch-invalid", characterId: "NOVA" as const, avatarId: "nova-1", version: 1, integrityHash: "not-a-hash", operationId: "batch-op-invalid", trustedTime: 1000 };
+    expect(store.transactionalBatch([{ document: valid, expectedVersion: 0 }, { document: invalid, expectedVersion: 0 }], "batch-invalid")).toMatchObject({ ok: false, reason: "INVALID_DOCUMENT" });
+    expect(store.read("batch-invalid", "ONYX")).toBeUndefined();
+    expect(store.compareAndSet(valid, 0)).toMatchObject({ ok: true, idempotent: false });
+  });
+
+  it("rejects duplicate transactional targets without partial mutation", () => {
+    const store = new InMemoryCharacterSelectionProjection();
+    const first = { accountScope: "batch-duplicate", characterId: "ONYX" as const, avatarId: "onyx-1", version: 1, integrityHash: "a".repeat(64), operationId: "batch-op-a", trustedTime: 1000 };
+    const conflicting = { ...first, avatarId: "onyx-2", operationId: "batch-op-b" };
+    expect(store.transactionalBatch([{ document: first, expectedVersion: 0 }, { document: conflicting, expectedVersion: 0 }], "batch-duplicate")).toMatchObject({ ok: false, reason: "DUPLICATE_OPERATION" });
+    expect(store.read("batch-duplicate", "ONYX")).toBeUndefined();
+    expect(store.changesAfter("batch-duplicate").changes).toHaveLength(0);
+  });
+
+  it("does not partially commit operation records on failed transactional batches", () => {
+    const store = new InMemoryCharacterSelectionProjection();
+    const earlier = { accountScope: "batch-ops", characterId: "ONYX" as const, avatarId: "onyx-1", version: 1, integrityHash: "a".repeat(64), operationId: "batch-op-earlier", trustedTime: 1000 };
+    const later = { accountScope: "batch-ops", characterId: "NOVA" as const, avatarId: "nova-1", version: 1, integrityHash: "bad", operationId: "batch-op-later", trustedTime: 1000 };
+    expect(store.transactionalBatch([{ document: earlier, expectedVersion: 0 }, { document: later, expectedVersion: 0 }], "batch-op-records").ok).toBe(false);
+    expect(store.compareAndSet(earlier, 0)).toMatchObject({ ok: true, idempotent: false });
+    expect(store.compareAndSet(earlier, 0)).toMatchObject({ ok: true, idempotent: true });
+  });
+
+  it("commits every valid transactional write and replays the full batch idempotently", () => {
+    const store = new InMemoryCharacterSelectionProjection();
+    const onyx = { accountScope: "batch-valid", characterId: "ONYX" as const, avatarId: "onyx-1", version: 1, integrityHash: "a".repeat(64), operationId: "batch-op-onyx", trustedTime: 1000 };
+    const nova = { accountScope: "batch-valid", characterId: "NOVA" as const, avatarId: "nova-1", version: 1, integrityHash: "b".repeat(64), operationId: "batch-op-nova", trustedTime: 1000 };
+    expect(store.transactionalBatch([{ document: onyx, expectedVersion: 0 }, { document: nova, expectedVersion: 0 }], "batch-valid")).toMatchObject({ ok: true, idempotent: false, auditReceiptId: "batch_batch-valid" });
+    expect(store.read("batch-valid", "ONYX")?.avatarId).toBe("onyx-1");
+    expect(store.read("batch-valid", "NOVA")?.avatarId).toBe("nova-1");
+    expect(store.changesAfter("batch-valid").changes).toHaveLength(2);
+    expect(store.transactionalBatch([{ document: onyx, expectedVersion: 0 }, { document: nova, expectedVersion: 0 }], "batch-valid")).toMatchObject({ ok: true, idempotent: true });
+  });
+
+  it("preserves account isolation and maximum batch bounds in transactional batches", () => {
+    const store = new InMemoryCharacterSelectionProjection();
+    const accountA = { accountScope: "batch-account-a", characterId: "ONYX" as const, avatarId: "onyx-a", version: 1, integrityHash: "a".repeat(64), operationId: "batch-op-shared", trustedTime: 1000 };
+    const accountB = { accountScope: "batch-account-b", characterId: "ONYX" as const, avatarId: "onyx-b", version: 1, integrityHash: "b".repeat(64), operationId: "batch-op-shared", trustedTime: 1000 };
+    expect(store.transactionalBatch([{ document: accountA, expectedVersion: 0 }, { document: accountB, expectedVersion: 0 }], "batch-isolation").ok).toBe(true);
+    expect(store.read("batch-account-a", "ONYX")?.avatarId).toBe("onyx-a");
+    expect(store.read("batch-account-b", "ONYX")?.avatarId).toBe("onyx-b");
+    const oversized = Array.from({ length: 17 }, (_, index) => ({ document: { accountScope: `batch-bound-${index}`, characterId: "NOVA" as const, avatarId: `nova-${index}`, version: 1, integrityHash: "c".repeat(64), operationId: `batch-op-${index}`, trustedTime: 1000 }, expectedVersion: 0 }));
+    expect(store.transactionalBatch(oversized, "batch-oversized")).toMatchObject({ ok: false, reason: "INVALID_DOCUMENT" });
+  });
+
   it("bounds miniature-agent projections and excludes sensitive fields", () => {
     const projection = buildMiniatureAgentProjection({ role: "ROUTING", state: "WORKING", activityType: "MODEL_ROUTING", status: "EVALUATING", sourceId: "route-1", trustedTime: 1000 });
     expect(projection).toMatchObject({ ok: true, value: { role: "ROUTING", state: "WORKING", nonAuthorizing: true } });
