@@ -7,4 +7,5 @@ export * from "./fixtures";
 export * from "./lifecycle";
 export * from "./orchestrator";
 export * from "./presentation";
+export * from "./prompt3-cinematic-runtime";
 export * from "./privacy";

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "PROMPT3_CINEMATIC_RUNTIME_EVIDENCE_V1",
+  "gateId": "ONYX_NOVA_PROMPT3_COMPLETE_FIRST_CINEMATIC_RUNTIME_EXECUTION_PACKAGE",
+  "baselineSha": "3ac2813d3232e823c62bb622e17cddc5317e9baa",
+  "packageOwner": "@onyx/post-alpha-onyx-presence-thin-slice",
+  "train1SealedPackagesMutated": false,
+  "harnessOnly": true,
+  "syntheticDataDisclosed": true,
+  "featureFlags": "OFF",
+  "runtimeActivation": "NONE",
+  "providerMutations": 0,
+  "secretAccess": 0,
+  "realModelCalls": 0,
+  "paidModelUsage": 0,
+  "cloudRendering": 0,
+  "deployment": 0,
+  "referenceInputs": ["ONYX_REFERENCE_PACK_V1", "NOVA_REFERENCE_PACK_V1", "WORKER_DRONE_BASE_SPEC_V1.1", "MINIATURE_AGENT_VISUAL_PROVENANCE_V1", "ONYX_NOVA_MINIATURE_AGENT_OPERATIONS_CENTER_FINAL_DESIGN_DRAFT_V2_OR_ACCEPTED_OPERATIONS_CENTER_VISUAL_TARGET"],
+  "referenceClassification": ["REFERENCE_ONLY", "DESIGN_ACCEPTED", "PROMPT3_INPUT_READY", "NOT_RUNTIME_ASSET"],
+  "executableAssetTruth": {
+    "riveHeroAssets": "NOT_VERIFIED_IN_REPOSITORY",
+    "dotLottieWorkerAssets": "NOT_VERIFIED_IN_REPOSITORY",
+    "webmAmbientLoops": "NOT_VERIFIED_FOR_PROMPT3_PROMOTION",
+    "audioCues": "NOT_VERIFIED_FOR_PROMPT3_PROMOTION",
+    "placeholderStatus": "PLACEHOLDER_READY"
+  },
+  "fallbackLadder": ["FULL_CINEMATIC", "REDUCED_CINEMATIC", "STATIC_CHARACTER", "TEXT_SAFE_PRESENCE"]
+}
