@@ -55,6 +55,7 @@ import {
   subscribeToCharacterSelection,
 } from "./characterPersistence";
 import { mapCoreStateToSemanticState } from "./nativeSemanticFallbackActivation";
+import { findOrbitAction, resolveOrbitHandler } from "./orbitActionRegistry";
 
 const states: CoreState[] = [
   "wake-armed",
@@ -718,6 +719,30 @@ export function App() {
 
   const voice = useVoiceRouter(dispatch);
 
+  const dispatchOrbitAction = useCallback(
+    (actionId: string) => {
+      const handler = resolveOrbitHandler(actionId);
+      if (!handler) return;
+
+      switch (handler.kind) {
+        case "VOICE_LISTEN":
+          voice.startListening();
+          return;
+        case "OPEN_SHELL_APP": {
+          const definition = findOrbitAction(actionId);
+          openShellApp(handler.appId);
+          setState("executing");
+          setCaption(`${definition?.label ?? handler.appId} selected.`);
+          return;
+        }
+        case "ASSISTANT_SWITCH":
+          activate(mode === "nova" ? "onyx" : "nova");
+          return;
+      }
+    },
+    [activate, mode, openShellApp, voice],
+  );
+
   const cycle = () => {
     const next =
       states[(states.indexOf(state) + 1) % states.length] ?? "wake-armed";
@@ -933,9 +958,7 @@ export function App() {
                   mode={mode}
                   state={state}
                   onSwitch={() => activate(mode === "nova" ? "onyx" : "nova")}
-                  onAction={(action) =>
-                    action === "Listen" ? voice.startListening() : void dispatch(action)
-                  }
+                  onAction={dispatchOrbitAction}
                   quality={quality}
                   lowPower={quality === "low"}
                 />
@@ -952,9 +975,7 @@ export function App() {
                 mode={mode}
                 state={state}
                 onSwitch={() => activate(mode === "nova" ? "onyx" : "nova")}
-                onAction={(action) =>
-                  action === "Listen" ? voice.startListening() : void dispatch(action)
-                }
+                onAction={dispatchOrbitAction}
                 quality={quality}
                 lowPower={quality === "low"}
               />
