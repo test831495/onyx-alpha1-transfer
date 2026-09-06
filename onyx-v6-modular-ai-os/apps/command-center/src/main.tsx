@@ -1,1 +1,1 @@
-import React from 'react';import{createRoot}from'react-dom/client';import{App}from'./App';import'./styles.css';createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>);
+import React from 'react';import{createRoot}from'react-dom/client';import{App}from'./App';import{PwaInstallPrompt}from'./components/PwaInstallPrompt';import{registerPwa}from'./pwa/installController';import'./styles.css';registerPwa();createRoot(document.getElementById('root')!).render(<React.StrictMode><App/><PwaInstallPrompt/></React.StrictMode>);
