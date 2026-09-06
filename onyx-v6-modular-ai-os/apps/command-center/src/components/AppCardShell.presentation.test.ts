@@ -8,10 +8,11 @@ describe("PRESENTATION-MOBILE-CARD-001", () => {
   it("keeps shared card actions accessible and side by side on compact layouts", () => {
     expect(componentSource).toContain('aria-label={`Minimize ${title}`}');
     expect(componentSource).toContain('aria-label={`Close ${title}`}');
-    expect(styleSource).toMatch(/\.app-card-shell__actions\{[^}]*display:flex/);
-    expect(styleSource).toMatch(/\.app-card-shell__actions\{[^}]*flex-wrap:nowrap/);
-    expect(styleSource).toMatch(/\.app-card-shell__header\{[^}]*align-items:flex-start/);
-    expect(styleSource).toMatch(/\.app-card-shell__identity\{[^}]*min-width:0/);
+    expect(styleSource).toMatch(/\.functional-scene--cards\s*\.app-card-shell__actions\s*\{[^}]*flex:0\s+0\s+auto[^}]*flex-wrap:\s*nowrap[^}]*gap:\s*4px/);
+    expect(styleSource).toMatch(/\.functional-scene--cards\s*\.app-card-shell__header\s*\{[^}]*align-items:\s*flex-start[^}]*gap:\s*6px/);
+    expect(styleSource).toMatch(/\.functional-scene--cards\s*\.app-card-shell__identity\s*\{[^}]*min-width:\s*0/);
+    expect(styleSource).toMatch(/\.functional-scene--cards\s*\{[^}]*--card-width:\s*min\(300px,calc\(100vw\s*-\s*32px\)\)/);
+    expect(styleSource).toMatch(/\.functional-scene--cards\s*\.app-card-shell\s*\{[^}]*width:\s*var\(--card-width\)[^}]*max-width:\s*var\(--card-width\)/);
   });
 
   it("keeps the compact override bounded and preserves the shared card geometry", () => {
