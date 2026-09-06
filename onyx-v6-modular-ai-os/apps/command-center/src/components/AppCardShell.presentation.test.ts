@@ -8,7 +8,7 @@ describe("PRESENTATION-MOBILE-CARD-001", () => {
   it("keeps shared card actions accessible and side by side on compact layouts", () => {
     expect(componentSource).toContain('aria-label={`Minimize ${title}`}');
     expect(componentSource).toContain('aria-label={`Close ${title}`}');
-    expect(styleSource).toMatch(/\.functional-scene--cards\s*\.app-card-shell__actions\s*\{[^}]*flex:0\s+0\s+auto[^}]*flex-wrap:\s*nowrap[^}]*gap:\s*4px/);
+    expect(styleSource).toMatch(/\.functional-scene--cards\s*\.app-card-shell__actions\s*\{[^}]*flex-wrap:\s*nowrap[^}]*gap:\s*4px/);
     expect(styleSource).toMatch(/\.functional-scene--cards\s*\.app-card-shell__header\s*\{[^}]*align-items:\s*flex-start[^}]*gap:\s*6px/);
     expect(styleSource).toMatch(/\.functional-scene--cards\s*\.app-card-shell__identity\s*\{[^}]*min-width:\s*0/);
   });
@@ -26,6 +26,19 @@ describe("PRESENTATION-MOBILE-CARD-001", () => {
     expect(styleSource).not.toMatch(/\.functional-scene--cards\s*\.app-card-shell\{[^}]*width:var\(--card-width\)/);
     expect(styleSource).toMatch(/\.functional-scene--cards\s*\.app-card-shell__actions\s*\{[^}]*flex-wrap:\s*nowrap[^}]*gap:\s*4px/);
     expect(styleSource).toMatch(/\.functional-scene--cards\s*\.app-card-shell__identity\s*\{[^}]*min-width:\s*0/);
+    expect(styleSource).toContain(".app-card-shell--left_top");
+    expect(styleSource).toContain(".app-card-shell--right_middle");
+    expect(styleSource).toContain("overflow-navigation-region");
+  });
+
+  it("keeps compact card identity and actions in separate visible rows", () => {
+    expect(styleSource).toMatch(/\.functional-scene--cards\s*\.app-card-shell__header\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*1fr[^}]*grid-template-rows:\s*auto\s+auto/);
+    expect(styleSource).toMatch(/\.functional-scene--cards\s*\.app-card-shell__identity\s*\{[^}]*grid-row:\s*1/);
+    expect(styleSource).toMatch(/\.functional-scene--cards\s*\.app-card-shell__actions\s*\{[^}]*grid-row:\s*2[^}]*flex-wrap:\s*nowrap/);
+    expect(componentSource).toContain('aria-label={`Minimize ${title}`}');
+    expect(componentSource).toContain('aria-label={`Close ${title}`}');
+    expect(styleSource).toMatch(/\.app-card-shell\{[^}]*width:min\(300px,28vw\)[^}]*max-width:300px/);
+    expect(styleSource).not.toMatch(/--card-width:\s*min\(300px,calc\(100vw\s*-\s*32px\)\)/);
     expect(styleSource).toContain(".app-card-shell--left_top");
     expect(styleSource).toContain(".app-card-shell--right_middle");
     expect(styleSource).toContain("overflow-navigation-region");
