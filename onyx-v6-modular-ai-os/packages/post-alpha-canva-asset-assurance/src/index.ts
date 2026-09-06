@@ -47,6 +47,7 @@ export type AssetAssuranceRecord = Readonly<{
 
 export type PromotionValidationResult = Readonly<{ valid: boolean; reasons: readonly string[] }>;
 export type SelectedVisualReadinessClass = "FULL_VISUAL_ASSET_SET_RUNTIME_READY" | "PARTIAL_VISUAL_ASSET_SET_RUNTIME_READY_WITH_NATIVE_FALLBACK" | "NATIVE_FALLBACK_RUNTIME_READINESS_ONLY" | "ASSET_CREATION_OR_EXPORT_REQUIRED";
+const PROMOTABLE_CLASSIFICATIONS = ["RUNTIME_CANDIDATE", "RUNTIME_READY"] as const;
 
 function isGitSha1(value: unknown): boolean {
   return typeof value === "string" && /^[0-9a-f]{40}$/.test(value) && !/^(.)\1{39}$/.test(value);
@@ -77,22 +78,23 @@ export function validatePromotionRecord(input: unknown): PromotionValidationResu
   if (typeof input["byteSize"] !== "number" || input["byteSize"] <= 0) reasons.push("BYTE_SIZE_INVALID");
   if (!hasText(input["mediaType"])) reasons.push("MEDIA_TYPE_MISSING");
   if (input["signatureValid"] !== true) reasons.push("FILE_SIGNATURE_INVALID");
-  if (!hasText(input["provenance"])) reasons.push("PROVENANCE_MISSING");
-  if (!hasText(input["license"])) reasons.push("LICENSE_MISSING");
-  if (!hasText(input["aiDisclosure"])) reasons.push("AI_DISCLOSURE_MISSING");
+  if (!hasText(input["sourceProvenance"])) reasons.push("PROVENANCE_MISSING");
+  if (!hasText(input["creatorSource"])) reasons.push("CREATOR_SOURCE_MISSING");
+  if (!hasText(input["licenseRuntimePermission"])) reasons.push("LICENSE_RUNTIME_PERMISSION_MISSING");
+  if (!hasText(input["aiGenerationDisclosure"])) reasons.push("AI_GENERATION_DISCLOSURE_MISSING");
   if (!hasText(input["intendedUse"])) reasons.push("INTENDED_USE_MISSING");
+  if (!Array.isArray(input["restrictions"])) reasons.push("RESTRICTIONS_MISSING");
   if (!hasText(input["version"])) reasons.push("VERSION_MISSING");
-  if (!["RUNTIME_CANDIDATE", "RUNTIME_READY"].includes(String(input["classification"]))) reasons.push("CLASSIFICATION_NOT_PROMOTABLE");
-  if (input["adapterCompatible"] !== true) reasons.push("ADAPTER_UNSUPPORTED");
-  if (!hasText(input["fallbackId"])) reasons.push("FALLBACK_MISSING");
-  if (input["performanceGovernor"] !== true) reasons.push("PERFORMANCE_GOVERNOR_MISSING");
-  if (input["accessibility"] !== true) reasons.push("ACCESSIBILITY_MISSING");
-  if (input["reducedMotion"] !== true) reasons.push("REDUCED_MOTION_MISSING");
+  if (!(PROMOTABLE_CLASSIFICATIONS as readonly string[]).includes(String(input["classification"]))) reasons.push("CLASSIFICATION_INVALID");
+  if (!hasText(input["status"])) reasons.push("STATUS_MISSING");
+  if (!hasText(input["fallbackAssetOrNativeFallbackId"]) && !hasText(input["disablement"])) reasons.push("FALLBACK_OR_DISABLEMENT_MISSING");
+  if (!hasText(input["performanceGovernor"])) reasons.push("PERFORMANCE_GOVERNOR_MISSING");
+  if (!hasText(input["accessibility"])) reasons.push("ACCESSIBILITY_MISSING");
   if (!hasText(input["rollbackVersion"])) reasons.push("ROLLBACK_MISSING");
-  if (!Array.isArray(input["revocationCodes"]) || input["revocationCodes"].length === 0) reasons.push("REVOCATION_MISSING");
+  if (!Array.isArray(input["revocationReasonCodes"]) || input["revocationReasonCodes"].length === 0) reasons.push("REVOCATION_MISSING");
   if (input["externalRuntimeDependency"] !== false) reasons.push("EXTERNAL_RUNTIME_DEPENDENCY");
   if (input["privacySensitive"] !== false) reasons.push("PRIVACY_RISK");
-  if (input["nonAuthorizing"] !== true) reasons.push("AUTHORITY_LEAKAGE");
+  if (input["nonAuthorizing"] !== true) reasons.push("NON_AUTHORITY_DECLARATION_MISSING");
 
   return deepFreeze({ valid: reasons.length === 0, reasons });
 }
@@ -100,7 +102,11 @@ export function validatePromotionRecord(input: unknown): PromotionValidationResu
 export function selectVisualReadinessClass(input: unknown): Readonly<{ selectedClass: SelectedVisualReadinessClass; reasons: readonly string[] }> {
   const reasons: string[] = [];
   if (!isPlainObject(input)) return deepFreeze({ selectedClass: "ASSET_CREATION_OR_EXPORT_REQUIRED", reasons: ["MALFORMED_INPUT"] });
-  const promotedFinalAssetCount = typeof input["promotedFinalAssetCount"] === "number" ? input["promotedFinalAssetCount"] : 0;
+  const rawPromotedFinalAssetCount = input["promotedFinalAssetCount"];
+  if (rawPromotedFinalAssetCount !== undefined && (typeof rawPromotedFinalAssetCount !== "number" || !Number.isFinite(rawPromotedFinalAssetCount) || !Number.isInteger(rawPromotedFinalAssetCount) || rawPromotedFinalAssetCount < 0)) {
+    reasons.push("PROMOTED_FINAL_ASSET_COUNT_INVALID");
+  }
+  const promotedFinalAssetCount = typeof rawPromotedFinalAssetCount === "number" && Number.isFinite(rawPromotedFinalAssetCount) && Number.isInteger(rawPromotedFinalAssetCount) && rawPromotedFinalAssetCount >= 0 ? rawPromotedFinalAssetCount : 0;
   const nativeFallbackReady = input["nativeFallbackReady"] === true;
   const duplicateAssetIds = Array.isArray(input["duplicateAssetIds"]) ? input["duplicateAssetIds"] : [];
   if (duplicateAssetIds.length > 0) reasons.push("DUPLICATE_ASSET_ID");
