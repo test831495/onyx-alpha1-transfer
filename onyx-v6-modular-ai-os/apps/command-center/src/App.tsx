@@ -933,6 +933,7 @@ export function App() {
                   onAction={(action) =>
                     action === "Listen" ? voice.startListening() : void dispatch(action)
                   }
+                  quality={quality}
                   lowPower={quality === "low"}
                 />
               </section>
@@ -951,6 +952,7 @@ export function App() {
                 onAction={(action) =>
                   action === "Listen" ? voice.startListening() : void dispatch(action)
                 }
+                quality={quality}
                 lowPower={quality === "low"}
               />
               <div className="app-card-list" role="list" aria-label="Open applications">
