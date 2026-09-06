@@ -594,15 +594,16 @@ export function resolveShellIntent(raw: string): ShellIntent | null {
     if (appId) return { type: "OPEN_DETAILS", appId };
   }
 
-  const match = text.match(/^(open|show|focus|minimize|close)\s+(.+)$/);
+  const match = text.match(/^(open|show|go to|focus|minimize|close)\s+(.+)$/);
   if (match) {
     const verb = match[1] ?? "open";
     const targetText = (match[2] ?? "").trim();
     const appId = SHELL_APP_ALIASES[targetText] ?? SHELL_APP_ALIASES[targetText.replace(/\s+/g, " ")];
     if (!appId) return null;
 
-    if (verb === "open") return { type: "OPEN_APP", appId };
-    if (verb === "show") return { type: "OPEN_APP", appId };
+    if (verb === "open" || verb === "show" || verb === "go to") {
+      return { type: "OPEN_APP", appId };
+    }
     if (verb === "focus") return { type: "FOCUS_APP", appId };
     if (verb === "minimize") return { type: "MINIMIZE_APP", appId };
     if (verb === "close") return { type: "CLOSE_APP", appId };

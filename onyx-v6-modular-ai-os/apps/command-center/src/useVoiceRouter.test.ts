@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
-import { DiagnosticResetTimer, parseVoice } from "./useVoiceRouter";
+import { DiagnosticResetTimer, FinalRecognitionGuard, parseVoice } from "./useVoiceRouter";
 
 describe("parseVoice vocal command parsing", () => {
   it("recognizes NOVA mode with greeting", () => {
@@ -185,5 +185,15 @@ describe("DiagnosticResetTimer timer lifecycle", () => {
 
     vi.advanceTimersByTime(1000);
     expect(callback2).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("FinalRecognitionGuard", () => {
+  it("rejects interim and duplicate final recognition results", () => {
+    const guard = new FinalRecognitionGuard();
+
+    expect(guard.shouldProcess(false)).toBe(false);
+    expect(guard.shouldProcess(true)).toBe(true);
+    expect(guard.shouldProcess(true)).toBe(false);
   });
 });

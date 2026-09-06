@@ -48,6 +48,16 @@ export class DiagnosticResetTimer {
   }
 }
 
+export class FinalRecognitionGuard {
+  private processed = false;
+
+  shouldProcess(isFinal: boolean): boolean {
+    if (!isFinal || this.processed) return false;
+    this.processed = true;
+    return true;
+  }
+}
+
 export function parseVoice(text: string): { mode: AssistantMode | null; command: string } {
   const value = normalize(text);
   const match = [...value.matchAll(/(?:^|\s)(?:hey\s+)?(nova|nover|onyx|onix|onics)(?:\s|$)/g)].at(-1);
@@ -87,7 +97,10 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.lang = "en-US";
+    const finalRecognitionGuard = new FinalRecognitionGuard();
     recognition.onresult = event => {
+      const result = event.results[event.resultIndex];
+      if (!finalRecognitionGuard.shouldProcess(Boolean(result?.isFinal))) return;
       const heard = event.results[event.resultIndex]?.[0]?.transcript?.trim() ?? "";
       if (!heard) { setDiagnostic("NO SPEECH DETECTED"); return; }
       setStatus("thinking");
