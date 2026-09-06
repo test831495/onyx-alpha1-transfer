@@ -10,7 +10,7 @@ export function PwaInstallPrompt() {
     setIosGuidance(!standalone && isIosDevice() && !isInstallDismissed());
     const onBeforeInstallPrompt = (event: Event) => {
       captureInstallPrompt(event);
-      setCanInstall(true);
+      setCanInstall(!isStandalone() && !isInstallDismissed());
     };
     const onInstalled = () => {
       setCanInstall(false);

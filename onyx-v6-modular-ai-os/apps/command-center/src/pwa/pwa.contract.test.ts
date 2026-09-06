@@ -27,7 +27,7 @@ describe("ONYX NOVA PWA installability contract", () => {
       expect.objectContaining({ src: "/icons/onyx-nova-512.png", sizes: "512x512", type: "image/png" }),
     ]));
     for (const icon of ["public/icons/onyx-nova-192.png", "public/icons/onyx-nova-512.png"]) expect(existsSync(new URL(icon, root))).toBe(true);
-    expect(value).not.toHaveProperty("prefer_related_applications", true);
+    expect(value.prefer_related_applications).toBe(false);
   });
 
   it("wires safe registration, install UI, and mobile metadata", () => {
@@ -42,6 +42,8 @@ describe("ONYX NOVA PWA installability contract", () => {
   it("keeps service-worker cache boundaries fail-closed", () => {
     expect(existsSync(workerPath)).toBe(true);
     const worker = readFileSync(workerPath, "utf8");
+    expect(existsSync(new URL("public/offline.html", root))).toBe(false);
+    expect(worker.match(/<!doctype html>/g)?.length).toBe(1);
     expect(worker).toContain("Network-only dynamic request");
     expect(worker).toMatch(/voice|speech|audio|microphone|media|stream/i);
     expect(worker).toContain("request.method !== \"GET\"");
@@ -50,6 +52,7 @@ describe("ONYX NOVA PWA installability contract", () => {
     expect(worker).not.toContain("cache.addAll");
     expect(worker).not.toContain("skipWaiting()");
     expect(worker).not.toContain("clients.claim()");
+    expect(worker).not.toContain("cache.addAll");
   });
 
   it("preserves existing voice and microphone ownership", () => {

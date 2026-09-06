@@ -11,6 +11,9 @@ describe("PWA install experience", () => {
     expect(source).toContain("isStandalone");
     expect(source).toContain("beforeinstallprompt");
     expect(source).toContain("appinstalled");
+    expect(source).toMatch(/captureInstallPrompt\(event\);[\s\S]*setCanInstall\(\s*!isStandalone\(\)\s*&&\s*!isInstallDismissed\(\)\s*\)/);
+    expect(source).not.toContain("setCanInstall(true)");
+    expect(source).toContain("onClick");
   });
 
   it("provides truthful iOS guidance without requesting microphone access", () => {
