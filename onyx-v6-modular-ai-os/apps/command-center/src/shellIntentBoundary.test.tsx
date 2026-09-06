@@ -30,6 +30,9 @@ describe("shell intent and presentation boundary", () => {
     expect(resolveShellIntent("Open Automation details")).toEqual({ type: "OPEN_DETAILS", appId: "automation" });
     expect(resolveShellIntent("Switch to ONYX")).toEqual({ type: "SET_PRESENCE_MODE", mode: "ONYX_ONLY" });
     expect(resolveShellIntent("Show ONYX and NOVA")).toEqual({ type: "SET_PRESENCE_MODE", mode: "ONYX_AND_NOVA" });
+    expect(resolveShellIntent("Open Workspace")).toEqual({ type: "OPEN_APP", appId: "workspace" });
+    expect(resolveShellIntent("Show Workspace")).toEqual({ type: "OPEN_APP", appId: "workspace" });
+    expect(resolveShellIntent("Go to Workspace")).toEqual({ type: "OPEN_APP", appId: "workspace" });
   });
 
   it("keeps character workspaces isolated when switching", () => {

@@ -539,7 +539,6 @@ export function App() {
       ].includes(normalized);
 
       if (
-        /^(open )?workspace( status)?$/.test(normalized) ||
         normalized === "connect workspace" ||
         normalized === "connect microsoft" ||
         profileCommand ||
