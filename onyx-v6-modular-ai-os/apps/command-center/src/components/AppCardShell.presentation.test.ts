@@ -31,7 +31,7 @@ describe("PRESENTATION-MOBILE-CARD-001", () => {
     expect(styleSource).toContain("overflow-navigation-region");
   });
 
-  it("keeps compact card identity and actions in separate visible rows", () => {
+  it("PRESENTATION-MOBILE-CARD-HEADER-001 keeps compact card identity and actions in separate visible rows", () => {
     expect(styleSource).toMatch(/\.functional-scene--cards\s*\.app-card-shell__header\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*1fr[^}]*grid-template-rows:\s*auto\s+auto/);
     expect(styleSource).toMatch(/\.functional-scene--cards\s*\.app-card-shell__identity\s*\{[^}]*grid-row:\s*1/);
     expect(styleSource).toMatch(/\.functional-scene--cards\s*\.app-card-shell__actions\s*\{[^}]*grid-row:\s*2[^}]*flex-wrap:\s*nowrap/);
