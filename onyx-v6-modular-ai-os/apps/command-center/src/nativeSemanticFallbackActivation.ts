@@ -1,8 +1,8 @@
 import {
   choosePerformanceTier,
   type PerformanceTier,
-} from "../../../packages/post-alpha-performance-governor/src/index";
-import { renderIntent } from "../../../packages/post-alpha-character-renderer-native/src/index";
+} from "@onyx/post-alpha-performance-governor";
+import { renderIntent } from "@onyx/post-alpha-character-renderer-native";
 
 export const ACTIVATION_CONTROL_ID =
   "ONYX_NOVA_NATIVE_SEMANTIC_FALLBACK_VISUAL_ACTIVATION_V1" as const;

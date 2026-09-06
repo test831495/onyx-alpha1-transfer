@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import type { AssistantMode, CoreState } from "@onyx/contracts";
 import {
   mapCoreStateToSemanticState,
-  performanceTierForQuality,
   PRIVATE_ALPHA_BUILD_ACTIVATION,
   projectNativeSemanticFallback,
 } from "../nativeSemanticFallbackActivation";
@@ -45,7 +44,7 @@ export function HeroCore({ mode, state, onSwitch, onAction, lowPower, quality }:
     { quality },
   );
 
-  return <section className={`hero-core hero-${mode} core-${state} native-fallback-${semantic.state.toLowerCase()} ${menuOpen ? "menu-open" : "menu-closed"} ${lowPower ? "hero-low-power" : ""}`} data-native-fallback={semantic.enabled ? "active" : "off"} data-truth-label={semantic.truthLabel}>
+  return <section className={`hero-core hero-${mode} core-${state} native-fallback-${semantic.state.toLowerCase()} ${menuOpen ? "menu-open" : "menu-closed"} ${lowPower ? "hero-low-power" : ""}`}>
     {menuOpen && <button className="core-dismiss-layer" aria-label="Close core menu" onClick={() => setMenuOpen(false)} />}
     <div className="hero-visual-zone">
       <div className="portrait-deck" aria-hidden="true">
@@ -65,6 +64,6 @@ export function HeroCore({ mode, state, onSwitch, onAction, lowPower, quality }:
           onClick={event => { event.preventDefault(); event.stopPropagation(); choose(action); }}><span>{short}</span></button>)}
       </div>}
     </div>
-    <div className="hero-status-row"><b>{label}</b><small aria-live="polite">{semantic.label}</small><small>Tap core for actions</small></div>
+    <div className="hero-status-row"><b>{label}</b><small className="native-semantic-label" aria-live="polite">{semantic.label}</small><small>Tap core for actions</small></div>
   </section>;
 }

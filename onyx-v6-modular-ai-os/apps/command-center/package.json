@@ -23,6 +23,8 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "@onyx/intelligence-runtime": "workspace:*",
+    "@onyx/post-alpha-character-renderer-native": "workspace:*",
+    "@onyx/post-alpha-performance-governor": "workspace:*",
     "@onyx/workspace-contracts": "workspace:*",
     "@onyx/workspace-connectors": "workspace:*",
     "@onyx/calendar-intelligence": "workspace:*",

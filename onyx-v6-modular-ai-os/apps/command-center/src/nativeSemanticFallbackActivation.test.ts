@@ -1,4 +1,9 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { HeroCore } from "./components/HeroCore";
 import {
   ACTIVATION_CONTROL_ID,
   AUTHORIZED_PRIVATE_ALPHA_STATE,
@@ -67,5 +72,50 @@ describe("native semantic fallback activation", () => {
     expect(performanceTierForQuality("balanced")).toBe("BALANCED");
     expect(performanceTierForQuality("low")).toBe("LIGHTWEIGHT");
     expect(performanceTierForQuality("full", true)).toBe("REDUCED_MOTION");
+  });
+
+  it("renders an accessible semantic label without exposing internal data attributes", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(HeroCore, {
+        mode: "onyx",
+        state: "thinking",
+        quality: "balanced",
+        lowPower: false,
+        onSwitch: () => undefined,
+        onAction: () => undefined,
+      }),
+    );
+    expect(html).toContain('class="native-semantic-label"');
+    expect(html).toContain('aria-live="polite"');
+    expect(html).toContain("native-fallback-thinking");
+    expect(html).not.toContain("data-native-fallback");
+    expect(html).not.toContain("data-truth-label");
+    expect(html).toContain("Tap core for actions");
+  });
+
+  it("scopes privacy and approval colors to the semantic label only", () => {
+    const css = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
+    expect(css).toContain(
+      ".hero-core.native-fallback-privacy_restricted .hero-status-row .native-semantic-label",
+    );
+    expect(css).toContain(
+      ".hero-core.native-fallback-approval_required .hero-status-row .native-semantic-label",
+    );
+    expect(css).not.toContain(
+      ".hero-core.native-fallback-privacy_restricted .hero-status-row small",
+    );
+    expect(css).not.toContain(
+      ".hero-core.native-fallback-approval_required .hero-status-row small",
+    );
+  });
+
+  it("uses public workspace package imports", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/nativeSemanticFallbackActivation.ts"),
+      "utf8",
+    );
+    expect(source).toContain('"@onyx/post-alpha-performance-governor"');
+    expect(source).toContain('"@onyx/post-alpha-character-renderer-native"');
+    expect(source).not.toMatch(/\.\.\/\.\.\/\.\.\/\.\.\/packages\//);
   });
 });
