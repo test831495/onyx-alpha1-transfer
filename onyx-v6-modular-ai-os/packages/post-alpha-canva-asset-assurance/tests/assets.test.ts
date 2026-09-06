@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { buildRegistryCandidate, classifyAsset, detectDuplicates } from "../src/index";
 
+const validSha = "6f2226e9b95d7b027f84abe9fa50e18d8a9e27e7885f40ee9f85fb09b8ce6e2a";
+const secondValidSha = "32e0dedc271a1812b345b85963dd12bbda727632bb5a0f7b1f43901b18e2716f";
+
 const good = {
   id: "a",
-  sha256: "a".repeat(64),
+  sha256: validSha,
   disclosure: true,
   provenance: "board",
   license: "owned",
@@ -14,7 +17,7 @@ const good = {
 
 describe("local Canva asset assurance", () => {
   it("accepts disclosed, licensed, hashed candidates", () => {
-    expect(classifyAsset({ id: "a", sha256: "a".repeat(64), disclosure: true, provenance: "board", license: "owned", width: 10, height: 10, format: "webp" }).classification).toBe("RUNTIME_CANDIDATE");
+    expect(classifyAsset({ id: "a", sha256: validSha, disclosure: true, provenance: "board", license: "owned", width: 10, height: 10, format: "webp" }).classification).toBe("RUNTIME_CANDIDATE");
   });
   it("rejects missing governance facts", () => {
     expect(classifyAsset({ id: "a", sha256: "bad", disclosure: false, provenance: "", license: "", width: 0, height: 0, format: "" }).classification).toBe("REJECTED");
@@ -41,22 +44,23 @@ describe("T2-CANVA-ASSET-001 governance classification", () => {
     expect(classifyAsset({ ...good, height: -5 }).reasons).toContain("HEIGHT_INVALID");
     expect(classifyAsset({ ...good, format: "" }).reasons).toContain("FORMAT_MISSING");
     expect(classifyAsset(null).classification).toBe("REJECTED");
-    expect(classifyAsset({ sha256: "a".repeat(64) }).reasons).toContain("MALFORMED_INPUT");
+    expect(classifyAsset({ sha256: validSha }).reasons).toContain("MALFORMED_INPUT");
+    expect(classifyAsset({ ...good, sha256: "a".repeat(64) }).reasons).toContain("HASH_INVALID");
   });
 
   it("records AI disclosure without changing authority", () => {
     expect(classifyAsset({ ...good, disclosure: false }).aiDisclosed).toBe(false);
     expect(classifyAsset(good).aiDisclosed).toBe(true);
-    expect(classifyAsset(good).immutableCandidateId).toBe(`a@${"a".repeat(12)}`);
+    expect(classifyAsset(good).immutableCandidateId).toBe(`a@${validSha.slice(0, 12)}`);
   });
 });
 
 describe("T2-CANVA-ASSET-002 duplicates and registry candidates", () => {
   it("T2-CANVA-ASSET-002-POS: detects exact, near, and functional duplicate groups", () => {
     const duplicates = detectDuplicates([
-      { id: "a", sha256: "a".repeat(64), perceptualHash: "p1", intendedUse: "avatar" },
-      { id: "b", sha256: "a".repeat(64), perceptualHash: "p1", intendedUse: "avatar" },
-      { id: "c", sha256: "c".repeat(64), perceptualHash: "p9", intendedUse: "world" },
+      { id: "a", sha256: validSha, perceptualHash: "p1", intendedUse: "avatar" },
+      { id: "b", sha256: validSha, perceptualHash: "p1", intendedUse: "avatar" },
+      { id: "c", sha256: secondValidSha, perceptualHash: "p9", intendedUse: "world" },
     ]);
     expect(duplicates.exactGroups).toEqual([["a", "b"]]);
     expect(duplicates.nearDuplicates).toEqual([["a", "b"]]);
@@ -79,7 +83,7 @@ describe("T2-CANVA-ASSET-002 duplicates and registry candidates", () => {
 describe("PR38 Finding B bounded duplicate detection", () => {
   const sameKey = Array.from({ length: 65 }, (_, index) => ({
     id: `asset-${index}`,
-    sha256: "a".repeat(64),
+    sha256: validSha,
     perceptualHash: "p",
     intendedUse: "avatar",
   }));
