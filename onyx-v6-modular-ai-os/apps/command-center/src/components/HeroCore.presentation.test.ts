@@ -1,13 +1,12 @@
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const componentSource = readFileSync(resolve(process.cwd(), "src/components/HeroCore.tsx"), "utf8");
-const styleSource = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
+const componentSource = readFileSync(new URL("./HeroCore.tsx", import.meta.url), "utf8");
+const styleSource = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 
 describe("PRESENTATION-MOBILE-ORBIT-001", () => {
   it("keeps the Executive label intact in the compact action node", () => {
-    expect(componentSource).toContain('{ label: "Executive", short: "Executive", angle: 60 }');
+    expect(componentSource).toMatch(/label:\s*"Executive",\s*short:\s*"Executive",\s*angle:\s*60/);
     expect(componentSource).toContain('aria-label={action}');
     expect(styleSource).toMatch(/\.equal-action-ring button\[aria-label="Executive"\] span\{[^}]*white-space:nowrap/);
     expect(styleSource).toMatch(/\.equal-action-ring button\[aria-label="Executive"\] span\{[^}]*overflow-wrap:normal/);
