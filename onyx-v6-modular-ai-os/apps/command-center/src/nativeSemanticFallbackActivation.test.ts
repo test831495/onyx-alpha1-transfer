@@ -177,6 +177,25 @@ describe("native semantic fallback activation", () => {
     expect(html).not.toContain("native-fallback-understanding");
   });
 
+  it("normalizes canonical semantic input when activation is off", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(HeroCore, {
+        mode: "nova",
+        state: "APPROVAL_REQUIRED",
+        quality: "balanced",
+        lowPower: false,
+        activationControl: { ...PRIVATE_ALPHA_BUILD_ACTIVATION, state: "OFF" },
+        onSwitch: () => undefined,
+        onAction: () => undefined,
+      }),
+    );
+
+    expect(html).toContain(">APPROVAL REQUIRED</b>");
+    expect(html).toContain("core-approval-required");
+    expect(html).toContain("native-fallback-off");
+    expect(html).not.toContain("native-semantic-label");
+  });
+
   it("scopes privacy and approval colors to the semantic label only", () => {
     const css = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
     expect(css).toContain(

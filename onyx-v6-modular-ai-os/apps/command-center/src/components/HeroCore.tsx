@@ -37,8 +37,9 @@ export function HeroCore({ mode, state, onSwitch, onAction, lowPower, quality, a
     setMenuOpen(false);
     if (action.startsWith("Switch")) onSwitch(); else onAction(action);
   };
-  const legacyState = state.toLowerCase() as CoreState;
-  const legacyLabel = legacyState === "thinking" ? "ANALYZING" : legacyState === "error" ? "ATTENTION" : legacyState.replace("-", " ").toUpperCase();
+  const legacyState = state.toLowerCase().replaceAll("_", "-");
+  const legacyLabelSource = legacyState.replaceAll("-", " ");
+  const legacyLabel = legacyState === "thinking" ? "ANALYZING" : legacyState === "error" ? "ATTENTION" : legacyLabelSource.toUpperCase();
   const semantic = projectNativeSemanticFallback(
     activationControl,
     mode === "onyx" ? "ONYX" : "NOVA",
