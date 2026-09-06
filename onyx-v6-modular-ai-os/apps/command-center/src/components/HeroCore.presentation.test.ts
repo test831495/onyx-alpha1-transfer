@@ -8,9 +8,16 @@ describe("PRESENTATION-MOBILE-ORBIT-001", () => {
   it("keeps the Executive label intact in the compact action node", () => {
     expect(componentSource).toMatch(/label:\s*"Executive",\s*short:\s*"Executive",\s*angle:\s*60/);
     expect(componentSource).toContain('aria-label={action}');
-    expect(styleSource).toMatch(/\.equal-action-ring button\[aria-label="Executive"\] span\{[^}]*white-space:nowrap/);
-    expect(styleSource).toMatch(/\.equal-action-ring button\[aria-label="Executive"\] span\{[^}]*overflow-wrap:normal/);
-    expect(styleSource).toMatch(/\.equal-action-ring button\[aria-label="Executive"\] span\{[^}]*word-break:normal/);
+    expect(styleSource).toMatch(/\.equal-action-ring button\[aria-label="Executive"\] span\s*,\s*\.equal-action-ring button\[aria-label="Calendar"\] span\{[^}]*white-space:nowrap/);
+    expect(styleSource).toMatch(/\.equal-action-ring button\[aria-label="Executive"\] span\s*,\s*\.equal-action-ring button\[aria-label="Calendar"\] span\{[^}]*overflow-wrap:normal/);
+    expect(styleSource).toMatch(/\.equal-action-ring button\[aria-label="Executive"\] span\s*,\s*\.equal-action-ring button\[aria-label="Calendar"\] span\{[^}]*word-break:normal/);
+  });
+
+  it("keeps Calendar readable without weakening the Executive fix", () => {
+    expect(componentSource).toMatch(/label:\s*"Calendar",\s*short:\s*"Calendar",\s*angle:\s*180/);
+    expect(componentSource).toContain('aria-label={action}');
+    expect(styleSource).toMatch(/\.equal-action-ring button\[aria-label="Executive"\] span\s*,\s*\.equal-action-ring button\[aria-label="Calendar"\] span\{[^}]*white-space:nowrap/);
+    expect(styleSource).toMatch(/\.equal-action-ring button\[aria-label="Executive"\] span\s*,\s*\.equal-action-ring button\[aria-label="Calendar"\] span\{[^}]*overflow-wrap:normal/);
   });
 
   it("preserves the compact node touch target and desktop rule", () => {
