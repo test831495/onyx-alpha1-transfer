@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
 import type { AssistantMode, CoreState } from "@onyx/contracts";
+import {
+  mapCoreStateToSemanticState,
+  performanceTierForQuality,
+  PRIVATE_ALPHA_BUILD_ACTIVATION,
+  projectNativeSemanticFallback,
+} from "../nativeSemanticFallbackActivation";
+import type { NativeQuality } from "../nativeSemanticFallbackActivation";
 
 const actions: Record<AssistantMode, Array<{ label: string; short: string; angle: number }>> = {
   nova: [
@@ -20,9 +27,9 @@ const actions: Record<AssistantMode, Array<{ label: string; short: string; angle
   ],
 };
 
-export function HeroCore({ mode, state, onSwitch, onAction, lowPower }: {
+export function HeroCore({ mode, state, onSwitch, onAction, lowPower, quality }: {
   mode: AssistantMode; state: CoreState; onSwitch: () => void;
-  onAction: (action: string) => void; lowPower: boolean;
+  onAction: (action: string) => void; lowPower: boolean; quality: NativeQuality;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => setMenuOpen(false), [mode]);
@@ -31,8 +38,14 @@ export function HeroCore({ mode, state, onSwitch, onAction, lowPower }: {
     if (action.startsWith("Switch")) onSwitch(); else onAction(action);
   };
   const label = state === "thinking" ? "ANALYZING" : state === "error" ? "ATTENTION" : state.replace("-", " ").toUpperCase();
+  const semantic = projectNativeSemanticFallback(
+    PRIVATE_ALPHA_BUILD_ACTIVATION,
+    mode === "onyx" ? "ONYX" : "NOVA",
+    mapCoreStateToSemanticState(state),
+    { quality },
+  );
 
-  return <section className={`hero-core hero-${mode} core-${state} ${menuOpen ? "menu-open" : "menu-closed"} ${lowPower ? "hero-low-power" : ""}`}>
+  return <section className={`hero-core hero-${mode} core-${state} native-fallback-${semantic.state.toLowerCase()} ${menuOpen ? "menu-open" : "menu-closed"} ${lowPower ? "hero-low-power" : ""}`} data-native-fallback={semantic.enabled ? "active" : "off"} data-truth-label={semantic.truthLabel}>
     {menuOpen && <button className="core-dismiss-layer" aria-label="Close core menu" onClick={() => setMenuOpen(false)} />}
     <div className="hero-visual-zone">
       <div className="portrait-deck" aria-hidden="true">
@@ -52,6 +65,6 @@ export function HeroCore({ mode, state, onSwitch, onAction, lowPower }: {
           onClick={event => { event.preventDefault(); event.stopPropagation(); choose(action); }}><span>{short}</span></button>)}
       </div>}
     </div>
-    <div className="hero-status-row"><b>{label}</b><small>Tap core for actions</small></div>
+    <div className="hero-status-row"><b>{label}</b><small aria-live="polite">{semantic.label}</small><small>Tap core for actions</small></div>
   </section>;
 }
