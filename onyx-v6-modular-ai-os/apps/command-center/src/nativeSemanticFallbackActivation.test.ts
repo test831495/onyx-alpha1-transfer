@@ -93,6 +93,90 @@ describe("native semantic fallback activation", () => {
     expect(html).toContain("Tap core for actions");
   });
 
+  it("renders the enabled production HeroCore path with canonical visible states for both characters", () => {
+    for (const mode of ["onyx", "nova"] as const) {
+      const executingHtml = renderToStaticMarkup(
+        React.createElement(HeroCore, {
+          mode,
+          state: "executing",
+          quality: "balanced",
+          lowPower: false,
+          onSwitch: () => undefined,
+          onAction: () => undefined,
+        }),
+      );
+      const errorHtml = renderToStaticMarkup(
+        React.createElement(HeroCore, {
+          mode,
+          state: "error",
+          quality: "balanced",
+          lowPower: false,
+          onSwitch: () => undefined,
+          onAction: () => undefined,
+        }),
+      );
+
+      expect(executingHtml).toContain(">UNDERSTANDING</b>");
+      expect(executingHtml).toContain("native-fallback-understanding");
+      expect(executingHtml).toContain(`${mode.toUpperCase()} understanding`);
+      expect(executingHtml).not.toContain(">EXECUTING</b>");
+      expect(executingHtml).not.toContain("core-executing");
+
+      expect(errorHtml).toContain(">RECOVERING</b>");
+      expect(errorHtml).toContain("native-fallback-recovering");
+      expect(errorHtml).toContain(`${mode.toUpperCase()} recovering`);
+      expect(errorHtml).not.toContain(">ERROR</b>");
+      expect(errorHtml).not.toContain(">ATTENTION</b>");
+      expect(errorHtml).not.toContain("core-error");
+    }
+  });
+
+  it("makes approval, privacy, understanding, and recovery canonical states visibly renderable", () => {
+    for (const state of [
+      "UNDERSTANDING",
+      "APPROVAL_REQUIRED",
+      "PRIVACY_RESTRICTED",
+      "RECOVERING",
+    ] as const) {
+      const html = renderToStaticMarkup(
+        React.createElement(HeroCore, {
+          mode: "onyx",
+          state,
+          quality: "balanced",
+          lowPower: false,
+          onSwitch: () => undefined,
+          onAction: () => undefined,
+        }),
+      );
+      const visibleLabel = state.replace("_", " ");
+
+      expect(html).toContain(`>${visibleLabel}</b>`);
+      expect(html).toContain(`core-${state.toLowerCase()}`);
+      expect(html).toContain(`native-fallback-${state.toLowerCase()}`);
+      expect(html).toContain(`ONYX ${visibleLabel.toLowerCase()}`);
+    }
+  });
+
+  it("restores the stable legacy shell when native semantic activation is off", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(HeroCore, {
+        mode: "nova",
+        state: "executing",
+        quality: "balanced",
+        lowPower: false,
+        activationControl: { ...PRIVATE_ALPHA_BUILD_ACTIVATION, state: "OFF" },
+        onSwitch: () => undefined,
+        onAction: () => undefined,
+      }),
+    );
+
+    expect(html).toContain(">EXECUTING</b>");
+    expect(html).toContain("core-executing");
+    expect(html).toContain("native-fallback-off");
+    expect(html).not.toContain("native-semantic-label");
+    expect(html).not.toContain("native-fallback-understanding");
+  });
+
   it("scopes privacy and approval colors to the semantic label only", () => {
     const css = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
     expect(css).toContain(
