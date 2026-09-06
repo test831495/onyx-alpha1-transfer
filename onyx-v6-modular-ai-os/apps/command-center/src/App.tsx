@@ -56,6 +56,16 @@ import {
 } from "./characterPersistence";
 import { mapCoreStateToSemanticState } from "./nativeSemanticFallbackActivation";
 import { findOrbitAction, resolveOrbitHandler } from "./orbitActionRegistry";
+import { parseConversationalRequest } from "./conversationIntentGrammar";
+import { buildConversationPlan } from "./conversationPlan";
+import { VoiceConversationOrchestrator } from "./voiceConversationOrchestrator";
+import { ConversationContextWindow } from "./conversationContextWindow";
+import {
+  formatDateForSpeech,
+  isSupportedWeekday,
+  resolveNamedWeekday,
+  tomorrowFrom,
+} from "./conversationDateFacts";
 
 const states: CoreState[] = [
   "wake-armed",
@@ -115,6 +125,19 @@ const unavailableApps = [
 ];
 
 const runtime = createIntelligenceRuntime();
+
+const SHELL_APP_LABELS: Record<ShellAppId, string> = {
+  home: "Home",
+  messages: "Messages",
+  tasks: "Tasks",
+  news: "News",
+  workspace: "Workspace",
+  calendar: "Calendar",
+  automation: "Automation",
+  settings: "Settings",
+  health: "System Health",
+  "provider-health": "Provider Health",
+};
 
 function resolveLegacyPanel(raw: string): Panel {
   const command = raw.toLowerCase().trim();
@@ -220,6 +243,9 @@ export function App() {
   const timers = useRef<number[]>([]);
   const commandSequence = useRef(0);
   const commandController = useRef<AbortController | null>(null);
+  const conversationOrchestrator = useRef(new VoiceConversationOrchestrator());
+  const conversationContext = useRef(new ConversationContextWindow());
+  const conversationPlanSequence = useRef(0);
 
   useEffect(() => {
     modeRef.current = mode;
@@ -257,6 +283,8 @@ export function App() {
       clearTimers();
       commandController.current?.abort();
       voiceManager.current.stop();
+      conversationOrchestrator.current.cancel();
+      conversationContext.current.clear();
     },
     [],
   );
@@ -330,6 +358,8 @@ export function App() {
     (next: AssistantMode) => {
       persistCharacterSelection(next);
       voiceManager.current.stop();
+      conversationOrchestrator.current.cancel();
+      conversationContext.current.clear();
       setRequested(next);
 
       if (next === modeRef.current) {
@@ -365,6 +395,8 @@ export function App() {
     return subscribeToCharacterSelection((next) => {
       if (next === modeRef.current) return;
       voiceManager.current.stop();
+      conversationOrchestrator.current.cancel();
+      conversationContext.current.clear();
       clearTimers();
       setRequested(next);
       setMode(next);
@@ -434,6 +466,113 @@ export function App() {
     [showError],
   );
 
+  const describeVisibleUiProjection = useCallback((): string => {
+    const active = getActiveWorkspace(shell);
+    const visible = getVisibleAppIds(shell);
+    if (visible.length === 0) return "No app cards are currently open.";
+    const labels = visible.map((appId) => SHELL_APP_LABELS[appId] ?? appId);
+    const selectedLabel =
+      active.selectedAppId != null
+        ? ` ${SHELL_APP_LABELS[active.selectedAppId] ?? active.selectedAppId} is selected.`
+        : "";
+    return `Currently visible: ${labels.join(", ")}.${selectedLabel}`;
+  }, [shell]);
+
+  // Bounded, provider-free conversational plan handling for the natural-language
+  // examples. Returns true when the request was recognized and handled here
+  // (successfully or with a truthful clarification/limitation), so callers can
+  // fall through to the existing pipelines for anything outside this scope.
+  const runConversationalPlan = useCallback(
+    async (rawText: string): Promise<boolean> => {
+      const envelope = parseConversationalRequest(rawText);
+
+      if (envelope.kind === "CANCEL") {
+        if (conversationOrchestrator.current.hasActivePlan()) {
+          conversationOrchestrator.current.cancel();
+        }
+        commandController.current?.abort();
+        voiceManager.current.stop();
+        setState("wake-armed");
+        setCaption(`${modeRef.current.toUpperCase()} · cancelled.`);
+        return true;
+      }
+
+      if (envelope.kind === "UNSUPPORTED") return false;
+
+      const planId = `conversation-plan-${++conversationPlanSequence.current}`;
+      const plan = buildConversationPlan(planId, envelope);
+      if (!plan) return false;
+
+      if (conversationOrchestrator.current.hasActivePlan()) {
+        showError("A conversational plan is already in progress. Say Stop to cancel it first.");
+        return true;
+      }
+
+      commandController.current?.abort();
+      voiceManager.current.stop();
+      setState("thinking");
+      setCaption(`${modeRef.current.toUpperCase()} · understanding request.`);
+
+      const now = new Date();
+      const identity = modeRef.current;
+
+      await conversationOrchestrator.current.executePlan(plan, {
+        navigate: (appId) => {
+          openShellApp(appId);
+          setState("executing");
+          setCaption(`${SHELL_APP_LABELS[appId] ?? appId} selected.`);
+        },
+        resolveTomorrowDate: () => {
+          const spoken = styleAssistantResponse(
+            identity,
+            `Tomorrow is ${formatDateForSpeech(tomorrowFrom(now))}.`,
+            "general",
+          );
+          conversationContext.current.recordTurn(Date.now(), {
+            turnId: `date-${Date.now()}`,
+            kind: "DATE_QUESTION",
+            normalizedText: "tomorrow",
+            resultSummary: spoken,
+          });
+          return spoken;
+        },
+        resolveWeekdayDate: (weekday) => {
+          if (!isSupportedWeekday(weekday)) {
+            return "I don't have a bounded answer for that day.";
+          }
+          const spoken = styleAssistantResponse(
+            identity,
+            `That ${weekday} is ${formatDateForSpeech(resolveNamedWeekday(now, weekday))}.`,
+            "general",
+          );
+          conversationContext.current.recordTurn(Date.now(), {
+            turnId: `date-${Date.now()}`,
+            kind: "DATE_QUESTION",
+            normalizedText: weekday,
+            resultSummary: spoken,
+          });
+          return spoken;
+        },
+        describeVisibleUi: () => styleAssistantResponse(identity, describeVisibleUiProjection(), "general"),
+        requestClarification: (message) => {
+          setState("speaking");
+          setCaption(message);
+          timers.current.push(window.setTimeout(() => reset(), 4200));
+        },
+        speak: async (text) => {
+          setCaption(text);
+          setState("speaking");
+          const voiceResult = await voiceManager.current.speak(text, voicePreferences);
+          setVoiceStatus(voiceResult.message ?? `${voiceResult.engine} voice ready.`);
+          timers.current.push(window.setTimeout(() => reset(), 4200));
+        },
+      });
+
+      return true;
+    },
+    [describeVisibleUiProjection, openShellApp, reset, showError, voicePreferences],
+  );
+
   const dispatchLegacy = useCallback(
     (raw: string, targetMode: AssistantMode | null = null) => {
       const clean = raw.trim();
@@ -476,6 +615,10 @@ export function App() {
     async (raw: string, targetMode: AssistantMode | null = null) => {
       const clean = raw.trim();
       const normalized = normalizeCommand(clean);
+
+      if (await runConversationalPlan(clean)) {
+        return;
+      }
 
       if (isCalendarCommand(normalized)) {
         const offset = normalized.includes("tomorrow") ? 1 : 0;
@@ -710,6 +853,7 @@ export function App() {
       handleShellIntent,
       refreshWorkspace,
       reset,
+      runConversationalPlan,
       selectPanel,
       showError,
       voicePreferences,
