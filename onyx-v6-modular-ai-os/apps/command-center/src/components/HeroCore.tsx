@@ -7,25 +7,7 @@ import {
   projectNativeSemanticFallback,
 } from "../nativeSemanticFallbackActivation";
 import type { NativeQuality, NativeSemanticState } from "../nativeSemanticFallbackActivation";
-
-const actions: Record<AssistantMode, Array<{ label: string; short: string; angle: number }>> = {
-  nova: [
-    { label: "Listen", short: "Listen", angle: 0 },
-    { label: "Tasks", short: "Tasks", angle: 60 },
-    { label: "Files", short: "Files", angle: 120 },
-    { label: "Calendar", short: "Calendar", angle: 180 },
-    { label: "System", short: "System", angle: 240 },
-    { label: "Switch to ONYX", short: "Switch", angle: 300 },
-  ],
-  onyx: [
-    { label: "Listen", short: "Listen", angle: 0 },
-    { label: "Executive", short: "Executive", angle: 60 },
-    { label: "Finance", short: "Finance", angle: 120 },
-    { label: "News", short: "News", angle: 180 },
-    { label: "Automation", short: "Auto", angle: 240 },
-    { label: "Switch to NOVA", short: "Switch", angle: 300 },
-  ],
-};
+import { getOrbitActions, type OrbitActionDefinition } from "../orbitActionRegistry";
 
 export function HeroCore({ mode, state, onSwitch, onAction, lowPower, quality, activationControl = PRIVATE_ALPHA_BUILD_ACTIVATION }: {
   mode: AssistantMode; state: CoreState | NativeSemanticState; onSwitch: () => void;
@@ -33,9 +15,9 @@ export function HeroCore({ mode, state, onSwitch, onAction, lowPower, quality, a
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => setMenuOpen(false), [mode]);
-  const choose = (action: string) => {
+  const choose = (definition: OrbitActionDefinition) => {
     setMenuOpen(false);
-    if (action.startsWith("Switch")) onSwitch(); else onAction(action);
+    if (definition.handler?.kind === "ASSISTANT_SWITCH") onSwitch(); else onAction(definition.id);
   };
   const legacyState = state.toLowerCase().replaceAll("_", "-");
   const legacyLabelSource = legacyState.replaceAll("-", " ");
@@ -63,10 +45,18 @@ export function HeroCore({ mode, state, onSwitch, onAction, lowPower, quality, a
       <div className="state-visual" aria-hidden="true">{Array.from({length:8},(_,i)=><i key={i} style={{"--i":i} as React.CSSProperties}/>)}</div>
       {menuOpen && <div className="equal-action-ring" role="menu" aria-label={`${mode} actions`}>
         <div className="equal-ring-track" aria-hidden="true"/>
-        {actions[mode].map(({label:action,short,angle}) => <button key={action} role="menuitem" aria-label={action} title={action}
-          style={{"--action-angle":`${angle}deg`} as React.CSSProperties}
-          onPointerDown={event => event.stopPropagation()}
-          onClick={event => { event.preventDefault(); event.stopPropagation(); choose(action); }}><span>{short}</span></button>)}
+        {getOrbitActions(mode).map(definition => {
+          const disabled = definition.kind === "DISABLED_UNAVAILABLE";
+          return <button key={definition.id} role="menuitem"
+            aria-label={disabled ? `${definition.label} — unavailable` : definition.label}
+            title={disabled ? definition.disabledReason : definition.label}
+            disabled={disabled}
+            aria-disabled={disabled ? true : undefined}
+            className={disabled ? "orbit-action-disabled" : undefined}
+            style={{"--action-angle":`${definition.angle}deg`} as React.CSSProperties}
+            onPointerDown={event => event.stopPropagation()}
+            onClick={event => { event.preventDefault(); event.stopPropagation(); if (disabled) return; choose(definition); }}><span>{definition.shortLabel}</span></button>;
+        })}
       </div>}
     </div>
     <div className="hero-status-row"><b>{label}</b>{semantic.enabled && <small className="native-semantic-label" aria-live="polite">{semantic.label}</small>}<small>Tap core for actions</small></div>
