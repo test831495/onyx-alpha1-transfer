@@ -26,7 +26,8 @@ describe("PRESENTATION-MOBILE-CARD-001", () => {
     expect(styleSource).not.toMatch(/\.functional-scene--cards\s*\.app-card-shell\{[^}]*width:var\(--card-width\)/);
     expect(styleSource).toMatch(/\.functional-scene--cards\s*\.app-card-shell__actions\s*\{[^}]*flex-wrap:\s*nowrap[^}]*gap:\s*4px/);
     expect(styleSource).toMatch(/\.functional-scene--cards\s*\.app-card-shell__identity\s*\{[^}]*min-width:\s*0/);
-    expect(styleSource).toMatch(/\.app-card-shell--left_top|\.app-card-shell--right_middle/);
+    expect(styleSource).toContain(".app-card-shell--left_top");
+    expect(styleSource).toContain(".app-card-shell--right_middle");
     expect(styleSource).toContain("overflow-navigation-region");
   });
 });
