@@ -51,8 +51,8 @@ export class DiagnosticResetTimer {
 export class FinalRecognitionGuard {
   private processed = false;
 
-  shouldProcess(isFinal: boolean): boolean {
-    if (!isFinal || this.processed) return false;
+  shouldProcess(isFinal: boolean, hasTranscript: boolean): boolean {
+    if (!isFinal || !hasTranscript || this.processed) return false;
     this.processed = true;
     return true;
   }
@@ -100,9 +100,14 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
     const finalRecognitionGuard = new FinalRecognitionGuard();
     recognition.onresult = event => {
       const result = event.results[event.resultIndex];
-      if (!finalRecognitionGuard.shouldProcess(Boolean(result?.isFinal))) return;
       const heard = event.results[event.resultIndex]?.[0]?.transcript?.trim() ?? "";
-      if (!heard) { setDiagnostic("NO SPEECH DETECTED"); return; }
+      if (result?.isFinal && !heard) {
+        setDiagnostic("NO SPEECH DETECTED");
+        return;
+      }
+      if (!finalRecognitionGuard.shouldProcess(Boolean(result?.isFinal), Boolean(heard))) {
+        return;
+      }
       setStatus("thinking");
       setDiagnostic("PROCESSING");
       const parsed = parseVoice(heard);

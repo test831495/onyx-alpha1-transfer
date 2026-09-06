@@ -192,8 +192,9 @@ describe("FinalRecognitionGuard", () => {
   it("rejects interim and duplicate final recognition results", () => {
     const guard = new FinalRecognitionGuard();
 
-    expect(guard.shouldProcess(false)).toBe(false);
-    expect(guard.shouldProcess(true)).toBe(true);
-    expect(guard.shouldProcess(true)).toBe(false);
+    expect(guard.shouldProcess(false, true)).toBe(false);
+    expect(guard.shouldProcess(true, false)).toBe(false);
+    expect(guard.shouldProcess(true, true)).toBe(true);
+    expect(guard.shouldProcess(true, true)).toBe(false);
   });
 });
