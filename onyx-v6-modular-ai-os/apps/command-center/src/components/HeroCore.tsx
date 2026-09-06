@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import type { AssistantMode, CoreState } from "@onyx/contracts";
 import {
+  type ActivationControl,
   mapCoreStateToSemanticState,
   PRIVATE_ALPHA_BUILD_ACTIVATION,
   projectNativeSemanticFallback,
 } from "../nativeSemanticFallbackActivation";
-import type { NativeQuality } from "../nativeSemanticFallbackActivation";
+import type { NativeQuality, NativeSemanticState } from "../nativeSemanticFallbackActivation";
 
 const actions: Record<AssistantMode, Array<{ label: string; short: string; angle: number }>> = {
   nova: [
@@ -26,9 +27,9 @@ const actions: Record<AssistantMode, Array<{ label: string; short: string; angle
   ],
 };
 
-export function HeroCore({ mode, state, onSwitch, onAction, lowPower, quality }: {
-  mode: AssistantMode; state: CoreState; onSwitch: () => void;
-  onAction: (action: string) => void; lowPower: boolean; quality: NativeQuality;
+export function HeroCore({ mode, state, onSwitch, onAction, lowPower, quality, activationControl = PRIVATE_ALPHA_BUILD_ACTIVATION }: {
+  mode: AssistantMode; state: CoreState | NativeSemanticState; onSwitch: () => void;
+  onAction: (action: string) => void; lowPower: boolean; quality: NativeQuality; activationControl?: ActivationControl;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => setMenuOpen(false), [mode]);
@@ -36,15 +37,19 @@ export function HeroCore({ mode, state, onSwitch, onAction, lowPower, quality }:
     setMenuOpen(false);
     if (action.startsWith("Switch")) onSwitch(); else onAction(action);
   };
-  const label = state === "thinking" ? "ANALYZING" : state === "error" ? "ATTENTION" : state.replace("-", " ").toUpperCase();
+  const legacyState = state.toLowerCase().replaceAll("_", "-");
+  const legacyLabelSource = legacyState.replaceAll("-", " ");
+  const legacyLabel = legacyState === "thinking" ? "ANALYZING" : legacyState === "error" ? "ATTENTION" : legacyLabelSource.toUpperCase();
   const semantic = projectNativeSemanticFallback(
-    PRIVATE_ALPHA_BUILD_ACTIVATION,
+    activationControl,
     mode === "onyx" ? "ONYX" : "NOVA",
     mapCoreStateToSemanticState(state),
     { quality },
   );
+  const presentationState = semantic.enabled ? semantic.state.toLowerCase() : legacyState;
+  const label = semantic.enabled ? semantic.state.replace("_", " ") : legacyLabel;
 
-  return <section className={`hero-core hero-${mode} core-${state} native-fallback-${semantic.state.toLowerCase()} ${menuOpen ? "menu-open" : "menu-closed"} ${lowPower ? "hero-low-power" : ""}`}>
+  return <section className={`hero-core hero-${mode} core-${presentationState} ${semantic.enabled ? `native-fallback-${semantic.state.toLowerCase()}` : "native-fallback-off"} ${menuOpen ? "menu-open" : "menu-closed"} ${lowPower ? "hero-low-power" : ""}`}>
     {menuOpen && <button className="core-dismiss-layer" aria-label="Close core menu" onClick={() => setMenuOpen(false)} />}
     <div className="hero-visual-zone">
       <div className="portrait-deck" aria-hidden="true">
@@ -64,6 +69,6 @@ export function HeroCore({ mode, state, onSwitch, onAction, lowPower, quality }:
           onClick={event => { event.preventDefault(); event.stopPropagation(); choose(action); }}><span>{short}</span></button>)}
       </div>}
     </div>
-    <div className="hero-status-row"><b>{label}</b><small className="native-semantic-label" aria-live="polite">{semantic.label}</small><small>Tap core for actions</small></div>
+    <div className="hero-status-row"><b>{label}</b>{semantic.enabled && <small className="native-semantic-label" aria-live="polite">{semantic.label}</small>}<small>Tap core for actions</small></div>
   </section>;
 }

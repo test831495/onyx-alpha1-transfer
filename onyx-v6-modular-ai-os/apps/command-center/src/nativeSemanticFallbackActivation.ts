@@ -59,6 +59,10 @@ export function resolveActivationState(value?: unknown): ActivationState {
 }
 
 export function mapCoreStateToSemanticState(value: unknown): NativeSemanticState {
+  if (isNativeSemanticState(value)) {
+    return value;
+  }
+
   switch (value) {
     case "listening":
       return "LISTENING";

@@ -54,6 +54,7 @@ import {
   persistCharacterSelection,
   subscribeToCharacterSelection,
 } from "./characterPersistence";
+import { mapCoreStateToSemanticState } from "./nativeSemanticFallbackActivation";
 
 const states: CoreState[] = [
   "wake-armed",
@@ -848,6 +849,8 @@ export function App() {
   };
 
   const activityVisible = state !== "wake-armed" && state !== "idle";
+  const activityStateLabel = mapCoreStateToSemanticState(state).replace("_", " ");
+  const stateDemoVisible = import.meta.env.DEV || window.localStorage.getItem("onyx.phase1.showStateDemo") === "true";
   const activeWorkspace = getActiveWorkspace(shell);
   const visibleAppIds = getVisibleAppIds(shell);
   const overflowLayout = allocateVisibleAndOverflow(
@@ -897,7 +900,7 @@ export function App() {
           >
             ONYX
           </button>
-          <button onClick={cycle}>STATE DEMO</button>
+          {stateDemoVisible && <button onClick={cycle}>STATE DEMO</button>}
         </div>
         <div className="stability-controls">
           <label>
@@ -1040,7 +1043,7 @@ export function App() {
       <div className="bottom-stack">
         {activityVisible && (
           <div className="activity-strip glass-surface">
-            <b>{state.replace("-", " ").toUpperCase()}</b>
+            <b>{activityStateLabel}</b>
             <span>{caption}</span>
             <small>{voice.diagnostic}</small>
           </div>
