@@ -48,11 +48,10 @@ export function HeroCore({ mode, state, onSwitch, onAction, lowPower, quality, a
         {getOrbitActions(mode).map(definition => {
           const disabled = definition.kind === "DISABLED_UNAVAILABLE";
           return <button key={definition.id} role="menuitem"
-            aria-label={disabled ? `${definition.label} — unavailable` : definition.label}
+            aria-label={disabled ? `${definition.label} — unavailable — ${definition.disabledReason}` : definition.label}
             title={disabled ? definition.disabledReason : definition.label}
             disabled={disabled}
             aria-disabled={disabled ? true : undefined}
-            className={disabled ? "orbit-action-disabled" : undefined}
             style={{"--action-angle":`${definition.angle}deg`} as React.CSSProperties}
             onPointerDown={event => event.stopPropagation()}
             onClick={event => { event.preventDefault(); event.stopPropagation(); if (disabled) return; choose(definition); }}><span>{definition.shortLabel}</span></button>;

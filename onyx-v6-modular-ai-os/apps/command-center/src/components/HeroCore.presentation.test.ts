@@ -29,6 +29,7 @@ describe("PRESENTATION-MOBILE-ORBIT-001", () => {
   it("gives disabled/unavailable orbit nodes truthful native-disabled presentation", () => {
     expect(componentSource).toContain("disabled={disabled}");
     expect(componentSource).toContain("aria-disabled={disabled ? true : undefined}");
-    expect(styleSource).toContain('.equal-action-ring button:disabled,.equal-action-ring button[aria-disabled="true"]{opacity:.42');
+    expect(componentSource).toContain("unavailable — ${definition.disabledReason}");
+    expect(styleSource).toContain('.equal-action-ring button:disabled,.equal-action-ring button[aria-disabled="true"]{opacity:.42;filter:grayscale(.6);cursor:not-allowed}');
   });
 });
