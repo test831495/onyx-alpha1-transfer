@@ -35,16 +35,28 @@ const FOLLOW_UP_WEEKDAY_PATTERN = /^(?:and )?what about ([a-z]+)\??$/;
 const COMPOSITE_PATTERN =
   /^(?:please\s+|can you\s+|could you\s+)*open (.+?) and tell me (tomorrows date|what is currently visible)\??$/;
 
+/** Bounded apostrophe variants produced by common desktop and mobile keyboards. */
+const APOSTROPHE_PATTERN = /[\u0027\u2018\u2019\u201B]/g;
+
 /**
- * Normalizes raw conversational text: lowercase, drop apostrophes (so
- * "tomorrow's" collapses to "tomorrows"), expand the bounded "what's"
- * contraction to "what is" so it matches the grammar patterns below, turn
- * remaining punctuation into spaces, and collapse whitespace.
+ * Maximum normalized-text length accepted by the conversational grammar.
+ * Applied before any regex matching so pathological-length input never
+ * reaches the anchored patterns below; anything longer fails closed as
+ * unsupported rather than being truncated and (potentially) matched.
+ */
+export const MAX_NORMALIZED_TEXT_LENGTH = 300;
+
+/**
+ * Normalizes raw conversational text: lowercase, drop bounded apostrophe
+ * variants (ASCII U+0027 and the smart-quote forms U+2018/U+2019/U+201B) so
+ * "tomorrow's"/"tomorrow\u2019s" collapse to "tomorrows", expand the bounded
+ * "whats" contraction to "what is" so it matches the grammar patterns below,
+ * turn remaining punctuation into spaces, and collapse whitespace.
  */
 export function normalizeConversationalText(raw: string): string {
   return raw
     .toLowerCase()
-    .replace(/['']/g, "")
+    .replace(APOSTROPHE_PATTERN, "")
     .replace(/\bwhats\b/g, "what is")
     .replace(/[^a-z0-9\s]/g, " ")
     .replace(/\s+/g, " ")
@@ -54,6 +66,9 @@ export function normalizeConversationalText(raw: string): string {
 export function parseConversationalRequest(rawText: string): ConversationIntentEnvelope {
   const text = normalizeConversationalText(rawText);
   if (!text) return { kind: "UNSUPPORTED", unsupportedReason: "Empty request." };
+  if (text.length > MAX_NORMALIZED_TEXT_LENGTH) {
+    return { kind: "UNSUPPORTED", unsupportedReason: "This request is too long to process." };
+  }
 
   if (CANCEL_PATTERN.test(text)) return { kind: "CANCEL" };
 

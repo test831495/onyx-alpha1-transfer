@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseConversationalRequest } from "./conversationIntentGrammar";
+import { MAX_NORMALIZED_TEXT_LENGTH, parseConversationalRequest } from "./conversationIntentGrammar";
 
 describe("parseConversationalRequest", () => {
   it("recognizes cancellation words", () => {
@@ -102,5 +102,102 @@ describe("parseConversationalRequest", () => {
 
   it("fails closed for a provider/tool request while providers are off", () => {
     expect(parseConversationalRequest("call the news api and tell me tomorrow's date").kind).toBe("UNSUPPORTED");
+  });
+
+  describe("smart-apostrophe normalization", () => {
+    it("normalizes the ASCII apostrophe (U+0027)", () => {
+      const result = parseConversationalRequest("What is tomorrow's date?");
+      expect(result.kind).toBe("DATE_QUESTION");
+      expect(result.factKind).toBe("TOMORROW_DATE");
+    });
+
+    it("normalizes the left single quotation mark (U+2018)", () => {
+      const result = parseConversationalRequest("What is tomorrow\u2018s date?");
+      expect(result.kind).toBe("DATE_QUESTION");
+      expect(result.factKind).toBe("TOMORROW_DATE");
+    });
+
+    it("normalizes the right single quotation mark (U+2019)", () => {
+      const result = parseConversationalRequest("What is tomorrow\u2019s date?");
+      expect(result.kind).toBe("DATE_QUESTION");
+      expect(result.factKind).toBe("TOMORROW_DATE");
+    });
+
+    it("normalizes the single high-reversed-9 quotation mark (U+201B)", () => {
+      const result = parseConversationalRequest("What is tomorrow\u201Bs date?");
+      expect(result.kind).toBe("DATE_QUESTION");
+      expect(result.factKind).toBe("TOMORROW_DATE");
+    });
+
+    it("resolves the what's contraction consistently across apostrophe forms", () => {
+      const ascii = parseConversationalRequest("What's tomorrow's date?");
+      const smart = parseConversationalRequest("What\u2019s tomorrow\u2019s date?");
+      expect(ascii.kind).toBe("DATE_QUESTION");
+      expect(smart.kind).toBe("DATE_QUESTION");
+      expect(smart.factKind).toBe(ascii.factKind);
+    });
+
+    it("resolves can't-style contractions without corrupting the word", () => {
+      expect(parseConversationalRequest("can't").kind).toBe("UNSUPPORTED");
+      expect(parseConversationalRequest("can\u2019t").kind).toBe("UNSUPPORTED");
+    });
+
+    it("supports the mobile smart-quote form of the composite calendar example", () => {
+      const result = parseConversationalRequest("Open calendar and tell me tomorrow\u2019s date.");
+      expect(result.kind).toBe("COMPOSITE_NAVIGATE_AND_FACT");
+      expect(result.navigateAppId).toBe("calendar");
+      expect(result.factKind).toBe("TOMORROW_DATE");
+    });
+  });
+
+  describe("defensive input-length bound", () => {
+    const base = "what is tomorrows date";
+
+    // Builds a bounded filler prefix of an exact character length using only
+    // grammar-recognized polite-filler tokens ("please " / "can you "), so the
+    // padded request remains a genuinely matchable phrase at any target length.
+    function fillerPrefixOfLength(targetLength: number): string {
+      if (targetLength === 0) return "";
+      const sevens = Math.floor(targetLength / 7);
+      const remainder = targetLength % 7;
+      const pieces = [
+        ...Array(Math.max(0, sevens - remainder)).fill("please "),
+        ...Array(remainder).fill("can you "),
+      ];
+      return pieces.join("");
+    }
+
+    it("processes input exactly at the accepted maximum", () => {
+      const atLimit = fillerPrefixOfLength(MAX_NORMALIZED_TEXT_LENGTH - base.length) + base;
+      expect(atLimit.length).toBe(MAX_NORMALIZED_TEXT_LENGTH);
+      const result = parseConversationalRequest(atLimit);
+      expect(result.kind).toBe("DATE_QUESTION");
+    });
+
+    it("fails closed for input one character above the maximum instead of matching", () => {
+      const overLimit = fillerPrefixOfLength(MAX_NORMALIZED_TEXT_LENGTH + 1 - base.length) + base;
+      expect(overLimit.length).toBe(MAX_NORMALIZED_TEXT_LENGTH + 1);
+      const result = parseConversationalRequest(overLimit);
+      expect(result.kind).toBe("UNSUPPORTED");
+      expect(result.navigateAppId).toBeUndefined();
+    });
+
+    it("does not execute a valid command hidden at the start of over-limit input", () => {
+      const overLimit = `open calendar and tell me tomorrow's date ${"padding ".repeat(80)}`;
+      const result = parseConversationalRequest(overLimit);
+      expect(result.kind).toBe("UNSUPPORTED");
+    });
+
+    it("does not execute a valid command hidden at the end of over-limit input", () => {
+      const overLimit = `${"padding ".repeat(80)} what is tomorrows date`;
+      const result = parseConversationalRequest(overLimit);
+      expect(result.kind).toBe("UNSUPPORTED");
+    });
+
+    it("does not throw for pathological repeated-conjunction input near the bound", () => {
+      const pathological = "open calendar and ".repeat(60);
+      expect(() => parseConversationalRequest(pathological)).not.toThrow();
+      expect(parseConversationalRequest(pathological).kind).toBe("UNSUPPORTED");
+    });
   });
 });
