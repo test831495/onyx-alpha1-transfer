@@ -1,0 +1,103 @@
+{
+  "schemaVersion": "ONYX_NOVA_VISUAL_ASSET_READINESS_V1",
+  "gateId": "ONYX_NOVA_VISUAL_ASSET_PROMOTION_AND_RUNTIME_READINESS_CLOSURE",
+  "selectedReadinessClass": "NATIVE_FALLBACK_RUNTIME_READINESS_ONLY",
+  "baselineCommitSha": "263ccc23834e934cb279d1da755a0d617d81d7c8",
+  "gitObjectFormat": "sha1",
+  "runtimeActivation": false,
+  "featureFlags": "OFF",
+  "noExternalDownloads": true,
+  "noDependencyChange": true,
+  "noLockfileChange": true,
+  "finalRuntimeAssets": {
+    "ASSET-ONYX-RIVE": "NOT_PRESENT",
+    "ASSET-NOVA-RIVE": "NOT_PRESENT",
+    "ASSET-WORKER-DRONE-DOTLOTTIE": "NOT_PRESENT",
+    "ASSET-OPERATIONS-CENTER-WORLD": "FINAL_ASSET_NOT_PRESENT_NATIVE_FALLBACK_ONLY",
+    "ASSET-AMBIENT-EFFECTS": "FINAL_EFFECT_ASSET_NOT_PRESENT_NATIVE_FALLBACK_ONLY",
+    "ASSET-AMBIENT-AUDIO": "NOT_PRESENT"
+  },
+  "promotedReadinessRecords": [
+    {
+      "id": "ASSET-NATIVE-SEMANTIC-FALLBACK",
+      "classification": "RUNTIME_CANDIDATE",
+      "version": "1.0.0",
+      "truthLabel": "repository-native semantic fallback readiness; not Rive, dotLottie, cinematic runtime, video, shader, or audio",
+      "canonicalPath": "onyx-v6-modular-ai-os/packages/post-alpha-character-renderer-native/src/index.ts",
+      "tracked": true,
+      "fileExists": true,
+      "gitBlobId": "6007e236310a79a4bcfb3a950eeb694093831eee",
+      "byteSize": 2902,
+      "sha256": "b7c1a93b411916e2a6bcb76fefc4ca3b4e7350605d4305b24aab63d73649dbf7",
+      "sha256Recheck": "b7c1a93b411916e2a6bcb76fefc4ca3b4e7350605d4305b24aab63d73649dbf7",
+      "mediaType": "repository-native-semantic-fallback",
+      "signatureValid": true,
+      "sourceProvenance": "tracked repository source file; no external asset; provider-neutral character renderer",
+      "creatorSource": "repository implementation",
+      "aiGenerationDisclosure": "not-applicable-to-source-controlled-fallback-record",
+      "licenseRuntimePermission": "repository-owned-source-controlled-runtime-use",
+      "intendedUse": "separate protected activation may use provider-free semantic visual fallback when final runtime assets are absent",
+      "restrictions": [
+        "NO_RUNTIME_ACTIVATION_IN_THIS_GATE",
+        "NOT_FINAL_CINEMATIC_RUNTIME",
+        "NO_AUTHORITY_OR_ACTION_EXECUTION"
+      ],
+      "semanticStates": [
+        "IDLE",
+        "LISTENING",
+        "UNDERSTANDING",
+        "THINKING",
+        "SPEAKING",
+        "APPROVAL_REQUIRED",
+        "PRIVACY_RESTRICTED",
+        "RECOVERING"
+      ],
+      "deviceVariants": ["mobile", "tablet", "desktop", "tv"],
+      "accessibility": "reduced motion and high contrast projection available through renderer options and integration contracts",
+      "performanceGovernor": "bounded degradation and static-alive fallback covered by @onyx/post-alpha-performance-governor",
+      "fallbackAssetOrNativeFallbackId": "TEXT_SAFE_PRESENCE",
+      "nonAuthorizing": true,
+      "externalRuntimeDependency": false,
+      "privacySensitive": false,
+      "revocationReasonCodes": ["ASSET_REVOKED", "PROVENANCE_REVOKED", "HASH_MISMATCH", "ADAPTER_UNSUPPORTED"],
+      "rollbackVersion": "main@263ccc23834e934cb279d1da755a0d617d81d7c8",
+      "supersedes": null,
+      "supersededBy": null,
+      "status": "READY_FOR_SEPARATE_PROTECTED_ACTIVATION_DECISION"
+    }
+  ],
+  "supportingEvidenceFiles": [
+    {
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-ambient-experience-foundation/src/index.ts",
+      "gitBlobId": "3e7e5d04fd7306cba126147c9c3da05908249838",
+      "byteSize": 1955,
+      "sha256": "0752fd0e58dadc1868ff78706e247e0b0063f6791c0ebbc6effd6a9979ae666c"
+    },
+    {
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-performance-governor/src/index.ts",
+      "gitBlobId": "27c5217be336425c06f4b05570653a52a3a804ae",
+      "byteSize": 4448,
+      "sha256": "f93b44119056e817b7ed8c5dfd63ff731035d9fe13a77f76a1e1d0fe9859f8ee"
+    },
+    {
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-visible-presence-integration-contracts/src/index.ts",
+      "gitBlobId": "57b575c14adc8ecf8c835ae2fddafc011d4ef396",
+      "byteSize": 24851,
+      "sha256": "9045f2c6b50ed0384a1b037afda8c1f3699911d6bf2fbd4b6a01d6d299750867"
+    },
+    {
+      "path": "onyx-v6-modular-ai-os/packages/post-alpha-visible-presence-contracts/src/index.ts",
+      "gitBlobId": "a14a86ce734308797457f50627a79f2e4f061e63",
+      "byteSize": 8696,
+      "sha256": "589524e97cd811b04af44cecb8526badded473442aa5b2b62356f770d8566dab"
+    }
+  ],
+  "validationCommands": [
+    "pnpm --filter @onyx/post-alpha-canva-asset-assurance test",
+    "pnpm --filter @onyx/post-alpha-character-renderer-native test",
+    "pnpm --filter @onyx/post-alpha-ambient-experience-foundation test",
+    "pnpm --filter @onyx/post-alpha-performance-governor test",
+    "pnpm --filter @onyx/post-alpha-visible-presence-contracts test",
+    "pnpm --filter @onyx/post-alpha-visible-presence-integration-contracts test"
+  ]
+}
