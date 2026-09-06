@@ -37,13 +37,15 @@ const COMPOSITE_PATTERN =
 
 /**
  * Normalizes raw conversational text: lowercase, drop apostrophes (so
- * "tomorrow's"/"what's" collapse to "tomorrows"/"whats"), turn remaining
- * punctuation into spaces, and collapse whitespace.
+ * "tomorrow's" collapses to "tomorrows"), expand the bounded "what's"
+ * contraction to "what is" so it matches the grammar patterns below, turn
+ * remaining punctuation into spaces, and collapse whitespace.
  */
 export function normalizeConversationalText(raw: string): string {
   return raw
     .toLowerCase()
     .replace(/['']/g, "")
+    .replace(/\bwhats\b/g, "what is")
     .replace(/[^a-z0-9\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();

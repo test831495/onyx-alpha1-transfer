@@ -499,6 +499,14 @@ export function App() {
 
       if (envelope.kind === "UNSUPPORTED") return false;
 
+      if (envelope.kind === "FOLLOW_UP_DATE_QUESTION") {
+        conversationContext.current.expireIfStale(Date.now());
+        if (!conversationContext.current.lastTurnOfKind("DATE_QUESTION")) {
+          showError("There's no earlier date question to follow up on.");
+          return true;
+        }
+      }
+
       const planId = `conversation-plan-${++conversationPlanSequence.current}`;
       const plan = buildConversationPlan(planId, envelope);
       if (!plan) return false;

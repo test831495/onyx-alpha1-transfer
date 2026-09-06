@@ -63,6 +63,10 @@ export class ConversationContextWindow {
   }
 
   private byteSize(): number {
-    return this.turns.reduce((total, turn) => total + turn.normalizedText.length + turn.resultSummary.length, 0);
+    const encoder = new TextEncoder();
+    return this.turns.reduce(
+      (total, turn) => total + encoder.encode(turn.normalizedText).length + encoder.encode(turn.resultSummary).length,
+      0,
+    );
   }
 }
