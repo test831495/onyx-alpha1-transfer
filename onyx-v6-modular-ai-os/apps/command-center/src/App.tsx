@@ -538,7 +538,7 @@ export function App() {
         return true;
       }
 
-      if (envelope.kind === "UNSUPPORTED") {
+      if (envelope.kind === "UNSUPPORTED" && !envelope.clarificationRequired) {
         const clarification = envelope.clarificationRequired
           ? "I understand you want to navigate, but I need the application name."
           : "I'm not sure what you want me to do with that yet. Could you rephrase it or tell me the topic or application you mean?";
@@ -639,10 +639,29 @@ export function App() {
           "general",
         ),
         describeVisibleUi: () => styleAssistantResponse(identity, describeVisibleUiProjection(), "general"),
-        requestClarification: (message) => {
+        requestClarification: async (message) => {
           setState("speaking");
           setCaption(message);
-          timers.current.push(window.setTimeout(() => reset(), 4200));
+          await voiceManager.current.speak(message, voicePreferences);
+          if (followUpSession.current.beginAfterSpeech(true)) {
+            const restartResult = followUpSession.current.beginListening(
+              () => {
+                const started = startFollowUp.current?.() ?? false;
+                if (started) setState("listening");
+                return started;
+              },
+              () => {
+                stopFollowUp.current?.();
+                reset();
+              },
+            );
+            if (restartResult === "TAP_TO_CONTINUE") {
+              setState("idle");
+              setCaption("Tap to continue.");
+            }
+          } else {
+            reset();
+          }
         },
         speak: async (text) => {
           setCaption(text);

@@ -25,7 +25,7 @@ export interface OrchestratorHandlers {
   resolveWeekdayDate(weekday: string): string;
   resolveCurrentTime(): string;
   describeVisibleUi(): string;
-  requestClarification(message: string): void;
+  requestClarification(message: string): Promise<void> | void;
   speak(text: string): Promise<void> | void;
 }
 
@@ -91,7 +91,7 @@ export class VoiceConversationOrchestrator {
         return { stepId: step.stepId, result: "COMPLETED" };
       }
       case "REQUEST_CLARIFICATION": {
-        handlers.requestClarification(step.clarificationPrompt ?? "Which day did you mean?");
+        await handlers.requestClarification(step.clarificationPrompt ?? "Which day did you mean?");
         return { stepId: step.stepId, result: "WAITING_FOR_CLARIFICATION" };
       }
       default:
