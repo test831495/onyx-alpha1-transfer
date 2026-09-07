@@ -1,7 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import type { AssistantMode, CoreState } from "@onyx/contracts";
 
-const normalize = (value: string) => value.toLowerCase().normalize("NFKD").replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+// Same bounded apostrophe variants (ASCII + smart-quote forms) conversationIntentGrammar strips,
+// so contractions collapse (e.g. "tomorrow's" -> "tomorrows") instead of splitting into a stray
+// token (e.g. "tomorrow s") that the shared conversational grammar's regexes cannot match.
+const APOSTROPHE_PATTERN = /[\u0027\u2018\u2019\u201B]/g;
+
+const normalize = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(APOSTROPHE_PATTERN, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
 /**
  * Pure timer state machine for managing diagnostic-reset timeout.
