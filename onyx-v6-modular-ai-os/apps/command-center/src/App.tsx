@@ -61,6 +61,7 @@ import { buildConversationPlan } from "./conversationPlan";
 import { VoiceConversationOrchestrator } from "./voiceConversationOrchestrator";
 import { ConversationContextWindow } from "./conversationContextWindow";
 import { FollowUpListeningSession } from "./followUpListeningSession";
+import { createExplicitListeningEntryHandler } from "./explicitListeningEntry";
 import {
   formatDateForSpeech,
   formatTimeForSpeech,
@@ -980,8 +981,10 @@ export function App() {
 
       switch (handler.kind) {
         case "VOICE_LISTEN":
-          followUpSession.current.beginExplicitSession();
-          voice.startListening("ORBITAL_LISTEN");
+          createExplicitListeningEntryHandler("ORBITAL_LISTEN", {
+            beginExplicitSession: () => followUpSession.current.beginExplicitSession(),
+            startListening: (sessionMode) => { voice.startListening(sessionMode); },
+          })();
           return;
         case "OPEN_SHELL_APP": {
           const definition = findOrbitAction(actionId);
@@ -1371,12 +1374,14 @@ export function App() {
           <GlassCommandBar
             mode={mode}
             state={state}
-            onMic={() => {
-              followUpSession.current.beginExplicitSession();
-              setState("listening");
-              setCaption(`${mode.toUpperCase()} · listening`);
-              voice.startListening("PUSH_TO_TALK");
-            }}
+            onMic={createExplicitListeningEntryHandler("PUSH_TO_TALK", {
+              beginExplicitSession: () => followUpSession.current.beginExplicitSession(),
+              beforeStartListening: () => {
+                setState("listening");
+                setCaption(`${mode.toUpperCase()} · listening`);
+              },
+              startListening: (sessionMode) => { voice.startListening(sessionMode); },
+            })}
             onCommand={(command) => void dispatch(command)}
           />
         </footer>
