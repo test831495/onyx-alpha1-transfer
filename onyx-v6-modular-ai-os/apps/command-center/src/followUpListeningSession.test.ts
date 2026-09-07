@@ -5,6 +5,7 @@ import {
   FollowUpListeningSession,
 } from "./followUpListeningSession";
 import { DEFAULT_CONVERSATION_POLICY } from "./conversationPolicy";
+import { createExplicitListeningEntryHandler } from "./explicitListeningEntry";
 
 describe("FollowUpListeningSession", () => {
   function withReceiverSensitiveNativeTimers(run: (scheduledDelays: number[]) => void): void {
@@ -42,16 +43,31 @@ describe("FollowUpListeningSession", () => {
   it.each([
     ["bottom mic", "PUSH_TO_TALK"],
     ["Orbital Listen", "ORBITAL_LISTEN"],
-  ])("%s explicit-session start reaches startListening(%s)", (_label, mode) => {
-    withReceiverSensitiveNativeTimers(() => {
+  ] as const)("%s real entry handler reaches startListening(%s)", (_label, mode) => {
+    withReceiverSensitiveNativeTimers((scheduledDelays) => {
       const session = new FollowUpListeningSession();
       const startListening = vi.fn();
-      expect(() => {
-        session.beginExplicitSession();
-        startListening(mode);
-      }).not.toThrow();
+      const handler = createExplicitListeningEntryHandler(mode, {
+        beginExplicitSession: () => session.beginExplicitSession(),
+        startListening,
+      });
+
+      expect(handler).not.toThrow();
+      expect(startListening).toHaveBeenCalledTimes(1);
       expect(startListening).toHaveBeenCalledWith(mode);
+      expect(scheduledDelays).toEqual([DEFAULT_CONVERSATION_POLICY.foregroundSessionMaxMs]);
     });
+  });
+
+  it("does not call startListening when explicit-session setup fails", () => {
+    const startListening = vi.fn();
+    const handler = createExplicitListeningEntryHandler("PUSH_TO_TALK", {
+      beginExplicitSession: () => { throw new TypeError("Illegal invocation"); },
+      startListening,
+    });
+
+    expect(handler).toThrow("Illegal invocation");
+    expect(startListening).not.toHaveBeenCalled();
   });
 
   it("starts only after eligible speech completion and uses the frozen bounds", () => {
