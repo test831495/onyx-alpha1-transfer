@@ -58,6 +58,7 @@ import { mapCoreStateToSemanticState } from "./nativeSemanticFallbackActivation"
 import { findOrbitAction, resolveOrbitHandler } from "./orbitActionRegistry";
 import { parseConversationalRequest } from "./conversationIntentGrammar";
 import { buildConversationPlan } from "./conversationPlan";
+import { getConversationContinuity, resolvePostSpeechDisposition, shouldAcknowledgeNavigation } from "./conversationContinuity";
 import { VoiceConversationOrchestrator } from "./voiceConversationOrchestrator";
 import { ConversationContextWindow } from "./conversationContextWindow";
 import { FollowUpListeningSession } from "./followUpListeningSession";
@@ -537,7 +538,7 @@ export function App() {
         return true;
       }
 
-      if (envelope.kind === "UNSUPPORTED") {
+      if (envelope.kind === "UNSUPPORTED" && !envelope.clarificationRequired) {
         const clarification = envelope.clarificationRequired
           ? "I understand you want to navigate, but I need the application name."
           : "I'm not sure what you want me to do with that yet. Could you rephrase it or tell me the topic or application you mean?";
@@ -589,11 +590,17 @@ export function App() {
       const now = new Date();
       const identity = modeRef.current;
 
-      await conversationOrchestrator.current.executePlan(plan, {
+      const outcomes = await conversationOrchestrator.current.executePlan(plan, {
         navigate: (appId) => {
           openShellApp(appId);
           setState("executing");
           setCaption(`${SHELL_APP_LABELS[appId] ?? appId} selected.`);
+        },
+        close: (appId) => {
+          dispatchShell({ type: "CLOSE_APP", appId });
+          setActivePanel(null);
+          setState("executing");
+          setCaption(`${SHELL_APP_LABELS[appId] ?? appId} closed.`);
         },
         resolveTomorrowDate: () => {
           const spoken = styleAssistantResponse(
@@ -632,10 +639,29 @@ export function App() {
           "general",
         ),
         describeVisibleUi: () => styleAssistantResponse(identity, describeVisibleUiProjection(), "general"),
-        requestClarification: (message) => {
+        requestClarification: async (message) => {
           setState("speaking");
           setCaption(message);
-          timers.current.push(window.setTimeout(() => reset(), 4200));
+          await voiceManager.current.speak(message, voicePreferences);
+          if (followUpSession.current.beginAfterSpeech(true)) {
+            const restartResult = followUpSession.current.beginListening(
+              () => {
+                const started = startFollowUp.current?.() ?? false;
+                if (started) setState("listening");
+                return started;
+              },
+              () => {
+                stopFollowUp.current?.();
+                reset();
+              },
+            );
+            if (restartResult === "TAP_TO_CONTINUE") {
+              setState("idle");
+              setCaption("Tap to continue.");
+            }
+          } else {
+            reset();
+          }
         },
         speak: async (text) => {
           setCaption(text);
@@ -664,9 +690,49 @@ export function App() {
         },
       });
 
+      const completedNavigation = plan.steps.find(
+        (step, index) =>
+          (step.kind === "NAVIGATE" || step.kind === "PRESENTATION") &&
+          outcomes[index]?.result === "COMPLETED",
+      );
+      if (completedNavigation?.appId && shouldAcknowledgeNavigation(plan, outcomes.map((outcome) => outcome.result))) {
+        const label = SHELL_APP_LABELS[completedNavigation.appId] ?? completedNavigation.appId;
+        const acknowledgement = completedNavigation.kind === "PRESENTATION"
+          ? `${label} is closed.`
+          : `${label} is open.`;
+        setCaption(acknowledgement);
+        setState("speaking");
+        const voiceResult = await voiceManager.current.speak(acknowledgement, voicePreferences);
+        setVoiceStatus(voiceResult.message ?? `${voiceResult.engine} voice ready.`);
+        let restartResult: "STARTED" | "TAP_TO_CONTINUE" | "CLOSED" = "CLOSED";
+        if (getConversationContinuity(envelope) === "CONTINUE_LISTENING" && followUpSession.current.beginAfterSpeech(true)) {
+          restartResult = followUpSession.current.beginListening(
+            () => {
+              const started = startFollowUp.current?.() ?? false;
+              if (started) setState("listening");
+              return started;
+            },
+            () => {
+              stopFollowUp.current?.();
+              reset();
+            },
+          );
+          if (restartResult === "TAP_TO_CONTINUE") {
+            setState("idle");
+            setCaption("Tap to continue.");
+          }
+        }
+        const disposition = resolvePostSpeechDisposition(getConversationContinuity(envelope), restartResult);
+        if (disposition === "IDLE") {
+          followUpSession.current.close("INELIGIBLE");
+          setState("idle");
+          setCaption(`${modeRef.current.toUpperCase()} · ready.`);
+        }
+      }
+
       return true;
     },
-    [describeVisibleUiProjection, openShellApp, reset, showError, voicePreferences],
+    [describeVisibleUiProjection, dispatchShell, openShellApp, reset, showError, voicePreferences],
   );
 
   const dispatchLegacy = useCallback(

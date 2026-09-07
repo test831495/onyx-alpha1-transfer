@@ -20,11 +20,12 @@ export interface StepOutcome {
  */
 export interface OrchestratorHandlers {
   navigate(appId: ShellAppId): void;
+  close?(appId: ShellAppId): void;
   resolveTomorrowDate(): string;
   resolveWeekdayDate(weekday: string): string;
   resolveCurrentTime(): string;
   describeVisibleUi(): string;
-  requestClarification(message: string): void;
+  requestClarification(message: string): Promise<void> | void;
   speak(text: string): Promise<void> | void;
 }
 
@@ -78,6 +79,11 @@ export class VoiceConversationOrchestrator {
         handlers.navigate(step.appId);
         return { stepId: step.stepId, result: "COMPLETED" };
       }
+      case "PRESENTATION": {
+        if (!step.appId || !handlers.close) return { stepId: step.stepId, result: "FAILED_SAFE" };
+        handlers.close(step.appId);
+        return { stepId: step.stepId, result: "COMPLETED" };
+      }
       case "ANSWER_DETERMINISTIC": {
         const text = this.resolveFact(step, handlers);
         if (text === null) return { stepId: step.stepId, result: "SKIPPED_UNSUPPORTED" };
@@ -85,7 +91,7 @@ export class VoiceConversationOrchestrator {
         return { stepId: step.stepId, result: "COMPLETED" };
       }
       case "REQUEST_CLARIFICATION": {
-        handlers.requestClarification("Which day did you mean?");
+        await handlers.requestClarification(step.clarificationPrompt ?? "Which day did you mean?");
         return { stepId: step.stepId, result: "WAITING_FOR_CLARIFICATION" };
       }
       default:

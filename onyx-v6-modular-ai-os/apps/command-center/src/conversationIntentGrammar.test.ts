@@ -27,8 +27,28 @@ describe("parseConversationalRequest", () => {
     const result = parseConversationalRequest(request);
     expect(result.kind).toBe("NAVIGATION");
     expect(result.intentFamily).toBe("APPLICATION_NAVIGATION");
-    expect(result.factKind).toBeUndefined();
+      expect(result.factKind).toBeUndefined();
   });
+
+    it.each(["Close Calendar", "Hide Calendar", "Exit Calendar", "Dismiss Calendar", "Close the Calendar app"])("classifies %s as application presentation close", (request) => {
+      const result = parseConversationalRequest(request);
+      expect(result.kind).toBe("NAVIGATION");
+      expect(result.intentFamily).toBe("APPLICATION_NAVIGATION");
+      expect(result.operation).toBe("CLOSE");
+      expect(result.navigateAppId).toBe("calendar");
+    });
+
+    it.each(["Close task", "Close this task", "Complete task", "Finish task"])("clarifies singular task-record language: %s", (request) => {
+      const result = parseConversationalRequest(request);
+      expect(result.clarificationRequired).toBe(true);
+      expect(result.clarificationReason).toBe("TASK_RECORD_OR_TASKS_APP");
+      expect(result.navigateAppId).toBeUndefined();
+    });
+
+    it("identifies a missing close target", () => {
+      const result = parseConversationalRequest("Close the app");
+      expect(result.clarificationReason).toBe("CLOSE_TARGET_REQUIRED");
+    });
   it("recognizes cancellation words", () => {
     expect(parseConversationalRequest("Stop").kind).toBe("CANCEL");
     expect(parseConversationalRequest("cancel").kind).toBe("CANCEL");
