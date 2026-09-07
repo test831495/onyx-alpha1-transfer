@@ -42,6 +42,15 @@ describe("parseVoice vocal command parsing", () => {
     const onics = parseVoice("onics hello");
     expect(onics.mode).toBe("onyx");
   });
+
+  it("collapses contraction apostrophes instead of splitting them into a stray token", () => {
+    // Regression: a bare space here ("tomorrow s date") broke the shared conversational
+    // grammar's regex match even though the text-input path handled the same phrase correctly.
+    expect(parseVoice("What is tomorrow's date?").command).toBe("what is tomorrows date");
+    expect(parseVoice("open calendar and tell me tomorrow\u2019s date").command).toBe(
+      "open calendar and tell me tomorrows date",
+    );
+  });
 });
 
 describe("DiagnosticResetTimer timer lifecycle", () => {
