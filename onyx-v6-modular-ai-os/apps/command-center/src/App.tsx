@@ -927,7 +927,7 @@ export function App() {
   );
 
   const voice = useVoiceRouter(dispatch);
-  startFollowUp.current = voice.startListening;
+  startFollowUp.current = () => voice.startListening("FOLLOW_UP_LISTENING");
   stopFollowUp.current = voice.stopListening;
 
   const dispatchOrbitAction = useCallback(
@@ -937,7 +937,7 @@ export function App() {
 
       switch (handler.kind) {
         case "VOICE_LISTEN":
-          voice.startListening();
+          voice.startListening("ORBITAL_LISTEN");
           return;
         case "OPEN_SHELL_APP": {
           const definition = findOrbitAction(actionId);
@@ -1330,7 +1330,7 @@ export function App() {
             onMic={() => {
               setState("listening");
               setCaption(`${mode.toUpperCase()} · listening`);
-              voice.startListening();
+              voice.startListening("PUSH_TO_TALK");
             }}
             onCommand={(command) => void dispatch(command)}
           />

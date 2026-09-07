@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { AssistantMode, CoreState } from "@onyx/contracts";
+import { VoiceSessionArbiter, type VoiceSessionAbortReason, type VoiceSessionMode } from "./voiceSessionArbiter";
 
 // Same bounded apostrophe variants (ASCII + smart-quote forms) conversationIntentGrammar strips,
 // so contractions collapse (e.g. "tomorrow's" -> "tomorrows") instead of splitting into a stray
@@ -21,6 +22,7 @@ const normalize = (value: string) =>
  */
 export class DiagnosticResetTimer {
   private timeoutHandle: number | NodeJS.Timeout | null = null;
+  private generation = 0;
 
   /**
    * Schedule a new diagnostic reset timeout, clearing any existing one.
@@ -28,9 +30,14 @@ export class DiagnosticResetTimer {
    * @param delayMs Delay in milliseconds before invoking callback
    */
   schedule(onTimeout: () => void, delayMs: number): void {
+    this.scheduleForGeneration(this.generation, onTimeout, delayMs);
+  }
+
+  scheduleForGeneration(generation: number, onTimeout: () => void, delayMs: number): void {
     this.clear();
     this.timeoutHandle = globalThis.setTimeout(() => {
       this.timeoutHandle = null;
+      if (generation !== this.generation) return;
       onTimeout();
     }, delayMs);
   }
@@ -43,6 +50,16 @@ export class DiagnosticResetTimer {
       globalThis.clearTimeout(this.timeoutHandle);
       this.timeoutHandle = null;
     }
+  }
+
+  invalidate(): number {
+    this.clear();
+    this.generation += 1;
+    return this.generation;
+  }
+
+  currentGeneration(): number {
+    return this.generation;
   }
 
   /**
@@ -84,33 +101,60 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
   const [status, setStatus] = useState<CoreState>("idle");
   const [diagnostic, setDiagnostic] = useState(supported ? "MIC READY" : "VOICE UNAVAILABLE · USE TYPED COMMANDS");
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionSequence = useRef(0);
+  const arbiterRef = useRef(new VoiceSessionArbiter());
   const timerRef = useRef(new DiagnosticResetTimer());
   const commandRef = useRef(onCommand);
   useEffect(() => { commandRef.current = onCommand; }, [onCommand]);
 
-  const stopListening = () => {
-    timerRef.current.clear();
-    try { recognitionRef.current?.abort(); } catch {}
+  const stopListening = (reason: VoiceSessionAbortReason = "USER_CANCEL") => {
+    timerRef.current.invalidate();
+    const snapshot = arbiterRef.current.snapshot();
+    if (!recognitionRef.current && snapshot.terminal && !snapshot.pendingStart) {
+      setStatus("idle");
+      return;
+    }
+    const generation = arbiterRef.current.cancel(reason);
+    arbiterRef.current.expectAbort(generation, reason);
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch {}
+    } else {
+      arbiterRef.current.markRecognitionEnded(generation);
+    }
     recognitionRef.current = null;
     setStatus("idle");
   };
 
-  const startListening = (): boolean => {
+  const startListening = (sessionMode: Extract<VoiceSessionMode, "PUSH_TO_TALK" | "ORBITAL_LISTEN" | "FOLLOW_UP_LISTENING"> = "PUSH_TO_TALK"): boolean => {
+    timerRef.current.invalidate();
     const Ctor = window.SpeechRecognition ?? window.webkitSpeechRecognition;
     if (!Ctor) {
       setDiagnostic("VOICE UNAVAILABLE · USE TYPED COMMANDS");
       setStatus("error");
       return false;
     }
-    stopListening();
+    const decision = arbiterRef.current.requestStart(sessionMode, "active");
+    if (!decision.shouldStartRecognition) return true;
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch {}
+      recognitionRef.current = null;
+    }
     setDiagnostic("REQUESTING MICROPHONE");
     const recognition = new Ctor();
+    const generation = decision.generation;
+    const recognitionInstanceId = `recognition-${++recognitionSequence.current}`;
     recognitionRef.current = recognition;
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.lang = "en-US";
     const finalRecognitionGuard = new FinalRecognitionGuard();
+    recognition.onstart = () => {
+      timerRef.current.invalidate();
+      arbiterRef.current.markRecognitionStarted(generation, recognitionInstanceId);
+    };
     recognition.onresult = event => {
+      timerRef.current.invalidate();
+      if (generation !== arbiterRef.current.snapshot().generation) return;
       const result = event.results[event.resultIndex];
       const heard = event.results[event.resultIndex]?.[0]?.transcript?.trim() ?? "";
       if (result?.isFinal && !heard) {
@@ -126,19 +170,30 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
       commandRef.current(parsed.command || heard, parsed.mode);
       const liveDiagnostic = `${parsed.mode ? `MATCHED ${parsed.mode.toUpperCase()} · ` : ""}HEARD “${heard}”`;
       setDiagnostic(liveDiagnostic);
-      timerRef.current.schedule(() => {
+      const resetTimerGeneration = timerRef.current.currentGeneration();
+      timerRef.current.scheduleForGeneration(resetTimerGeneration, () => {
+        const owner = arbiterRef.current.snapshot();
+        if (owner.generation !== generation || !owner.terminal || owner.mode !== "IDLE") return;
         setDiagnostic(supported ? "MIC READY" : "VOICE UNAVAILABLE · USE TYPED COMMANDS");
         setStatus("idle");
       }, 1500);
     };
     recognition.onerror = event => {
+      timerRef.current.invalidate();
+      const classification = arbiterRef.current.classifyRecognitionError(generation, event.error);
+      if (classification.expected) {
+        if (generation === arbiterRef.current.snapshot().generation) setStatus("idle");
+        return;
+      }
       const message = event.error === "not-allowed" || event.error === "service-not-allowed"
         ? "MICROPHONE BLOCKED"
-        : event.error === "no-speech" ? "NO SPEECH DETECTED" : `VOICE ERROR · ${event.error}`;
+        : event.error === "no-speech" ? "NO SPEECH DETECTED" : `VOICE ERROR · ${classification.userMessage ?? event.error}`;
       setDiagnostic(message);
       setStatus("error");
     };
     recognition.onend = () => {
+      if (generation !== arbiterRef.current.snapshot().generation) return;
+      arbiterRef.current.markRecognitionEnded(generation);
       recognitionRef.current = null;
       setStatus(current => current === "error" ? current : "idle");
     };
@@ -155,9 +210,9 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
   };
 
   useEffect(() => {
-    const visibility = () => { if (document.hidden) stopListening(); };
+    const visibility = () => { if (document.hidden) stopListening("SESSION_CLOSE"); };
     document.addEventListener("visibilitychange", visibility);
-    return () => { document.removeEventListener("visibilitychange", visibility); stopListening(); };
+    return () => { document.removeEventListener("visibilitychange", visibility); stopListening("UNMOUNT"); };
   }, []);
 
   return { status, diagnostic, supported, startListening, stopListening };

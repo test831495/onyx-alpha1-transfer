@@ -3,10 +3,21 @@ import { VoiceManager, loadVoicePreferences, saveVoicePreferences, type Assistan
 import { VoiceSettingsPanel } from "./VoiceSettingsPanel";
 
 type Extra = Record<"pushToTalk" | "autoListen" | "wakeWords" | "localWhenAvailable" | "clearTemporaryAudio" | "liveTranscript" | "largeCaptions" | "highContrast", boolean>;
+type VoiceRuntimeTruthInput = Pick<Extra, "pushToTalk" | "autoListen" | "wakeWords">;
 const storageKey = (assistant: AssistantVoice) => `onyx.voice.extra.${assistant}`;
 const defaults: Extra = { pushToTalk: true, autoListen: false, wakeWords: true, localWhenAvailable: true, clearTemporaryAudio: true, liveTranscript: true, largeCaptions: false, highContrast: false };
 const box: CSSProperties = { background: "rgba(3,12,25,.99)", color: "#ecfbff", border: "1px solid #2698ac", borderRadius: 20, overflow: "auto", padding: 18 };
 const button: CSSProperties = { border: "1px solid #2698ac", borderRadius: 999, padding: "8px 13px", background: "#071c33", color: "white", fontWeight: 800, cursor: "pointer" };
+
+export function describeVoiceRuntimeTruth(extra: VoiceRuntimeTruthInput): string {
+  if (extra.autoListen) {
+    return extra.wakeWords
+      ? "Auto Listen is saved for bounded follow-up after eligible replies. Wake-word readiness is saved; no background listener is active."
+      : "Auto Listen is saved for bounded follow-up after eligible replies; no background listener is active.";
+  }
+  if (extra.pushToTalk) return "Push-to-talk mode is active. Wake-word readiness is saved; no background listener is active.";
+  return "Voice input is idle. Enable push-to-talk or bounded Auto Listen follow-up to use the microphone.";
+}
 
 export function SettingsCenter({ embedded = false }: { embedded?: boolean }) {
   const [open, setOpen] = useState(embedded);
@@ -14,7 +25,7 @@ export function SettingsCenter({ embedded = false }: { embedded?: boolean }) {
   const [prefs, setPrefs] = useState<VoicePreferences>(() => loadVoicePreferences("nova"));
   const [extra, setExtra] = useState<Extra>(() => loadExtra("nova"));
   const [status, setStatus] = useState("Ready");
-  const [autoStatus, setAutoStatus] = useState("Push-to-talk mode is active.");
+  const [autoStatus, setAutoStatus] = useState(() => describeVoiceRuntimeTruth(loadExtra("nova")));
   const manager = useState(() => new VoiceManager())[0];
 
   useEffect(() => {
@@ -32,13 +43,16 @@ export function SettingsCenter({ embedded = false }: { embedded?: boolean }) {
   const choose = (nextAssistant: AssistantVoice) => {
     setAssistant(nextAssistant);
     setPrefs(loadVoicePreferences(nextAssistant));
-    setExtra(loadExtra(nextAssistant));
+    const nextExtra = loadExtra(nextAssistant);
+    setExtra(nextExtra);
+    setAutoStatus(describeVoiceRuntimeTruth(nextExtra));
   };
   const changeExtra = (key: keyof Extra, value: boolean) => {
     const next = { ...extra, [key]: value };
     if (key === "autoListen" && value) next.pushToTalk = false;
     if (key === "pushToTalk" && value) next.autoListen = false;
     setExtra(next);
+    setAutoStatus(describeVoiceRuntimeTruth(next));
     localStorage.setItem(storageKey(assistant), JSON.stringify(next));
     if (key === "autoListen" || key === "pushToTalk" || key === "wakeWords") {
       window.dispatchEvent(new CustomEvent("onyx:voice-supervisor-setting", { detail: { assistant, enabled: next.autoListen, wakeEnabled: next.wakeWords } }));
