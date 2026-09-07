@@ -2,12 +2,13 @@ import type { ShellAppId } from "./shellState";
 import type { ConversationFactKind, ConversationIntentEnvelope } from "./conversationIntentGrammar";
 import type { SupportedWeekday } from "./conversationDateFacts";
 
-export type PlanStepKind = "NAVIGATE" | "ANSWER_DETERMINISTIC" | "REQUEST_CLARIFICATION";
+export type PlanStepKind = "NAVIGATE" | "PRESENTATION" | "ANSWER_DETERMINISTIC" | "REQUEST_CLARIFICATION";
 
 export interface PlanStep {
   readonly stepId: string;
   readonly kind: PlanStepKind;
   readonly appId?: ShellAppId;
+    readonly operation?: "OPEN" | "CLOSE";
   readonly factKind?: ConversationFactKind;
   readonly weekday?: SupportedWeekday;
 }
@@ -30,8 +31,15 @@ export function buildConversationPlan(
 ): ConversationPlan | null {
   const steps: PlanStep[] = [];
 
-  if (envelope.kind === "NAVIGATION" && envelope.navigateAppId) {
-    steps.push({ stepId: `${planId}-1`, kind: "NAVIGATE", appId: envelope.navigateAppId });
+  if (envelope.clarificationRequired) {
+    steps.push({ stepId: `${planId}-1`, kind: "REQUEST_CLARIFICATION" });
+  } else if (envelope.kind === "NAVIGATION" && envelope.navigateAppId) {
+    steps.push({
+      stepId: `${planId}-1`,
+      kind: envelope.operation === "CLOSE" ? "PRESENTATION" : "NAVIGATE",
+      appId: envelope.navigateAppId,
+      ...(envelope.operation === "CLOSE" ? { operation: "CLOSE" as const } : {}),
+    });
   } else if (envelope.kind === "COMPOSITE_NAVIGATE_AND_FACT" && envelope.navigateAppId && envelope.factKind) {
     steps.push({ stepId: `${planId}-1`, kind: "NAVIGATE", appId: envelope.navigateAppId });
     steps.push({ stepId: `${planId}-2`, kind: "ANSWER_DETERMINISTIC", factKind: envelope.factKind });

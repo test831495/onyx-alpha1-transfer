@@ -37,6 +37,8 @@ export type ConversationIntentKind =
   | "CALENDAR_LOCAL_FACT"
   | "CALENDAR_PROVIDER_LIMITATION"
   | "UNSUPPORTED";
+const APPLICATION_CLOSE_PATTERN = /^(?:close|hide|exit|dismiss)\s+(?:the\s+)?(.+?)(?:\s+app)?$/;
+const SINGULAR_TASK_RECORD_PATTERN = /^(?:close|complete|finish)\s+(?:this\s+)?task$/;
 
 export type ConversationFactKind = "TOMORROW_DATE" | "WEEKDAY_DATE" | "CURRENT_TIME" | "UI_VISIBLE";
 export type IntentFamily = "CANCEL_INTENT" | "SESSION_CLOSE_INTENT" | "APPLICATION_NAVIGATION" | "TEMPORAL_TIME_QUERY" | "UNKNOWN_INTENT";
@@ -47,7 +49,7 @@ export interface ConversationIntentEnvelope {
   readonly discourseAct?: DiscourseAct;
   readonly actionClass?: ActionClass;
   readonly domain?: ConversationDomain;
-  readonly operation?: "OPEN" | "READ" | "LIST" | "GET" | "CANCEL" | "CLOSE_SESSION" | "CLARIFY";
+  readonly operation?: "OPEN" | "READ" | "LIST" | "GET" | "CANCEL" | "CLOSE" | "CLOSE_SESSION" | "CLARIFY";
   readonly requestedResult?: RequestedResultType;
   readonly availability?: AvailabilityClass;
   readonly risk?: RiskClass;
@@ -155,6 +157,46 @@ export function parseConversationalRequest(rawText: string): ConversationIntentE
 
   if (UI_VISIBLE_PATTERN.test(text)) {
     return { kind: "UI_VISIBLE_QUESTION", factKind: "UI_VISIBLE" };
+  }
+
+  if (SINGULAR_TASK_RECORD_PATTERN.test(text)) {
+    return {
+      kind: "UNSUPPORTED",
+      discourseAct: "UNSUPPORTED",
+      actionClass: "UNSUPPORTED",
+      requestedResult: "CLARIFICATION",
+      clarificationRequired: true,
+      unsupportedReason: "Please clarify whether you mean the Tasks app or a task record.",
+      ...base,
+    };
+  }
+
+  const closeMatch = text.match(APPLICATION_CLOSE_PATTERN);
+  if (closeMatch) {
+    const target = closeMatch[1]?.trim() ?? "";
+    const closeIntent = resolveShellIntent(`close ${target}`);
+    if (closeIntent?.type === "CLOSE_APP") {
+      return {
+        kind: "NAVIGATION",
+        intentFamily: "APPLICATION_NAVIGATION",
+        navigateAppId: closeIntent.appId,
+        discourseAct: "COMMAND",
+        actionClass: "NAVIGATE",
+        operation: "CLOSE",
+        requestedResult: "NAVIGATION",
+        availability: "AVAILABLE_LOCAL",
+        ...base,
+      };
+    }
+    return {
+      kind: "UNSUPPORTED",
+      discourseAct: "UNSUPPORTED",
+      actionClass: "UNSUPPORTED",
+      requestedResult: "CLARIFICATION",
+      clarificationRequired: true,
+      unsupportedReason: "I recognized a close request but need a supported application target.",
+      ...base,
+    };
   }
 
   const followUp = text.match(FOLLOW_UP_WEEKDAY_PATTERN);

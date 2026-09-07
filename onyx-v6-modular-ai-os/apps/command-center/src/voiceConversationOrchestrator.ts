@@ -20,6 +20,7 @@ export interface StepOutcome {
  */
 export interface OrchestratorHandlers {
   navigate(appId: ShellAppId): void;
+  close?(appId: ShellAppId): void;
   resolveTomorrowDate(): string;
   resolveWeekdayDate(weekday: string): string;
   resolveCurrentTime(): string;
@@ -76,6 +77,11 @@ export class VoiceConversationOrchestrator {
       case "NAVIGATE": {
         if (!step.appId) return { stepId: step.stepId, result: "FAILED_SAFE" };
         handlers.navigate(step.appId);
+        return { stepId: step.stepId, result: "COMPLETED" };
+      }
+      case "PRESENTATION": {
+        if (!step.appId || !handlers.close) return { stepId: step.stepId, result: "FAILED_SAFE" };
+        handlers.close(step.appId);
         return { stepId: step.stepId, result: "COMPLETED" };
       }
       case "ANSWER_DETERMINISTIC": {

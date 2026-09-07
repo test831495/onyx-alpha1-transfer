@@ -58,6 +58,7 @@ import { mapCoreStateToSemanticState } from "./nativeSemanticFallbackActivation"
 import { findOrbitAction, resolveOrbitHandler } from "./orbitActionRegistry";
 import { parseConversationalRequest } from "./conversationIntentGrammar";
 import { buildConversationPlan } from "./conversationPlan";
+import { getConversationContinuity } from "./conversationContinuity";
 import { VoiceConversationOrchestrator } from "./voiceConversationOrchestrator";
 import { ConversationContextWindow } from "./conversationContextWindow";
 import { FollowUpListeningSession } from "./followUpListeningSession";
@@ -589,11 +590,17 @@ export function App() {
       const now = new Date();
       const identity = modeRef.current;
 
-      await conversationOrchestrator.current.executePlan(plan, {
+      const outcomes = await conversationOrchestrator.current.executePlan(plan, {
         navigate: (appId) => {
           openShellApp(appId);
           setState("executing");
           setCaption(`${SHELL_APP_LABELS[appId] ?? appId} selected.`);
+        },
+        close: (appId) => {
+          dispatchShell({ type: "CLOSE_APP", appId });
+          setActivePanel(null);
+          setState("executing");
+          setCaption(`${SHELL_APP_LABELS[appId] ?? appId} closed.`);
         },
         resolveTomorrowDate: () => {
           const spoken = styleAssistantResponse(
@@ -664,9 +671,42 @@ export function App() {
         },
       });
 
+      const completedNavigation = plan.steps.find(
+        (step, index) =>
+          (step.kind === "NAVIGATE" || step.kind === "PRESENTATION") &&
+          outcomes[index]?.result === "COMPLETED",
+      );
+      if (completedNavigation?.appId) {
+        const label = SHELL_APP_LABELS[completedNavigation.appId] ?? completedNavigation.appId;
+        const acknowledgement = completedNavigation.kind === "PRESENTATION"
+          ? `${label} is closed.`
+          : `${label} is open.`;
+        setCaption(acknowledgement);
+        setState("speaking");
+        const voiceResult = await voiceManager.current.speak(acknowledgement, voicePreferences);
+        setVoiceStatus(voiceResult.message ?? `${voiceResult.engine} voice ready.`);
+        if (getConversationContinuity(envelope) === "CONTINUE_LISTENING" && followUpSession.current.beginAfterSpeech(true)) {
+          const restartResult = followUpSession.current.beginListening(
+            () => {
+              const started = startFollowUp.current?.() ?? false;
+              if (started) setState("listening");
+              return started;
+            },
+            () => {
+              stopFollowUp.current?.();
+              reset();
+            },
+          );
+          if (restartResult === "TAP_TO_CONTINUE") {
+            setState("idle");
+            setCaption("Tap to continue.");
+          }
+        }
+      }
+
       return true;
     },
-    [describeVisibleUiProjection, openShellApp, reset, showError, voicePreferences],
+    [describeVisibleUiProjection, dispatchShell, openShellApp, reset, showError, voicePreferences],
   );
 
   const dispatchLegacy = useCallback(

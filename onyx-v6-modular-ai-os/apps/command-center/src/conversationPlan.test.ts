@@ -29,6 +29,18 @@ describe("buildConversationPlan", () => {
     expect(plan?.steps).toEqual([{ stepId: "plan-3-1", kind: "REQUEST_CLARIFICATION" }]);
   });
 
+    it.each(["Close Calendar", "Hide Calendar", "Exit Calendar", "Dismiss Calendar"])("builds a presentation close step for %s", (request) => {
+      const plan = buildConversationPlan("close-plan", parseConversationalRequest(request));
+      expect(plan?.steps).toEqual([
+        { stepId: "close-plan-1", kind: "PRESENTATION", appId: "calendar", operation: "CLOSE" },
+      ]);
+    });
+
+    it("builds clarification for singular task-record language", () => {
+      const plan = buildConversationPlan("task-close-plan", parseConversationalRequest("Close task"));
+      expect(plan?.steps).toEqual([{ stepId: "task-close-plan-1", kind: "REQUEST_CLARIFICATION" }]);
+    });
+
   it("returns null for unsupported requests instead of fabricating a plan", () => {
     const envelope = parseConversationalRequest("Summarize the news for me please");
     expect(buildConversationPlan("plan-4", envelope)).toBeNull();
