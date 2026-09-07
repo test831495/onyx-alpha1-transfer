@@ -25,7 +25,7 @@ export class FollowUpListeningSession {
   private readonly timeoutMs: number;
   private readonly maxAutomaticTurns: number;
   private readonly foregroundSessionMaxMs: number;
-  private readonly now: () => number;
+  private readonly recognitionRestartLimit: number;
   private readonly setTimer: (callback: () => void, delayMs: number) => ReturnType<typeof setTimeout>;
   private readonly clearTimer: (handle: ReturnType<typeof setTimeout>) => void;
   private generation = 0;
@@ -36,7 +36,7 @@ export class FollowUpListeningSession {
     this.timeoutMs = options.timeoutMs ?? options.policy?.followUpSilenceTimeoutMs ?? FOLLOW_UP_TIMEOUT_MS;
     this.maxAutomaticTurns = options.maxAutomaticTurns ?? options.policy?.maxAcceptedTurns ?? FOLLOW_UP_MAX_AUTOMATIC_TURNS;
     this.foregroundSessionMaxMs = options.policy?.foregroundSessionMaxMs ?? DEFAULT_CONVERSATION_POLICY.foregroundSessionMaxMs;
-    this.now = options.now ?? Date.now;
+    this.recognitionRestartLimit = options.policy?.recognitionRestartLimit ?? DEFAULT_CONVERSATION_POLICY.recognitionRestartLimit;
     this.setTimer = options.setTimer ?? globalThis.setTimeout;
     this.clearTimer = options.clearTimer ?? globalThis.clearTimeout;
   }
@@ -85,7 +85,7 @@ export class FollowUpListeningSession {
 
   handleEarlyEnd(restart: () => boolean): "RESTARTED" | "TAP_TO_CONTINUE" | "CLOSED" {
     if (this.state !== "LISTENING") return "CLOSED";
-    if (this.restartCount >= DEFAULT_CONVERSATION_POLICY.recognitionRestartLimit) {
+    if (this.restartCount >= this.recognitionRestartLimit) {
       this.state = "TAP_TO_CONTINUE";
       this.scheduleTerminal();
       return "TAP_TO_CONTINUE";

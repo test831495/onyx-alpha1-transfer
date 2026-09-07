@@ -105,4 +105,18 @@ describe("FollowUpListeningSession", () => {
     expect(terminal).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
   });
+
+  it("uses the supplied policy recognition restart limit", () => {
+    const session = new FollowUpListeningSession({
+      policy: {
+        maxAcceptedTurns: 10,
+        followUpSilenceTimeoutMs: 15000,
+        foregroundSessionMaxMs: 300000,
+        recognitionRestartLimit: 0,
+      },
+    });
+    session.beginAfterSpeech(true);
+    session.beginListening(() => true, vi.fn());
+    expect(session.handleEarlyEnd(() => true)).toBe("TAP_TO_CONTINUE");
+  });
 });

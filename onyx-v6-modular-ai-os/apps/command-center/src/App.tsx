@@ -544,10 +544,21 @@ export function App() {
         setCaption(clarification);
         await voiceManager.current.speak(clarification, voicePreferences);
         if (followUpSession.current.beginAfterSpeech(true)) {
-          followUpSession.current.beginListening(() => startFollowUp.current?.() ?? false, () => {
-            stopFollowUp.current?.();
-            reset();
-          });
+          const restartResult = followUpSession.current.beginListening(
+            () => {
+              const started = startFollowUp.current?.() ?? false;
+              if (started) setState("listening");
+              return started;
+            },
+            () => {
+              stopFollowUp.current?.();
+              reset();
+            },
+          );
+          if (restartResult === "TAP_TO_CONTINUE") {
+            setState("idle");
+            setCaption("Tap to continue.");
+          }
         }
         return true;
       }
