@@ -4,7 +4,7 @@ import { getAssistantProfile, styleAssistantResponse } from "@onyx/identity-runt
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AssistantMode, CoreState, Intent } from "@onyx/contracts";
 import { createIntelligenceRuntime } from "@onyx/intelligence-runtime";
-import type { CalendarSummary } from "@onyx/calendar-intelligence";
+import type { CalendarAgendaProjection, CalendarRangeKind } from "@onyx/calendar-intelligence";
 import {
   VoiceManager,
   loadVoicePreferences,
@@ -227,7 +227,7 @@ export function App() {
   );
   const [activePanel, setActivePanel] = useState<Panel>(null);
   const [shell, setShell] = useState(shellStateFactory());
-  const [calendarSummary, setCalendarSummary] = useState<CalendarSummary>();
+  const [calendarSummary, setCalendarSummary] = useState<CalendarAgendaProjection>(() => loadCalendar());
   const [calendarBusy, setCalendarBusy] = useState(false);
   const [calendarMinimized, setCalendarMinimized] = useState(false);
   const [voicePreferences, setVoicePreferences] = useState<VoicePreferences>(
@@ -497,6 +497,32 @@ export function App() {
         return true;
       }
 
+      if (envelope.kind === "CALENDAR_LOCAL_FACT" || envelope.kind === "CALENDAR_PROVIDER_LIMITATION") {
+        setState("thinking");
+        const providerRequest = envelope.kind === "CALENDAR_PROVIDER_LIMITATION";
+        const normalizedCalendarRequest = rawText.toLowerCase();
+        const range: CalendarRangeKind = normalizedCalendarRequest.includes("next week")
+          ? "NEXT_WEEK"
+          : normalizedCalendarRequest.includes("what week")
+            ? "CURRENT_WEEK"
+            : normalizedCalendarRequest.includes("tomorrow") ? "TOMORROW" : "TODAY";
+        const summary = loadCalendar(range);
+        const spoken = providerRequest
+          ? "No connected calendar event data is available. Meetings, availability, places, weather, and travel time require an approved connector."
+          : composeCalendarSpeech(summary);
+        setCaption(spoken);
+        setState("speaking");
+        try {
+          const voiceResult = await voiceManager.current.speak(spoken, voicePreferences);
+          setVoiceStatus(voiceResult.message ?? `${voiceResult.engine} voice ready.`);
+        } catch {
+          setVoiceStatus("System voice ready.");
+        } finally {
+          reset();
+        }
+        return true;
+      }
+
       if (envelope.kind === "UNSUPPORTED") return false;
 
       if (envelope.kind === "FOLLOW_UP_DATE_QUESTION") {
@@ -629,7 +655,7 @@ export function App() {
       }
 
       if (isCalendarCommand(normalized)) {
-        const offset = normalized.includes("tomorrow") ? 1 : 0;
+        const range: CalendarRangeKind = normalized.includes("tomorrow") ? "TOMORROW" : "TODAY";
 
         commandController.current?.abort();
         voiceManager.current.stop();
@@ -638,18 +664,18 @@ export function App() {
         setCalendarBusy(true);
         setState("thinking");
         setCaption(
-          offset === 1
+          range === "TOMORROW"
             ? "Loading tomorrow's calendar."
             : "Loading today's calendar.",
         );
 
         try {
-          const summary = await loadCalendar(offset);
+          const summary = loadCalendar(range);
           setCalendarSummary(summary);
 
           const spoken = styleAssistantResponse(
             modeRef.current,
-            composeCalendarSpeech(summary, voicePreferences.detail),
+            composeCalendarSpeech(summary),
             "calendar",
           );
 
@@ -964,7 +990,7 @@ export function App() {
           <>
             <div className="app-card-summary">
               <strong>Calendar</strong>
-              <span>{calendarSummary ? `${calendarSummary.rangeLabel ?? "Today"} • ${calendarSummary.events?.length ?? 0} events` : "No meetings loaded."}</span>
+              <span>{calendarSummary.requestedRange.displayLabel} · event data unavailable</span>
             </div>
             {canOpenDetails && (
               <button type="button" className="app-card-action" onClick={() => dispatchShell({ type: "OPEN_DETAILS", appId: "calendar" })}>
@@ -1184,15 +1210,20 @@ export function App() {
                     onWorkspaceRefresh: refreshWorkspace,
                     calendarSummary,
                     calendarBusy,
-                    onCalendarRefresh: () => void loadCalendar(0),
-                    onCalendarSpeak: () => {
-                      if (calendarSummary) {
-                        void voiceManager.current.speak(
-                          composeCalendarSpeech(calendarSummary, voicePreferences.detail),
-                          voicePreferences,
-                        );
-                      }
+                    onCalendarRefresh: () => {
+                      const summary = loadCalendar(calendarSummary.requestedRange.kind);
+                      setCalendarSummary(summary);
+                      setCaption(`Local temporal context refreshed for ${summary.requestedRange.displayLabel}.`);
+                      setState("wake-armed");
                     },
+                    onCalendarSpeak: () => {
+                      setState("speaking");
+                      void voiceManager.current.speak(composeCalendarSpeech(calendarSummary), voicePreferences)
+                        .then((voiceResult) => setVoiceStatus(voiceResult.message ?? `${voiceResult.engine} voice ready.`))
+                        .catch(() => setVoiceStatus("System voice ready."))
+                        .finally(reset);
+                    },
+                    onCalendarSelectRange: (range: CalendarRangeKind) => setCalendarSummary(loadCalendar(range)),
                   }}>
                     <DetailShell
                       appId={detailAppId}

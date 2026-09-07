@@ -37,6 +37,138 @@ export interface CalendarSummary {
   generatedAt: number;
 }
 
+export type CalendarRangeKind =
+  | "TODAY"
+  | "TOMORROW"
+  | "CURRENT_WEEK"
+  | "NEXT_WEEK";
+
+export type CalendarConnectionState = "NOT_CONFIGURED" | "CONNECTOR_UNAVAILABLE";
+
+export interface CalendarTemporalContext {
+  instant: string;
+  timeZone: string;
+  locale: string;
+  weekStartsOn: 0 | 1;
+  freshness: string;
+}
+
+export interface CalendarRange {
+  kind: CalendarRangeKind;
+  start: string;
+  end: string;
+  displayLabel: string;
+  timeZone: string;
+}
+
+export interface CalendarAgendaProjection {
+  requestedRange: CalendarRange;
+  currentDateTime: string;
+  connectionState: CalendarConnectionState;
+  eventCount: "UNKNOWN";
+  events: [];
+  limitations: string[];
+  nextAvailableAction: "REFRESH_LOCAL_TEMPORAL_CONTEXT";
+  privacyStatus: "LOCAL_FACTS_ONLY";
+  speech: string;
+}
+
+function localParts(instant: string, timeZone: string): Record<string, string> {
+  return Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      weekday: "short",
+    })
+      .formatToParts(new Date(instant))
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  );
+}
+
+function localDate(context: CalendarTemporalContext): Date {
+  const parts = localParts(context.instant, context.timeZone);
+  return new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day)));
+}
+
+function isoDate(value: Date): string {
+  return value.toISOString().slice(0, 10);
+}
+
+function addLocalDays(value: Date, days: number): Date {
+  const result = new Date(value);
+  result.setUTCDate(result.getUTCDate() + days);
+  return result;
+}
+
+export function createTemporalContext(input: {
+  instant: string;
+  timeZone: string;
+  locale: string;
+  weekStartsOn?: 0 | 1;
+}): CalendarTemporalContext {
+  if (Number.isNaN(new Date(input.instant).getTime())) throw new Error("Calendar instant is invalid.");
+  try {
+    new Intl.DateTimeFormat(input.locale, { timeZone: input.timeZone }).format(new Date(input.instant));
+  } catch {
+    throw new Error("Calendar timezone or locale is invalid.");
+  }
+  return {
+    instant: new Date(input.instant).toISOString(),
+    timeZone: input.timeZone,
+    locale: input.locale,
+    weekStartsOn: input.weekStartsOn ?? 1,
+    freshness: new Date(input.instant).toISOString(),
+  };
+}
+
+export function selectCalendarRange(
+  context: CalendarTemporalContext,
+  kind: CalendarRangeKind,
+): CalendarRange {
+  const today = localDate(context);
+  let start = today;
+  let end = addLocalDays(today, 1);
+  let displayLabel = "Today";
+  if (kind === "TOMORROW") {
+    start = addLocalDays(today, 1);
+    end = addLocalDays(today, 2);
+    displayLabel = "Tomorrow";
+  } else if (kind === "CURRENT_WEEK" || kind === "NEXT_WEEK") {
+    const offset = (today.getUTCDay() - context.weekStartsOn + 7) % 7;
+    start = addLocalDays(today, -offset + (kind === "NEXT_WEEK" ? 7 : 0));
+    end = addLocalDays(start, 7);
+    displayLabel = kind === "CURRENT_WEEK" ? "Current week" : "Next week";
+  }
+  return { kind, start: isoDate(start), end: isoDate(end), displayLabel, timeZone: context.timeZone };
+}
+
+export function createProviderFreeAgenda(
+  context: CalendarTemporalContext,
+  kind: CalendarRangeKind = "TODAY",
+): CalendarAgendaProjection {
+  const requestedRange = selectCalendarRange(context, kind);
+  const currentDateTime = new Intl.DateTimeFormat(context.locale, {
+    dateStyle: "full",
+    timeStyle: "short",
+    timeZone: context.timeZone,
+  }).format(new Date(context.instant));
+  const limitation = "Real meetings, availability, location, weather, and travel time are unavailable without an approved connector.";
+  return {
+    requestedRange,
+    currentDateTime,
+    connectionState: "NOT_CONFIGURED",
+    eventCount: "UNKNOWN",
+    events: [],
+    limitations: [limitation],
+    nextAvailableAction: "REFRESH_LOCAL_TEMPORAL_CONTEXT",
+    privacyStatus: "LOCAL_FACTS_ONLY",
+    speech: `It is ${currentDateTime}. Selected range: ${requestedRange.displayLabel}, ${requestedRange.start} through ${requestedRange.end}. No connected calendar event data is available.`,
+  };
+}
+
 const dateValue = (value: string) => new Date(value).getTime();
 
 export function analyzeCalendar(

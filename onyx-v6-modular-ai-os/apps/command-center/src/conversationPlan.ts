@@ -34,7 +34,7 @@ export function buildConversationPlan(
     steps.push({ stepId: `${planId}-1`, kind: "NAVIGATE", appId: envelope.navigateAppId });
     steps.push({ stepId: `${planId}-2`, kind: "ANSWER_DETERMINISTIC", factKind: envelope.factKind });
   } else if (envelope.kind === "DATE_QUESTION" && envelope.factKind) {
-    steps.push({ stepId: `${planId}-1`, kind: "ANSWER_DETERMINISTIC", factKind: envelope.factKind });
+    steps.push({ stepId: `${planId}-1`, kind: "ANSWER_DETERMINISTIC", factKind: envelope.factKind, weekday: envelope.weekday });
   } else if (envelope.kind === "UI_VISIBLE_QUESTION" && envelope.factKind) {
     steps.push({ stepId: `${planId}-1`, kind: "ANSWER_DETERMINISTIC", factKind: envelope.factKind });
   } else if (envelope.kind === "FOLLOW_UP_DATE_QUESTION") {

@@ -34,6 +34,25 @@ describe("parseConversationalRequest", () => {
     expect(result.factKind).toBe("TOMORROW_DATE");
   });
 
+  it("classifies bounded Calendar local-fact and agenda questions", () => {
+    for (const request of ["What is today's date?", "What time is it?", "What week are we in?", "What are the dates for next week?", "Read my agenda."]) {
+      expect(parseConversationalRequest(request).kind).toBe("CALENDAR_LOCAL_FACT");
+    }
+  });
+
+  it("parses a standalone named weekday Calendar question", () => {
+    const result = parseConversationalRequest("What date is Monday?");
+    expect(result.kind).toBe("DATE_QUESTION");
+    expect(result.factKind).toBe("WEEKDAY_DATE");
+    expect(result.weekday).toBe("monday");
+  });
+
+  it("classifies provider-dependent calendar questions as truthful limitations", () => {
+    for (const request of ["What meetings do I have tomorrow?", "Am I free after 3 PM?", "Where is my next meeting?", "What is the weather at my meeting?"]) {
+      expect(parseConversationalRequest(request).kind).toBe("CALENDAR_PROVIDER_LIMITATION");
+    }
+  });
+
   it("expands the bounded what's contraction so it still matches", () => {
     const result = parseConversationalRequest("What's tomorrow's date?");
     expect(result.kind).toBe("DATE_QUESTION");
