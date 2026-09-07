@@ -60,6 +60,7 @@ import { parseConversationalRequest } from "./conversationIntentGrammar";
 import { buildConversationPlan } from "./conversationPlan";
 import { VoiceConversationOrchestrator } from "./voiceConversationOrchestrator";
 import { ConversationContextWindow } from "./conversationContextWindow";
+import { FollowUpListeningSession } from "./followUpListeningSession";
 import {
   formatDateForSpeech,
   isSupportedWeekday,
@@ -246,9 +247,14 @@ export function App() {
   const conversationOrchestrator = useRef(new VoiceConversationOrchestrator());
   const conversationContext = useRef(new ConversationContextWindow());
   const conversationPlanSequence = useRef(0);
+  const followUpSession = useRef(new FollowUpListeningSession());
+  const startFollowUp = useRef<(() => boolean) | null>(null);
+  const stopFollowUp = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     modeRef.current = mode;
+    stopFollowUp.current?.();
+    followUpSession.current.close("CANCELLED");
   }, [mode]);
 
   useEffect(() => {
@@ -285,6 +291,8 @@ export function App() {
       voiceManager.current.stop();
       conversationOrchestrator.current.cancel();
       conversationContext.current.clear();
+      stopFollowUp.current?.();
+      followUpSession.current.close("CANCELLED");
     },
     [],
   );
@@ -446,6 +454,8 @@ export function App() {
 
   const showError = useCallback(
     (message: string) => {
+      stopFollowUp.current?.();
+      followUpSession.current.close("ERROR");
       setActivePanel(null);
       setState("error");
       setCaption(message);
@@ -487,6 +497,8 @@ export function App() {
       const envelope = parseConversationalRequest(rawText);
 
       if (envelope.kind === "CANCEL") {
+        stopFollowUp.current?.();
+        followUpSession.current.close("CANCELLED");
         if (conversationOrchestrator.current.hasActivePlan()) {
           conversationOrchestrator.current.cancel();
         }
@@ -598,7 +610,25 @@ export function App() {
           setState("speaking");
           const voiceResult = await voiceManager.current.speak(text, voicePreferences);
           setVoiceStatus(voiceResult.message ?? `${voiceResult.engine} voice ready.`);
-          timers.current.push(window.setTimeout(() => reset(), 4200));
+          if (followUpSession.current.beginAfterSpeech(true)) {
+            const restartResult = followUpSession.current.beginListening(
+              () => {
+                const started = startFollowUp.current?.() ?? false;
+                if (started) setState("listening");
+                return started;
+              },
+              () => {
+                stopFollowUp.current?.();
+                reset();
+              },
+            );
+            if (restartResult === "TAP_TO_CONTINUE") {
+              setState("idle");
+              setCaption("Tap to continue.");
+            }
+          } else {
+            reset();
+          }
         },
       });
 
@@ -649,6 +679,8 @@ export function App() {
     async (raw: string, targetMode: AssistantMode | null = null) => {
       const clean = raw.trim();
       const normalized = normalizeCommand(clean);
+
+      followUpSession.current.recordTurn();
 
       if (await runConversationalPlan(clean)) {
         return;
@@ -895,6 +927,8 @@ export function App() {
   );
 
   const voice = useVoiceRouter(dispatch);
+  startFollowUp.current = voice.startListening;
+  stopFollowUp.current = voice.stopListening;
 
   const dispatchOrbitAction = useCallback(
     (actionId: string) => {

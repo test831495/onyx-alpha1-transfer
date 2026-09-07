@@ -3,6 +3,11 @@ import { buildConversationPlan } from "./conversationPlan";
 import { parseConversationalRequest } from "./conversationIntentGrammar";
 
 describe("buildConversationPlan", () => {
+  it.each(["Open Calendar", "Show Calendar", "Go to Calendar", "Take me to Calendar", "Please open Calendar"])("builds one navigation step for %s", (request) => {
+    const plan = buildConversationPlan("navigation-plan", parseConversationalRequest(request));
+    expect(plan?.steps).toEqual([{ stepId: "navigation-plan-1", kind: "NAVIGATE", appId: "calendar" }]);
+  });
+
   it("builds an ordered two-step plan for the calendar + tomorrow example", () => {
     const envelope = parseConversationalRequest("Open calendar and tell me tomorrow's date.");
     const plan = buildConversationPlan("plan-1", envelope);

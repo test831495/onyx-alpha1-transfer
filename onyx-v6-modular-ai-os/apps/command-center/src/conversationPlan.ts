@@ -30,7 +30,9 @@ export function buildConversationPlan(
 ): ConversationPlan | null {
   const steps: PlanStep[] = [];
 
-  if (envelope.kind === "COMPOSITE_NAVIGATE_AND_FACT" && envelope.navigateAppId && envelope.factKind) {
+  if (envelope.kind === "NAVIGATION" && envelope.navigateAppId) {
+    steps.push({ stepId: `${planId}-1`, kind: "NAVIGATE", appId: envelope.navigateAppId });
+  } else if (envelope.kind === "COMPOSITE_NAVIGATE_AND_FACT" && envelope.navigateAppId && envelope.factKind) {
     steps.push({ stepId: `${planId}-1`, kind: "NAVIGATE", appId: envelope.navigateAppId });
     steps.push({ stepId: `${planId}-2`, kind: "ANSWER_DETERMINISTIC", factKind: envelope.factKind });
   } else if (envelope.kind === "DATE_QUESTION" && envelope.factKind) {
