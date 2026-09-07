@@ -14,6 +14,8 @@ export type ConversationIntentKind =
   | "DATE_QUESTION"
   | "FOLLOW_UP_DATE_QUESTION"
   | "UI_VISIBLE_QUESTION"
+  | "CALENDAR_LOCAL_FACT"
+  | "CALENDAR_PROVIDER_LIMITATION"
   | "UNSUPPORTED";
 
 export type ConversationFactKind = "TOMORROW_DATE" | "WEEKDAY_DATE" | "UI_VISIBLE";
@@ -34,6 +36,8 @@ const UI_VISIBLE_PATTERN =
 const FOLLOW_UP_WEEKDAY_PATTERN = /^(?:and )?what about ([a-z]+)\??$/;
 const COMPOSITE_PATTERN =
   /^(?:please\s+|can you\s+|could you\s+)*open (.+?) and tell me (tomorrows date|what is currently visible)\??$/;
+const CALENDAR_LOCAL_FACT_PATTERN = /^(what is todays date|what time is it|what week are we in|what are the dates for next week|read my agenda)\??$/;
+const CALENDAR_PROVIDER_LIMITATION_PATTERN = /^(what meetings do i have tomorrow|am i free after 3 pm|where is my next meeting|what is the weather at my meeting)\??$/;
 
 /** Bounded apostrophe variants produced by common desktop and mobile keyboards. */
 const APOSTROPHE_PATTERN = /[\u0027\u2018\u2019\u201B]/g;
@@ -71,6 +75,8 @@ export function parseConversationalRequest(rawText: string): ConversationIntentE
   }
 
   if (CANCEL_PATTERN.test(text)) return { kind: "CANCEL" };
+  if (CALENDAR_LOCAL_FACT_PATTERN.test(text)) return { kind: "CALENDAR_LOCAL_FACT" };
+  if (CALENDAR_PROVIDER_LIMITATION_PATTERN.test(text)) return { kind: "CALENDAR_PROVIDER_LIMITATION" };
 
   const composite = text.match(COMPOSITE_PATTERN);
   if (composite) {
@@ -89,6 +95,11 @@ export function parseConversationalRequest(rawText: string): ConversationIntentE
 
   if (TOMORROW_DATE_PATTERN.test(text)) {
     return { kind: "DATE_QUESTION", factKind: "TOMORROW_DATE" };
+  }
+
+  const weekdayQuestion = text.match(/^what date is ([a-z]+)\??$/);
+  if (weekdayQuestion && isSupportedWeekday(weekdayQuestion[1] ?? "")) {
+    return { kind: "DATE_QUESTION", factKind: "WEEKDAY_DATE", weekday: weekdayQuestion[1] as SupportedWeekday };
   }
 
   if (UI_VISIBLE_PATTERN.test(text)) {
