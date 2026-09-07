@@ -12,7 +12,7 @@ export function CalendarIntelligencePanel({ summary, busy, onRefresh, onSpeak, o
       <div><strong>Local date and time</strong><div>{summary.currentDateTime}</div><small>{summary.requestedRange.timeZone} · locale-aware browser display</small></div>
       <div role="group" aria-label="Date range"><strong>Date navigation</strong><div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap", marginTop: ".4rem" }}>{ranges.map((range) => <button key={range.value} type="button" onClick={() => onSelectRange(range.value)} aria-pressed={summary.requestedRange.kind === range.value} disabled={busy}>{range.label}</button>)}</div></div>
       <div><strong>Calendar connection</strong><div>Not configured</div><small>Real meetings require a future approved connector.</small></div>
-      <div className="glass-surface" style={{ padding: ".8rem", borderRadius: ".75rem" }}><strong>Local agenda: {summary.requestedRange.displayLabel}</strong><p>No connected calendar event data is available.</p><small>{summary.limitations[0]}</small></div>
+      <div className="glass-surface" style={{ padding: ".8rem", borderRadius: ".75rem" }}><strong>Local agenda: {summary.requestedRange.displayLabel}</strong><p>No connected calendar event data is available.</p><small>{summary.limitations.join(" ") || "Real event data is unavailable without an approved connector."}</small></div>
     </div>
   </section>;
 }

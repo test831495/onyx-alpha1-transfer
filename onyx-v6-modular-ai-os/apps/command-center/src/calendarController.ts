@@ -10,7 +10,7 @@ export function loadCalendar(
   instant = new Date().toISOString(),
 ): CalendarAgendaProjection {
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-  const locale = navigator.language || "en-IN";
+  const locale = typeof navigator === "undefined" ? "en-IN" : navigator.language || "en-IN";
   return createProviderFreeAgenda(createTemporalContext({ instant, timeZone, locale }), range);
 }
 

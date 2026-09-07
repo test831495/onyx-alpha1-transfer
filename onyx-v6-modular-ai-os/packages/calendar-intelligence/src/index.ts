@@ -66,7 +66,7 @@ export interface CalendarAgendaProjection {
   currentDateTime: string;
   connectionState: CalendarConnectionState;
   eventCount: "UNKNOWN";
-  events: [];
+  events: CalendarEventRecord[];
   limitations: string[];
   nextAvailableAction: "REFRESH_LOCAL_TEMPORAL_CONTEXT";
   privacyStatus: "LOCAL_FACTS_ONLY";
@@ -165,7 +165,7 @@ export function createProviderFreeAgenda(
     limitations: [limitation],
     nextAvailableAction: "REFRESH_LOCAL_TEMPORAL_CONTEXT",
     privacyStatus: "LOCAL_FACTS_ONLY",
-    speech: `It is ${currentDateTime}. Selected range: ${requestedRange.displayLabel}, ${requestedRange.start} through ${requestedRange.end}. No connected calendar event data is available.`,
+    speech: `It is ${currentDateTime}. Selected range: ${requestedRange.displayLabel}, ${requestedRange.start} through ${isoDate(addLocalDays(new Date(`${requestedRange.end}T00:00:00Z`), -1))}. No connected calendar event data is available.`,
   };
 }
 
