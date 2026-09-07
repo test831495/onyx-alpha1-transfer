@@ -1,0 +1,67 @@
+import { describe, expect, it } from "vitest";
+import { VoiceSessionArbiter, TtsSttHandoffGate } from "./voiceSessionArbiter";
+
+describe("VoiceSessionArbiter", () => {
+  it("routes explicit orbital listen and push-to-talk through one pending owner", () => {
+    const arbiter = new VoiceSessionArbiter();
+
+    const orbital = arbiter.requestStart("ORBITAL_LISTEN", "nova");
+    const duplicate = arbiter.requestStart("PUSH_TO_TALK", "nova");
+
+    expect(orbital.shouldStartRecognition).toBe(true);
+    expect(duplicate.shouldStartRecognition).toBe(false);
+    expect(duplicate.generation).toBe(orbital.generation);
+    expect(arbiter.snapshot()).toMatchObject({ mode: "ORBITAL_LISTEN", pendingStart: true });
+  });
+
+  it("lets explicit orbital listen preempt wake-word standby with an expected abort", () => {
+    const arbiter = new VoiceSessionArbiter();
+    const wake = arbiter.enterWakeWordStandby("onyx");
+
+    const orbital = arbiter.requestStart("ORBITAL_LISTEN", "onyx");
+    const abort = arbiter.classifyRecognitionError(wake.generation, "aborted");
+
+    expect(orbital.shouldStartRecognition).toBe(true);
+    expect(abort).toEqual({ expected: true, userMessage: null, reason: "MODE_HANDOFF" });
+    expect(arbiter.snapshot()).toMatchObject({ mode: "ORBITAL_LISTEN", generation: orbital.generation });
+  });
+
+  it("keeps unexpected aborted errors visible and recovers to idle", () => {
+    const arbiter = new VoiceSessionArbiter();
+    const turn = arbiter.requestStart("PUSH_TO_TALK", "nova");
+    arbiter.markRecognitionStarted(turn.generation, "recognition-1");
+
+    const abort = arbiter.classifyRecognitionError(turn.generation, "aborted");
+
+    expect(abort).toEqual({ expected: false, userMessage: "VOICE_ABORT_UNEXPECTED", reason: "UNEXPECTED_ABORT" });
+    expect(arbiter.snapshot()).toMatchObject({ mode: "IDLE", terminal: true });
+  });
+
+  it("prevents an old-generation abort from terminating a newer explicit session", () => {
+    const arbiter = new VoiceSessionArbiter();
+    const first = arbiter.requestStart("FOLLOW_UP_LISTENING", "nova");
+    arbiter.markRecognitionStarted(first.generation, "recognition-1");
+    const second = arbiter.requestStart("ORBITAL_LISTEN", "nova");
+
+    const staleAbort = arbiter.classifyRecognitionError(first.generation, "aborted");
+
+    expect(staleAbort).toEqual({ expected: true, userMessage: null, reason: "STALE_GENERATION" });
+    expect(arbiter.snapshot()).toMatchObject({ mode: "ORBITAL_LISTEN", generation: second.generation });
+  });
+});
+
+describe("TtsSttHandoffGate", () => {
+  it("opens follow-up only after speech and the previous recognizer are terminal", () => {
+    const gate = new TtsSttHandoffGate();
+
+    gate.expectPreviousRecognitionEnd(3);
+    gate.markSpeechComplete();
+    expect(gate.canStartFollowUp()).toBe(false);
+
+    gate.markRecognitionTerminal(2);
+    expect(gate.canStartFollowUp()).toBe(false);
+
+    gate.markRecognitionTerminal(3);
+    expect(gate.canStartFollowUp()).toBe(true);
+  });
+});

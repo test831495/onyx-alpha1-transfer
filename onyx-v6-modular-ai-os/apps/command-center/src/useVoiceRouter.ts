@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { AssistantMode, CoreState } from "@onyx/contracts";
+import { VoiceSessionArbiter, type VoiceSessionAbortReason, type VoiceSessionMode } from "./voiceSessionArbiter";
 
 // Same bounded apostrophe variants (ASCII + smart-quote forms) conversationIntentGrammar strips,
 // so contractions collapse (e.g. "tomorrow's" -> "tomorrows") instead of splitting into a stray
@@ -84,33 +85,48 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
   const [status, setStatus] = useState<CoreState>("idle");
   const [diagnostic, setDiagnostic] = useState(supported ? "MIC READY" : "VOICE UNAVAILABLE · USE TYPED COMMANDS");
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionSequence = useRef(0);
+  const arbiterRef = useRef(new VoiceSessionArbiter());
   const timerRef = useRef(new DiagnosticResetTimer());
   const commandRef = useRef(onCommand);
   useEffect(() => { commandRef.current = onCommand; }, [onCommand]);
 
-  const stopListening = () => {
+  const stopListening = (reason: VoiceSessionAbortReason = "USER_CANCEL") => {
     timerRef.current.clear();
+    const generation = arbiterRef.current.cancel(reason);
+    arbiterRef.current.expectAbort(generation, reason);
     try { recognitionRef.current?.abort(); } catch {}
     recognitionRef.current = null;
     setStatus("idle");
   };
 
-  const startListening = (): boolean => {
+  const startListening = (sessionMode: Extract<VoiceSessionMode, "PUSH_TO_TALK" | "ORBITAL_LISTEN" | "FOLLOW_UP_LISTENING"> = "PUSH_TO_TALK"): boolean => {
     const Ctor = window.SpeechRecognition ?? window.webkitSpeechRecognition;
     if (!Ctor) {
       setDiagnostic("VOICE UNAVAILABLE · USE TYPED COMMANDS");
       setStatus("error");
       return false;
     }
-    stopListening();
+    const decision = arbiterRef.current.requestStart(sessionMode, "active");
+    if (!decision.shouldStartRecognition) return true;
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch {}
+      recognitionRef.current = null;
+    }
     setDiagnostic("REQUESTING MICROPHONE");
     const recognition = new Ctor();
+    const generation = decision.generation;
+    const recognitionInstanceId = `recognition-${++recognitionSequence.current}`;
     recognitionRef.current = recognition;
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.lang = "en-US";
     const finalRecognitionGuard = new FinalRecognitionGuard();
+    recognition.onstart = () => {
+      arbiterRef.current.markRecognitionStarted(generation, recognitionInstanceId);
+    };
     recognition.onresult = event => {
+      if (generation !== arbiterRef.current.snapshot().generation) return;
       const result = event.results[event.resultIndex];
       const heard = event.results[event.resultIndex]?.[0]?.transcript?.trim() ?? "";
       if (result?.isFinal && !heard) {
@@ -132,13 +148,20 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
       }, 1500);
     };
     recognition.onerror = event => {
+      const classification = arbiterRef.current.classifyRecognitionError(generation, event.error);
+      if (classification.expected) {
+        if (generation === arbiterRef.current.snapshot().generation) setStatus("idle");
+        return;
+      }
       const message = event.error === "not-allowed" || event.error === "service-not-allowed"
         ? "MICROPHONE BLOCKED"
-        : event.error === "no-speech" ? "NO SPEECH DETECTED" : `VOICE ERROR · ${event.error}`;
+        : event.error === "no-speech" ? "NO SPEECH DETECTED" : `VOICE ERROR · ${classification.userMessage ?? event.error}`;
       setDiagnostic(message);
       setStatus("error");
     };
     recognition.onend = () => {
+      if (generation !== arbiterRef.current.snapshot().generation) return;
+      arbiterRef.current.markRecognitionEnded(generation);
       recognitionRef.current = null;
       setStatus(current => current === "error" ? current : "idle");
     };
@@ -155,9 +178,9 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
   };
 
   useEffect(() => {
-    const visibility = () => { if (document.hidden) stopListening(); };
+    const visibility = () => { if (document.hidden) stopListening("SESSION_CLOSE"); };
     document.addEventListener("visibilitychange", visibility);
-    return () => { document.removeEventListener("visibilitychange", visibility); stopListening(); };
+    return () => { document.removeEventListener("visibilitychange", visibility); stopListening("UNMOUNT"); };
   }, []);
 
   return { status, diagnostic, supported, startListening, stopListening };
