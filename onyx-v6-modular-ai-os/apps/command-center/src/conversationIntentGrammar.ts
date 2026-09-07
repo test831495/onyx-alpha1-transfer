@@ -8,6 +8,24 @@ import { isSupportedWeekday, type SupportedWeekday } from "./conversationDateFac
  * handlers.
  */
 
+export type DiscourseAct = "QUESTION" | "COMMAND" | "FOLLOW_UP" | "CORRECTION" | "CANCEL" | "SESSION_CLOSE" | "UNSUPPORTED";
+export type ActionClass = "READ" | "NAVIGATE" | "CONTROL_SESSION" | "UNSUPPORTED";
+export type ConversationDomain = "CALENDAR" | "SYSTEM" | "UNKNOWN";
+export type RequestedResultType = "DIRECT_ANSWER" | "LIST" | "NAVIGATION" | "CLARIFICATION" | "LIMITATION" | "SESSION_CONTROL";
+export type AvailabilityClass = "AVAILABLE_LOCAL" | "UNAVAILABLE_PROVIDER" | "UNKNOWN";
+export type RiskClass = "R0_READ_PUBLIC_OR_CONFIG" | "R1_READ_AUTHORIZED" | "R5_PROHIBITED";
+export type EntityType = "APPLICATION" | "TEMPORAL_DATE" | "TEMPORAL_DAY_OF_WEEK" | "REFERENT" | "NEGATION" | "CORRECTION_TARGET";
+
+export interface EntityMention {
+  readonly id: string;
+  readonly type: EntityType;
+  readonly raw: string;
+  readonly canonicalValue: string;
+  readonly source: "EXPLICIT" | "CONTEXT" | "INFERRED_BOUNDED";
+  readonly confidence: "DETERMINISTIC" | "BOUNDED_INFERENCE" | "AMBIGUOUS";
+  readonly resolutionStatus: "RESOLVED" | "AMBIGUOUS" | "UNRESOLVED";
+}
+
 export type ConversationIntentKind =
   | "CANCEL"
   | "COMPOSITE_NAVIGATE_AND_FACT"
@@ -22,13 +40,24 @@ export type ConversationFactKind = "TOMORROW_DATE" | "WEEKDAY_DATE" | "UI_VISIBL
 
 export interface ConversationIntentEnvelope {
   readonly kind: ConversationIntentKind;
+  readonly discourseAct?: DiscourseAct;
+  readonly actionClass?: ActionClass;
+  readonly domain?: ConversationDomain;
+  readonly operation?: "OPEN" | "READ" | "LIST" | "GET" | "CANCEL" | "CLOSE_SESSION" | "CLARIFY";
+  readonly requestedResult?: RequestedResultType;
+  readonly availability?: AvailabilityClass;
+  readonly risk?: RiskClass;
+  readonly entities?: readonly EntityMention[];
+  readonly negated?: boolean;
+  readonly correction?: boolean;
+  readonly clarificationRequired?: boolean;
   readonly navigateAppId?: ShellAppId;
   readonly factKind?: ConversationFactKind;
   readonly weekday?: SupportedWeekday;
   readonly unsupportedReason?: string;
 }
 
-const CANCEL_PATTERN = /^(stop|cancel|never mind)$/;
+const CANCEL_PATTERN = /^(stop|cancel|never mind|forget that|disregard that|that s all|finish|close conversation|stop talking)$/;
 const TOMORROW_DATE_PATTERN =
   /^(?:please\s+|can you\s+|could you\s+)*what is tomorrows date\??$|^(?:please\s+|can you\s+|could you\s+)*tell me tomorrows date\??$/;
 const UI_VISIBLE_PATTERN =
@@ -37,7 +66,7 @@ const FOLLOW_UP_WEEKDAY_PATTERN = /^(?:and )?what about ([a-z]+)\??$/;
 const COMPOSITE_PATTERN =
   /^(?:please\s+|can you\s+|could you\s+)*open (.+?) and tell me (tomorrows date|what is currently visible)\??$/;
 const CALENDAR_LOCAL_FACT_PATTERN = /^(what is todays date|what time is it|what week are we in|what are the dates for next week|read my agenda)\??$/;
-const CALENDAR_PROVIDER_LIMITATION_PATTERN = /^(what meetings do i have tomorrow|am i free after 3 pm|where is my next meeting|what is the weather at my meeting)\??$/;
+const CALENDAR_PROVIDER_LIMITATION_PATTERN = /^(what meetings? do i have tomorrow|can you tell me which meetings? i have tomorrow|do i have anything scheduled tomorrow|what is on my calendar tomorrow|how does tomorrow look|tell me tomorrows agenda|are there any appointments tomorrow|am i free after 3 pm|where is my next meeting|what is the weather at my meeting)$/;
 
 /** Bounded apostrophe variants produced by common desktop and mobile keyboards. */
 const APOSTROPHE_PATTERN = /[\u0027\u2018\u2019\u201B]/g;
@@ -74,9 +103,20 @@ export function parseConversationalRequest(rawText: string): ConversationIntentE
     return { kind: "UNSUPPORTED", unsupportedReason: "This request is too long to process." };
   }
 
-  if (CANCEL_PATTERN.test(text)) return { kind: "CANCEL" };
-  if (CALENDAR_LOCAL_FACT_PATTERN.test(text)) return { kind: "CALENDAR_LOCAL_FACT" };
-  if (CALENDAR_PROVIDER_LIMITATION_PATTERN.test(text)) return { kind: "CALENDAR_PROVIDER_LIMITATION" };
+  const base = { domain: "CALENDAR" as const, risk: "R0_READ_PUBLIC_OR_CONFIG" as const };
+  if (CANCEL_PATTERN.test(text)) return { kind: "CANCEL", discourseAct: text === "that s all" || text === "finish" || text === "close conversation" ? "SESSION_CLOSE" : "CANCEL", actionClass: "CONTROL_SESSION", operation: text === "that s all" || text === "finish" || text === "close conversation" ? "CLOSE_SESSION" : "CANCEL", requestedResult: "SESSION_CONTROL", ...base };
+  if (CALENDAR_LOCAL_FACT_PATTERN.test(text)) return { kind: "CALENDAR_LOCAL_FACT", discourseAct: "QUESTION", actionClass: "READ", operation: "READ", requestedResult: "DIRECT_ANSWER", availability: "AVAILABLE_LOCAL", ...base };
+  if (CALENDAR_PROVIDER_LIMITATION_PATTERN.test(text)) return { kind: "CALENDAR_PROVIDER_LIMITATION", discourseAct: "QUESTION", actionClass: "READ", operation: "LIST", requestedResult: "LIMITATION", availability: "UNAVAILABLE_PROVIDER", ...base };
+
+  const correctionText = text.replace(/^(actually|no i meant|i meant)\s+/, "");
+  const isCorrection = correctionText !== text;
+  const withoutNegation = correctionText.replace(/^(?:please\s+)?(?:don t|do not)\s+/, "");
+  const isNegated = withoutNegation !== correctionText;
+  if (/\b(?:api|provider|connector|ignore your rules|bypass|call the news)\b/.test(text)) return { kind: "UNSUPPORTED", discourseAct: "UNSUPPORTED", actionClass: "UNSUPPORTED", requestedResult: "LIMITATION", unsupportedReason: "Provider and policy bypass requests are unavailable." };
+  if (isNegated && /\b(open|launch|show|display)\b/.test(withoutNegation) && /\b(?:just|only)\b/.test(withoutNegation)) {
+    const date = parseConversationalRequest(withoutNegation);
+    if (date.kind !== "UNSUPPORTED") return { ...date, negated: true, correction: isCorrection };
+  }
 
   const composite = text.match(COMPOSITE_PATTERN);
   if (composite) {
@@ -93,13 +133,14 @@ export function parseConversationalRequest(rawText: string): ConversationIntentE
     return { kind: "COMPOSITE_NAVIGATE_AND_FACT", navigateAppId: navIntent.appId, factKind };
   }
 
-  if (TOMORROW_DATE_PATTERN.test(text)) {
-    return { kind: "DATE_QUESTION", factKind: "TOMORROW_DATE" };
+  const tomorrowDateWords = /tomorrows date|date for tomorrow|(?:what|which) date is tomorrow|(?:what|which) day is tomorrow/.test(correctionText);
+  if (tomorrowDateWords && !/\b(?:send|delete|approve|execute)\b/.test(correctionText)) {
+    return { kind: "DATE_QUESTION", factKind: "TOMORROW_DATE", discourseAct: isCorrection ? "CORRECTION" : "QUESTION", actionClass: "READ", operation: "GET", requestedResult: "DIRECT_ANSWER", availability: "AVAILABLE_LOCAL", ...base, correction: isCorrection };
   }
 
   const weekdayQuestion = text.match(/^what date is ([a-z]+)\??$/);
   if (weekdayQuestion && isSupportedWeekday(weekdayQuestion[1] ?? "")) {
-    return { kind: "DATE_QUESTION", factKind: "WEEKDAY_DATE", weekday: weekdayQuestion[1] as SupportedWeekday };
+    return { kind: "DATE_QUESTION", factKind: "WEEKDAY_DATE", weekday: weekdayQuestion[1] as SupportedWeekday, discourseAct: isCorrection ? "CORRECTION" : "QUESTION", actionClass: "READ", operation: "GET", requestedResult: "DIRECT_ANSWER", availability: "AVAILABLE_LOCAL", ...base, correction: isCorrection };
   }
 
   if (UI_VISIBLE_PATTERN.test(text)) {
@@ -110,10 +151,16 @@ export function parseConversationalRequest(rawText: string): ConversationIntentE
   if (followUp) {
     const candidate = followUp[1] ?? "";
     if (isSupportedWeekday(candidate)) {
-      return { kind: "FOLLOW_UP_DATE_QUESTION", factKind: "WEEKDAY_DATE", weekday: candidate };
+      return { kind: "FOLLOW_UP_DATE_QUESTION", factKind: "WEEKDAY_DATE", weekday: candidate, discourseAct: "FOLLOW_UP", actionClass: "READ", operation: "GET", requestedResult: "DIRECT_ANSWER", availability: "AVAILABLE_LOCAL", ...base };
     }
     return { kind: "FOLLOW_UP_DATE_QUESTION", unsupportedReason: `"${candidate}" is not a recognized day.` };
   }
 
-  return { kind: "UNSUPPORTED", unsupportedReason: "This request is not yet supported." };
+  if (/\b(open|launch|show|display|bring up|take me to|go to)\b/.test(text)) {
+    const target = text.replace(/^(?:please\s+|can you\s+|could you\s+|would you\s+)?(?:open|launch|show|display|bring up|take me to|go to)\s+/, "").replace(/\s+(?:please|for me)$/, "");
+    const navIntent = resolveShellIntent(`open ${target}`);
+    if (navIntent?.type === "OPEN_APP") return { kind: "COMPOSITE_NAVIGATE_AND_FACT", navigateAppId: navIntent.appId, discourseAct: "COMMAND", actionClass: "NAVIGATE", operation: "OPEN", requestedResult: "NAVIGATION", availability: "AVAILABLE_LOCAL", ...base };
+    return { kind: "UNSUPPORTED", discourseAct: "UNSUPPORTED", actionClass: "UNSUPPORTED", requestedResult: "CLARIFICATION", clarificationRequired: true, unsupportedReason: `I recognized a navigation request but need a supported application target.`, ...base };
+  }
+  return { kind: "UNSUPPORTED", discourseAct: "UNSUPPORTED", actionClass: "UNSUPPORTED", requestedResult: "LIMITATION", unsupportedReason: "This request is not yet supported." };
 }

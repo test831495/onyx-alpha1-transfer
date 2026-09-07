@@ -95,12 +95,12 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
     setStatus("idle");
   };
 
-  const startListening = () => {
+  const startListening = (): boolean => {
     const Ctor = window.SpeechRecognition ?? window.webkitSpeechRecognition;
     if (!Ctor) {
       setDiagnostic("VOICE UNAVAILABLE · USE TYPED COMMANDS");
       setStatus("error");
-      return;
+      return false;
     }
     stopListening();
     setDiagnostic("REQUESTING MICROPHONE");
@@ -149,7 +149,9 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
     } catch {
       setDiagnostic("VOICE COULD NOT START");
       setStatus("error");
+      return false;
     }
+    return true;
   };
 
   useEffect(() => {
