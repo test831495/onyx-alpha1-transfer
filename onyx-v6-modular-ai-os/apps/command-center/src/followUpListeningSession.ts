@@ -102,6 +102,7 @@ export class FollowUpListeningSession {
   }
 
   private scheduleTerminal(): void {
+    this.clearTimeout();
     const generation = this.generation;
     this.timeoutHandle = this.setTimer(() => {
       if (generation !== this.generation) return;

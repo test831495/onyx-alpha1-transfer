@@ -155,8 +155,9 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
     const finalRecognitionGuard = new FinalRecognitionGuard();
     recognition.onstart = () => {
       timerRef.current.invalidate();
-      arbiterRef.current.markRecognitionStarted(generation, recognitionInstanceId);
-      lifecycle.onRecognitionStart?.(sessionMode);
+      if (arbiterRef.current.markRecognitionStarted(generation, recognitionInstanceId)) {
+        lifecycle.onRecognitionStart?.(sessionMode);
+      }
     };
     recognition.onresult = event => {
       timerRef.current.invalidate();

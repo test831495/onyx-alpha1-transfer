@@ -66,4 +66,25 @@ describe("FollowUpListeningSession", () => {
     expect(terminal).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
   });
+
+  it("does not leave the original timeout active after an early-end fallback", () => {
+    vi.useFakeTimers();
+    const setTimer = vi.fn((callback: () => void, delayMs: number) =>
+      setTimeout(callback, delayMs));
+    const clearTimer = vi.fn((handle: ReturnType<typeof setTimeout>) =>
+      clearTimeout(handle));
+    const session = new FollowUpListeningSession({ setTimer, clearTimer });
+    const terminal = vi.fn();
+
+    session.beginAfterSpeech(true);
+    session.beginListening(() => true, terminal);
+    session.markListeningActive();
+    const clearsBeforeFallback = clearTimer.mock.calls.length;
+    expect(session.handleEarlyEnd(() => false)).toBe("TAP_TO_CONTINUE");
+    vi.advanceTimersByTime(FOLLOW_UP_TIMEOUT_MS);
+
+    expect(clearTimer.mock.calls.length).toBeGreaterThan(clearsBeforeFallback);
+    expect(terminal).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
 });
