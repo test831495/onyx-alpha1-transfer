@@ -11,6 +11,7 @@ import { buildConversationPlan } from "./conversationPlan";
  */
 const PHRASES = [
   "What is tomorrow's date?",
+  "What is the time now?",
   "Open calendar and tell me tomorrow's date.",
   "And what about Monday?",
   "Read my agenda.",

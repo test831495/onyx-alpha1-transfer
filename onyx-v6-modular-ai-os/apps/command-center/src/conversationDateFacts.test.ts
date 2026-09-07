@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   addDays,
   formatDateForSpeech,
+  formatTimeForSpeech,
   isSupportedWeekday,
   resolveNamedWeekday,
   tomorrowFrom,
@@ -43,5 +44,9 @@ describe("conversationDateFacts", () => {
     const formatted = formatDateForSpeech(new Date("2026-09-07T12:00:00Z"));
     expect(formatted).toContain("2026");
     expect(formatted).toContain("September");
+  });
+
+  it("formats supplied trusted time in Asia/Kolkata using en-IN", () => {
+    expect(formatTimeForSpeech(new Date("2026-09-07T12:34:00Z"))).toContain("6:04 pm");
   });
 });

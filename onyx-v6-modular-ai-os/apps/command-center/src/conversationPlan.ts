@@ -35,7 +35,7 @@ export function buildConversationPlan(
   } else if (envelope.kind === "COMPOSITE_NAVIGATE_AND_FACT" && envelope.navigateAppId && envelope.factKind) {
     steps.push({ stepId: `${planId}-1`, kind: "NAVIGATE", appId: envelope.navigateAppId });
     steps.push({ stepId: `${planId}-2`, kind: "ANSWER_DETERMINISTIC", factKind: envelope.factKind });
-  } else if (envelope.kind === "DATE_QUESTION" && envelope.factKind) {
+  } else if ((envelope.kind === "DATE_QUESTION" || envelope.kind === "TIME_QUERY") && envelope.factKind) {
     steps.push({ stepId: `${planId}-1`, kind: "ANSWER_DETERMINISTIC", factKind: envelope.factKind, weekday: envelope.weekday });
   } else if (envelope.kind === "UI_VISIBLE_QUESTION" && envelope.factKind) {
     steps.push({ stepId: `${planId}-1`, kind: "ANSWER_DETERMINISTIC", factKind: envelope.factKind });
