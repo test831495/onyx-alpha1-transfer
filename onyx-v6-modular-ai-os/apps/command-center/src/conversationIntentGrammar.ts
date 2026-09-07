@@ -28,6 +28,7 @@ export interface EntityMention {
 
 export type ConversationIntentKind =
   | "CANCEL"
+  | "NAVIGATION"
   | "COMPOSITE_NAVIGATE_AND_FACT"
   | "DATE_QUESTION"
   | "FOLLOW_UP_DATE_QUESTION"
@@ -37,9 +38,11 @@ export type ConversationIntentKind =
   | "UNSUPPORTED";
 
 export type ConversationFactKind = "TOMORROW_DATE" | "WEEKDAY_DATE" | "UI_VISIBLE";
+export type IntentFamily = "CANCEL_INTENT" | "SESSION_CLOSE_INTENT" | "APPLICATION_NAVIGATION" | "UNKNOWN_INTENT";
 
 export interface ConversationIntentEnvelope {
   readonly kind: ConversationIntentKind;
+  readonly intentFamily?: IntentFamily;
   readonly discourseAct?: DiscourseAct;
   readonly actionClass?: ActionClass;
   readonly domain?: ConversationDomain;
@@ -57,7 +60,10 @@ export interface ConversationIntentEnvelope {
   readonly unsupportedReason?: string;
 }
 
-const CANCEL_PATTERN = /^(stop|cancel|never mind|forget that|disregard that|that s all|finish|close conversation|stop talking)$/;
+const SESSION_CLOSE_PATTERN = /^(thats all|that s all|that is all|finish|close conversation|stop talking|end conversation|were done|we re done|we are done)$/;
+const CANCEL_PATTERN = /^(stop|cancel|never mind|forget that|disregard that|stop this|cancel that)$/;
+const BYPASS_ACTION_PATTERN = /\b(?:bypass|ignore|evade|skip|override|disable|circumvent|call directly|call(?:\s+\w+){0,3}\s+directly|invoke directly|connect directly|use without approval|use without consent|ignore the rules|bypass policy|call the news)\b/;
+const PROTECTED_TARGET_PATTERN = /\b(?:api|provider|connector|approval|policy|consent|permission|authentication|authorization|guard|security rule)s?\b/;
 const TOMORROW_DATE_PATTERN =
   /^(?:please\s+|can you\s+|could you\s+)*what is tomorrows date\??$|^(?:please\s+|can you\s+|could you\s+)*tell me tomorrows date\??$/;
 const UI_VISIBLE_PATTERN =
@@ -104,7 +110,8 @@ export function parseConversationalRequest(rawText: string): ConversationIntentE
   }
 
   const base = { domain: "CALENDAR" as const, risk: "R0_READ_PUBLIC_OR_CONFIG" as const };
-  if (CANCEL_PATTERN.test(text)) return { kind: "CANCEL", discourseAct: text === "that s all" || text === "finish" || text === "close conversation" ? "SESSION_CLOSE" : "CANCEL", actionClass: "CONTROL_SESSION", operation: text === "that s all" || text === "finish" || text === "close conversation" ? "CLOSE_SESSION" : "CANCEL", requestedResult: "SESSION_CONTROL", ...base };
+  if (SESSION_CLOSE_PATTERN.test(text)) return { kind: "CANCEL", intentFamily: "SESSION_CLOSE_INTENT", discourseAct: "SESSION_CLOSE", actionClass: "CONTROL_SESSION", operation: "CLOSE_SESSION", requestedResult: "SESSION_CONTROL", ...base };
+  if (CANCEL_PATTERN.test(text)) return { kind: "CANCEL", intentFamily: "CANCEL_INTENT", discourseAct: "CANCEL", actionClass: "CONTROL_SESSION", operation: "CANCEL", requestedResult: "SESSION_CONTROL", ...base };
   if (CALENDAR_LOCAL_FACT_PATTERN.test(text)) return { kind: "CALENDAR_LOCAL_FACT", discourseAct: "QUESTION", actionClass: "READ", operation: "READ", requestedResult: "DIRECT_ANSWER", availability: "AVAILABLE_LOCAL", ...base };
   if (CALENDAR_PROVIDER_LIMITATION_PATTERN.test(text)) return { kind: "CALENDAR_PROVIDER_LIMITATION", discourseAct: "QUESTION", actionClass: "READ", operation: "LIST", requestedResult: "LIMITATION", availability: "UNAVAILABLE_PROVIDER", ...base };
 
@@ -112,7 +119,7 @@ export function parseConversationalRequest(rawText: string): ConversationIntentE
   const isCorrection = correctionText !== text;
   const withoutNegation = correctionText.replace(/^(?:please\s+)?(?:don t|do not)\s+/, "");
   const isNegated = withoutNegation !== correctionText;
-  if (/\b(?:api|provider|connector|ignore your rules|bypass|call the news)\b/.test(text)) return { kind: "UNSUPPORTED", discourseAct: "UNSUPPORTED", actionClass: "UNSUPPORTED", requestedResult: "LIMITATION", unsupportedReason: "Provider and policy bypass requests are unavailable." };
+  if (BYPASS_ACTION_PATTERN.test(text) && PROTECTED_TARGET_PATTERN.test(text)) return { kind: "UNSUPPORTED", discourseAct: "UNSUPPORTED", actionClass: "UNSUPPORTED", requestedResult: "LIMITATION", risk: "R5_PROHIBITED", unsupportedReason: "Provider and policy bypass requests are unavailable." };
   if (isNegated && /\b(open|launch|show|display)\b/.test(withoutNegation) && /\b(?:just|only)\b/.test(withoutNegation)) {
     const date = parseConversationalRequest(withoutNegation);
     if (date.kind !== "UNSUPPORTED") return { ...date, negated: true, correction: isCorrection };
@@ -159,7 +166,7 @@ export function parseConversationalRequest(rawText: string): ConversationIntentE
   if (/\b(open|launch|show|display|bring up|take me to|go to)\b/.test(text)) {
     const target = text.replace(/^(?:please\s+|can you\s+|could you\s+|would you\s+)?(?:open|launch|show|display|bring up|take me to|go to)\s+/, "").replace(/\s+(?:please|for me)$/, "");
     const navIntent = resolveShellIntent(`open ${target}`);
-    if (navIntent?.type === "OPEN_APP") return { kind: "COMPOSITE_NAVIGATE_AND_FACT", navigateAppId: navIntent.appId, discourseAct: "COMMAND", actionClass: "NAVIGATE", operation: "OPEN", requestedResult: "NAVIGATION", availability: "AVAILABLE_LOCAL", ...base };
+    if (navIntent?.type === "OPEN_APP") return { kind: "NAVIGATION", intentFamily: "APPLICATION_NAVIGATION", navigateAppId: navIntent.appId, discourseAct: "COMMAND", actionClass: "NAVIGATE", operation: "OPEN", requestedResult: "NAVIGATION", availability: "AVAILABLE_LOCAL", ...base };
     return { kind: "UNSUPPORTED", discourseAct: "UNSUPPORTED", actionClass: "UNSUPPORTED", requestedResult: "CLARIFICATION", clarificationRequired: true, unsupportedReason: `I recognized a navigation request but need a supported application target.`, ...base };
   }
   return { kind: "UNSUPPORTED", discourseAct: "UNSUPPORTED", actionClass: "UNSUPPORTED", requestedResult: "LIMITATION", unsupportedReason: "This request is not yet supported." };

@@ -8,6 +8,11 @@ describe("explicit emotional communication policy", () => {
     expect(decideCommunicationStyle("Explain in detail.").detailMode).toBe("DETAILED");
     expect(decideCommunicationStyle("neutral request").signal).toBe("NEUTRAL");
     expect(decideCommunicationStyle("neutral request", true).signal).toBe("REPEATED_FAILURE_IN_CURRENT_SESSION");
+    expect(decideCommunicationStyle("I don't understand.").signal).toBe("USER_EXPLICIT_CONFUSION");
+    expect(decideCommunicationStyle("I don’t understand.").signal).toBe("USER_EXPLICIT_CONFUSION");
+    expect(decideCommunicationStyle("This isn't working.").signal).toBe("USER_EXPLICIT_FRUSTRATION");
+    expect(decideCommunicationStyle("This isn’t working.").signal).toBe("USER_EXPLICIT_FRUSTRATION");
+    expect(decideCommunicationStyle("I do not understand.").signal).toBe("USER_EXPLICIT_CONFUSION");
   });
 
   it("cannot change authority or persist a communication label", () => {

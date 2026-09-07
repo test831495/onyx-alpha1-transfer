@@ -49,7 +49,7 @@ describe("generated bounded natural-intent fixtures", () => {
   it("maps navigation verb/object combinations without protected execution", () => {
     const results = navigationVerbs.flatMap(verb => navigationObjects.map(object => parseConversationalRequest(`${verb} ${object}`)));
     expect(results.length).toBeGreaterThanOrEqual(15);
-    expect(results.every(result => result.kind === "COMPOSITE_NAVIGATE_AND_FACT" || result.clarificationRequired)).toBe(true);
+    expect(results.every(result => result.kind === "NAVIGATION" || result.kind === "COMPOSITE_NAVIGATE_AND_FACT" || result.clarificationRequired)).toBe(true);
     expect(results.some(result => result.risk === "R5_PROHIBITED")).toBe(false);
   });
 });

@@ -249,9 +249,12 @@ export function App() {
   const conversationPlanSequence = useRef(0);
   const followUpSession = useRef(new FollowUpListeningSession());
   const startFollowUp = useRef<(() => boolean) | null>(null);
+  const stopFollowUp = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     modeRef.current = mode;
+    stopFollowUp.current?.();
+    followUpSession.current.close("CANCELLED");
   }, [mode]);
 
   useEffect(() => {
@@ -288,6 +291,7 @@ export function App() {
       voiceManager.current.stop();
       conversationOrchestrator.current.cancel();
       conversationContext.current.clear();
+      stopFollowUp.current?.();
       followUpSession.current.close("CANCELLED");
     },
     [],
@@ -450,6 +454,8 @@ export function App() {
 
   const showError = useCallback(
     (message: string) => {
+      stopFollowUp.current?.();
+      followUpSession.current.close("ERROR");
       setActivePanel(null);
       setState("error");
       setCaption(message);
@@ -491,6 +497,7 @@ export function App() {
       const envelope = parseConversationalRequest(rawText);
 
       if (envelope.kind === "CANCEL") {
+        stopFollowUp.current?.();
         followUpSession.current.close("CANCELLED");
         if (conversationOrchestrator.current.hasActivePlan()) {
           conversationOrchestrator.current.cancel();
@@ -604,11 +611,17 @@ export function App() {
           const voiceResult = await voiceManager.current.speak(text, voicePreferences);
           setVoiceStatus(voiceResult.message ?? `${voiceResult.engine} voice ready.`);
           if (followUpSession.current.beginAfterSpeech(true)) {
-            const restartResult = followUpSession.current.beginListening(() => {
-              const started = startFollowUp.current?.() ?? false;
-              if (started) setState("listening");
-              return started;
-            });
+            const restartResult = followUpSession.current.beginListening(
+              () => {
+                const started = startFollowUp.current?.() ?? false;
+                if (started) setState("listening");
+                return started;
+              },
+              () => {
+                stopFollowUp.current?.();
+                reset();
+              },
+            );
             if (restartResult === "TAP_TO_CONTINUE") {
               setState("idle");
               setCaption("Tap to continue.");
@@ -915,6 +928,7 @@ export function App() {
 
   const voice = useVoiceRouter(dispatch);
   startFollowUp.current = voice.startListening;
+  stopFollowUp.current = voice.stopListening;
 
   const dispatchOrbitAction = useCallback(
     (actionId: string) => {

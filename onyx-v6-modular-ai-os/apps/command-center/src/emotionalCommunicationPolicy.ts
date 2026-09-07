@@ -22,12 +22,12 @@ export interface EmotionalCommunicationDecision {
 }
 
 export function decideCommunicationStyle(text: string, repeatedFailure = false): EmotionalCommunicationDecision {
-  const normalized = text.toLowerCase();
+  const normalized = text.toLowerCase().replace(/[\u0027\u2018\u2019\u201B]/g, "");
   let signal: ExplicitCommunicationSignal = "NEUTRAL";
   let detailMode: EmotionalCommunicationDecision["detailMode"] = "NORMAL";
   let speechRate: EmotionalCommunicationDecision["speechRate"] = "NORMAL";
-  if (/frustrat|this is hard|this isn t working/.test(normalized)) signal = "USER_EXPLICIT_FRUSTRATION";
-  else if (/confus|don t understand/.test(normalized)) signal = "USER_EXPLICIT_CONFUSION";
+  if (/frustrat|this is hard|this isnt working|this is not working/.test(normalized)) signal = "USER_EXPLICIT_FRUSTRATION";
+  else if (/confus|dont understand|do not understand|cannot understand/.test(normalized)) signal = "USER_EXPLICIT_CONFUSION";
   else if (/keep it short|simplif|be brief/.test(normalized)) { signal = "USER_REQUESTS_SIMPLIFICATION"; detailMode = "BRIEF"; }
   else if (/in detail|explain more|more detail/.test(normalized)) { signal = "USER_REQUESTS_MORE_DETAIL"; detailMode = "DETAILED"; }
   else if (/speak slower|slow down/.test(normalized)) { signal = "USER_REQUESTS_SLOWER_RESPONSE"; speechRate = "SLOWER"; }
