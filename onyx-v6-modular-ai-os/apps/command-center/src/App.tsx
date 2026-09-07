@@ -232,7 +232,7 @@ export function App() {
   const [calendarBusy, setCalendarBusy] = useState(false);
   const [calendarMinimized, setCalendarMinimized] = useState(false);
   const [voicePreferences, setVoicePreferences] = useState<VoicePreferences>(
-    () => loadVoicePreferences("nova"),
+    () => loadVoicePreferences(mode),
   );
   const [voiceStatus, setVoiceStatus] = useState("System voice ready.");
   const voiceManager = useRef(new VoiceManager());
@@ -926,7 +926,19 @@ export function App() {
     ],
   );
 
-  const voice = useVoiceRouter(dispatch);
+  const voice = useVoiceRouter(dispatch, {
+    onRecognitionStart: (sessionMode) => {
+      if (sessionMode === "FOLLOW_UP_LISTENING") followUpSession.current.markListeningActive();
+    },
+    onRecognitionEnd: (sessionMode) => {
+      if (sessionMode !== "FOLLOW_UP_LISTENING") return;
+      const result = followUpSession.current.handleEarlyEnd(() => startFollowUp.current?.() ?? false);
+      if (result === "TAP_TO_CONTINUE") {
+        setState("idle");
+        setCaption("Tap to continue.");
+      }
+    },
+  });
   startFollowUp.current = () => voice.startListening("FOLLOW_UP_LISTENING");
   stopFollowUp.current = voice.stopListening;
 

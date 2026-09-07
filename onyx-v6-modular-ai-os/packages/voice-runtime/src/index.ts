@@ -50,6 +50,19 @@ export const saveVoicePreferences=(assistantOrPreferences:AssistantVoice|VoicePr
 };
 
 export const availableSystemVoices=()=>typeof speechSynthesis==="undefined"?[]:speechSynthesis.getVoices();
+export const SYSTEM_VOICE_READINESS_TIMEOUT_MS=2000;
+export const waitForSystemVoiceInventory=(timeoutMs=SYSTEM_VOICE_READINESS_TIMEOUT_MS):Promise<SpeechSynthesisVoice[]>=>{
+  const synthesis=typeof speechSynthesis==="undefined"?null:speechSynthesis;
+  if(!synthesis)return Promise.resolve([]);
+  const initial=synthesis.getVoices();
+  if(initial.length>0)return Promise.resolve(initial);
+  return new Promise(resolve=>{
+    let settled=false;
+    const finish=()=>{if(settled)return;settled=true;synthesis.removeEventListener("voiceschanged",finish);globalThis.clearTimeout(timer);resolve(synthesis.getVoices())};
+    const timer=globalThis.setTimeout(finish,timeoutMs);
+    synthesis.addEventListener("voiceschanged",finish,{once:true});
+  });
+};
 const femaleHints=/female|woman|zira|samantha|victoria|karen|moira|tessa|veena|heera|neerja|aria|jenny|sonia|natasha|ava|susan/i;
 const maleHints=/male|man|david|mark|daniel|alex|rishi|prabhat|guy|ryan|george|thomas/i;
 export const selectSystemVoice=(p:VoicePreferences):SpeechSynthesisVoice|null=>{
@@ -57,7 +70,7 @@ export const selectSystemVoice=(p:VoicePreferences):SpeechSynthesisVoice|null=>{
   const exact=voices.find(v=>v.name===p.systemVoice);if(exact)return exact;
   const sameLanguage=voices.filter(v=>v.lang.toLowerCase()===p.language.toLowerCase()||v.lang.toLowerCase().startsWith((p.language.split("-")[0] ?? p.language).toLowerCase()));
   const hint=p.persona==="female"?femaleHints:p.persona==="male"?maleHints:null;
-  return (hint?sameLanguage.find(v=>hint.test(v.name)):undefined)??sameLanguage.find(v=>v.default)??sameLanguage[0]??voices.find(v=>v.default)??voices[0]??null;
+  return (hint?sameLanguage.find(v=>hint.test(v.name)):undefined)??null;
 };
 
 export class VoiceManager {
@@ -70,7 +83,7 @@ export class VoiceManager {
     try{const r=await fetch(`/.netlify/functions/voice-status?provider=${engine}`);const j=await r.json();return{engine,ready:Boolean(j.ready),diagnostic:j.diagnostic??"Voice provider unavailable."};}
     catch{return{engine,ready:false,diagnostic:"Voice backend unavailable."};}
   }
-  private speakSystem(text:string,p:VoicePreferences){if(typeof speechSynthesis==="undefined")return Promise.resolve(false);this.stop();return new Promise<boolean>((resolve,reject)=>{const u=new SpeechSynthesisUtterance(text);let done=false;const finish=(ok:boolean,error?:unknown)=>{if(done)return;done=true;if(ok)resolve(true);else reject(error instanceof Error?error:new Error("System voice synthesis failed."));};u.lang=p.language;u.rate=p.rate;u.pitch=p.pitch;u.volume=p.volume;u.voice=selectSystemVoice(p);u.onend=()=>finish(true);u.onerror=(event)=>finish(false,event);try{speechSynthesis.speak(u)}catch(error){finish(false,error)}});}
+  private async speakSystem(text:string,p:VoicePreferences){if(typeof speechSynthesis==="undefined")return false;await waitForSystemVoiceInventory();this.stop();return new Promise<boolean>((resolve,reject)=>{const u=new SpeechSynthesisUtterance(text);let done=false;const finish=(ok:boolean,error?:unknown)=>{if(done)return;done=true;if(ok)resolve(true);else reject(error instanceof Error?error:new Error("System voice synthesis failed."));};u.lang=p.language;u.rate=p.rate;u.pitch=p.pitch;u.volume=p.volume;u.voice=selectSystemVoice(p);u.onend=()=>finish(true);u.onerror=(event)=>finish(false,event);try{speechSynthesis.speak(u)}catch(error){finish(false,error)}});}
   async speak(text:string,p:VoicePreferences):Promise<{engine:VoiceEngine;fallback:boolean;message?:string}>{
     if(!p.enabled)return{engine:p.engine,fallback:false};
     if(p.engine==="system"){await this.speakSystem(text,p);return{engine:"system",fallback:false};}

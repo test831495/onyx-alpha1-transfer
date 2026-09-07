@@ -96,7 +96,12 @@ export function parseVoice(text: string): { mode: AssistantMode | null; command:
   return { mode, command: value.slice((match.index ?? 0) + match[0].length).trim() };
 }
 
-export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode | null) => void) {
+export interface VoiceRouterLifecycle {
+  onRecognitionStart?: (mode: Extract<VoiceSessionMode, "PUSH_TO_TALK" | "ORBITAL_LISTEN" | "FOLLOW_UP_LISTENING">) => void;
+  onRecognitionEnd?: (mode: Extract<VoiceSessionMode, "PUSH_TO_TALK" | "ORBITAL_LISTEN" | "FOLLOW_UP_LISTENING">) => void;
+}
+
+export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode | null) => void, lifecycle: VoiceRouterLifecycle = {}) {
   const supported = Boolean(window.SpeechRecognition ?? window.webkitSpeechRecognition);
   const [status, setStatus] = useState<CoreState>("idle");
   const [diagnostic, setDiagnostic] = useState(supported ? "MIC READY" : "VOICE UNAVAILABLE · USE TYPED COMMANDS");
@@ -151,6 +156,7 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
     recognition.onstart = () => {
       timerRef.current.invalidate();
       arbiterRef.current.markRecognitionStarted(generation, recognitionInstanceId);
+      lifecycle.onRecognitionStart?.(sessionMode);
     };
     recognition.onresult = event => {
       timerRef.current.invalidate();
@@ -195,6 +201,7 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
       if (generation !== arbiterRef.current.snapshot().generation) return;
       arbiterRef.current.markRecognitionEnded(generation);
       recognitionRef.current = null;
+      lifecycle.onRecognitionEnd?.(sessionMode);
       setStatus(current => current === "error" ? current : "idle");
     };
     try {

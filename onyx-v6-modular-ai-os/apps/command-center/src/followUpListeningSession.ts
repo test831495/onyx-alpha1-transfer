@@ -1,4 +1,4 @@
-export const FOLLOW_UP_TIMEOUT_MS = 8000;
+export const FOLLOW_UP_TIMEOUT_MS = 15000;
 export const FOLLOW_UP_MAX_AUTOMATIC_TURNS = 3;
 
 export type FollowUpState = "IDLE" | "WAITING_FOR_TTS" | "LISTENING" | "TAP_TO_CONTINUE";
@@ -23,6 +23,7 @@ export class FollowUpListeningSession {
   private readonly clearTimer: (handle: ReturnType<typeof setTimeout>) => void;
   private generation = 0;
   private terminalHandler: FollowUpTerminalHandler | null = null;
+  private restartCount = 0;
 
   constructor(options: FollowUpListeningSessionOptions = {}) {
     this.timeoutMs = options.timeoutMs ?? FOLLOW_UP_TIMEOUT_MS;
@@ -42,6 +43,7 @@ export class FollowUpListeningSession {
     }
     this.clearTimeout();
     this.state = "WAITING_FOR_TTS";
+    this.restartCount = 0;
     return true;
   }
 
@@ -56,8 +58,29 @@ export class FollowUpListeningSession {
       return "TAP_TO_CONTINUE";
     }
     this.state = "LISTENING";
-    this.scheduleTerminal();
     return "STARTED";
+  }
+
+  markListeningActive(): boolean {
+    if (this.state !== "LISTENING" || this.timeoutHandle !== null) return false;
+    this.scheduleTerminal();
+    return true;
+  }
+
+  handleEarlyEnd(restart: () => boolean): "RESTARTED" | "TAP_TO_CONTINUE" | "CLOSED" {
+    if (this.state !== "LISTENING") return "CLOSED";
+    if (this.restartCount >= 1) {
+      this.state = "TAP_TO_CONTINUE";
+      this.scheduleTerminal();
+      return "TAP_TO_CONTINUE";
+    }
+    this.restartCount += 1;
+    let restarted = false;
+    try { restarted = restart(); } catch { restarted = false; }
+    if (restarted) return "RESTARTED";
+    this.state = "TAP_TO_CONTINUE";
+    this.scheduleTerminal();
+    return "TAP_TO_CONTINUE";
   }
 
   recordTurn(): boolean {
@@ -74,6 +97,7 @@ export class FollowUpListeningSession {
     this.clearTimeout();
     this.generation += 1;
     this.terminalHandler = null;
+    this.restartCount = 0;
     this.state = "IDLE";
   }
 
