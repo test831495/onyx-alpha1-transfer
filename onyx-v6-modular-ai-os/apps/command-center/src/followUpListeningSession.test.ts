@@ -15,7 +15,12 @@ describe("FollowUpListeningSession", () => {
     expect(session.getState()).toBe("WAITING_FOR_TTS");
     expect(session.beginListening(start, terminal)).toBe("STARTED");
     expect(start).toHaveBeenCalledTimes(1);
-    vi.advanceTimersByTime(FOLLOW_UP_TIMEOUT_MS);
+    vi.advanceTimersByTime(14999);
+    expect(terminal).not.toHaveBeenCalled();
+    session.markListeningActive();
+    vi.advanceTimersByTime(14999);
+    expect(terminal).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
     expect(session.getState()).toBe("IDLE");
     expect(terminal).toHaveBeenCalledWith("TIMEOUT", 0);
     vi.useRealTimers();
@@ -37,7 +42,7 @@ describe("FollowUpListeningSession", () => {
     const terminal = vi.fn();
     expect(session.beginAfterSpeech(true)).toBe(true);
     expect(session.beginListening(() => { throw new Error("gesture required"); }, terminal)).toBe("TAP_TO_CONTINUE");
-    vi.advanceTimersByTime(8000);
+    vi.advanceTimersByTime(FOLLOW_UP_TIMEOUT_MS);
     expect(terminal).toHaveBeenCalledWith("TIMEOUT", 0);
     session.close("CANCELLED");
     expect(session.getState()).toBe("IDLE");
@@ -50,12 +55,35 @@ describe("FollowUpListeningSession", () => {
     const terminal = vi.fn();
     session.beginAfterSpeech(true);
     session.beginListening(() => true, terminal);
+    session.markListeningActive();
     session.recordTurn();
     session.beginAfterSpeech(true);
     session.beginListening(() => true, terminal);
-    vi.advanceTimersByTime(7999);
+    session.markListeningActive();
+    vi.advanceTimersByTime(FOLLOW_UP_TIMEOUT_MS - 1);
     expect(terminal).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1);
+    expect(terminal).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
+  it("does not leave the original timeout active after an early-end fallback", () => {
+    vi.useFakeTimers();
+    const setTimer = vi.fn((callback: () => void, delayMs: number) =>
+      setTimeout(callback, delayMs));
+    const clearTimer = vi.fn((handle: ReturnType<typeof setTimeout>) =>
+      clearTimeout(handle));
+    const session = new FollowUpListeningSession({ setTimer, clearTimer });
+    const terminal = vi.fn();
+
+    session.beginAfterSpeech(true);
+    session.beginListening(() => true, terminal);
+    session.markListeningActive();
+    const clearsBeforeFallback = clearTimer.mock.calls.length;
+    expect(session.handleEarlyEnd(() => false)).toBe("TAP_TO_CONTINUE");
+    vi.advanceTimersByTime(FOLLOW_UP_TIMEOUT_MS);
+
+    expect(clearTimer.mock.calls.length).toBeGreaterThan(clearsBeforeFallback);
     expect(terminal).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
   });
