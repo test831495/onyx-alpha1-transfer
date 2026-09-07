@@ -62,9 +62,22 @@ describe("parseConversationalRequest", () => {
   });
 
   it("classifies bounded Calendar local-fact and agenda questions", () => {
-    for (const request of ["What is today's date?", "What time is it?", "What week are we in?", "What are the dates for next week?", "Read my agenda."]) {
+    for (const request of ["What is today's date?", "What week are we in?", "What are the dates for next week?", "Read my agenda."]) {
       expect(parseConversationalRequest(request).kind).toBe("CALENDAR_LOCAL_FACT");
     }
+  });
+
+  it.each([
+    "What is the time now?", "What time is it?", "What is the time?", "What time is it now?",
+    "Tell me the current time.", "Tell me the time.", "Can you tell me the time?", "Could you tell me the time?",
+    "Do you know what time it is?", "Current time, please.", "Time now.", "Please tell me the current time.",
+    "What's the time in Chennai?", "What time is it in Chennai?", "What's the time in India?", "What time is it in India?",
+    "What is the local time?", "Give me the current time.", "May I know the time?", "Can I have the current time?",
+  ])("classifies %s as a deterministic temporal time query", (request) => {
+    const result = parseConversationalRequest(request);
+    expect(result.kind).toBe("TIME_QUERY");
+    expect(result.intentFamily).toBe("TEMPORAL_TIME_QUERY");
+    expect(result.operation).toBe("GET");
   });
 
   it("parses a standalone named weekday Calendar question", () => {

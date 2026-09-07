@@ -63,6 +63,7 @@ import { ConversationContextWindow } from "./conversationContextWindow";
 import { FollowUpListeningSession } from "./followUpListeningSession";
 import {
   formatDateForSpeech,
+  formatTimeForSpeech,
   isSupportedWeekday,
   resolveNamedWeekday,
   tomorrowFrom,
@@ -535,7 +536,32 @@ export function App() {
         return true;
       }
 
-      if (envelope.kind === "UNSUPPORTED") return false;
+      if (envelope.kind === "UNSUPPORTED") {
+        const clarification = envelope.clarificationRequired
+          ? "I understand you want to navigate, but I need the application name."
+          : "I'm not sure what you want me to do with that yet. Could you rephrase it or tell me the topic or application you mean?";
+        setState("speaking");
+        setCaption(clarification);
+        await voiceManager.current.speak(clarification, voicePreferences);
+        if (followUpSession.current.beginAfterSpeech(true)) {
+          const restartResult = followUpSession.current.beginListening(
+            () => {
+              const started = startFollowUp.current?.() ?? false;
+              if (started) setState("listening");
+              return started;
+            },
+            () => {
+              stopFollowUp.current?.();
+              reset();
+            },
+          );
+          if (restartResult === "TAP_TO_CONTINUE") {
+            setState("idle");
+            setCaption("Tap to continue.");
+          }
+        }
+        return true;
+      }
 
       if (envelope.kind === "FOLLOW_UP_DATE_QUESTION") {
         conversationContext.current.expireIfStale(Date.now());
@@ -599,6 +625,11 @@ export function App() {
           });
           return spoken;
         },
+        resolveCurrentTime: () => styleAssistantResponse(
+          identity,
+          `The current time is ${formatTimeForSpeech(now)}.`,
+          "general",
+        ),
         describeVisibleUi: () => styleAssistantResponse(identity, describeVisibleUiProjection(), "general"),
         requestClarification: (message) => {
           setState("speaking");
@@ -949,6 +980,7 @@ export function App() {
 
       switch (handler.kind) {
         case "VOICE_LISTEN":
+          followUpSession.current.beginExplicitSession();
           voice.startListening("ORBITAL_LISTEN");
           return;
         case "OPEN_SHELL_APP": {
@@ -1340,6 +1372,7 @@ export function App() {
             mode={mode}
             state={state}
             onMic={() => {
+              followUpSession.current.beginExplicitSession();
               setState("listening");
               setCaption(`${mode.toUpperCase()} · listening`);
               voice.startListening("PUSH_TO_TALK");

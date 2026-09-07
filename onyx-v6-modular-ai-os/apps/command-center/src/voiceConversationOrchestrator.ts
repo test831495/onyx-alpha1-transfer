@@ -22,6 +22,7 @@ export interface OrchestratorHandlers {
   navigate(appId: ShellAppId): void;
   resolveTomorrowDate(): string;
   resolveWeekdayDate(weekday: string): string;
+  resolveCurrentTime(): string;
   describeVisibleUi(): string;
   requestClarification(message: string): void;
   speak(text: string): Promise<void> | void;
@@ -95,6 +96,7 @@ export class VoiceConversationOrchestrator {
   private resolveFact(step: PlanStep, handlers: OrchestratorHandlers): string | null {
     if (step.factKind === "TOMORROW_DATE") return handlers.resolveTomorrowDate();
     if (step.factKind === "WEEKDAY_DATE" && step.weekday) return handlers.resolveWeekdayDate(step.weekday);
+    if (step.factKind === "CURRENT_TIME") return handlers.resolveCurrentTime();
     if (step.factKind === "UI_VISIBLE") return handlers.describeVisibleUi();
     return null;
   }

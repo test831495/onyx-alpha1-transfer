@@ -48,3 +48,12 @@ export function formatDateForSpeech(date: Date): string {
     timeZone: "UTC",
   });
 }
+
+export function formatTimeForSpeech(now: Date): string {
+  return now.toLocaleTimeString("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Kolkata",
+  }).toLowerCase();
+}

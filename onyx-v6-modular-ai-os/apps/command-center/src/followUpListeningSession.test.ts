@@ -26,14 +26,17 @@ describe("FollowUpListeningSession", () => {
     vi.useRealTimers();
   });
 
-  it("closes at the automatic turn bound and never starts for ineligible results", () => {
+  it("keeps the third through tenth accepted turns eligible and closes after the configured bound", () => {
     const session = new FollowUpListeningSession();
-    expect(session.beginAfterSpeech(false)).toBe(false);
-    expect(session.beginListening(() => true, vi.fn())).toBe("CLOSED");
-    expect(session.beginAfterSpeech(true)).toBe(true);
-    expect(session.beginListening(() => true, vi.fn())).toBe("STARTED");
-    for (let index = 0; index < FOLLOW_UP_MAX_AUTOMATIC_TURNS; index += 1) session.recordTurn();
+    for (let index = 0; index < 10; index += 1) {
+      expect(session.beginAfterSpeech(true)).toBe(true);
+      expect(session.beginListening(() => true, vi.fn())).toBe("STARTED");
+      session.recordTurn();
+      if (index < 9) expect(session.getState()).toBe("IDLE");
+    }
     expect(session.getState()).toBe("IDLE");
+    expect(FOLLOW_UP_MAX_AUTOMATIC_TURNS).toBe(10);
+    expect(session.beginAfterSpeech(true)).toBe(false);
   });
 
   it("shows tap-to-continue when the browser rejects restart and closes on cancellation", () => {
@@ -67,6 +70,21 @@ describe("FollowUpListeningSession", () => {
     vi.useRealTimers();
   });
 
+  it("closes an explicit session at the configured foreground duration", () => {
+    vi.useFakeTimers();
+    const session = new FollowUpListeningSession();
+    const terminal = vi.fn();
+    session.beginExplicitSession();
+    session.beginAfterSpeech(true);
+    session.beginListening(() => true, terminal);
+    vi.advanceTimersByTime(299999);
+    expect(terminal).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(terminal).toHaveBeenCalledWith("TIMEOUT", 1);
+    expect(session.getState()).toBe("IDLE");
+    vi.useRealTimers();
+  });
+
   it("does not leave the original timeout active after an early-end fallback", () => {
     vi.useFakeTimers();
     const setTimer = vi.fn((callback: () => void, delayMs: number) =>
@@ -86,5 +104,19 @@ describe("FollowUpListeningSession", () => {
     expect(clearTimer.mock.calls.length).toBeGreaterThan(clearsBeforeFallback);
     expect(terminal).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
+  });
+
+  it("uses the supplied policy recognition restart limit", () => {
+    const session = new FollowUpListeningSession({
+      policy: {
+        maxAcceptedTurns: 10,
+        followUpSilenceTimeoutMs: 15000,
+        foregroundSessionMaxMs: 300000,
+        recognitionRestartLimit: 0,
+      },
+    });
+    session.beginAfterSpeech(true);
+    session.beginListening(() => true, vi.fn());
+    expect(session.handleEarlyEnd(() => true)).toBe("TAP_TO_CONTINUE");
   });
 });

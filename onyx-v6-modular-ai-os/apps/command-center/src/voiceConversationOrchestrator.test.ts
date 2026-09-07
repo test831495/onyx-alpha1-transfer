@@ -7,6 +7,7 @@ function makeHandlers(overrides: Partial<OrchestratorHandlers> = {}): Orchestrat
     navigate: vi.fn(),
     resolveTomorrowDate: vi.fn(() => "Tomorrow is Monday."),
     resolveWeekdayDate: vi.fn(() => "That Monday is September 7th."),
+    resolveCurrentTime: vi.fn(() => "The current time is 6:04 pm."),
     describeVisibleUi: vi.fn(() => "The calendar card is open."),
     requestClarification: vi.fn(),
     speak: vi.fn(async () => {}),
