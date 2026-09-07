@@ -195,6 +195,42 @@ describe("DiagnosticResetTimer timer lifecycle", () => {
     vi.advanceTimersByTime(1000);
     expect(callback2).toHaveBeenCalledTimes(1);
   });
+
+  it("invalidates a prior diagnostic reset generation when a new listening session begins", () => {
+    const timer = new DiagnosticResetTimer();
+    let diagnostic = "HEARD COMMAND";
+    let status = "thinking";
+
+    const oldGeneration = timer.currentGeneration();
+    timer.scheduleForGeneration(oldGeneration, () => {
+      diagnostic = "MIC READY";
+      status = "idle";
+    }, 1500);
+
+    timer.invalidate();
+    diagnostic = "LISTENING";
+    status = "listening";
+    vi.advanceTimersByTime(1500);
+
+    expect(diagnostic).toBe("LISTENING");
+    expect(status).toBe("listening");
+  });
+
+  it("preserves terminal diagnostic cleanup for the current generation", () => {
+    const timer = new DiagnosticResetTimer();
+    let diagnostic = "HEARD COMMAND";
+    let status = "thinking";
+    const generation = timer.currentGeneration();
+
+    timer.scheduleForGeneration(generation, () => {
+      diagnostic = "MIC READY";
+      status = "idle";
+    }, 1500);
+    vi.advanceTimersByTime(1500);
+
+    expect(diagnostic).toBe("MIC READY");
+    expect(status).toBe("idle");
+  });
 });
 
 describe("FinalRecognitionGuard", () => {

@@ -43,6 +43,10 @@ function emit(message: string, state: string): void {
   }));
 }
 
+export function describeCoordinatorWakeReadinessResume(reason: string): string {
+  return `Wake-word readiness remains saved after ${reason}. No background listener is active.`;
+}
+
 function resumeWake(reason: string): void {
   window.clearTimeout(resumeTimer);
   resumeTimer = window.setTimeout(() => {
@@ -51,9 +55,9 @@ function resumeWake(reason: string): void {
       owner = "idle";
       return;
     }
-    owner = "wake";
+    owner = "idle";
     supervisor(true);
-    emit(`Wake-word listener resumed after ${reason}.`, "listening");
+    emit(describeCoordinatorWakeReadinessResume(reason), "ready");
   }, 1200);
 }
 

@@ -43,6 +43,7 @@ export interface VoiceAbortClassification {
 }
 
 const explicitModes = new Set<VoiceSessionMode>(["PUSH_TO_TALK", "ORBITAL_LISTEN"]);
+const recognitionStartModes = new Set<VoiceSessionMode>(["PUSH_TO_TALK", "ORBITAL_LISTEN", "FOLLOW_UP_LISTENING"]);
 
 export class VoiceSessionArbiter {
   private generation = 0;
@@ -79,7 +80,11 @@ export class VoiceSessionArbiter {
     return { generation: this.generation, mode: this.mode, shouldStartRecognition: false, expectedAbortReason: null };
   }
 
-  requestStart(mode: Exclude<VoiceSessionMode, "IDLE" | "TTS_PLAYBACK" | "CANCELLING" | "ERROR_RECOVERY">, characterId: string): VoiceSessionStartDecision {
+  requestStart(mode: Extract<VoiceSessionMode, "PUSH_TO_TALK" | "ORBITAL_LISTEN" | "FOLLOW_UP_LISTENING">, characterId: string): VoiceSessionStartDecision {
+    if (!recognitionStartModes.has(mode)) {
+      return this.enterWakeWordStandby(characterId);
+    }
+
     if (this.pendingStart && explicitModes.has(mode) && explicitModes.has(this.mode)) {
       return { generation: this.generation, mode: this.mode, shouldStartRecognition: false, expectedAbortReason: null };
     }

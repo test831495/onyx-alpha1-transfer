@@ -22,6 +22,7 @@ const normalize = (value: string) =>
  */
 export class DiagnosticResetTimer {
   private timeoutHandle: number | NodeJS.Timeout | null = null;
+  private generation = 0;
 
   /**
    * Schedule a new diagnostic reset timeout, clearing any existing one.
@@ -29,9 +30,14 @@ export class DiagnosticResetTimer {
    * @param delayMs Delay in milliseconds before invoking callback
    */
   schedule(onTimeout: () => void, delayMs: number): void {
+    this.scheduleForGeneration(this.generation, onTimeout, delayMs);
+  }
+
+  scheduleForGeneration(generation: number, onTimeout: () => void, delayMs: number): void {
     this.clear();
     this.timeoutHandle = globalThis.setTimeout(() => {
       this.timeoutHandle = null;
+      if (generation !== this.generation) return;
       onTimeout();
     }, delayMs);
   }
@@ -44,6 +50,16 @@ export class DiagnosticResetTimer {
       globalThis.clearTimeout(this.timeoutHandle);
       this.timeoutHandle = null;
     }
+  }
+
+  invalidate(): number {
+    this.clear();
+    this.generation += 1;
+    return this.generation;
+  }
+
+  currentGeneration(): number {
+    return this.generation;
   }
 
   /**
@@ -92,7 +108,7 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
   useEffect(() => { commandRef.current = onCommand; }, [onCommand]);
 
   const stopListening = (reason: VoiceSessionAbortReason = "USER_CANCEL") => {
-    timerRef.current.clear();
+    timerRef.current.invalidate();
     const snapshot = arbiterRef.current.snapshot();
     if (!recognitionRef.current && snapshot.terminal && !snapshot.pendingStart) {
       setStatus("idle");
@@ -110,6 +126,7 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
   };
 
   const startListening = (sessionMode: Extract<VoiceSessionMode, "PUSH_TO_TALK" | "ORBITAL_LISTEN" | "FOLLOW_UP_LISTENING"> = "PUSH_TO_TALK"): boolean => {
+    timerRef.current.invalidate();
     const Ctor = window.SpeechRecognition ?? window.webkitSpeechRecognition;
     if (!Ctor) {
       setDiagnostic("VOICE UNAVAILABLE · USE TYPED COMMANDS");
@@ -132,9 +149,11 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
     recognition.lang = "en-US";
     const finalRecognitionGuard = new FinalRecognitionGuard();
     recognition.onstart = () => {
+      timerRef.current.invalidate();
       arbiterRef.current.markRecognitionStarted(generation, recognitionInstanceId);
     };
     recognition.onresult = event => {
+      timerRef.current.invalidate();
       if (generation !== arbiterRef.current.snapshot().generation) return;
       const result = event.results[event.resultIndex];
       const heard = event.results[event.resultIndex]?.[0]?.transcript?.trim() ?? "";
@@ -151,12 +170,16 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
       commandRef.current(parsed.command || heard, parsed.mode);
       const liveDiagnostic = `${parsed.mode ? `MATCHED ${parsed.mode.toUpperCase()} · ` : ""}HEARD “${heard}”`;
       setDiagnostic(liveDiagnostic);
-      timerRef.current.schedule(() => {
+      const resetTimerGeneration = timerRef.current.currentGeneration();
+      timerRef.current.scheduleForGeneration(resetTimerGeneration, () => {
+        const owner = arbiterRef.current.snapshot();
+        if (owner.generation !== generation || !owner.terminal || owner.mode !== "IDLE") return;
         setDiagnostic(supported ? "MIC READY" : "VOICE UNAVAILABLE · USE TYPED COMMANDS");
         setStatus("idle");
       }, 1500);
     };
     recognition.onerror = event => {
+      timerRef.current.invalidate();
       const classification = arbiterRef.current.classifyRecognitionError(generation, event.error);
       if (classification.expected) {
         if (generation === arbiterRef.current.snapshot().generation) setStatus("idle");

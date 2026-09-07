@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { describeVoiceRuntimeTruth } from "./components/SettingsCenter";
+import { describeCoordinatorWakeReadinessResume } from "./voiceSessionCoordinator";
 import { describeVoiceSupervisorStatus } from "./voiceRecognitionSupervisor";
 
 describe("settings voice runtime truth", () => {
@@ -19,5 +20,22 @@ describe("settings voice runtime truth", () => {
     expect(describeVoiceSupervisorStatus(false, true)).toBe(
       "Voice recognition standby is paused. No background listener is active.",
     );
+  });
+
+  it("does not let coordinator resume copy imply an active wake-word listener", () => {
+    expect(describeCoordinatorWakeReadinessResume("speech completion")).toBe(
+      "Wake-word readiness remains saved after speech completion. No background listener is active.",
+    );
+  });
+
+  it("keeps exposed runtime messages free of inactive listener-active claims", () => {
+    const exposedMessages = [
+      describeVoiceRuntimeTruth({ pushToTalk: true, autoListen: false, wakeWords: true }),
+      describeVoiceSupervisorStatus(true, true),
+      describeVoiceSupervisorStatus(false, true),
+      describeCoordinatorWakeReadinessResume("command completion"),
+    ].join("\n");
+
+    expect(exposedMessages).not.toMatch(/wake-word listener (active|resumed)|always listening|background listener active/i);
   });
 });

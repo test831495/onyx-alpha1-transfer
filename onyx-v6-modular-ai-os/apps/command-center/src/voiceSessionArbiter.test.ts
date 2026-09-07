@@ -22,6 +22,15 @@ describe("VoiceSessionArbiter", () => {
     expect(arbiter.snapshot()).toMatchObject({ mode: "WAKE_WORD_STANDBY", terminal: true, recognitionInstanceId: null });
   });
 
+  it("does not allow wake-word standby to enter through the recognition start path", () => {
+    const arbiter = new VoiceSessionArbiter();
+
+    const decision = arbiter.requestStart("WAKE_WORD_STANDBY" as never, "nova");
+
+    expect(decision.shouldStartRecognition).toBe(false);
+    expect(arbiter.snapshot()).toMatchObject({ mode: "WAKE_WORD_STANDBY", terminal: true, recognitionInstanceId: null });
+  });
+
   it("lets explicit orbital listen preempt wake-word readiness", () => {
     const arbiter = new VoiceSessionArbiter();
     arbiter.enterWakeWordStandby("onyx");
