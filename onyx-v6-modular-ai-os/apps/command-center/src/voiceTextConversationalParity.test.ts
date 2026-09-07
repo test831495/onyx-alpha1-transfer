@@ -42,8 +42,13 @@ describe("voice/text conversational dispatch parity", () => {
   }
 
   it("the assistant mode argument voice adds is never consumed by the conversational grammar", () => {
-    const withoutMode = parseConversationalRequest("what is tomorrows date");
-    const sameTextAgain = parseConversationalRequest("what is tomorrows date");
-    expect(withoutMode).toEqual(sameTextAgain);
+    // parseVoice extracts a wake word into `mode` and strips it from `command`; the grammar only
+    // ever sees `command`, so classification must be identical whether or not a mode was matched.
+    const withMode = parseVoice("hey onyx what is tomorrow's date");
+    const withoutMode = parseVoice("what is tomorrow's date");
+
+    expect(withMode.mode).toBe("onyx");
+    expect(withoutMode.mode).toBeNull();
+    expect(parseConversationalRequest(withMode.command)).toEqual(parseConversationalRequest(withoutMode.command));
   });
 });
