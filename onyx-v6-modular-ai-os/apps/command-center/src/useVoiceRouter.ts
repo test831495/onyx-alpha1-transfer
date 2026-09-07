@@ -93,9 +93,18 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
 
   const stopListening = (reason: VoiceSessionAbortReason = "USER_CANCEL") => {
     timerRef.current.clear();
+    const snapshot = arbiterRef.current.snapshot();
+    if (!recognitionRef.current && snapshot.terminal && !snapshot.pendingStart) {
+      setStatus("idle");
+      return;
+    }
     const generation = arbiterRef.current.cancel(reason);
     arbiterRef.current.expectAbort(generation, reason);
-    try { recognitionRef.current?.abort(); } catch {}
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch {}
+    } else {
+      arbiterRef.current.markRecognitionEnded(generation);
+    }
     recognitionRef.current = null;
     setStatus("idle");
   };

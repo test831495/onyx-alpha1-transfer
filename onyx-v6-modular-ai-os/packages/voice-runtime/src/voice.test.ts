@@ -21,4 +21,24 @@ describe("VoiceManager TTS completion",()=>{
   expect(resolved).toBe(true);
   vi.unstubAllGlobals();
  });
+
+ it("rejects instead of hanging when system speech fails to start",async()=>{
+  vi.stubGlobal("SpeechSynthesisUtterance",class{onend:((event:unknown)=>void)|null=null;onerror:((event:unknown)=>void)|null=null;lang="";rate=1;pitch=1;volume=1;voice=null;constructor(public text:string){}});
+  vi.stubGlobal("speechSynthesis",{cancel:vi.fn(),getVoices:vi.fn(()=>[]),speak:vi.fn(()=>{throw new Error("blocked")})});
+  const manager=new VoiceManager();
+  await expect(manager.speak("hello",defaultVoicePreferences)).rejects.toThrow("blocked");
+  vi.unstubAllGlobals();
+ });
+
+ it("rejects when system speech reaches an error terminal event",async()=>{
+  let utterance:SpeechSynthesisUtterance|undefined;
+  vi.stubGlobal("SpeechSynthesisUtterance",class{onend:((event:unknown)=>void)|null=null;onerror:((event:unknown)=>void)|null=null;lang="";rate=1;pitch=1;volume=1;voice=null;constructor(public text:string){utterance=this as unknown as SpeechSynthesisUtterance;}});
+  vi.stubGlobal("speechSynthesis",{cancel:vi.fn(),getVoices:vi.fn(()=>[]),speak:vi.fn()});
+  const manager=new VoiceManager();
+  const pending=expect(manager.speak("hello",defaultVoicePreferences)).rejects.toThrow("System voice synthesis failed.");
+  await Promise.resolve();
+  utterance?.onerror?.({} as SpeechSynthesisErrorEvent);
+  await pending;
+  vi.unstubAllGlobals();
+ });
 });

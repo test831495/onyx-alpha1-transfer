@@ -70,11 +70,11 @@ export class VoiceManager {
     try{const r=await fetch(`/.netlify/functions/voice-status?provider=${engine}`);const j=await r.json();return{engine,ready:Boolean(j.ready),diagnostic:j.diagnostic??"Voice provider unavailable."};}
     catch{return{engine,ready:false,diagnostic:"Voice backend unavailable."};}
   }
-  private speakSystem(text:string,p:VoicePreferences){if(typeof speechSynthesis==="undefined")return Promise.resolve(false);this.stop();return new Promise<boolean>((resolve)=>{const u=new SpeechSynthesisUtterance(text);let done=false;const finish=()=>{if(done)return;done=true;resolve(true)};u.lang=p.language;u.rate=p.rate;u.pitch=p.pitch;u.volume=p.volume;u.voice=selectSystemVoice(p);u.onend=finish;u.onerror=finish;speechSynthesis.speak(u);});}
+  private speakSystem(text:string,p:VoicePreferences){if(typeof speechSynthesis==="undefined")return Promise.resolve(false);this.stop();return new Promise<boolean>((resolve,reject)=>{const u=new SpeechSynthesisUtterance(text);let done=false;const finish=(ok:boolean,error?:unknown)=>{if(done)return;done=true;if(ok)resolve(true);else reject(error instanceof Error?error:new Error("System voice synthesis failed."));};u.lang=p.language;u.rate=p.rate;u.pitch=p.pitch;u.volume=p.volume;u.voice=selectSystemVoice(p);u.onend=()=>finish(true);u.onerror=(event)=>finish(false,event);try{speechSynthesis.speak(u)}catch(error){finish(false,error)}});}
   async speak(text:string,p:VoicePreferences):Promise<{engine:VoiceEngine;fallback:boolean;message?:string}>{
     if(!p.enabled)return{engine:p.engine,fallback:false};
     if(p.engine==="system"){await this.speakSystem(text,p);return{engine:"system",fallback:false};}
     try{const s=await this.status(p.engine);if(!s.ready)throw new Error(s.diagnostic);const r=await fetch("/.netlify/functions/voice-synthesize",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({provider:p.engine,text,voiceId:p.engine==="azure"?p.azureVoice:p.elevenLabsVoice,language:p.language})});if(!r.ok)throw new Error("Premium voice synthesis failed.");this.stop();this.audio=new Audio(URL.createObjectURL(await r.blob()));await this.audio.play();return{engine:p.engine,fallback:false};}
-    catch{await this.speakSystem(text,p);return{engine:"system",fallback:true,message:"VOICE CONNECTION NOT ACTIVE · USING SYSTEM VOICE"};}
+    catch{try{await this.speakSystem(text,p);}catch{}return{engine:"system",fallback:true,message:"VOICE CONNECTION NOT ACTIVE · USING SYSTEM VOICE"};}
   }
 }

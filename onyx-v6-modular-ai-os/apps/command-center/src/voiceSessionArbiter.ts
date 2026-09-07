@@ -72,11 +72,11 @@ export class VoiceSessionArbiter {
     this.generation += 1;
     this.mode = "WAKE_WORD_STANDBY";
     this.characterId = characterId;
-    this.recognitionInstanceId = `wake-${this.generation}`;
+    this.recognitionInstanceId = null;
     this.pendingStart = false;
-    this.terminal = false;
+    this.terminal = true;
     this.cancellationReason = null;
-    return { generation: this.generation, mode: this.mode, shouldStartRecognition: true, expectedAbortReason: null };
+    return { generation: this.generation, mode: this.mode, shouldStartRecognition: false, expectedAbortReason: null };
   }
 
   requestStart(mode: Exclude<VoiceSessionMode, "IDLE" | "TTS_PLAYBACK" | "CANCELLING" | "ERROR_RECOVERY">, characterId: string): VoiceSessionStartDecision {
@@ -106,6 +106,8 @@ export class VoiceSessionArbiter {
 
   markRecognitionEnded(generation: number): boolean {
     if (generation !== this.generation) return false;
+    this.expectedAbortReasons.delete(generation);
+    this.expectedAbortModes.delete(generation);
     this.recognitionInstanceId = null;
     this.pendingStart = false;
     this.terminal = true;
@@ -120,6 +122,11 @@ export class VoiceSessionArbiter {
   }
 
   cancel(reason: VoiceSessionAbortReason): number {
+    if (this.terminal && !this.pendingStart && !this.recognitionInstanceId) {
+      this.mode = "IDLE";
+      this.cancellationReason = null;
+      return this.generation;
+    }
     this.markCurrentAbortExpected(reason);
     this.mode = "CANCELLING";
     this.pendingStart = false;

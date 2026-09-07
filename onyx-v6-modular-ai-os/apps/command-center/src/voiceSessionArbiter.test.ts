@@ -14,15 +14,21 @@ describe("VoiceSessionArbiter", () => {
     expect(arbiter.snapshot()).toMatchObject({ mode: "ORBITAL_LISTEN", pendingStart: true });
   });
 
-  it("lets explicit orbital listen preempt wake-word standby with an expected abort", () => {
+  it("keeps wake-word standby as readiness without starting a recognizer", () => {
     const arbiter = new VoiceSessionArbiter();
     const wake = arbiter.enterWakeWordStandby("onyx");
 
+    expect(wake.shouldStartRecognition).toBe(false);
+    expect(arbiter.snapshot()).toMatchObject({ mode: "WAKE_WORD_STANDBY", terminal: true, recognitionInstanceId: null });
+  });
+
+  it("lets explicit orbital listen preempt wake-word readiness", () => {
+    const arbiter = new VoiceSessionArbiter();
+    arbiter.enterWakeWordStandby("onyx");
+
     const orbital = arbiter.requestStart("ORBITAL_LISTEN", "onyx");
-    const abort = arbiter.classifyRecognitionError(wake.generation, "aborted");
 
     expect(orbital.shouldStartRecognition).toBe(true);
-    expect(abort).toEqual({ expected: true, userMessage: null, reason: "MODE_HANDOFF" });
     expect(arbiter.snapshot()).toMatchObject({ mode: "ORBITAL_LISTEN", generation: orbital.generation });
   });
 
@@ -47,6 +53,16 @@ describe("VoiceSessionArbiter", () => {
 
     expect(staleAbort).toEqual({ expected: true, userMessage: null, reason: "STALE_GENERATION" });
     expect(arbiter.snapshot()).toMatchObject({ mode: "ORBITAL_LISTEN", generation: second.generation });
+  });
+
+  it("keeps idle cancellation terminal and does not create pending abort state", () => {
+    const arbiter = new VoiceSessionArbiter();
+
+    const generation = arbiter.cancel("USER_CANCEL");
+    const ended = arbiter.markRecognitionEnded(generation);
+
+    expect(ended).toBe(true);
+    expect(arbiter.snapshot()).toMatchObject({ mode: "IDLE", terminal: true, cancellationReason: null });
   });
 });
 
