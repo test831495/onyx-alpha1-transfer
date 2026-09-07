@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { VoiceConversationOrchestrator, type OrchestratorHandlers } from "./voiceConversationOrchestrator";
 import type { ConversationPlan } from "./conversationPlan";
+import { resolvePostSpeechDisposition, shouldAcknowledgeNavigation } from "./conversationContinuity";
 
 function makeHandlers(overrides: Partial<OrchestratorHandlers> = {}): OrchestratorHandlers {
   return {
@@ -92,6 +93,42 @@ describe("VoiceConversationOrchestrator", () => {
     expect(handlers.requestClarification).toHaveBeenCalledWith("Which day did you mean?");
   });
 
+  it("executes a presentation step through the close handler", async () => {
+    const orchestrator = new VoiceConversationOrchestrator();
+    const close = vi.fn();
+    const handlers = makeHandlers({ close });
+    const outcomes = await orchestrator.executePlan({
+      planId: "presentation",
+      steps: [{ stepId: "presentation-1", kind: "PRESENTATION", appId: "tasks" }],
+    }, handlers);
+    expect(close).toHaveBeenCalledOnce();
+    expect(close).toHaveBeenCalledWith("tasks");
+    expect(outcomes).toEqual([{ stepId: "presentation-1", result: "COMPLETED" }]);
+  });
+
+  it("fails safe for presentation without a target or close handler", async () => {
+    const orchestrator = new VoiceConversationOrchestrator();
+    const handlers = makeHandlers();
+    await expect(orchestrator.executePlan({
+      planId: "missing-presentation-target",
+      steps: [{ stepId: "presentation-1", kind: "PRESENTATION" }],
+    }, handlers)).resolves.toEqual([{ stepId: "presentation-1", result: "FAILED_SAFE" }]);
+    await expect(orchestrator.executePlan({
+      planId: "missing-presentation-handler",
+      steps: [{ stepId: "presentation-1", kind: "PRESENTATION", appId: "tasks" }],
+    }, handlers)).resolves.toEqual([{ stepId: "presentation-1", result: "FAILED_SAFE" }]);
+  });
+
+  it("uses the plan clarification prompt", async () => {
+    const orchestrator = new VoiceConversationOrchestrator();
+    const handlers = makeHandlers();
+    await orchestrator.executePlan({
+      planId: "clarification-prompt",
+      steps: [{ stepId: "clarification-1", kind: "REQUEST_CLARIFICATION", clarificationPrompt: "Do you mean the Tasks app or a task record?" }],
+    }, handlers);
+    expect(handlers.requestClarification).toHaveBeenCalledWith("Do you mean the Tasks app or a task record?");
+  });
+
   it("fails safe for a step missing its required target", async () => {
     const orchestrator = new VoiceConversationOrchestrator();
     const handlers = makeHandlers();
@@ -101,5 +138,27 @@ describe("VoiceConversationOrchestrator", () => {
     };
     const outcomes = await orchestrator.executePlan(plan, handlers);
     expect(outcomes).toEqual([{ stepId: "plan-4-1", result: "FAILED_SAFE" }]);
+  });
+
+  it("acknowledges only a sole completed navigation step", () => {
+    const single: ConversationPlan = { planId: "single", steps: [{ stepId: "single-1", kind: "NAVIGATE", appId: "calendar" }] };
+    const composite: ConversationPlan = {
+      planId: "composite",
+      steps: [
+        { stepId: "composite-1", kind: "NAVIGATE", appId: "calendar" },
+        { stepId: "composite-2", kind: "ANSWER_DETERMINISTIC", factKind: "TOMORROW_DATE" },
+      ],
+    };
+    expect(shouldAcknowledgeNavigation(single, ["COMPLETED"])).toBe(true);
+    expect(shouldAcknowledgeNavigation(composite, ["COMPLETED", "COMPLETED"])).toBe(false);
+  });
+
+  it.each([
+    ["CONTINUE_LISTENING", "STARTED", "LISTENING"],
+    ["CONTINUE_LISTENING", "TAP_TO_CONTINUE", "TAP_TO_CONTINUE"],
+    ["CONTINUE_LISTENING", "CLOSED", "IDLE"],
+    ["TERMINATE_SESSION", "STARTED", "IDLE"],
+  ] as const)("resolves post-speech disposition for %s/%s", (continuity, restartResult, expected) => {
+    expect(resolvePostSpeechDisposition(continuity, restartResult)).toBe(expected);
   });
 });

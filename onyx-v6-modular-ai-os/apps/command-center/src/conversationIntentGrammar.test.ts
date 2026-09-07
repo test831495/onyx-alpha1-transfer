@@ -41,7 +41,13 @@ describe("parseConversationalRequest", () => {
     it.each(["Close task", "Close this task", "Complete task", "Finish task"])("clarifies singular task-record language: %s", (request) => {
       const result = parseConversationalRequest(request);
       expect(result.clarificationRequired).toBe(true);
+      expect(result.clarificationReason).toBe("TASK_RECORD_OR_TASKS_APP");
       expect(result.navigateAppId).toBeUndefined();
+    });
+
+    it("identifies a missing close target", () => {
+      const result = parseConversationalRequest("Close the app");
+      expect(result.clarificationReason).toBe("CLOSE_TARGET_REQUIRED");
     });
   it("recognizes cancellation words", () => {
     expect(parseConversationalRequest("Stop").kind).toBe("CANCEL");

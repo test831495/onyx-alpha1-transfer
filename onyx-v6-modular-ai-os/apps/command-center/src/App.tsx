@@ -58,7 +58,7 @@ import { mapCoreStateToSemanticState } from "./nativeSemanticFallbackActivation"
 import { findOrbitAction, resolveOrbitHandler } from "./orbitActionRegistry";
 import { parseConversationalRequest } from "./conversationIntentGrammar";
 import { buildConversationPlan } from "./conversationPlan";
-import { getConversationContinuity } from "./conversationContinuity";
+import { getConversationContinuity, resolvePostSpeechDisposition, shouldAcknowledgeNavigation } from "./conversationContinuity";
 import { VoiceConversationOrchestrator } from "./voiceConversationOrchestrator";
 import { ConversationContextWindow } from "./conversationContextWindow";
 import { FollowUpListeningSession } from "./followUpListeningSession";
@@ -676,7 +676,7 @@ export function App() {
           (step.kind === "NAVIGATE" || step.kind === "PRESENTATION") &&
           outcomes[index]?.result === "COMPLETED",
       );
-      if (completedNavigation?.appId) {
+      if (completedNavigation?.appId && shouldAcknowledgeNavigation(plan, outcomes.map((outcome) => outcome.result))) {
         const label = SHELL_APP_LABELS[completedNavigation.appId] ?? completedNavigation.appId;
         const acknowledgement = completedNavigation.kind === "PRESENTATION"
           ? `${label} is closed.`
@@ -685,8 +685,9 @@ export function App() {
         setState("speaking");
         const voiceResult = await voiceManager.current.speak(acknowledgement, voicePreferences);
         setVoiceStatus(voiceResult.message ?? `${voiceResult.engine} voice ready.`);
+        let restartResult: "STARTED" | "TAP_TO_CONTINUE" | "CLOSED" = "CLOSED";
         if (getConversationContinuity(envelope) === "CONTINUE_LISTENING" && followUpSession.current.beginAfterSpeech(true)) {
-          const restartResult = followUpSession.current.beginListening(
+          restartResult = followUpSession.current.beginListening(
             () => {
               const started = startFollowUp.current?.() ?? false;
               if (started) setState("listening");
@@ -701,6 +702,12 @@ export function App() {
             setState("idle");
             setCaption("Tap to continue.");
           }
+        }
+        const disposition = resolvePostSpeechDisposition(getConversationContinuity(envelope), restartResult);
+        if (disposition === "IDLE") {
+          followUpSession.current.close("INELIGIBLE");
+          setState("idle");
+          setCaption(`${modeRef.current.toUpperCase()} · ready.`);
         }
       }
 

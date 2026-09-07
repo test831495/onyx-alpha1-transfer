@@ -91,7 +91,7 @@ export class VoiceConversationOrchestrator {
         return { stepId: step.stepId, result: "COMPLETED" };
       }
       case "REQUEST_CLARIFICATION": {
-        handlers.requestClarification("Which day did you mean?");
+        handlers.requestClarification(step.clarificationPrompt ?? "Which day did you mean?");
         return { stepId: step.stepId, result: "WAITING_FOR_CLARIFICATION" };
       }
       default:

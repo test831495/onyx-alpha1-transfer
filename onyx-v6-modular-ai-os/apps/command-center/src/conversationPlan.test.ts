@@ -26,20 +26,27 @@ describe("buildConversationPlan", () => {
   it("builds a clarification step for an ambiguous follow-up", () => {
     const envelope = parseConversationalRequest("And what about someday?");
     const plan = buildConversationPlan("plan-3", envelope);
-    expect(plan?.steps).toEqual([{ stepId: "plan-3-1", kind: "REQUEST_CLARIFICATION" }]);
+    expect(plan?.steps).toEqual([{ stepId: "plan-3-1", kind: "REQUEST_CLARIFICATION", clarificationPrompt: "Which day did you mean?" }]);
   });
 
-    it.each(["Close Calendar", "Hide Calendar", "Exit Calendar", "Dismiss Calendar"])("builds a presentation close step for %s", (request) => {
-      const plan = buildConversationPlan("close-plan", parseConversationalRequest(request));
-      expect(plan?.steps).toEqual([
-        { stepId: "close-plan-1", kind: "PRESENTATION", appId: "calendar", operation: "CLOSE" },
-      ]);
-    });
+  it.each(["Close Calendar", "Hide Calendar", "Exit Calendar", "Dismiss Calendar"])("builds a presentation close step for %s", (request) => {
+    const plan = buildConversationPlan("close-plan", parseConversationalRequest(request));
+    expect(plan?.steps).toEqual([
+      { stepId: "close-plan-1", kind: "PRESENTATION", appId: "calendar", operation: "CLOSE" },
+    ]);
+  });
 
-    it("builds clarification for singular task-record language", () => {
-      const plan = buildConversationPlan("task-close-plan", parseConversationalRequest("Close task"));
-      expect(plan?.steps).toEqual([{ stepId: "task-close-plan-1", kind: "REQUEST_CLARIFICATION" }]);
-    });
+  it("preserves clarification reason for singular task-record language", () => {
+    const plan = buildConversationPlan("task-close-plan", parseConversationalRequest("Close task"));
+    expect(plan?.steps).toEqual([
+      {
+        stepId: "task-close-plan-1",
+        kind: "REQUEST_CLARIFICATION",
+        clarificationReason: "TASK_RECORD_OR_TASKS_APP",
+        clarificationPrompt: "Do you mean the Tasks app or a task record?",
+      },
+    ]);
+  });
 
   it("returns null for unsupported requests instead of fabricating a plan", () => {
     const envelope = parseConversationalRequest("Summarize the news for me please");

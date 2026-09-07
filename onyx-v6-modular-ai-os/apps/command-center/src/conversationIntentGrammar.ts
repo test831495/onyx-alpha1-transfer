@@ -42,6 +42,7 @@ const SINGULAR_TASK_RECORD_PATTERN = /^(?:close|complete|finish)\s+(?:this\s+)?t
 
 export type ConversationFactKind = "TOMORROW_DATE" | "WEEKDAY_DATE" | "CURRENT_TIME" | "UI_VISIBLE";
 export type IntentFamily = "CANCEL_INTENT" | "SESSION_CLOSE_INTENT" | "APPLICATION_NAVIGATION" | "TEMPORAL_TIME_QUERY" | "UNKNOWN_INTENT";
+export type ClarificationReason = "TASK_RECORD_OR_TASKS_APP" | "CLOSE_TARGET_REQUIRED" | "AMBIGUOUS_APPLICATION_TARGET" | "UNKNOWN_APPLICATION_TARGET" | "GENERIC_CLARIFICATION";
 
 export interface ConversationIntentEnvelope {
   readonly kind: ConversationIntentKind;
@@ -57,6 +58,7 @@ export interface ConversationIntentEnvelope {
   readonly negated?: boolean;
   readonly correction?: boolean;
   readonly clarificationRequired?: boolean;
+  readonly clarificationReason?: ClarificationReason;
   readonly navigateAppId?: ShellAppId;
   readonly factKind?: ConversationFactKind;
   readonly weekday?: SupportedWeekday;
@@ -166,7 +168,21 @@ export function parseConversationalRequest(rawText: string): ConversationIntentE
       actionClass: "UNSUPPORTED",
       requestedResult: "CLARIFICATION",
       clarificationRequired: true,
+      clarificationReason: "TASK_RECORD_OR_TASKS_APP",
       unsupportedReason: "Please clarify whether you mean the Tasks app or a task record.",
+      ...base,
+    };
+  }
+
+  if (text === "close the app" || text === "close app") {
+    return {
+      kind: "UNSUPPORTED",
+      discourseAct: "UNSUPPORTED",
+      actionClass: "UNSUPPORTED",
+      requestedResult: "CLARIFICATION",
+      clarificationRequired: true,
+      clarificationReason: "CLOSE_TARGET_REQUIRED",
+      unsupportedReason: "Which application would you like me to close?",
       ...base,
     };
   }
@@ -194,6 +210,7 @@ export function parseConversationalRequest(rawText: string): ConversationIntentE
       actionClass: "UNSUPPORTED",
       requestedResult: "CLARIFICATION",
       clarificationRequired: true,
+      clarificationReason: "UNKNOWN_APPLICATION_TARGET",
       unsupportedReason: "I recognized a close request but need a supported application target.",
       ...base,
     };
