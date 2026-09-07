@@ -4,8 +4,56 @@ import {
   FOLLOW_UP_TIMEOUT_MS,
   FollowUpListeningSession,
 } from "./followUpListeningSession";
+import { DEFAULT_CONVERSATION_POLICY } from "./conversationPolicy";
 
 describe("FollowUpListeningSession", () => {
+  function withReceiverSensitiveNativeTimers(run: (scheduledDelays: number[]) => void): void {
+    const originalSetTimeout = globalThis.setTimeout;
+    const originalClearTimeout = globalThis.clearTimeout;
+    const scheduledDelays: number[] = [];
+    const handles = new Set<{ callback: () => void; delayMs: number }>();
+    globalThis.setTimeout = function receiverSensitiveSetTimeout(this: typeof globalThis, callback: () => void, delayMs?: number) {
+      if (this !== globalThis) throw new TypeError("Illegal invocation");
+      const handle = { callback, delayMs: delayMs ?? 0 };
+      scheduledDelays.push(handle.delayMs);
+      handles.add(handle);
+      return handle as unknown as ReturnType<typeof setTimeout>;
+    } as typeof setTimeout;
+    globalThis.clearTimeout = function receiverSensitiveClearTimeout(this: typeof globalThis, handle?: ReturnType<typeof setTimeout>) {
+      if (this !== globalThis) throw new TypeError("Illegal invocation");
+      handles.delete(handle as never);
+    } as typeof clearTimeout;
+    try {
+      run(scheduledDelays);
+    } finally {
+      globalThis.setTimeout = originalSetTimeout;
+      globalThis.clearTimeout = originalClearTimeout;
+    }
+  }
+
+  it("starts an explicit session with the production default scheduler without native receiver loss", () => {
+    withReceiverSensitiveNativeTimers((scheduledDelays) => {
+      const session = new FollowUpListeningSession();
+      expect(() => session.beginExplicitSession()).not.toThrow();
+      expect(scheduledDelays).toEqual([DEFAULT_CONVERSATION_POLICY.foregroundSessionMaxMs]);
+    });
+  });
+
+  it.each([
+    ["bottom mic", "PUSH_TO_TALK"],
+    ["Orbital Listen", "ORBITAL_LISTEN"],
+  ])("%s explicit-session start reaches startListening(%s)", (_label, mode) => {
+    withReceiverSensitiveNativeTimers(() => {
+      const session = new FollowUpListeningSession();
+      const startListening = vi.fn();
+      expect(() => {
+        session.beginExplicitSession();
+        startListening(mode);
+      }).not.toThrow();
+      expect(startListening).toHaveBeenCalledWith(mode);
+    });
+  });
+
   it("starts only after eligible speech completion and uses the frozen bounds", () => {
     vi.useFakeTimers();
     const session = new FollowUpListeningSession();

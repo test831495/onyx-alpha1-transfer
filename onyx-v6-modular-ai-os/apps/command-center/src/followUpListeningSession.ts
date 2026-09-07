@@ -37,8 +37,8 @@ export class FollowUpListeningSession {
     this.maxAutomaticTurns = options.maxAutomaticTurns ?? options.policy?.maxAcceptedTurns ?? FOLLOW_UP_MAX_AUTOMATIC_TURNS;
     this.foregroundSessionMaxMs = options.policy?.foregroundSessionMaxMs ?? DEFAULT_CONVERSATION_POLICY.foregroundSessionMaxMs;
     this.recognitionRestartLimit = options.policy?.recognitionRestartLimit ?? DEFAULT_CONVERSATION_POLICY.recognitionRestartLimit;
-    this.setTimer = options.setTimer ?? globalThis.setTimeout;
-    this.clearTimer = options.clearTimer ?? globalThis.clearTimeout;
+    this.setTimer = options.setTimer ?? ((callback, delayMs) => globalThis.setTimeout(callback, delayMs));
+    this.clearTimer = options.clearTimer ?? ((handle) => globalThis.clearTimeout(handle));
   }
 
   getState(): FollowUpState { return this.state; }
