@@ -4,6 +4,7 @@ const records: readonly SyntheticRecord[] = [
   { recordReference: "netlify:site:onyx", dataClass: "DEPLOYMENT_METADATA", fields: [{ key: "kind", value: "site" }, { key: "name", value: "onyx" }, { key: "status", value: "published" }] },
   { recordReference: "netlify:deployment:latest", dataClass: "DEPLOYMENT_OBSERVABILITY", fields: [{ key: "kind", value: "deployment" }, { key: "status", value: "ready" }] },
   { recordReference: "netlify:build:latest", dataClass: "DEPLOYMENT_OBSERVABILITY", fields: [{ key: "kind", value: "build" }, { key: "status", value: "success" }] },
+  { recordReference: "netlify:domain:onyx", dataClass: "DEPLOYMENT_METADATA", fields: [{ key: "kind", value: "safe_domain" }, { key: "status", value: "verified" }] },
 ];
 
 export const netlifyReadAdapter = createSyntheticReadAdapter({

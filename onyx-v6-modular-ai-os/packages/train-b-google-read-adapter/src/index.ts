@@ -2,8 +2,10 @@ import { createSyntheticReadAdapter, type SyntheticRecord } from "@onyx/train-b-
 
 const records: readonly SyntheticRecord[] = [
   { recordReference: "google:mail:1", dataClass: "MAIL_METADATA", fields: [{ key: "kind", value: "mail" }, { key: "subject", value: "ONYX status" }] },
+  { recordReference: "google:mail:2", dataClass: "MAIL_METADATA", fields: [{ key: "kind", value: "mail" }, { key: "subject", value: "Deployment review" }] },
   { recordReference: "google:calendar:1", dataClass: "CALENDAR_METADATA", fields: [{ key: "kind", value: "calendar" }, { key: "status", value: "scheduled" }] },
   { recordReference: "google:drive:1", dataClass: "FILE_METADATA", fields: [{ key: "kind", value: "file" }, { key: "name", value: "status.md" }] },
+  { recordReference: "google:drive:2", dataClass: "FILE_METADATA", fields: [{ key: "kind", value: "file" }, { key: "name", value: "release-notes.md" }] },
 ];
 
 export const googleReadAdapter = createSyntheticReadAdapter({

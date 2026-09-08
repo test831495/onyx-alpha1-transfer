@@ -32,4 +32,22 @@ describe("universal connector intelligence", () => {
     expect(run.synthesis.excludedClaimIds).toHaveLength(0);
     expect(run.receipt.completionDisposition).toBe("COMPLETE_RESULTS");
   });
+
+  it("rejects cursors bound to another connector or account", async () => {
+    const response = await adapter.execute({
+      operation: "SEARCH",
+      context: {
+        connectorId: "connector:synthetic",
+        accountScopeReference: "account:synthetic",
+        vaultReferenceId: "vault:synthetic",
+        purposeReference: "purpose:status",
+        trustedTimeReference: "trusted:synthetic",
+      },
+      capabilityId: "synthetic.read",
+      queryReference: "today",
+      cursor: "connector:other:account:synthetic:2",
+      pageSize: 10,
+    });
+    expect(response.error?.code).toBe("CURSOR_INVALID");
+  });
 });

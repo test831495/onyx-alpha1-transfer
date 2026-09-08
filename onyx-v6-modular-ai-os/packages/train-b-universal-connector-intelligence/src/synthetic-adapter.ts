@@ -74,6 +74,12 @@ function pageRecords(definition: SyntheticAdapterDefinition, request: AdapterOpe
   return selected.map((record) => normalizeAdapterRecord(record, request.context.trustedTimeReference));
 }
 
+function invalidCursor(request: AdapterOperationRequest): boolean {
+  if (!request.cursor) return false;
+  const [connectorId, accountScopeReference, pageReference] = request.cursor.split(":");
+  return connectorId !== request.context.connectorId || accountScopeReference !== request.context.accountScopeReference || !/^\d+$/.test(pageReference ?? "");
+}
+
 export function createSyntheticReadAdapter(definition: SyntheticAdapterDefinition): ConnectorAdapter {
   const registration = Object.freeze({
     metadata: Object.freeze({
@@ -98,6 +104,12 @@ export function createSyntheticReadAdapter(definition: SyntheticAdapterDefinitio
         return Object.freeze({
           ...resultBase(request, definition.adapterId),
           error: Object.freeze({ code: "VAULT_REFERENCE_INVALID" as const, retryable: false, safe: true as const }),
+        });
+      }
+      if (invalidCursor(request)) {
+        return Object.freeze({
+          ...resultBase(request, definition.adapterId),
+          error: Object.freeze({ code: "CURSOR_INVALID" as const, retryable: false, safe: true as const }),
         });
       }
       if (!READ_OPERATIONS.includes(request.operation as typeof READ_OPERATIONS[number])) {
