@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AdapterOperationRequest, ConnectorAdapter } from "@onyx/train-b-connector-adapter-foundation";
-import { B1_FEATURE_FLAGS, B1_PROVIDER_MATRIX, createSyntheticReadAdapter, projectOperationalState, runUniversalConnectorIntelligence } from "../src/index.js";
+import { B1_BUDGETS, B1_FEATURE_FLAGS, B1_PROVIDER_MATRIX, createSyntheticReadAdapter, projectOperationalState, runUniversalConnectorIntelligence } from "../src/index.js";
 
 const adapter = createSyntheticReadAdapter({
   adapterId: "synthetic.read.one",
@@ -84,6 +84,10 @@ describe("universal connector intelligence", () => {
     expect(state.enabled).toBe(false);
     expect(state.nonAuthorizing).toBe(true);
     expect(state.freshness).toBe("STALE");
-    expect(B1_FEATURE_FLAGS.every((flag) => flag.defaultState === "OFF" && flag.killSwitchState === "OFF" && !flag.activationAllowed)).toBe(true);
+    expect(B1_FEATURE_FLAGS.every((flag) => flag.defaultState === "OFF" && flag.killSwitchState === "OFF" && !flag.activationAllowed && flag.reviewOn && flag.removalCondition)).toBe(true);
+    expect(B1_BUDGETS.maximumProviders).toBe(4);
+    expect(B1_BUDGETS.maximumPagesPerProvider).toBe(5);
+    expect(B1_BUDGETS.maximumAutomaticRetries).toBe(1);
+    expect(B1_BUDGETS.maximumProviderDeadlineMs).toBe(6000);
   });
 });
