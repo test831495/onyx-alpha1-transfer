@@ -714,6 +714,89 @@ importers:
         specifier: ^3.2.7
         version: 3.2.7(@types/node@26.2.0)(tsx@4.23.12)
 
+  packages/train-b-github-read-adapter:
+    dependencies:
+      '@onyx/train-b-connector-adapter-foundation':
+        specifier: workspace:*
+        version: link:../train-b-connector-adapter-foundation
+      '@onyx/train-b-universal-connector-intelligence':
+        specifier: workspace:*
+        version: link:../train-b-universal-connector-intelligence
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.7
+        version: 3.2.7(@types/node@26.2.0)(tsx@4.23.12)
+
+  packages/train-b-google-read-adapter:
+    dependencies:
+      '@onyx/train-b-connector-adapter-foundation':
+        specifier: workspace:*
+        version: link:../train-b-connector-adapter-foundation
+      '@onyx/train-b-universal-connector-intelligence':
+        specifier: workspace:*
+        version: link:../train-b-universal-connector-intelligence
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.7
+        version: 3.2.7(@types/node@26.2.0)(tsx@4.23.12)
+
+  packages/train-b-microsoft-read-adapter:
+    dependencies:
+      '@onyx/train-b-connector-adapter-foundation':
+        specifier: workspace:*
+        version: link:../train-b-connector-adapter-foundation
+      '@onyx/train-b-universal-connector-intelligence':
+        specifier: workspace:*
+        version: link:../train-b-universal-connector-intelligence
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.7
+        version: 3.2.7(@types/node@26.2.0)(tsx@4.23.12)
+
+  packages/train-b-netlify-read-adapter:
+    dependencies:
+      '@onyx/train-b-connector-adapter-foundation':
+        specifier: workspace:*
+        version: link:../train-b-connector-adapter-foundation
+      '@onyx/train-b-universal-connector-intelligence':
+        specifier: workspace:*
+        version: link:../train-b-universal-connector-intelligence
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.7
+        version: 3.2.7(@types/node@26.2.0)(tsx@4.23.12)
+
+  packages/train-b-universal-connector-intelligence:
+    dependencies:
+      '@onyx/train-b-connector-adapter-foundation':
+        specifier: workspace:*
+        version: link:../train-b-connector-adapter-foundation
+      '@onyx/train-b-cross-application-synthesis-foundation':
+        specifier: workspace:*
+        version: link:../train-b-cross-application-synthesis-foundation
+      '@onyx/train-b-universal-search-foundation':
+        specifier: workspace:*
+        version: link:../train-b-universal-search-foundation
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.7
+        version: 3.2.7(@types/node@26.2.0)(tsx@4.23.12)
+
   packages/train-b-universal-search-foundation:
     dependencies:
       '@onyx/train-b-application-foundation':

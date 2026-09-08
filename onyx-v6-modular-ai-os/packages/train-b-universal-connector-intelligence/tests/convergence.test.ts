@@ -1,0 +1,35 @@
+import { describe, expect, it } from "vitest";
+import { createSyntheticReadAdapter, B1_PROVIDER_MATRIX, runUniversalConnectorIntelligence } from "../src/index.js";
+
+const adapter = createSyntheticReadAdapter({
+  adapterId: "synthetic.read.one",
+  providerMetadataReference: "provider-family:synthetic",
+  capabilities: [{ capabilityId: "synthetic.read", permissionReference: "synthetic:read", dataClass: "METADATA", operations: ["SEARCH", "LIST", "GET_BY_ID", "GET_CHANGES"] }],
+  records: [{ recordReference: "synthetic:record:1", dataClass: "METADATA", fields: [{ key: "status", value: "ready" }] }],
+});
+const candidate = { applicationId: "application.files", capabilityId: "files.search", connectorId: "connector:synthetic", accountScopeReference: "account:synthetic", dataClass: "METADATA", supportedSearchModes: ["METADATA"] as const, sourceHealth: "HEALTHY", freshnessState: "CURRENT", attributionAvailable: true, privacyDecision: "AUTHORIZED", regionCompatible: true, availability: "AVAILABLE", evidenceReferences: ["synthetic:evidence:1"], priority: 1 } as const;
+
+describe("universal connector intelligence", () => {
+  it("freezes four synthetic-only disabled provider lanes", () => {
+    expect(B1_PROVIDER_MATRIX).toHaveLength(4);
+    expect(B1_PROVIDER_MATRIX.every((lane) => lane.syntheticOnly && !lane.enabledByDefault)).toBe(true);
+    expect(B1_PROVIDER_MATRIX.every((lane) => lane.forbiddenOperations.includes("DELETE"))).toBe(true);
+  });
+
+  it("keeps adapters disabled and produces attributed partial-safe synthesis inputs", async () => {
+    expect(adapter.registration.enabled).toBe(false);
+    const run = await runUniversalConnectorIntelligence({ requestId: "request:hero", accountScopeReference: "account:synthetic", purposeReference: "purpose:status", queryTextReference: "today", searchModes: ["METADATA"], applicationScopes: ["workspace"], maximumResults: 20, pageSize: 10 }, [
+      { adapter, candidate },
+    ]);
+    expect(run.results.length).toBeGreaterThan(0);
+    expect(run.results.every((result) => result.evidenceReferences.length > 0)).toBe(true);
+    expect(run.synthesis.nonAuthorizing).toBe(true);
+  });
+
+  it("rejects cross-account evidence before synthesis admission", async () => {
+    const run = await runUniversalConnectorIntelligence({ requestId: "request:isolation", accountScopeReference: "account:other", purposeReference: "purpose:status", queryTextReference: "today", searchModes: ["METADATA"], applicationScopes: ["application.files"], maximumResults: 20, pageSize: 10 }, [{ adapter, candidate }]);
+    expect(run.results).toHaveLength(0);
+    expect(run.synthesis.excludedClaimIds).toHaveLength(0);
+    expect(run.receipt.completionDisposition).toBe("COMPLETE_RESULTS");
+  });
+});
