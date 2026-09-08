@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { AdapterOperationRequest, ConnectorAdapter } from "@onyx/train-b-connector-adapter-foundation";
 import { createSyntheticReadAdapter, B1_PROVIDER_MATRIX, runUniversalConnectorIntelligence } from "../src/index.js";
 
 const adapter = createSyntheticReadAdapter({
@@ -8,6 +9,20 @@ const adapter = createSyntheticReadAdapter({
   records: [{ recordReference: "synthetic:record:1", dataClass: "METADATA", fields: [{ key: "status", value: "ready" }] }],
 });
 const candidate = { applicationId: "application.files", capabilityId: "files.search", connectorId: "connector:synthetic", accountScopeReference: "account:synthetic", dataClass: "METADATA", supportedSearchModes: ["METADATA"] as const, sourceHealth: "HEALTHY", freshnessState: "CURRENT", attributionAvailable: true, privacyDecision: "AUTHORIZED", regionCompatible: true, availability: "AVAILABLE", evidenceReferences: ["synthetic:evidence:1"], priority: 1 } as const;
+const unavailableAdapter: ConnectorAdapter = Object.freeze({
+  registration: adapter.registration,
+  async execute(request: AdapterOperationRequest) {
+    return Object.freeze({
+      operation: request.operation,
+      adapterReference: adapter.registration.metadata.adapterId,
+      connectorId: request.context.connectorId,
+      accountScopeReference: request.context.accountScopeReference,
+      receipt: Object.freeze({ requestIdReference: request.context.idempotencyKey ?? "synthetic:unavailable", operation: request.operation, completed: false, cancelled: false, partial: true, nonAuthorizing: true as const }),
+      error: Object.freeze({ code: "RATE_LIMITED" as const, retryable: true, safe: true as const }),
+      nonAuthorizing: true as const,
+    });
+  },
+});
 
 describe("universal connector intelligence", () => {
   it("freezes four synthetic-only disabled provider lanes", () => {
@@ -49,5 +64,18 @@ describe("universal connector intelligence", () => {
       pageSize: 10,
     });
     expect(response.error?.code).toBe("CURSOR_INVALID");
+  });
+
+  it("returns truthful partial coverage when one eligible provider is unavailable", async () => {
+    const unavailableCandidate = { ...candidate, connectorId: "connector:unavailable", priority: 2 } as const;
+    const run = await runUniversalConnectorIntelligence({ requestId: "request:partial", accountScopeReference: "account:synthetic", purposeReference: "purpose:status", queryTextReference: "today", searchModes: ["METADATA"], applicationScopes: ["workspace"], maximumResults: 20, pageSize: 10 }, [
+      { adapter, candidate },
+      { adapter: unavailableAdapter, candidate: unavailableCandidate },
+    ]);
+    expect(run.unavailableSources).toEqual(["connector:unavailable"]);
+    expect(run.receipt.completionDisposition).toBe("PARTIAL_RESULTS");
+    expect(run.receipt.partialSourceCount).toBe(1);
+    expect(run.receipt.completedSourceCount).toBe(1);
+    expect(run.results.every((result) => result.evidenceReferences.length > 0)).toBe(true);
   });
 });

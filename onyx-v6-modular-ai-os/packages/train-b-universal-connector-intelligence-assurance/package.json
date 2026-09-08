@@ -1,0 +1,21 @@
+{
+  "name": "@onyx/train-b-universal-connector-intelligence-assurance",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@onyx/train-b-google-read-adapter": "workspace:*",
+    "@onyx/train-b-github-read-adapter": "workspace:*",
+    "@onyx/train-b-microsoft-read-adapter": "workspace:*",
+    "@onyx/train-b-netlify-read-adapter": "workspace:*",
+    "@onyx/train-b-universal-connector-intelligence": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.7"
+  }
+}

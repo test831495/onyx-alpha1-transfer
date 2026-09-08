@@ -121,7 +121,7 @@ export async function runUniversalConnectorIntelligence(
     requestedScopes: input.applicationScopes ?? [],
     eligibleSourceCount: plan.sources.filter((source) => source.sourceState === "ELIGIBLE").length,
     ineligibleSourceCount: plan.sources.filter((source) => source.sourceState !== "ELIGIBLE").length,
-    completedSourceCount: plan.sources.length - unavailableSources.length,
+    completedSourceCount: plan.sources.filter((source) => source.sourceState === "ELIGIBLE").length - unavailableSources.length,
     emptySourceCount: ranked.length === 0 ? 1 : 0,
     partialSourceCount: unavailableSources.length,
     failedSourceCount: unavailableSources.length,
