@@ -1,0 +1,2 @@
+import type { CostEvidence } from "./model";
+export function evaluateCostEvidence(value: CostEvidence, budgetRequired = true): CostEvidence { if (budgetRequired && (value.disposition === "COST_UNKNOWN" || value.freshnessState === "UNKNOWN")) throw new Error("Cost evidence is not assessable"); return Object.freeze({ ...value }); }

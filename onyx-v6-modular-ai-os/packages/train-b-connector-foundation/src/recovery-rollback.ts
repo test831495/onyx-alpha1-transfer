@@ -1,0 +1,2 @@
+import type { RecoveryPlan } from "./model";
+export function createRecoveryPlan(value: RecoveryPlan): RecoveryPlan { if (value.steps.length > 64 || value.gaps.length > 64) throw new Error("Recovery bounds exceeded"); if (value.disposition === "ROLLBACK_READY" && value.externalEffectsUnknown) throw new Error("Unknown external effects block rollback"); return Object.freeze({ ...value, steps: Object.freeze([...value.steps]), gaps: Object.freeze([...value.gaps]) }); }

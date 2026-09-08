@@ -1,0 +1,2 @@
+import type { SourceAttributionRuntime } from "./model";
+export function createSourceAttribution(value: SourceAttributionRuntime): SourceAttributionRuntime { if (!value.connectorId || !value.accountReference || !value.adapterReference || !value.providerRecordReference || !value.observationTimeReference || !value.complete) throw new Error("Required source attribution is missing"); return Object.freeze({ ...value, evidenceReferences: Object.freeze([...value.evidenceReferences]) }); }
