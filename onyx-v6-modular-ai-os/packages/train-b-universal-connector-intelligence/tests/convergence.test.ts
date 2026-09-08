@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AdapterOperationRequest, ConnectorAdapter } from "@onyx/train-b-connector-adapter-foundation";
-import { createSyntheticReadAdapter, B1_PROVIDER_MATRIX, runUniversalConnectorIntelligence } from "../src/index.js";
+import { B1_FEATURE_FLAGS, B1_PROVIDER_MATRIX, createSyntheticReadAdapter, projectOperationalState, runUniversalConnectorIntelligence } from "../src/index.js";
 
 const adapter = createSyntheticReadAdapter({
   adapterId: "synthetic.read.one",
@@ -77,5 +77,13 @@ describe("universal connector intelligence", () => {
     expect(run.receipt.partialSourceCount).toBe(1);
     expect(run.receipt.completedSourceCount).toBe(1);
     expect(run.results.every((result) => result.evidenceReferences.length > 0)).toBe(true);
+  });
+
+  it("projects operational limits without enabling or authorizing a provider", () => {
+    const state = projectOperationalState({ adapterId: "synthetic.read.one", health: "DEGRADED", freshness: "STALE", quota: "LIMITED", cost: "UNKNOWN", revoked: false, recoverable: true });
+    expect(state.enabled).toBe(false);
+    expect(state.nonAuthorizing).toBe(true);
+    expect(state.freshness).toBe("STALE");
+    expect(B1_FEATURE_FLAGS.every((flag) => flag.defaultState === "OFF" && flag.killSwitchState === "OFF" && !flag.activationAllowed)).toBe(true);
   });
 });
