@@ -21,4 +21,22 @@ describe("conflict contracts", () => {
     ]);
     expect(result.conflicts.map((item) => item.id)).toEqual(["a-1", "z-1"]);
   });
+
+  it("blocks account-scope conflicts in a fail-closed manner", () => {
+    const result = evaluateConflicts([{ id: "acct-1", kind: "ACCOUNT_SCOPE_CONFLICT", severity: "BLOCKING", title: "Account scope conflict", detail: "Private account cannot mix with shared room", evidenceIds: ["ev-1"], resolution: "BLOCKED", nonAuthorizing: true }]);
+    expect(result.disposition).toBe("BLOCKED");
+    expect(result.conflicts[0]?.kind).toBe("ACCOUNT_SCOPE_CONFLICT");
+  });
+
+  it("blocks data-class conflicts in a fail-closed manner", () => {
+    const result = evaluateConflicts([{ id: "dc-1", kind: "DATA_CLASS_CONFLICT", severity: "BLOCKING", title: "Data class conflict", detail: "Sensitive data class cannot mix with public query scope", evidenceIds: ["ev-2"], resolution: "BLOCKED", nonAuthorizing: true }]);
+    expect(result.disposition).toBe("BLOCKED");
+    expect(result.suggestions[0]).toContain("review dc-1");
+  });
+
+  it("fails closed on unknown blocking conflicts and preserves immutability", () => {
+    const result = evaluateConflicts([{ id: "u-1", kind: "UNKNOWN_CONFLICT", severity: "BLOCKING", title: "Unknown blocking conflict", detail: "Unrecognized but blocking", evidenceIds: ["ev-3"], resolution: "BLOCKED", nonAuthorizing: true }]);
+    expect(result.disposition).toBe("BLOCKED");
+    expect(Object.isFrozen(result)).toBe(true);
+  });
 });

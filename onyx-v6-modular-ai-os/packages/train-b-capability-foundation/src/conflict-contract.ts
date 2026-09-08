@@ -49,8 +49,12 @@ export function evaluateConflicts(conflicts: readonly ConflictRecord[]): Conflic
     return Object.freeze({ disposition: "NOT_ASSESSABLE", conflicts: Object.freeze([]), suggestions: Object.freeze([]) });
   }
   const ordered = [...conflicts].sort((a, b) => a.id.localeCompare(b.id));
-  const blocking = ordered.some((conflict) => conflict.severity === "BLOCKING" && conflict.kind === "PRIVACY_CONFLICT");
-  const disposition: ConflictResolutionDisposition = blocking ? "BLOCKED" : ordered.length > 0 ? "REQUIRES_CLARIFICATION" : "NO_CONFLICT";
+  const failClosed = ordered.some((conflict) => {
+    if (conflict.severity === "BLOCKING") return true;
+    if (conflict.resolution === "BLOCKED") return true;
+    return ["ACCOUNT_SCOPE_CONFLICT", "DATA_CLASS_CONFLICT", "UNKNOWN_CONFLICT"].includes(conflict.kind);
+  });
+  const disposition: ConflictResolutionDisposition = failClosed ? "BLOCKED" : ordered.length > 0 ? "REQUIRES_CLARIFICATION" : "NO_CONFLICT";
   return Object.freeze({
     disposition,
     conflicts: Object.freeze(ordered),

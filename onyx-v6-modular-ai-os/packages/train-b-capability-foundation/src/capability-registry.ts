@@ -1,6 +1,8 @@
 import type { CapabilityDefinition, CapabilityRegistrySnapshot } from "./capability-model";
 import { assertCapabilityDefinition } from "./validators";
 
+export const MAX_REGISTRY_ENTRIES = 128;
+
 export interface CapabilityRegistry {
   readonly definitions: Map<string, CapabilityDefinition>;
   register(definition: CapabilityDefinition): CapabilityDefinition;
@@ -17,13 +19,20 @@ function sortDefinitions(entries: readonly CapabilityDefinition[]): readonly Cap
 export function createCapabilityRegistry(): CapabilityRegistry {
   const definitions = new Map<string, CapabilityDefinition>();
 
+  if (definitions.size >= MAX_REGISTRY_ENTRIES) {
+    throw new Error("Registry has reached the maximum entry limit");
+  }
+
   return {
     definitions,
     register(definition: CapabilityDefinition): CapabilityDefinition {
+      if (definitions.size >= MAX_REGISTRY_ENTRIES) {
+        throw new Error("Registry has reached the maximum entry limit");
+      }
       const normalized = assertCapabilityDefinition(definition);
       const existing = definitions.get(normalized.id);
       if (existing) {
-        throw new Error(`Duplicate capability ID and version: ${normalized.id}@${normalized.version}`);
+        throw new Error(`Duplicate capability ID: ${normalized.id}`);
       }
       const next = Object.freeze({ ...normalized });
       definitions.set(normalized.id, next);

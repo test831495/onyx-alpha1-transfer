@@ -1,5 +1,9 @@
 import type { CapabilityDefinition, CapabilityRegistrySnapshot } from "./capability-model";
 
+export const MAX_GRAPH_NODES = 256;
+export const MAX_GRAPH_EDGES = 1024;
+export const MAX_TRAVERSAL_DEPTH = 64;
+
 export const GRAPH_EDGE_KINDS = [
   "REQUIRES",
   "OPTIONAL_REQUIRES",
@@ -10,6 +14,10 @@ export const GRAPH_EDGE_KINDS = [
   "FALLBACK_TO",
 ] as const;
 export type GraphEdgeKind = (typeof GRAPH_EDGE_KINDS)[number];
+
+const HARD_DEPENDENCY_EDGE_KINDS = new Set<GraphEdgeKind>(["REQUIRES"]);
+const OPTIONAL_DEPENDENCY_EDGE_KINDS = new Set<GraphEdgeKind>(["OPTIONAL_REQUIRES"]);
+const NON_DEPENDENCY_EDGE_KINDS = new Set<GraphEdgeKind>(["REFINES", "COMPOSES", "CONFLICTS_WITH", "SUPERSEDES", "FALLBACK_TO"]);
 
 export interface CapabilityGraphEdge {
   readonly kind: GraphEdgeKind;
@@ -30,6 +38,12 @@ export interface CapabilityGraph {
 }
 
 export function createCapabilityGraph(snapshot: CapabilityRegistrySnapshot, edges: readonly CapabilityGraphEdge[]): CapabilityGraph {
+  if (snapshot.entries.length > MAX_GRAPH_NODES) {
+    throw new TypeError(`Graph exceeds the max node limit: ${snapshot.entries.length} > ${MAX_GRAPH_NODES}`);
+  }
+  if (edges.length > MAX_GRAPH_EDGES) {
+    throw new TypeError(`Graph exceeds the max edge limit: ${edges.length} > ${MAX_GRAPH_EDGES}`);
+  }
   const nodes = snapshot.ids;
   const known = new Set(nodes);
   const seen = new Set<string>();
@@ -72,6 +86,8 @@ export function createCapabilityGraph(snapshot: CapabilityRegistrySnapshot, edge
     }
   }
 
+  const optionalEvidence = validEdges.filter((edge) => OPTIONAL_DEPENDENCY_EDGE_KINDS.has(edge.kind));
+
   const dependencyClosure: Record<string, readonly string[]> = {};
   for (const node of nodes) {
     dependencyClosure[node] = Object.freeze([...collectDependencies(validEdges, node)]);
@@ -84,6 +100,10 @@ export function createCapabilityGraph(snapshot: CapabilityRegistrySnapshot, edge
   for (const edge of validEdges) {
     if (edge.kind === "CONFLICTS_WITH") {
       conflicts.push(`${edge.from}->${edge.to}`);
+      continue;
+    }
+    if (!HARD_DEPENDENCY_EDGE_KINDS.has(edge.kind)) {
+      continue;
     }
     const from = snapshot.byId[edge.from];
     const to = snapshot.byId[edge.to];
@@ -94,6 +114,10 @@ export function createCapabilityGraph(snapshot: CapabilityRegistrySnapshot, edge
     if (!to.runtimeEnabled || to.lifecycleState !== "ACTIVE") {
       disabledDependencies.push(`${edge.from}->${edge.to}`);
     }
+  }
+
+  if (optionalEvidence.length > 0) {
+    // Optional dependency evidence is tracked separately and is intentionally non-blocking.
   }
 
   return Object.freeze({
@@ -107,13 +131,17 @@ export function createCapabilityGraph(snapshot: CapabilityRegistrySnapshot, edge
   });
 }
 
-function collectDependencies(edges: readonly CapabilityGraphEdge[], node: string, seen = new Set<string>()): string[] {
+function collectDependencies(edges: readonly CapabilityGraphEdge[], node: string, seen = new Set<string>(), depth = 0): string[] {
+  if (depth > MAX_TRAVERSAL_DEPTH) {
+    throw new TypeError(`Traversal exceeds the max dependency depth: ${depth} > ${MAX_TRAVERSAL_DEPTH}`);
+  }
   const collected: string[] = [];
   for (const edge of edges) {
+    if (!HARD_DEPENDENCY_EDGE_KINDS.has(edge.kind)) continue;
     if (edge.from !== node || seen.has(edge.to)) continue;
     seen.add(edge.to);
     collected.push(edge.to);
-    collected.push(...collectDependencies(edges, edge.to, seen));
+    collected.push(...collectDependencies(edges, edge.to, seen, depth + 1));
   }
   return [...new Set(collected)].sort();
 }

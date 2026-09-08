@@ -91,6 +91,115 @@ describe("capability graph", () => {
     expect(() => createCapabilityGraph(registry.snapshot(), [{ kind: "REQUIRES", from: "calendar.events.read", to: "calendar.events.read", reasonCode: "X" }])).toThrow();
   });
 
+  it("uses an explicit hard-dependency allowlist and keeps non-dependency edges out of closure", () => {
+    const registry = createCapabilityRegistry();
+    registerFixture(registry);
+    registry.register({
+      id: "repositories.pull_requests.read",
+      version: "1.0.0",
+      label: "Pull request read",
+      description: "Read PR metadata",
+      domain: "repositories",
+      operations: ["READ"],
+      riskClass: "MEDIUM",
+      inputContractIds: [],
+      outputContractIds: [],
+      dataClasses: ["REPOSITORY"],
+      freshnessRequirement: "CURRENT",
+      sourceAttributionRequired: true,
+      costClass: "LOW",
+      dependencies: [],
+      conflicts: [],
+      lifecycleState: "ACTIVE",
+      runtimeEnabled: true,
+      owner: "Rahul",
+      purpose: "read PR data",
+      providerNeutralImplementation: true,
+    });
+    registry.register({
+      id: "files.search",
+      version: "1.0.0",
+      label: "File search",
+      description: "Find files",
+      domain: "files",
+      operations: ["READ"],
+      riskClass: "LOW",
+      inputContractIds: [],
+      outputContractIds: [],
+      dataClasses: ["FILE"],
+      freshnessRequirement: "CURRENT",
+      sourceAttributionRequired: true,
+      costClass: "LOW",
+      dependencies: [],
+      conflicts: [],
+      lifecycleState: "ACTIVE",
+      runtimeEnabled: true,
+      owner: "Rahul",
+      purpose: "search files",
+      providerNeutralImplementation: true,
+    });
+    registry.register({
+      id: "mail.messages.read",
+      version: "1.0.0",
+      label: "Mail messages read",
+      description: "Read mail messages",
+      domain: "mail",
+      operations: ["READ"],
+      riskClass: "LOW",
+      inputContractIds: [],
+      outputContractIds: [],
+      dataClasses: ["EMAIL_MESSAGE"],
+      freshnessRequirement: "CURRENT",
+      sourceAttributionRequired: true,
+      costClass: "LOW",
+      dependencies: [],
+      conflicts: [],
+      lifecycleState: "ACTIVE",
+      runtimeEnabled: true,
+      owner: "Rahul",
+      purpose: "read mail messages",
+      providerNeutralImplementation: true,
+    });
+    registry.register({
+      id: "deployments.status.read",
+      version: "1.0.0",
+      label: "Deployment status read",
+      description: "Read deployment status",
+      domain: "deployments",
+      operations: ["READ"],
+      riskClass: "MEDIUM",
+      inputContractIds: [],
+      outputContractIds: [],
+      dataClasses: ["DEPLOYMENT"],
+      freshnessRequirement: "CURRENT",
+      sourceAttributionRequired: true,
+      costClass: "LOW",
+      dependencies: [],
+      conflicts: [],
+      lifecycleState: "ACTIVE",
+      runtimeEnabled: true,
+      owner: "Rahul",
+      purpose: "read deployment status",
+      providerNeutralImplementation: true,
+    });
+
+    const graph = createCapabilityGraph(registry.snapshot(), [
+      { kind: "REQUIRES", from: "applications.open", to: "calendar.events.read", reasonCode: "APP_OPEN_NEEDS_CALENDAR" },
+      { kind: "OPTIONAL_REQUIRES", from: "applications.open", to: "tasks.items.read", reasonCode: "APP_OPEN_OPTIONAL_TASKS" },
+      { kind: "REFINES", from: "applications.open", to: "mail.messages.read", reasonCode: "APP_OPEN_REFINES_MAIL" },
+      { kind: "COMPOSES", from: "applications.open", to: "deployments.status.read", reasonCode: "APP_OPEN_COMPOSES_DEPLOYMENTS" },
+      { kind: "CONFLICTS_WITH", from: "applications.open", to: "repositories.pull_requests.read", reasonCode: "APP_OPEN_CONFLICTS_WITH_PRS" },
+      { kind: "SUPERSEDES", from: "applications.open", to: "files.search", reasonCode: "APP_OPEN_SUPERSEDES_FILES" },
+      { kind: "FALLBACK_TO", from: "applications.open", to: "tasks.items.read", reasonCode: "APP_OPEN_FALLBACK_TASKS" },
+    ]);
+
+    expect(graph.dependencyClosure["applications.open"]).toEqual(["calendar.events.read"]);
+    expect(graph.conflicts).toContain("applications.open->repositories.pull_requests.read");
+    expect(graph.dependencyClosure["applications.open"]).not.toContain("tasks.items.read");
+    expect(graph.dependencyClosure["applications.open"]).not.toContain("repositories.pull_requests.read");
+    expect(graph.dependencyClosure["applications.open"]).not.toContain("files.search");
+  });
+
   it("detects cycles and disabled dependencies", () => {
     const registry = createCapabilityRegistry();
     registerFixture(registry);
