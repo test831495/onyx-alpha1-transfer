@@ -1,0 +1,10 @@
+export const APPROVED_APPLICATION_IDS = Object.freeze(["workspace","automation","calendar","tasks","news","messages","health","settings","files","executive","finance","notes","memory"] as const);
+export type ApplicationId = (typeof APPROVED_APPLICATION_IDS)[number];
+export const APPLICATION_ACTIONS = Object.freeze(["OPEN","CLOSE","SHOW","HIDE","EXPLAIN","SEARCH","SUMMARIZE","DESCRIBE_AVAILABILITY","DESCRIBE_SOURCES","DESCRIBE_FRESHNESS","DESCRIBE_HEALTH"] as const);
+export type ApplicationAction = (typeof APPLICATION_ACTIONS)[number];
+export const APPLICATION_CATEGORIES = Object.freeze(["PRODUCTIVITY","COMMUNICATION","INFORMATION","SYSTEM","PERSONAL","OPERATIONS"] as const);
+export type ApplicationCategory = (typeof APPLICATION_CATEGORIES)[number];
+export const PRIVACY_CLASSES = Object.freeze(["PUBLIC","PERSONAL","SENSITIVE","OWNER_ONLY"] as const);
+export type PrivacyClass = (typeof PRIVACY_CLASSES)[number];
+export interface ApplicationDefinition { readonly applicationId: ApplicationId; readonly version: string; readonly displayName: string; readonly aliases: readonly string[]; readonly category: ApplicationCategory; readonly lifecycleState: "ACTIVE" | "DISABLED"; readonly shellTarget: string; readonly parentView: string; readonly requiredCapabilities: readonly string[]; readonly optionalCapabilities: readonly string[]; readonly supportedActions: readonly ApplicationAction[]; readonly privacyClass: PrivacyClass; readonly sharedRoomPolicy: "REDUCE" | "HIDE" | "ALLOW"; readonly devices: readonly ("WEB"|"DESKTOP"|"MOBILE"|"TABLET"|"TV"|"FUTURE_XR")[]; readonly placeholderAllowed: boolean; readonly attributionRequired: boolean; readonly freshnessRequired: boolean; readonly nonAuthorizing: true; }
+export interface ApplicationRegistrySnapshot { readonly entries: readonly ApplicationDefinition[]; readonly ids: readonly ApplicationId[]; readonly byId: Readonly<Record<string, ApplicationDefinition>>; }
