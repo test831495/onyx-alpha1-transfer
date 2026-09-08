@@ -13,6 +13,11 @@ export type RollbackDisposition = (typeof ROLLBACK_DISPOSITIONS)[number];
 export type ConnectorId = string;
 export type ConnectorAccountId = string;
 export type VaultReferenceId = string;
+export const MAX_ATTRIBUTION_EVIDENCE_REFERENCES = 64;
+export const MAX_EVIDENCE_REFERENCE_LENGTH = 256;
+export const MAX_VALIDATION_DEPTH = 8;
+export const MAX_VALIDATION_KEYS = 512;
+export const MAX_VALIDATION_ARRAY_ELEMENTS = 128;
 export interface CapabilityBinding { readonly capabilityId: string; readonly operations: readonly CapabilityOperation[]; readonly permissionReferences: readonly string[]; readonly attributionRequired: boolean; readonly freshnessRequirement: string; readonly costClass: string; }
 export interface AccountConnectorBinding { readonly connectorId: ConnectorId; readonly accountId: ConnectorAccountId; readonly capabilityIds: readonly string[]; }
 export interface ConnectorRegistration { readonly id: ConnectorId; readonly type: string; readonly lifecycleState: ConnectorLifecycleState; readonly adapterReference: string; readonly requiresAccount: boolean; readonly requiresCredential: boolean; readonly bindings: readonly CapabilityBinding[]; readonly maxAccounts?: number; }
