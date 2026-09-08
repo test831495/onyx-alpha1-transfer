@@ -16,6 +16,7 @@ import {
   type ClaimSupportAssessment,
   type EvidenceInput,
 } from "@onyx/train-b-cross-application-synthesis-foundation";
+import { B1_BUDGETS } from "./operational-governance.js";
 
 export type IntelligenceSource = Readonly<{ adapter: ConnectorAdapter; candidate: SearchSourceCandidate }>;
 export type IntelligenceRun = Readonly<{
@@ -31,10 +32,11 @@ export async function runUniversalConnectorIntelligence(
   input: SearchRequestInput,
   sources: readonly IntelligenceSource[],
 ): Promise<IntelligenceRun> {
-  const plan = buildSearchPlan(input, sources.map((source) => source.candidate));
+  const boundedSources = sources.slice(0, B1_BUDGETS.maximumProviders);
+  const plan = buildSearchPlan(input, boundedSources.map((source) => source.candidate));
   const results: SearchResult[] = [];
   const unavailableSources: string[] = [];
-  for (const source of sources) {
+  for (const source of boundedSources) {
     const planned = plan.sources.find((item) => item.connectorId === source.candidate.connectorId);
     if (planned?.sourceState !== "ELIGIBLE") continue;
     const request: AdapterOperationRequest = {
@@ -57,6 +59,7 @@ export async function runUniversalConnectorIntelligence(
       continue;
     }
     for (const [rank, record] of response.page.items.entries()) {
+      if (results.length >= B1_BUDGETS.maximumNormalizedResults) break;
       results.push(normalizeSearchResult({
         resultId: `${source.candidate.connectorId}:${record.recordReference}`,
         sourceResultReference: record.recordReference,
@@ -97,16 +100,16 @@ export async function runUniversalConnectorIntelligence(
     duplicateGroupReference: result.duplicateGroupReference,
     conflictGroupReference: result.conflictGroupReference,
   }));
-  const decisions = evidence.map((item) => admitEvidence(item, { accountScopeReference: input.accountScopeReference, allowStale: false }));
+  const decisions = evidence.slice(0, B1_BUDGETS.maximumAdmittedEvidenceItems).map((item) => admitEvidence(item, { accountScopeReference: input.accountScopeReference, allowStale: false }));
   const admitted = decisions.filter((decision) => decision.disposition === "ADMITTED").map((decision) => decision.evidenceId);
-  const claims: ClaimSupportAssessment[] = ranked.map((result, index) => assessClaimSupport({
+  const claims: ClaimSupportAssessment[] = ranked.slice(0, B1_BUDGETS.maximumFactualClaims).map((result, index) => assessClaimSupport({
     claimId: `claim:${result.resultId}`,
     evidenceIds: [`evidence:${result.resultId}`],
     admittedEvidenceIds: admitted.includes(`evidence:${result.resultId}`) ? [`evidence:${result.resultId}`] : [],
     contradictionEvidenceIds: result.conflictGroupReference ? [`evidence:${result.resultId}`] : [],
     citationIds: [`citation:${index}`],
   }));
-  const citations = ranked.map((result, index) => createCitation({
+  const citations = ranked.slice(0, B1_BUDGETS.maximumCitations).map((result, index) => createCitation({
     citationId: `citation:${index}`,
     claimId: `claim:${result.resultId}`,
     evidenceId: `evidence:${result.resultId}`,

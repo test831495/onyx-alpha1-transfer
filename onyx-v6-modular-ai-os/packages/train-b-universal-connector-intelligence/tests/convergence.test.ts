@@ -79,6 +79,16 @@ describe("universal connector intelligence", () => {
     expect(run.results.every((result) => result.evidenceReferences.length > 0)).toBe(true);
   });
 
+  it("bounds providers at the provider-neutral orchestration boundary", async () => {
+    const sources = Array.from({ length: 5 }, (_, index) => ({
+      adapter,
+      candidate: { ...candidate, connectorId: `connector:${index}`, priority: index + 1 },
+    }));
+    const run = await runUniversalConnectorIntelligence({ requestId: "request:provider-bound", accountScopeReference: "account:synthetic", purposeReference: "purpose:status", queryTextReference: "today", searchModes: ["METADATA"], applicationScopes: ["workspace"], maximumResults: 150, pageSize: 50 }, sources);
+    expect(run.plan.sources).toHaveLength(4);
+    expect(run.receipt.eligibleSourceCount).toBe(4);
+  });
+
   it("projects operational limits without enabling or authorizing a provider", () => {
     const state = projectOperationalState({ adapterId: "synthetic.read.one", health: "DEGRADED", freshness: "STALE", quota: "LIMITED", cost: "UNKNOWN", revoked: false, recoverable: true });
     expect(state.enabled).toBe(false);
