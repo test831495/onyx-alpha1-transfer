@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AdapterOperationRequest, ConnectorAdapter } from "@onyx/train-b-connector-adapter-foundation";
-import { B1_BUDGETS, B1_FEATURE_FLAGS, B1_PROVIDER_MATRIX, createSyntheticReadAdapter, projectOperationalState, runUniversalConnectorIntelligence } from "../src/index.js";
+import { B1_ACCEPTANCE_REGISTRY, B1_BUDGETS, B1_FEATURE_FLAGS, B1_PROVIDER_MATRIX, createSyntheticReadAdapter, projectOperationalState, runUniversalConnectorIntelligence } from "../src/index.js";
 
 const adapter = createSyntheticReadAdapter({
   adapterId: "synthetic.read.one",
@@ -29,6 +29,8 @@ describe("universal connector intelligence", () => {
     expect(B1_PROVIDER_MATRIX).toHaveLength(4);
     expect(B1_PROVIDER_MATRIX.every((lane) => lane.syntheticOnly && !lane.enabledByDefault)).toBe(true);
     expect(B1_PROVIDER_MATRIX.every((lane) => lane.forbiddenOperations.includes("DELETE"))).toBe(true);
+    expect(new Set(B1_ACCEPTANCE_REGISTRY.map((item) => item.id)).size).toBe(B1_ACCEPTANCE_REGISTRY.length);
+    expect(B1_ACCEPTANCE_REGISTRY).toHaveLength(8);
   });
 
   it("keeps adapters disabled and produces attributed partial-safe synthesis inputs", async () => {
