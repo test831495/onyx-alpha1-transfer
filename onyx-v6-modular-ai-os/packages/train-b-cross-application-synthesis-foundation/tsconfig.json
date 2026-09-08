@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true,
+    "paths": {
+      "@onyx/train-b-capability-foundation": ["../train-b-capability-foundation/src/index"],
+      "@onyx/train-b-connector-foundation": ["../train-b-connector-foundation/src/index"],
+      "@onyx/train-b-application-foundation": ["../train-b-application-foundation/src/index"],
+      "@onyx/train-b-universal-search-foundation": ["../train-b-universal-search-foundation/src/index"]
+    }
+  },
+  "include": ["src", "tests"]
+}
