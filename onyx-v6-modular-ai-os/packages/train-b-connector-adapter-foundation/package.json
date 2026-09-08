@@ -1,0 +1,10 @@
+{
+  "name": "@onyx/train-b-connector-adapter-foundation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run" },
+  "dependencies": { "@onyx/train-b-connector-foundation": "workspace:*" },
+  "devDependencies": { "typescript": "^5.9.2", "vitest": "^3.2.7" }
+}
