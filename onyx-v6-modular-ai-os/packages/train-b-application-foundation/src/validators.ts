@@ -1,6 +1,6 @@
 import { APPROVED_APPLICATION_IDS, APPLICATION_ACTIONS, type ApplicationDefinition } from "./application-model";
 const MAX_STRING = 128; const MAX_ALIASES = 16; const MAX_CAPABILITIES = 32; const MAX_ACTIONS = 11; const PROVIDER_WORDS = /google|microsoft|yahoo|github|netlify|spotify|youtube/i;
-export function normalizeAlias(value: string): string { if (typeof value !== "string" || value.length > MAX_STRING) throw new Error("Invalid alias"); return value.trim().toLowerCase().replace(/\s+/g, " "); }
+export function normalizeAlias(value: unknown): string { if (typeof value !== "string" || value.length > MAX_STRING) throw new Error("INVALID_ALIAS"); const normalized = value.trim().toLowerCase().replace(/\s+/g, " "); if (normalized.length === 0 || !/[a-z0-9]/.test(normalized)) throw new Error("INVALID_ALIAS"); if (normalized.length > MAX_STRING) throw new Error("INVALID_ALIAS"); return normalized; }
 export function validateApplicationDefinition(input: unknown): ApplicationDefinition {
   if (typeof input !== "object" || input === null || Array.isArray(input)) throw new Error("Application definition must be an object");
   const value = input as ApplicationDefinition;

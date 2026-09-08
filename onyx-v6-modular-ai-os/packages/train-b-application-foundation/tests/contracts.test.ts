@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDeviceProjection, evaluateApplicationAvailability, projectPrivacy, projectTruth, summarizeApplicationHealth, validateAcceptanceRegistry, createSourcePresentation } from "../src/index";
+import { createDeviceProjection, evaluateApplicationAvailability, normalizeAlias, projectPrivacy, projectTruth, summarizeApplicationHealth, validateAcceptanceRegistry, createSourcePresentation } from "../src/index";
 
 describe("truthful projections", () => {
   it("preserves stale and conflicting truth", () => {
@@ -18,5 +18,13 @@ describe("truthful projections", () => {
   it("rejects compact hiding when coverage is material and maps 120 IDs", () => {
     expect(() => createSourcePresentation({ level: "COMPACT", disclosure: "HIDDEN_WHEN_SAFE", freshness: "STALE", sourceCount: 1, missingSourceCount: 1, staleSourceCount: 1, conflictCount: 0, fallbackUsed: true, originalSourceUnavailable: true })).toThrow();
     expect(validateAcceptanceRegistry()).toMatchObject({ valid: true, count: 120 });
+  });
+
+  it("rejects aliases that normalize to an empty key", () => {
+    for (const alias of ["", "   ", "\t\t", "\n", "---", "___", "..."] as const) {
+      expect(() => normalizeAlias(alias)).toThrow("INVALID_ALIAS");
+    }
+    expect(normalizeAlias("  Calendar  ")).toBe("calendar");
+    expect(normalizeAlias("CALENDAR")).toBe("calendar");
   });
 });
