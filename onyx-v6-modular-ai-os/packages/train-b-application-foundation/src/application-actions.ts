@@ -1,0 +1,3 @@
+import type { ApplicationAction } from "./application-model";
+export interface ActionProjection { readonly applicationId:string; readonly action:ApplicationAction; readonly supported:boolean; readonly reasonCode:string; readonly nonAuthorizing:true; }
+export function describeApplicationAction(applicationId:string, action:ApplicationAction, supportedActions:readonly ApplicationAction[]):ActionProjection { const supported=supportedActions.includes(action); return Object.freeze({applicationId,action,supported,reasonCode:supported ? "SUPPORTED_METADATA_ONLY" : "UNSUPPORTED_ACTION",nonAuthorizing:true as const}); }

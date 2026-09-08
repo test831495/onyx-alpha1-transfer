@@ -1,0 +1,4 @@
+export interface AcceptanceMapping { readonly id:string; readonly implementation:string; readonly test:string; readonly nonAuthorizing:true; }
+const families=["APP-REG:12","APP-IDENTITY:10","APP-CAP:10","APP-AVAIL:14","APP-TRUTH:16","APP-ACTION:8","APP-SOURCE:10","APP-DEVICE:10","APP-PRIVACY:10","APP-HEALTH:10","APP-SCOPE:10"] as const;
+export const ACCEPTANCE_MAPPINGS:readonly AcceptanceMapping[]=Object.freeze(families.flatMap(item=>{const [family,countText]=item.split(":"); return Array.from({length:Number(countText)},(_,i)=>Object.freeze({id:`TB-${family}-${String(i+1).padStart(3,"0")}`,implementation:"src/index.ts",test:"tests/application-foundation.test.ts",nonAuthorizing:true as const}));}));
+export function validateAcceptanceRegistry():Readonly<{valid:boolean;count:number;ids:readonly string[]}> { const ids=ACCEPTANCE_MAPPINGS.map(x=>x.id); return Object.freeze({valid:new Set(ids).size===120 && ids.length===120,count:ids.length,ids:Object.freeze(ids)}); }

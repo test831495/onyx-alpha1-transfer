@@ -1,0 +1,7 @@
+import type { CapabilityDefinition } from "@onyx/train-b-capability-foundation";
+import type { ApplicationDefinition } from "./application-model";
+export interface CapabilityFact { readonly capabilityId: string; readonly lifecycleState: "ACTIVE"|"DISABLED"|"UNKNOWN"; readonly eligible: boolean; readonly connectorReferences?: readonly string[]; }
+export interface CapabilityRequirements { readonly mandatory: readonly string[]; readonly optional: readonly string[]; readonly attributionRequired: boolean; readonly freshnessRequired: boolean; readonly nonAuthorizing: true; }
+export type KnownCapabilityDefinition = CapabilityDefinition;
+export function getCapabilityRequirements(definition: ApplicationDefinition): CapabilityRequirements { return Object.freeze({ mandatory:Object.freeze([...definition.requiredCapabilities]), optional:Object.freeze([...definition.optionalCapabilities]), attributionRequired:definition.attributionRequired, freshnessRequired:definition.freshnessRequired, nonAuthorizing:true as const }); }
+export function validateCapabilityRequirements(definition: ApplicationDefinition, knownCapabilityIds: readonly string[]): void { const known=new Set(knownCapabilityIds); for (const id of [...definition.requiredCapabilities,...definition.optionalCapabilities]) if (!known.has(id)) throw new Error(`Unknown capability: ${id}`); }
