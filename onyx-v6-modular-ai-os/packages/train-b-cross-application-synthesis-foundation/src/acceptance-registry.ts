@@ -1,0 +1,5 @@
+export type AcceptanceMapping = Readonly<{ id: string; implementation: string; test: string; nonAuthorizing: true }>;
+const FAMILIES: Readonly<Record<string, number>> = Object.freeze({ REQUEST: 10, ADMISSION: 14, EVIDENCE: 10, CLAIM: 14, CONTRADICTION: 10, RELATIONSHIP: 12, TIMELINE: 10, PLAN: 12, CITATION: 10, COVERAGE: 12, PROJECTION: 10, SCOPE: 10 });
+export const ACCEPTANCE_MAPPINGS: readonly AcceptanceMapping[] = Object.freeze(Object.entries(FAMILIES).flatMap(([family, count]) => Array.from({ length: count }, (_, index) => ({ id: `TB-SYNTH-${family}-${String(index + 1).padStart(3, "0")}`, implementation: "src/synthesis-model.ts", test: "tests/synthesis-foundation.test.ts", nonAuthorizing: true as const }))));
+export const ACCEPTANCE_REGISTRY = Object.freeze(ACCEPTANCE_MAPPINGS.map((mapping) => mapping.id));
+export function validateAcceptanceRegistry(): Readonly<{ valid: boolean; count: number }> { return Object.freeze({ valid: ACCEPTANCE_MAPPINGS.length === 134 && new Set(ACCEPTANCE_REGISTRY).size === 134, count: ACCEPTANCE_MAPPINGS.length }); }

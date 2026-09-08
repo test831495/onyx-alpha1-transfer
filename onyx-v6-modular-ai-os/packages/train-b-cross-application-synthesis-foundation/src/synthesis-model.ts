@@ -1,0 +1,95 @@
+export const SYNTHESIS_MODES = ["STATUS_SUMMARY", "CHANGE_SUMMARY", "TIMELINE", "RISK_SUMMARY", "DEADLINE_SUMMARY", "RELATIONSHIP_SUMMARY", "DECISION_SUMMARY", "SOURCE_COMPARISON", "CONFLICT_SUMMARY", "COVERAGE_SUMMARY"] as const;
+export type SynthesisMode = typeof SYNTHESIS_MODES[number];
+export const SYNTHESIS_OUTCOMES = ["SYNTHESIS_READY", "SYNTHESIS_READY_PARTIAL", "CLARIFICATION_REQUIRED", "NO_ADMISSIBLE_EVIDENCE", "UNSUPPORTED_CLAIM_BLOCKED", "CONFLICTING_EVIDENCE", "PERMISSION_RESTRICTED", "SOURCE_UNAVAILABLE", "SOURCE_STALE", "CANCELLED", "DEADLINE_EXCEEDED", "INVALID_REQUEST", "NOT_ASSESSABLE"] as const;
+export type SynthesisOutcome = typeof SYNTHESIS_OUTCOMES[number];
+export const SUPPORT_LABELS = ["FULLY_SUPPORTED", "PARTIALLY_SUPPORTED", "CONTRADICTED", "UNSUPPORTED", "NOT_ASSESSABLE"] as const;
+export type SupportLabel = typeof SUPPORT_LABELS[number];
+export const RELATIONSHIP_KINDS = ["REFERENCES", "DERIVED_FROM", "RELATES_TO_PROJECT", "RELATES_TO_DECISION", "RELATES_TO_TASK", "RELATES_TO_EVENT", "RELATES_TO_FILE", "RELATES_TO_MESSAGE", "RELATES_TO_NOTE", "PRECEDES", "FOLLOWS", "UPDATES", "SUPERSEDES", "SUPPORTS", "CONTRADICTS", "POSSIBLE_RELATIONSHIP"] as const;
+export type RelationshipKind = typeof RELATIONSHIP_KINDS[number];
+export const CHANGE_KINDS = ["CREATED", "UPDATED", "COMPLETED", "CANCELLED", "DEFERRED", "REOPENED", "SUPERSEDED", "STATUS_CHANGED", "DATE_CHANGED", "OWNER_CHANGED", "SCOPE_CHANGED", "EVIDENCE_ADDED", "EVIDENCE_REMOVED", "UNKNOWN_CHANGE"] as const;
+export type ChangeKind = typeof CHANGE_KINDS[number];
+export const UNCERTAINTY_CLASSES = ["LOW", "MODERATE", "HIGH", "UNKNOWN", "NOT_ASSESSABLE"] as const;
+export type UncertaintyClass = typeof UNCERTAINTY_CLASSES[number];
+export const MAX = Object.freeze({ string: 512, question: 256, refs: 128, claims: 128, applications: 32, sections: 32, keys: 128, depth: 8 });
+
+export type NonAuthorizing = { readonly nonAuthorizing: true };
+export type RequestInput = { readonly requestId: string; readonly accountScopeReference: string; readonly householdScopeReference?: string; readonly actorSessionReference?: string; readonly purposeReference: string; readonly mode: SynthesisMode; readonly questionReference?: string; readonly searchReceiptReferences: readonly string[]; readonly resultReferences: readonly string[]; readonly applicationScopes: readonly string[]; readonly dataClasses: readonly string[]; readonly dateTimeScopeReferences?: readonly string[]; readonly comparisonBaselineReference?: string; readonly detailLevel: "COMPACT" | "STANDARD" | "DETAILED" | "EVIDENCE_COMPLETE"; readonly privacyRequirements: readonly string[]; readonly freshnessRequirements: readonly string[]; readonly maximumClaims: number; readonly maximumApplicationContributions: number; readonly deadlineReference?: string; readonly cancellationReference?: string; readonly idempotencyKey?: string; readonly missingSourcePolicy: "DISCLOSE" | "BLOCK" | "NOT_ASSESSABLE"; readonly conflictPolicy: "PRESERVE" | "CLARIFY" | "BLOCK" };
+export type SynthesisRequest = Readonly<RequestInput & NonAuthorizing>;
+export type EvidenceInput = { readonly evidenceId: string; readonly resultId: string; readonly applicationId: string; readonly accountScopeReference: string; readonly dataClass: string; readonly freshnessState: "CURRENT" | "STALE" | "UNKNOWN" | "NOT_ASSESSABLE"; readonly privacyDecision: "AUTHORIZED" | "LIMITED" | "RESTRICTED" | "UNKNOWN"; readonly attributionComplete: boolean; readonly placeholder: boolean; readonly evidenceReferences: readonly string[]; readonly duplicateGroupReference?: string; readonly conflictGroupReference?: string };
+export type EvidenceAdmissionDecision = Readonly<{ evidenceId: string; disposition: "ADMITTED" | "EXCLUDED" | "STALE" | "PERMISSION_RESTRICTED" | "NOT_ASSESSABLE"; reasonCodes: readonly string[]; disclosed: boolean; nonAuthorizing: true }>;
+export type ClaimInput = { readonly claimId: string; readonly evidenceIds: readonly string[]; readonly admittedEvidenceIds: readonly string[]; readonly contradictionEvidenceIds: readonly string[]; readonly missingEvidenceClasses?: readonly string[] };
+export type ClaimSupportAssessment = Readonly<ClaimInput & { readonly label: SupportLabel; readonly citationRequired: true; nonAuthorizing: true }>;
+export type SynthesisPlanInput = { readonly requestId: string; readonly claims: readonly ClaimSupportAssessment[]; readonly conflicts: readonly string[]; readonly coverageGaps: readonly string[]; readonly citations: readonly string[] };
+export type SynthesisPlan = Readonly<SynthesisPlanInput & { readonly admittedClaimIds: readonly string[]; readonly excludedClaimIds: readonly string[]; readonly proseGenerationAllowed: false; readonly llmRenderingAllowed: false; nonAuthorizing: true }>;
+
+function freeze<T>(value: T, depth = 0): T {
+  if (depth > MAX.depth) throw new Error("Input exceeds validation depth");
+  if (value && typeof value === "object" && !Object.isFrozen(value)) {
+    for (const child of Object.values(value as Record<string, unknown>)) freeze(child, depth + 1);
+    Object.freeze(value);
+  }
+  return value;
+}
+function record(value: unknown): Record<string, unknown> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) throw new Error("Expected a safe record");
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) throw new Error("Unsupported prototype");
+  const keys = Object.keys(value);
+  if (keys.length > MAX.keys) throw new Error("Input exceeds key bound");
+  return value as Record<string, unknown>;
+}
+function text(value: unknown, name: string, limit: number = MAX.string): string { if (typeof value !== "string" || value.length === 0 || value.length > limit) throw new Error(`Invalid ${name}`); return value; }
+function list(value: unknown, name: string, limit: number = MAX.refs): readonly string[] { if (!Array.isArray(value) || value.length > limit || value.some((item) => typeof item !== "string" || item.length === 0 || item.length > MAX.string)) throw new Error(`Invalid ${name}`); return Object.freeze([...value]); }
+function noForbiddenKeys(input: Record<string, unknown>): void { const forbidden = /llm|model|provider|prompt|credential|token|secret|password|network|connector/i; if (Object.keys(input).some((key) => forbidden.test(key))) throw new Error("Unsupported synthesis field"); }
+
+export function createSynthesisRequest(input: RequestInput): SynthesisRequest {
+  const source = record(input) as RequestInput; noForbiddenKeys(source);
+  if (!SYNTHESIS_MODES.includes(source.mode as SynthesisMode)) throw new Error("Invalid synthesis mode");
+  if (source.mode === "CHANGE_SUMMARY" && !source.comparisonBaselineReference) throw new Error("Comparison baseline required");
+  if (source.privacyRequirements.length === 0 || source.applicationScopes.length === 0) throw new Error("Explicit privacy and application scope required");
+  if (source.maximumClaims < 1 || source.maximumClaims > MAX.claims || source.maximumApplicationContributions < 1 || source.maximumApplicationContributions > MAX.applications) throw new Error("Invalid synthesis bounds");
+  const output = { ...source, requestId: text(source.requestId, "requestId"), accountScopeReference: text(source.accountScopeReference, "account scope"), purposeReference: text(source.purposeReference, "purpose"), questionReference: source.questionReference === undefined ? undefined : text(source.questionReference, "question", MAX.question), searchReceiptReferences: list(source.searchReceiptReferences, "receipts"), resultReferences: list(source.resultReferences, "results"), applicationScopes: list(source.applicationScopes, "applications", MAX.applications), dataClasses: list(source.dataClasses, "data classes"), privacyRequirements: list(source.privacyRequirements, "privacy requirements"), freshnessRequirements: list(source.freshnessRequirements, "freshness requirements"), nonAuthorizing: true as const };
+  return freeze(output);
+}
+
+export function admitEvidence(input: EvidenceInput, policy: { readonly accountScopeReference: string; readonly allowStale: boolean }): EvidenceAdmissionDecision {
+  const source = record(input) as EvidenceInput; noForbiddenKeys(source); text(source.evidenceId, "evidence"); list(source.evidenceReferences, "evidence references");
+  let disposition: EvidenceAdmissionDecision["disposition"] = "ADMITTED"; const reasons: string[] = [];
+  if (source.accountScopeReference !== policy.accountScopeReference) { disposition = "EXCLUDED"; reasons.push("ACCOUNT_SCOPE_MISMATCH"); }
+  else if (source.privacyDecision === "RESTRICTED" || source.privacyDecision === "UNKNOWN") { disposition = "PERMISSION_RESTRICTED"; reasons.push("PRIVACY_RESTRICTED"); }
+  else if (!source.attributionComplete) { disposition = "EXCLUDED"; reasons.push("MISSING_ATTRIBUTION"); }
+  else if (source.placeholder) { disposition = "EXCLUDED"; reasons.push("PLACEHOLDER_EVIDENCE"); }
+  else if (source.freshnessState === "STALE" && policy.allowStale) { disposition = "STALE"; reasons.push("STALE_ALLOWED_WITH_DISCLOSURE"); }
+  else if (source.freshnessState !== "CURRENT") { disposition = "NOT_ASSESSABLE"; reasons.push("FRESHNESS_NOT_ASSESSABLE"); }
+  return freeze({ evidenceId: source.evidenceId, disposition, reasonCodes: Object.freeze(reasons), disclosed: disposition !== "ADMITTED", nonAuthorizing: true });
+}
+
+export function assessClaimSupport(input: ClaimInput): ClaimSupportAssessment {
+  const evidence = list(input.evidenceIds, "claim evidence"); const admitted = list(input.admittedEvidenceIds, "admitted evidence"); const contradictions = list(input.contradictionEvidenceIds, "contradictions");
+  const label: SupportLabel = contradictions.length ? "CONTRADICTED" : admitted.length === 0 ? "UNSUPPORTED" : admitted.length < evidence.length ? "PARTIALLY_SUPPORTED" : "FULLY_SUPPORTED";
+  return freeze({ ...input, evidenceIds: evidence, admittedEvidenceIds: admitted, contradictionEvidenceIds: contradictions, missingEvidenceClasses: list(input.missingEvidenceClasses ?? [], "missing evidence"), label, citationRequired: true, nonAuthorizing: true });
+}
+
+export function createSynthesisPlan(input: SynthesisPlanInput): SynthesisPlan {
+  const claims = Object.freeze(input.claims.map(assessClaimSupport)); const admittedClaimIds = Object.freeze(claims.filter((claim) => claim.label === "FULLY_SUPPORTED" || claim.label === "PARTIALLY_SUPPORTED").map((claim) => claim.claimId)); const excludedClaimIds = Object.freeze(claims.filter((claim) => !admittedClaimIds.includes(claim.claimId)).map((claim) => claim.claimId));
+  return freeze({ requestId: text(input.requestId, "requestId"), claims, conflicts: list(input.conflicts, "conflicts"), coverageGaps: list(input.coverageGaps, "coverage gaps"), citations: list(input.citations, "citations"), admittedClaimIds, excludedClaimIds, proseGenerationAllowed: false, llmRenderingAllowed: false, nonAuthorizing: true });
+}
+
+export type EvidenceSet = Readonly<{ admittedEvidenceIds: readonly string[]; excludedEvidenceIds: readonly string[]; coverageGaps: readonly string[]; staleSources: readonly string[]; unavailableSources: readonly string[]; conflictGroupReferences: readonly string[]; nonAuthorizing: true }>;
+export function createEvidenceSet(input: Omit<EvidenceSet, "nonAuthorizing">): EvidenceSet { return freeze({ admittedEvidenceIds: list(input.admittedEvidenceIds, "admitted evidence"), excludedEvidenceIds: list(input.excludedEvidenceIds, "excluded evidence"), coverageGaps: list(input.coverageGaps, "coverage gaps"), staleSources: list(input.staleSources, "stale sources"), unavailableSources: list(input.unavailableSources, "unavailable sources"), conflictGroupReferences: list(input.conflictGroupReferences, "conflicts"), nonAuthorizing: true }); }
+export type SynthesisContradictionGroup = Readonly<{ contradictionGroupId: string; evidenceIds: readonly string[]; conflictingReferences: readonly string[]; disposition: "PRESENT_BOTH" | "CLARIFICATION_REQUIRED" | "POLICY_DECISION_REQUIRED" | "BLOCK_SYNTHESIS" | "NOT_ASSESSABLE"; nonAuthorizing: true }>;
+export function createContradiction(input: Omit<SynthesisContradictionGroup, "nonAuthorizing">): SynthesisContradictionGroup { return freeze({ ...input, contradictionGroupId: text(input.contradictionGroupId, "contradiction group"), evidenceIds: list(input.evidenceIds, "contradiction evidence"), conflictingReferences: list(input.conflictingReferences, "conflicting references"), nonAuthorizing: true }); }
+export type SynthesisRelationship = Readonly<{ relationshipId: string; kind: RelationshipKind; fromReference: string; toReference: string; evidenceIds: readonly string[]; nonAuthorizing: true }>;
+export function createRelationship(input: Omit<SynthesisRelationship, "nonAuthorizing">): SynthesisRelationship { if (!RELATIONSHIP_KINDS.includes(input.kind)) throw new Error("Invalid relationship kind"); if (input.evidenceIds.length === 0) throw new Error("Relationship evidence required"); return freeze({ ...input, relationshipId: text(input.relationshipId, "relationship"), fromReference: text(input.fromReference, "relationship source"), toReference: text(input.toReference, "relationship target"), evidenceIds: list(input.evidenceIds, "relationship evidence"), nonAuthorizing: true }); }
+export type SynthesisTimeline = Readonly<{ entries: readonly Readonly<{ entryId: string; trustedTimeReference: string; evidenceIds: readonly string[] }>[]; nonAuthorizing: true }>;
+export function createTimeline(entries: readonly SynthesisTimeline["entries"][number][]): SynthesisTimeline { const ordered = [...entries].sort((a, b) => a.trustedTimeReference.localeCompare(b.trustedTimeReference) || a.entryId.localeCompare(b.entryId)); return freeze({ entries: Object.freeze(ordered.map((entry) => freeze({ ...entry, evidenceIds: list(entry.evidenceIds, "timeline evidence") }))), nonAuthorizing: true }); }
+export type SynthesisChangeSet = Readonly<{ changes: readonly Readonly<{ changeId: string; kind: ChangeKind; beforeReference?: string; afterReference?: string; evidenceIds: readonly string[] }>[]; assessable: boolean; nonAuthorizing: true }>;
+export function createChangeSet(changes: readonly SynthesisChangeSet["changes"][number][], baselinePresent: boolean): SynthesisChangeSet { return freeze({ changes: Object.freeze(changes.map((change) => { if (!CHANGE_KINDS.includes(change.kind)) throw new Error("Invalid change kind"); return freeze({ ...change, evidenceIds: list(change.evidenceIds, "change evidence") }); })), assessable: baselinePresent, nonAuthorizing: true }); }
+export type SynthesisCitation = Readonly<{ citationId: string; claimId: string; evidenceId: string; resultId: string; applicationId: string; sourceReference: string; freshnessState: string; nonAuthorizing: true }>;
+export function createCitation(input: Omit<SynthesisCitation, "nonAuthorizing">): SynthesisCitation { return freeze({ ...input, citationId: text(input.citationId, "citation"), claimId: text(input.claimId, "citation claim"), evidenceId: text(input.evidenceId, "citation evidence"), resultId: text(input.resultId, "citation result"), applicationId: text(input.applicationId, "citation application"), sourceReference: text(input.sourceReference, "citation source"), freshnessState: text(input.freshnessState, "citation freshness"), nonAuthorizing: true }); }
+export type SynthesisCoverageSummary = Readonly<{ requestedSources: readonly string[]; completedSources: readonly string[]; unavailableSources: readonly string[]; staleSources: readonly string[]; restrictedSources: readonly string[]; admittedEvidenceCount: number; excludedEvidenceCount: number; fullySupportedClaimCount: number; partiallySupportedClaimCount: number; contradictedClaimCount: number; unsupportedClaimCount: number; uncertainty: UncertaintyClass; nonAuthorizing: true }>;
+export function createCoverageSummary(input: Omit<SynthesisCoverageSummary, "nonAuthorizing">): SynthesisCoverageSummary { if (Object.values(input).some((value) => typeof value === "number" && (value < 0 || !Number.isSafeInteger(value)))) throw new Error("Invalid coverage count"); return freeze({ ...input, requestedSources: list(input.requestedSources, "requested sources"), completedSources: list(input.completedSources, "completed sources"), unavailableSources: list(input.unavailableSources, "unavailable sources"), staleSources: list(input.staleSources, "stale sources"), restrictedSources: list(input.restrictedSources, "restricted sources"), nonAuthorizing: true }); }
+export type SynthesisReceipt = Readonly<{ requestId: string; outcome: SynthesisOutcome; admittedEvidenceCount: number; excludedEvidenceCount: number; citationCount: number; coverage: SynthesisCoverageSummary; nonAuthorizing: true }>;
+export function createSynthesisReceipt(input: Omit<SynthesisReceipt, "nonAuthorizing">): SynthesisReceipt { if (!SYNTHESIS_OUTCOMES.includes(input.outcome)) throw new Error("Invalid synthesis outcome"); return freeze({ ...input, requestId: text(input.requestId, "receipt request"), nonAuthorizing: true }); }
+export type SynthesisProjection = Readonly<{ detailLevel: "COMPACT" | "STANDARD" | "DETAILED" | "EVIDENCE_COMPLETE"; device: string; hidePrivateDetail: boolean; showCoverageGaps: boolean; showConflicts: boolean; nonAuthorizing: true }>;
+export function createSynthesisProjection(input: Omit<SynthesisProjection, "nonAuthorizing">): SynthesisProjection { return freeze({ ...input, device: text(input.device, "device"), nonAuthorizing: true }); }

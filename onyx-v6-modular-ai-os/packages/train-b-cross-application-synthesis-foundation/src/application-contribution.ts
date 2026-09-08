@@ -1,0 +1,1 @@
+export type ApplicationContributionEnvelope = Readonly<{ applicationId: string; admittedEvidenceIds: readonly string[]; excludedEvidenceIds: readonly string[]; claimIds: readonly string[]; nonAuthorizing: true }>;
