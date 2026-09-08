@@ -290,6 +290,38 @@ describe("connector adapter foundation", () => {
     expect(validateAdapterResult({ ...base, page: { items: [{ recordReference: "r", fields: [], dataClass: "d", observedTimeReference: "t" } as never], complete: true }, error: { code: "RATE_LIMITED", diagnosticReference: long, retryable: true, safe: true }, receipt: { ...base.receipt, requestIdReference: long }, usage: { quotaState: "AVAILABLE", costState: "KNOWN", requestCountReference: long, amountReference: long } })).toContain("result references are invalid");
   });
 
+  it("rejects operations not advertised by the registered adapter before execution", async () => {
+    let executeCalls = 0;
+    const adapter = createAdapter();
+    const registry = new ConnectorAdapterRegistry();
+    registry.register({ ...adapter, async execute(request) { executeCalls += 1; return adapter.execute(request); } });
+
+    await expect(registry.execute("adapter.test", {
+      operation: "GET_CHANGES",
+      context: { connectorId: "c", accountScopeReference: "a", purposeReference: "p", trustedTimeReference: "t" },
+    })).rejects.toThrow("UNSUPPORTED_ADAPTER_OPERATION");
+    expect(executeCalls).toBe(0);
+  });
+
+  it("rejects inconsistent result identity, operation, receipt, and malformed records", () => {
+    const request = { operation: "LIST" as const, context: { connectorId: "c", accountScopeReference: "a", purposeReference: "p", trustedTimeReference: "t" } };
+    const result = createAdapterResult(request);
+    expect(validateAdapterResult({ ...result, adapterReference: "other" }, "adapter.test", request.operation)).toContain("adapter reference mismatch");
+    expect(validateAdapterResult({ ...result, operation: "SEARCH" }, "adapter.test", request.operation)).toContain("result operation mismatch");
+    expect(validateAdapterResult({ ...result, receipt: { ...result.receipt, operation: "SEARCH" } })).toContain("receipt operation mismatch");
+    expect(() => normalizeAdapterRecord({ recordReference: "", dataClass: "d", fields: [] }, "time")).toThrow("PAYLOAD_INVALID");
+    expect(() => normalizeAdapterRecord({ recordReference: "r", dataClass: "d", fields: [] }, "")).toThrow("PAYLOAD_INVALID");
+    expect(validateAdapterResult({ ...result, page: { items: [{ recordReference: "", fields: [], dataClass: "d", observedTimeReference: "t" } as never], complete: true } })).toContain("page exceeds the bounded range");
+  });
+
+  it("rejects unknown runtime projection vocabularies and accepts approved values", () => {
+    expect(validateRuntimeProjection({ health: "HEALTHY", freshness: "CURRENT", rateLimitState: "AVAILABLE" })).toEqual([]);
+    expect(validateRuntimeProjection({ health: "UNKNOWN_HEALTH", freshness: "CURRENT", rateLimitState: "AVAILABLE" })).toContain("runtime projection vocabulary is invalid");
+    expect(validateRuntimeProjection({ health: "HEALTHY", freshness: "UNKNOWN_FRESHNESS", rateLimitState: "AVAILABLE" })).toContain("runtime projection vocabulary is invalid");
+    expect(validateRuntimeProjection({ health: "HEALTHY", freshness: "CURRENT", rateLimitState: "UNKNOWN_RATE" })).toContain("runtime projection vocabulary is invalid");
+    expect(validateRuntimeProjection({ health: 1 as never, freshness: "CURRENT", rateLimitState: "AVAILABLE" })).toContain("runtime projection vocabulary is invalid");
+  });
+
   it.each([
     "reauthorizationRequired",
     "revoked",

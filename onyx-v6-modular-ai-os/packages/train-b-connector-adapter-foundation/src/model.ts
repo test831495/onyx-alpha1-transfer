@@ -68,6 +68,10 @@ export type AdapterErrorCode = (typeof ADAPTER_ERROR_CODES)[number];
 
 export type AdapterScalar = string | number | boolean | null;
 
+export const ADAPTER_RUNTIME_HEALTH_STATES = ["HEALTHY", "DEGRADED", "UNAVAILABLE", "UNKNOWN"] as const;
+export const ADAPTER_RUNTIME_FRESHNESS_STATES = ["CURRENT", "STALE", "UNKNOWN", "NOT_ASSESSABLE"] as const;
+export const ADAPTER_RUNTIME_RATE_LIMIT_STATES = ["AVAILABLE", "LIMITED", "EXHAUSTED", "UNKNOWN"] as const;
+
 export const ADAPTER_BOUNDS = Object.freeze({
   adapterIdMaxLength: 128,
   versionMaxLength: 32,
@@ -230,9 +234,9 @@ export interface AdapterResult {
 }
 
 export interface AdapterRuntimeProjection {
-  readonly health: "HEALTHY" | "DEGRADED" | "UNAVAILABLE" | "UNKNOWN";
-  readonly freshness: "CURRENT" | "STALE" | "UNKNOWN" | "NOT_ASSESSABLE";
-  readonly rateLimitState: "AVAILABLE" | "LIMITED" | "EXHAUSTED" | "UNKNOWN";
+  readonly health: (typeof ADAPTER_RUNTIME_HEALTH_STATES)[number];
+  readonly freshness: (typeof ADAPTER_RUNTIME_FRESHNESS_STATES)[number];
+  readonly rateLimitState: (typeof ADAPTER_RUNTIME_RATE_LIMIT_STATES)[number];
 }
 
 export interface ConnectorAdapter {

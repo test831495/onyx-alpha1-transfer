@@ -2,6 +2,9 @@ import {
   ADAPTER_OPERATIONS,
   ADAPTER_ERROR_CODES,
   ADAPTER_BOUNDS,
+  ADAPTER_RUNTIME_FRESHNESS_STATES,
+  ADAPTER_RUNTIME_HEALTH_STATES,
+  ADAPTER_RUNTIME_RATE_LIMIT_STATES,
   type AdapterOperationRequest,
   type AdapterRegistration,
   type AdapterResult,
@@ -83,7 +86,7 @@ export function validateAdapterRequest(request: AdapterOperationRequest): readon
 }
 
 export function normalizeAdapterRecord(input: unknown, observedTimeReference: string): NormalizedAdapterRecord {
-  if (!isRecord(input) || typeof input.recordReference !== "string" || input.recordReference.length > MAX_REFERENCE_LENGTH || typeof input.dataClass !== "string" || input.dataClass.length > ADAPTER_BOUNDS.stringValueMaxLength) throw new Error("PAYLOAD_INVALID");
+  if (!isRecord(input) || !boundedReference(input.recordReference) || !boundedString(input.dataClass, ADAPTER_BOUNDS.stringValueMaxLength) || !boundedReference(observedTimeReference)) throw new Error("PAYLOAD_INVALID");
   if (!Array.isArray(input.fields) || input.fields.length > ADAPTER_BOUNDS.fieldCountMax) throw new Error("PAYLOAD_INVALID");
   const fields = input.fields.map((field) => {
     if (!isRecord(field) || typeof field.key !== "string" || field.key.length === 0 || field.key.length > ADAPTER_BOUNDS.fieldKeyMaxLength || SECRET_KEY_PATTERN.test(field.key) || !isScalar(field.value) || typeof field.value === "string" && field.value.length > ADAPTER_BOUNDS.stringValueMaxLength) throw new Error("PAYLOAD_INVALID");
@@ -92,10 +95,13 @@ export function normalizeAdapterRecord(input: unknown, observedTimeReference: st
   return Object.freeze({ recordReference: input.recordReference, fields: Object.freeze(fields), dataClass: input.dataClass, observedTimeReference });
 }
 
-export function validateAdapterResult(result: AdapterResult): readonly string[] {
+export function validateAdapterResult(result: AdapterResult, expectedAdapterReference?: string, expectedOperation?: AdapterOperationRequest["operation"]): readonly string[] {
   const errors: string[] = [];
   if (result.nonAuthorizing !== true || result.receipt.nonAuthorizing !== true) errors.push("result must be non-authorizing");
   if (!boundedString(result.adapterReference, MAX_REFERENCE_LENGTH) || !boundedString(result.connectorId, MAX_REFERENCE_LENGTH) || !boundedString(result.accountScopeReference, MAX_REFERENCE_LENGTH)) errors.push("result attribution boundary is incomplete");
+  if (expectedAdapterReference !== undefined && result.adapterReference !== expectedAdapterReference) errors.push("adapter reference mismatch");
+  if (expectedOperation !== undefined && result.operation !== expectedOperation) errors.push("result operation mismatch");
+  if (result.receipt.operation !== result.operation) errors.push("receipt operation mismatch");
   if (result.page && !result.attribution) errors.push("source attribution is required for page results");
   if (result.error && !ADAPTER_ERROR_CODES.includes(result.error.code)) errors.push("error code is not normalized");
   if (result.error && result.error.safe !== true) errors.push("error is not marked safe");
@@ -127,7 +133,7 @@ export function detectPaginationLoop(cursors: readonly string[]): boolean {
 
 export function validateRuntimeProjection(projection: { readonly health: string; readonly freshness: string; readonly rateLimitState: string }): readonly string[] {
   const errors: string[] = [];
-  if (!projection.health || !projection.freshness || !projection.rateLimitState) errors.push("runtime projection is incomplete");
+  if (!ADAPTER_RUNTIME_HEALTH_STATES.includes(projection.health as typeof ADAPTER_RUNTIME_HEALTH_STATES[number]) || !ADAPTER_RUNTIME_FRESHNESS_STATES.includes(projection.freshness as typeof ADAPTER_RUNTIME_FRESHNESS_STATES[number]) || !ADAPTER_RUNTIME_RATE_LIMIT_STATES.includes(projection.rateLimitState as typeof ADAPTER_RUNTIME_RATE_LIMIT_STATES[number])) errors.push("runtime projection vocabulary is invalid");
   return Object.freeze(errors);
 }
 
