@@ -71,7 +71,6 @@ const ALLOWED_REQUEST_KEYS = new Set([
   "cancellationReference",
   "idempotencyKey",
   "scopeExpansionPolicy",
-  "hostile",
 ]);
 
 export function assertClosedInput(input: unknown): void {

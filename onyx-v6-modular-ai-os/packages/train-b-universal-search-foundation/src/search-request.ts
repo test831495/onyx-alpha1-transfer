@@ -3,6 +3,9 @@ import { assertClosedInput, normalizedTokens, validString, validateSearchMode } 
 
 export function createUniversalSearchRequest(input: SearchRequestInput): UniversalSearchRequest {
   assertClosedInput(input);
+  if (input.queryTextReference !== undefined && typeof input.queryTextReference !== "string") {
+    throw new TypeError("queryTextReference must be a string");
+  }
   const queryText = input.queryTextReference ?? "";
   if (!input.queryTextReference && !(input.exactPhrases?.length || input.tags?.length || input.projectReferences?.length)) {
     throw new TypeError("query or metadata-only scope required");
@@ -17,7 +20,17 @@ export function createUniversalSearchRequest(input: SearchRequestInput): Univers
   if (modes.includes(SEARCH_MODES.SEMANTIC)) {
     throw new TypeError("semantic execution mode rejected");
   }
-  if (typeof input.maximumResults === "number" && input.maximumResults > BOUNDS.resultMax) {
+  if (input.maximumResults !== undefined && typeof input.maximumResults !== "number") {
+    throw new TypeError("maximumResults must be a number");
+  }
+  if (input.maxResults !== undefined && typeof input.maxResults !== "number") {
+    throw new TypeError("maxResults must be a number");
+  }
+  if (input.maximumResults !== undefined && input.maxResults !== undefined && input.maximumResults !== input.maxResults) {
+    throw new TypeError("conflicting result limits");
+  }
+  const requestedMaximumResults = input.maximumResults ?? input.maxResults;
+  if (typeof requestedMaximumResults === "number" && (!Number.isFinite(requestedMaximumResults) || requestedMaximumResults <= 0 || requestedMaximumResults > BOUNDS.resultMax)) {
     throw new TypeError("maximumResults exceeds maximum");
   }
   if (typeof input.pageSize === "number" && input.pageSize > BOUNDS.pageSizeMax) {
@@ -49,7 +62,7 @@ export function createUniversalSearchRequest(input: SearchRequestInput): Univers
     privacyRequirements: Object.freeze(normalizedTokens(input.privacyRequirements, 8)),
     freshnessRequirements: Object.freeze(normalizedTokens(input.freshnessRequirements, 8)),
     regionRequirements: Object.freeze(normalizedTokens(input.regionRequirements, 8)),
-    maximumResults: typeof input.maximumResults === "number" ? Math.min(input.maximumResults, BOUNDS.resultMax) : BOUNDS.resultMax,
+    maximumResults: requestedMaximumResults ?? BOUNDS.resultMax,
     pageSize: typeof input.pageSize === "number" ? Math.min(input.pageSize, BOUNDS.pageSizeMax) : 20,
     deadlineReference: input.deadlineReference ? validString(input.deadlineReference, 128) ?? undefined : undefined,
     costCeilingReference: input.costCeilingReference ? validString(input.costCeilingReference, 128) ?? undefined : undefined,

@@ -32,6 +32,20 @@ describe("universal search foundation", () => {
     });
     expect(request.accountScopeReference).toBe("acct-1");
     expect(request.searchModes).toEqual([SEARCH_MODES.EXACT]);
+    expect(request.maximumResults).toBe(20);
+  });
+
+  it("rejects invalid result limits and non-string query input", () => {
+    const request = {
+      requestId: "req-limits",
+      accountScopeReference: "acct-1",
+      purposeReference: "project-review",
+      queryTextReference: "nora architecture",
+      searchModes: [SEARCH_MODES.EXACT],
+    };
+    expect(() => createUniversalSearchRequest({ ...request, maxResults: 1001 })).toThrow();
+    expect(() => createUniversalSearchRequest({ ...request, maximumResults: 20, maxResults: 10 })).toThrow();
+    expect(() => createUniversalSearchRequest({ ...request, queryTextReference: 1 } as any)).toThrow();
   });
 
   it("rejects empty query when unsupported", () => {
@@ -109,6 +123,25 @@ describe("universal search foundation", () => {
     }, { accountScopeReference: "acct-1", purposeReference: "calendar" } as any);
     expect(result.eligible).toBe(false);
     expect(result.reasonCode).toBe("UNKNOWN_CAPABILITY");
+  });
+
+  it("accepts a source that supports any requested search mode", () => {
+    const result = evaluateSearchSourceEligibility({
+      applicationId: "application.calendar",
+      capabilityId: "calendar.events.read",
+      connectorId: "connector-1",
+      accountScopeReference: "acct-1",
+      dataClass: "CALENDAR_EVENT",
+      supportedSearchModes: [SEARCH_MODES.METADATA],
+      sourceHealth: "HEALTHY",
+      freshnessState: "CURRENT",
+      attributionAvailable: true,
+      privacyDecision: "AUTHORIZED",
+      regionCompatible: true,
+      availability: "AVAILABLE",
+      evidenceReferences: ["e-1"],
+    }, { accountScopeReference: "acct-1", purposeReference: "calendar", searchModes: [SEARCH_MODES.EXACT, SEARCH_MODES.METADATA] });
+    expect(result.eligible).toBe(true);
   });
 
   it("builds deterministic plan order", () => {

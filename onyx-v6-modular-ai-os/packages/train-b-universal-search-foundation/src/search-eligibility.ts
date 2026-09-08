@@ -35,7 +35,8 @@ export function evaluateSearchSourceEligibility(
   if (candidate.freshnessState === "STALE") {
     return { eligible: false, reasonCode: "SOURCE_STALE", sourceState: "STALE" };
   }
-  if (candidate.supportedSearchModes?.length && !candidate.supportedSearchModes.includes(request.searchModes[0] ?? SEARCH_MODES.EXACT)) {
+  const requestedModes = Array.isArray(request.searchModes) ? request.searchModes : [];
+  if (!Array.isArray(candidate.supportedSearchModes) || !requestedModes.some((mode) => candidate.supportedSearchModes.includes(mode))) {
     return { eligible: false, reasonCode: "MODE_UNSUPPORTED", sourceState: "INELIGIBLE" };
   }
   return { eligible: true, reasonCode: undefined, sourceState: "ELIGIBLE" };
