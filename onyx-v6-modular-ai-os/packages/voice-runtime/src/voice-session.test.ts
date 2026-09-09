@@ -1,0 +1,29 @@
+import { describe, expect, it } from "vitest";
+import { createVoiceSession } from "./voice-session";
+
+describe("baseline C1 voice session", () => {
+  it("defers microphone use until tap to talk and prevents duplicate output", () => {
+    const session = createVoiceSession({ language: "en-IN" });
+
+    expect(session.state).toBe("IDLE");
+    expect(session.microphoneRequested).toBe(false);
+    expect(session.tapToTalk()).toBe("LISTENING");
+    expect(session.microphoneRequested).toBe(true);
+    expect(session.beginResponse("response-1")).toBe(true);
+    expect(session.beginResponse("response-1")).toBe(false);
+    expect(session.navigate("briefing-1")).toBe(true);
+    expect(session.navigate("briefing-1")).toBe(false);
+  });
+
+  it("handles interruption, cancellation, bounded follow-up and reconnect without a provider", () => {
+    const session = createVoiceSession({ language: "hi-IN", maxFollowUps: 1 });
+
+    session.tapToTalk();
+    expect(session.interrupt()).toBe("INTERRUPTED");
+    expect(session.cancel("user-cancel").cancelled).toBe(true);
+    expect(session.followUp()).toBe("LISTENING");
+    expect(session.followUp()).toBe("OFFLINE");
+    expect(session.reconnect()).toBe("LISTENING");
+    expect(session.providerEnabled).toBe(false);
+  });
+});
