@@ -1,0 +1,134 @@
+name: Netlify Read-Only Smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      NETLIFY_PAT: ${{ secrets.NETLIFY_PAT }}
+      NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID }}
+      NETLIFY_SITE_NAME: ${{ vars.NETLIFY_SITE_NAME }}
+      EVIDENCE_PATH: netlify-readonly-smoke-evidence.json
+    steps:
+      - name: Checkout Track A
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run bounded read-only smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$NETLIFY_PAT"
+          test -n "$NETLIFY_SITE_ID"
+          test -n "$NETLIFY_SITE_NAME"
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          const apiBase = 'https://api.netlify.com/api/v1';
+          const token = process.env.NETLIFY_PAT;
+          const siteId = process.env.NETLIFY_SITE_ID;
+          const siteName = process.env.NETLIFY_SITE_NAME;
+          const evidencePath = process.env.EVIDENCE_PATH;
+
+          const evidence = [];
+          const allowedGetPaths = new Set([
+            '/accounts',
+            `/sites/${siteId}`,
+            `/sites/${siteId}/deploys?per_page=10&page=1`,
+          ]);
+
+          function classifyEndpoint(path) {
+            if (path === '/accounts') return 'accounts.metadata';
+            if (path === `/sites/${siteId}`) return 'site.metadata';
+            if (path.includes('/deploys')) return 'site.deploys';
+            return 'unknown';
+          }
+
+          async function request(path) {
+            if (!allowedGetPaths.has(path)) throw new Error('Non-allowlisted path.');
+            const started = Date.now();
+            const response = await fetch(`${apiBase}${path}`, {
+              method: 'GET',
+              headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+              redirect: 'error',
+            });
+            const text = await response.text();
+            let json = null;
+            if (text) json = JSON.parse(text);
+            if (!response.ok) throw new Error(`GET ${path} failed with status ${response.status}.`);
+            const itemCount = Array.isArray(json) ? json.length : undefined;
+            evidence.push({ endpointClass: classifyEndpoint(path), status: response.status, latencyMs: Date.now() - started, itemCount });
+            return json;
+          }
+
+          function sanitizeErrorMessage(error) {
+            const raw = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Unknown smoke failure';
+            const knownSecrets = [token].filter((value) => typeof value === 'string' && value.length > 0);
+            let sanitized = raw;
+            for (const value of knownSecrets) sanitized = sanitized.split(value).join('[redacted]');
+            sanitized = sanitized
+              .replace(/\bBearer\s+\S+/gi, 'Bearer [redacted]')
+              .replace(/Authorization\s*:\s*\S+/gi, 'Authorization: [redacted]')
+              .replace(/[\r\n]+/g, ' ')
+              .replace(/\s+/g, ' ')
+              .trim()
+              .slice(0, 500);
+            return sanitized || 'Unknown smoke failure';
+          }
+
+          (async () => {
+            await request('/accounts');
+
+            const site = await request(`/sites/${siteId}`);
+            if (site.id !== siteId) throw new Error('Site ID mismatch.');
+            if (site.name !== siteName) throw new Error('Site name mismatch.');
+
+            const deploys = await request(`/sites/${siteId}/deploys?per_page=10&page=1`);
+            if (!Array.isArray(deploys) || deploys.length === 0) throw new Error('Deployment history missing.');
+            const latestDeploy = deploys[0];
+            if (!latestDeploy?.id) throw new Error('Latest deployment metadata missing.');
+
+            const productionDeploy = deploys.find((deploy) => deploy.context === 'production') || null;
+
+            const sanitized = {
+              gateId: 'NETLIFY_ACTIONS_READONLY_SMOKE',
+              siteId: site.id,
+              siteName: site.name,
+              siteUrl: site.url,
+              latestDeploy: { id: latestDeploy.id, state: latestDeploy.state, context: latestDeploy.context, createdAt: latestDeploy.created_at },
+              productionDeploy: productionDeploy ? { id: productionDeploy.id, state: productionDeploy.state, createdAt: productionDeploy.created_at } : null,
+              deployHistoryCount: deploys.length,
+              endpoints: evidence,
+              zeroWriteClaim: true,
+              credentialsDropped: true,
+              generatedAt: new Date().toISOString(),
+            };
+            const serialized = JSON.stringify(sanitized, null, 2);
+            if (/Bearer|Authorization/.test(serialized) || serialized.includes(token)) throw new Error('Evidence failed secret scan.');
+            fs.writeFileSync(evidencePath, `${serialized}\n`, { flag: 'wx' });
+            console.log(`NETLIFY_ACTIONS_READONLY_SMOKE=PASS SITE_ID=${site.id} SITE_NAME=${site.name} DEPLOY_COUNT=${deploys.length} ENDPOINT_COUNT=${evidence.length} EVIDENCE_PATH=${evidencePath} CREDENTIALS_DROPPED=true`);
+          })().catch((error) => {
+            const safeMessage = sanitizeErrorMessage(error);
+            console.error(`NETLIFY_ACTIONS_READONLY_SMOKE=FAIL REASON=${safeMessage}`);
+            process.exitCode = 1;
+          });
+          NODE
+
+      - name: Upload sanitized evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: netlify-readonly-smoke-evidence
+          path: netlify-readonly-smoke-evidence.json
+          if-no-files-found: ignore
+          retention-days: 7
