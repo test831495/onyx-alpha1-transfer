@@ -64,9 +64,21 @@ jobs:
             `/repos/${owner}/${repo}/actions/runs?per_page=10&page=1`,
           ]);
           const installationRepositoriesPath = '/installation/repositories?per_page=10&page=1';
+          const accessTokensPath = `/app/installations/${installationId}/access_tokens`;
+
+          function classifyEndpoint(method, path) {
+            if (method === 'POST' && path === accessTokensPath) return 'credential.exchange';
+            if (method === 'GET' && path === '/app') return 'app.metadata';
+            if (method === 'GET' && path === `/app/installations/${installationId}`) return 'installation.metadata';
+            if (method === 'GET' && path === installationRepositoriesPath) return 'installation.repositories';
+            if (method === 'GET' && path.includes('/pulls')) return 'repository.pull_requests';
+            if (method === 'GET' && path.includes('/issues')) return 'repository.issues';
+            if (method === 'GET' && path.includes('/actions/runs')) return 'repository.actions_runs';
+            return 'repository.metadata';
+          }
 
           async function request(method, path, token, body) {
-            if (method !== 'GET' && path !== `/app/installations/${installationId}/access_tokens`) throw new Error('Non-allowlisted method.');
+            if (method !== 'GET' && path !== accessTokensPath) throw new Error('Non-allowlisted method.');
             if (method === 'GET' && !allowed.has(path) && path !== '/app' && path !== `/app/installations/${installationId}` && path !== installationRepositoriesPath) throw new Error('Non-allowlisted endpoint.');
             const started = Date.now();
             const response = await fetch(`${apiBase}${path}`, {
@@ -80,7 +92,7 @@ jobs:
             if (text) json = JSON.parse(text);
             if (!response.ok) throw new Error(`${method} ${path} failed with status ${response.status}.`);
             const items = Array.isArray(json) ? json.length : Array.isArray(json?.items) ? json.items.length : Array.isArray(json?.workflow_runs) ? json.workflow_runs.length : undefined;
-            evidence.push({ endpointClass: path === '/app' ? 'app.metadata' : path === installationRepositoriesPath ? 'installation.repositories' : path.includes('/installations/') && method === 'GET' ? 'installation.metadata' : path.includes('/pulls') ? 'repository.pull_requests' : path.includes('/issues') ? 'repository.issues' : path.includes('/actions/runs') ? 'repository.actions_runs' : 'repository.metadata', status: response.status, latencyMs: Date.now() - started, itemCount: items });
+            evidence.push({ endpointClass: classifyEndpoint(method, path), status: response.status, latencyMs: Date.now() - started, itemCount: items });
             return json;
           }
 
@@ -109,7 +121,7 @@ jobs:
             if (installation.id !== installationId || installation.account?.login !== owner || installation.suspended_at || installation.repository_selection !== 'selected') throw new Error('Installation identity or scope mismatch.');
             for (const [permission, level] of Object.entries(installation.permissions || {})) if (level !== 'read') throw new Error(`Unexpected ${permission} permission.`);
 
-            const exchange = await request('POST', `/app/installations/${installationId}/access_tokens`, jwt, { repositories: [repo], permissions: Object.fromEntries(Object.entries(installation.permissions || {}).filter(([, level]) => level === 'read')) });
+            const exchange = await request('POST', accessTokensPath, jwt, { repositories: [repo], permissions: Object.fromEntries(Object.entries(installation.permissions || {}).filter(([, level]) => level === 'read')) });
             if (!exchange.token || !exchange.expires_at) throw new Error('Installation token scope mismatch.');
             for (const [permission, level] of Object.entries(exchange.permissions || {})) if (level !== 'read') throw new Error(`Unexpected token ${permission} permission.`);
             if (exchange.repositories && exchange.repositories.some((item) => item.full_name !== `${owner}/${repo}`)) throw new Error('Installation token repository scope mismatch.');

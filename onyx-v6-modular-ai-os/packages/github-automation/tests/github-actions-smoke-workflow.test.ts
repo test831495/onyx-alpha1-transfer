@@ -199,4 +199,39 @@ describe("GitHub Actions read-only smoke workflow", () => {
     expect(repositoryIdOccurrences).toHaveLength(1);
     expect(repositoryIdOccurrences[0]).toBe("repositoryId: target.id,");
   });
+
+  it("classifies the token exchange as credential.exchange, distinct from every other endpoint class", () => {
+    expect(workflow).toContain("const accessTokensPath = `/app/installations/${installationId}/access_tokens`;");
+    expect(workflow).toContain("function classifyEndpoint(method, path) {");
+    expect(workflow).toContain("evidence.push({ endpointClass: classifyEndpoint(method, path)");
+    expect(workflow).toContain("request('POST', accessTokensPath, jwt,");
+
+    const classifyMatch = workflow.match(/function classifyEndpoint\(method, path\) \{([\s\S]*?)\n {10}\}\n/);
+    expect(classifyMatch).not.toBeNull();
+    if (!classifyMatch || !classifyMatch[1]) throw new Error("Expected a classifyEndpoint function body.");
+    const body = classifyMatch[1];
+
+    // The credential-exchange branch must require both an exact POST method and exact path equality, and must be evaluated first.
+    const lines = body.split("\n").map((line) => line.trim()).filter(Boolean);
+    expect(lines[0]).toBe("if (method === 'POST' && path === accessTokensPath) return 'credential.exchange';");
+
+    for (const [returnValue, count] of [
+      ["'credential.exchange'", 1],
+      ["'app.metadata'", 1],
+      ["'installation.metadata'", 1],
+      ["'installation.repositories'", 1],
+      ["'repository.pull_requests'", 1],
+      ["'repository.issues'", 1],
+      ["'repository.actions_runs'", 1],
+      ["'repository.metadata'", 1],
+    ] as const) {
+      const occurrences = body.split(`return ${returnValue};`).length - 1;
+      expect(occurrences).toBe(count);
+    }
+  });
+
+  it("keeps evidence receipts free of credentials, request bodies, and response bodies", () => {
+    expect(workflow).toContain("evidence.push({ endpointClass: classifyEndpoint(method, path), status: response.status, latencyMs: Date.now() - started, itemCount: items });");
+    expect(workflow).not.toMatch(/evidence\.push\(\{[^}]*\b(body|headers|token|jwt)\b/);
+  });
 });
