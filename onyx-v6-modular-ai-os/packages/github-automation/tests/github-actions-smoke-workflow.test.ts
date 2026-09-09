@@ -3,6 +3,24 @@ import { describe, expect, it } from "vitest";
 
 const workflow = readFileSync(new URL("../../../../.github/workflows/github-app-readonly-smoke.yml", import.meta.url), "utf8");
 
+// Returns every line before the IIFE containing an `await` that is not nested inside an `async function` declaration.
+function findTopLevelAwaitViolations(scriptBeforeIife: string): string[] {
+  const violations: string[] = [];
+  let nestedFunctionDepth = 0;
+  let braceDepth = 0;
+  for (const line of scriptBeforeIife.split("\n")) {
+    if (nestedFunctionDepth === 0 && /^\s*async function \w+\(/.test(line)) nestedFunctionDepth = 1;
+    if (nestedFunctionDepth > 0) {
+      braceDepth += (line.match(/\{/g) || []).length;
+      braceDepth -= (line.match(/\}/g) || []).length;
+      if (braceDepth <= 0) nestedFunctionDepth = 0;
+      continue;
+    }
+    if (/(?<!\S)await\s/.test(line)) violations.push(line);
+  }
+  return violations;
+}
+
 describe("GitHub Actions read-only smoke workflow", () => {
   it("is manually dispatched with contents read permission", () => {
     expect(workflow).toContain("workflow_dispatch:");
@@ -34,5 +52,105 @@ describe("GitHub Actions read-only smoke workflow", () => {
     expect(workflow).toContain("actions/upload-artifact@v4");
     expect(workflow).toContain("retention-days: 7");
     expect(workflow).toContain("PRIVATE KEY|Bearer|Authorization|ghs_");
+  });
+
+  it("wraps CommonJS require() with an async IIFE instead of unwrapped top-level await", () => {
+    const heredocMatches = [...workflow.matchAll(/node <<'NODE'\n([\s\S]*?)\n {10}NODE(?:\n|$)/g)];
+    expect(heredocMatches).toHaveLength(1);
+    const heredocMatch = heredocMatches[0];
+    if (!heredocMatch || !heredocMatch[1]) throw new Error("Expected exactly one non-empty inline Node heredoc.");
+    const inlineScript = heredocMatch[1];
+
+    expect(inlineScript).toMatch(/const crypto = require\('node:crypto'\);/);
+    expect(inlineScript).toMatch(/const fs = require\('node:fs'\);/);
+    expect(inlineScript.match(/\(async \(\) => \{/g)).toHaveLength(1);
+    expect(inlineScript.match(/\}\)\(\)\.catch\(\(error\) => \{/g)).toHaveLength(1);
+    expect(inlineScript).toContain("process.exitCode = 1;");
+
+    const iifeStart = inlineScript.indexOf("(async () => {");
+    const iifeEnd = inlineScript.indexOf("})().catch((error) => {");
+    if (iifeStart < 0 || iifeEnd < 0) throw new Error("Expected an async IIFE boundary.");
+    const iifeBody = inlineScript.slice(iifeStart, iifeEnd);
+    for (const statement of ["const app = await request('GET', '/app', jwt);", "const exchange = await request('POST'", "for (const path of allowed) await request('GET', path, token);"]) {
+      expect(iifeBody).toContain(statement);
+    }
+
+    // Every `await` outside the IIFE must belong to a nested `async function` declaration, never a top-level statement.
+    const beforeIife = inlineScript.slice(0, iifeStart);
+    expect(findTopLevelAwaitViolations(beforeIife)).toHaveLength(0);
+
+    const catchBody = inlineScript.slice(inlineScript.indexOf(".catch((error) => {"));
+    expect(catchBody).not.toMatch(/error\.stack|console\.(error|log)\(error\)/);
+  });
+
+  it("tolerates harmless formatting changes when detecting top-level await", () => {
+    const baseline = [
+      "async function request(method, path, token, body) {",
+      "  const response = await fetch(path);",
+      "  return response;",
+      "}",
+      "",
+      "const owner = 'test831495';",
+    ].join("\n");
+    expect(findTopLevelAwaitViolations(baseline)).toHaveLength(0);
+
+    const changedClosingBraceIndentation = [
+      "async function request(method, path, token, body) {",
+      "  const response = await fetch(path);",
+      "      }",
+      "const owner = 'test831495';",
+    ].join("\n");
+    expect(findTopLevelAwaitViolations(changedClosingBraceIndentation)).toHaveLength(0);
+
+    const withBlankLines = [
+      "async function request(method, path, token, body) {",
+      "",
+      "  const response = await fetch(path);",
+      "",
+      "}",
+      "",
+      "const owner = 'test831495';",
+    ].join("\n");
+    expect(findTopLevelAwaitViolations(withBlankLines)).toHaveLength(0);
+
+    const nestedHelperReindented = [
+      "    async function request(method, path, token, body) {",
+      "        const response = await fetch(path);",
+      "        return response;",
+      "    }",
+      "const owner = 'test831495';",
+    ].join("\n");
+    expect(findTopLevelAwaitViolations(nestedHelperReindented)).toHaveLength(0);
+
+    const unwrappedTopLevelAwait = [
+      "async function request(method, path, token, body) {",
+      "  return await fetch(path);",
+      "}",
+      "const app = await request('GET', '/app', jwt);",
+    ].join("\n");
+    expect(findTopLevelAwaitViolations(unwrappedTopLevelAwait)).toHaveLength(1);
+  });
+
+  it("sanitizes the terminal catch handler's logged error message", () => {
+    expect(workflow).toContain("function sanitizeErrorMessage(error)");
+    expect(workflow).toContain("const safeMessage = sanitizeErrorMessage(error);");
+    expect(workflow).not.toMatch(/console\.error\(`GITHUB_ACTIONS_READONLY_SMOKE=FAIL REASON=\$\{error\.message\}`\)/);
+
+    const sanitizeMatch = workflow.match(/function sanitizeErrorMessage\(error\) \{([\s\S]*?)\n {10}\}\n/);
+    expect(sanitizeMatch).not.toBeNull();
+    if (!sanitizeMatch || !sanitizeMatch[1]) throw new Error("Expected a sanitizeErrorMessage function body.");
+    const sanitizerBody = sanitizeMatch[1];
+
+    expect(sanitizerBody).toContain("privateKey");
+    expect(sanitizerBody).toContain("process.env.APP_ID_GITHUB");
+    expect(sanitizerBody).toContain("process.env.APP_INSTALLATION_ID_GITHUB");
+    expect(sanitizerBody).toMatch(/BEGIN \[\^-\]\+-----\[\\s\\S\]\*\?-----END/);
+    expect(sanitizerBody).toContain("eyJ[A-Za-z0-9_-]*");
+    expect(sanitizerBody).toContain("ghs_[A-Za-z0-9._-]+");
+    expect(sanitizerBody).toMatch(/Authorization\\s\*:\\s\*Bearer/i);
+    expect(sanitizerBody).toMatch(/Bearer\\s\+\\S\+/i);
+    expect(sanitizerBody).toContain("[\\r\\n]+");
+    expect(sanitizerBody).toContain(".slice(0, 500)");
+    expect(sanitizerBody).not.toMatch(/error\.stack/);
   });
 });
