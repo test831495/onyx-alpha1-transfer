@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   createAdapterRegistry,
   createDeterministicModelRouter,
+  createModelRegistry,
+  createSTTRegistry,
+  createTTSRegistry,
+  createWakeWordRegistry,
   type ModelAdapter,
   type STTAdapter,
   type TTSAdapter,
@@ -28,6 +32,24 @@ describe("provider-neutral C1 contracts", () => {
 
     expect(registry.enabled()).toEqual([]);
     expect(registry.byId("model.local.baseline")?.enabled).toBe(false);
+  });
+
+  it("keeps every adapter-family registry runtime-immutable and caller-array isolated", () => {
+    const complete = <T extends ModelAdapter | STTAdapter | TTSAdapter | WakeWordAdapter>(adapter: T) => ({ ...adapter, healthEvidence: { observedAt: "2026-09-09T00:00:00.000Z", expiresAt: "2026-09-10T00:00:00.000Z", evidenceReference: "synthetic-health" }, costEvidence: { known: true, budgetCompatible: true, evidenceReference: "synthetic-cost" }, region: "LOCAL" });
+    const model = createModelRegistry([complete({ ...localModel, declared: true })]);
+    const stt = createSTTRegistry([complete({ ...localModel, id: "stt.local", kind: "STT", capabilities: ["TRANSCRIBE"] })]);
+    const tts = createTTSRegistry([complete({ ...localModel, id: "tts.local", kind: "TTS", capabilities: ["SYNTHESIZE"] })]);
+    const wakeWord = createWakeWordRegistry([complete({ ...localModel, id: "wake.local", kind: "WAKE_WORD", capabilities: ["DETECT_WAKE_WORD"] })]);
+    for (const registry of [model, stt, tts, wakeWord]) {
+      expect(Object.isFrozen(registry)).toBe(true);
+      expect(Object.isFrozen(registry.candidates)).toBe(true);
+      expect(() => { (registry.candidates as unknown as unknown[]).push({}); }).toThrow();
+      expect(registry.enabled()).toEqual([]);
+    }
+    expect(model.byId("model.local.baseline")?.id).toBe("model.local.baseline");
+    expect(stt.byId("stt.local")?.id).toBe("stt.local");
+    expect(tts.byId("tts.local")?.id).toBe("tts.local");
+    expect(wakeWord.byId("wake.local")?.id).toBe("wake.local");
   });
 
   it("fails closed before ranking when trusted time or an eligible local baseline is missing", () => {

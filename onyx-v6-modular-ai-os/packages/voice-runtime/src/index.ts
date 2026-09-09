@@ -95,7 +95,9 @@ export class VoiceManager {
 export type C1ModelCandidate = Readonly<{ id:string; kind:"MODEL"|"STT"|"TTS"|"WAKE_WORD"; provider:string; enabled:boolean; quality:number; privacy:number; reliability:number; latencyMs:number; costScore:number; expiresAt:string; }>;
 export type C1ModelRouteDecision = Readonly<{ ok:true; value:{ selectedId:string; provider:string; receipt:{ provider:string; quality:number; latencyMs:number; reason:string; }; } } | { ok:false; error:string; }>;
 export function createModelRegistry(candidates: readonly C1ModelCandidate[]) {
-  return { candidates: [...candidates], byId: new Map(candidates.map((candidate) => [candidate.id, candidate])) };
+  const frozenCandidates=Object.freeze(candidates.map((candidate)=>Object.freeze({...candidate})));
+  const index=new Map(frozenCandidates.map((candidate)=>[candidate.id,candidate] as const));
+  return Object.freeze({candidates:frozenCandidates,byId:Object.freeze({get:(id:string)=>index.get(id)})});
 }
 export function createModelRouter({ policyVersion, now }: { policyVersion: string; now: string }) {
   const t = new Date(now).getTime();

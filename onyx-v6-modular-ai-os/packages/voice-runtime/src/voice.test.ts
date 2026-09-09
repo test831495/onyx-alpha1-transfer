@@ -55,6 +55,23 @@ describe("VoiceManager TTS completion",()=>{
 });
 
 describe("C1 provider-neutral adapters and deterministic routing",()=>{
+ it("keeps the package-root registry immutable without exposing its mutable index",()=>{
+   const source=[
+     {id:"registry-first", kind:"MODEL" as const, provider:"synthetic-local", enabled:false, quality:0.9, privacy:0.9, reliability:0.9, latencyMs:100, costScore:0.9, expiresAt:"2099-01-01T00:00:00Z"},
+     {id:"registry-second", kind:"MODEL" as const, provider:"synthetic-local", enabled:false, quality:0.8, privacy:0.8, reliability:0.8, latencyMs:200, costScore:0.8, expiresAt:"2099-01-01T00:00:00Z"},
+   ];
+   const registry=createModelRegistry(source);
+   source.pop();
+   expect(registry.candidates).toHaveLength(2);
+   expect(Object.isFrozen(registry)).toBe(true);
+   expect(Object.isFrozen(registry.candidates)).toBe(true);
+   expect(()=>{(registry.candidates as unknown as Array<unknown>).push(source[0]);}).toThrow();
+   expect(()=>{(registry.candidates as unknown as Array<unknown>)[0]=source[0];}).toThrow();
+   expect(registry.byId.get("registry-first")?.id).toBe("registry-first");
+   expect("set" in registry.byId).toBe(false);
+   expect(registry.candidates.every(candidate=>candidate.enabled===false)).toBe(true);
+ });
+
  it("keeps a synthetic local model route eligible and deterministic",()=>{
    const registry=createModelRegistry([
      {id:"local-synthetic", kind:"MODEL", provider:"synthetic-local", enabled:true, quality:0.94, privacy:0.96, reliability:0.92, latencyMs:160, costScore:0.92, expiresAt:"2099-01-01T00:00:00Z"},
