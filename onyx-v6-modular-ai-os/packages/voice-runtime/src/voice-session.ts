@@ -1,8 +1,10 @@
-export type VoiceSessionState = "IDLE" | "LISTENING" | "RESPONDING" | "INTERRUPTED" | "OFFLINE";
+export type VoiceSessionState = "IDLE" | "LISTENING" | "UNDERSTANDING" | "RESPONDING" | "INTERRUPTED" | "OFFLINE";
 
 export interface VoiceSessionOptions {
   readonly language: string;
   readonly maxFollowUps?: number;
+  readonly accountId?: string;
+  readonly sessionId?: string;
 }
 
 export interface VoiceSessionCancellation {
@@ -10,7 +12,7 @@ export interface VoiceSessionCancellation {
   readonly reason: string;
 }
 
-export function createVoiceSession({ language, maxFollowUps = 1 }: VoiceSessionOptions) {
+export function createVoiceSession({ language, maxFollowUps = 1, accountId, sessionId }: VoiceSessionOptions) {
   let state: VoiceSessionState = "IDLE";
   let microphoneRequested = false;
   let followUps = 0;
@@ -30,6 +32,18 @@ export function createVoiceSession({ language, maxFollowUps = 1 }: VoiceSessionO
     orbitListen(): VoiceSessionState {
       return this.tapToTalk();
     },
+    owns(owner: { readonly accountId: string; readonly sessionId: string }): boolean {
+      return owner.accountId === accountId && owner.sessionId === sessionId;
+    },
+    understand(transcript: string): VoiceSessionState {
+      if (!transcript.trim() || state !== "LISTENING") return state;
+      state = "UNDERSTANDING";
+      return state;
+    },
+    endTurn(transcript: string, spokenResponse: string) {
+      state = "RESPONDING";
+      return Object.freeze({ transcript, spokenResponse, consistent: Boolean(transcript.trim() && spokenResponse.trim()) });
+    },
     beginResponse(responseId: string): boolean {
       if (responses.has(responseId) || state === "OFFLINE") return false;
       responses.add(responseId);
@@ -44,6 +58,9 @@ export function createVoiceSession({ language, maxFollowUps = 1 }: VoiceSessionO
     interrupt(): VoiceSessionState {
       state = "INTERRUPTED";
       return state;
+    },
+    bargeIn(): VoiceSessionState {
+      return this.interrupt();
     },
     cancel(reason: string): VoiceSessionCancellation {
       state = "OFFLINE";
@@ -64,6 +81,11 @@ export function createVoiceSession({ language, maxFollowUps = 1 }: VoiceSessionO
     },
     fallback(): VoiceSessionState {
       state = "OFFLINE";
+      return state;
+    },
+    releaseMicrophone(): VoiceSessionState {
+      microphoneRequested = false;
+      state = "IDLE";
       return state;
     },
   });

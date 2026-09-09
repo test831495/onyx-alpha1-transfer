@@ -26,4 +26,17 @@ describe("baseline C1 voice session", () => {
     expect(session.reconnect()).toBe("LISTENING");
     expect(session.providerEnabled).toBe(false);
   });
+
+  it("preserves owner-scoped transcript, end-of-turn and barge-in behavior without retaining microphone access", () => {
+    const session = createVoiceSession({ language: "en-IN", accountId: "account-1", sessionId: "session-1" });
+
+    expect(session.owns({ accountId: "account-1", sessionId: "session-1" })).toBe(true);
+    expect(session.owns({ accountId: "account-2", sessionId: "session-1" })).toBe(false);
+    session.tapToTalk();
+    expect(session.understand("Hello Onyx")).toBe("UNDERSTANDING");
+    expect(session.endTurn("Hello Onyx", "Hello Rahul")).toMatchObject({ transcript: "Hello Onyx", spokenResponse: "Hello Rahul", consistent: true });
+    expect(session.bargeIn()).toBe("INTERRUPTED");
+    expect(session.releaseMicrophone()).toBe("IDLE");
+    expect(session.microphoneRequested).toBe(false);
+  });
 });
