@@ -153,4 +153,50 @@ describe("GitHub Actions read-only smoke workflow", () => {
     expect(sanitizerBody).toContain(".slice(0, 500)");
     expect(sanitizerBody).not.toMatch(/error\.stack/);
   });
+
+  it("does not assume installation metadata contains a repositories array", () => {
+    expect(workflow).not.toContain("installation.repositories\n");
+    expect(workflow).not.toContain("const repositories = installation.repositories");
+    expect(workflow).not.toMatch(/repositories\.find\(\(item\) => item\.full_name/);
+  });
+
+  it("preserves installation identity, suspension, selection, and read-only permission checks before token exchange", () => {
+    expect(workflow).toContain("installation.id !== installationId");
+    expect(workflow).toContain("installation.account?.login !== owner");
+    expect(workflow).toContain("installation.suspended_at");
+    expect(workflow).toContain("installation.repository_selection !== 'selected'");
+    expect(workflow).toContain("for (const [permission, level] of Object.entries(installation.permissions || {})) if (level !== 'read')");
+  });
+
+  it("restricts the single token exchange by repository name, not a numeric ID", () => {
+    expect(workflow.match(/request\('POST'/g)).toHaveLength(1);
+    expect(workflow).toContain("{ repositories: [repo], permissions:");
+    expect(workflow).not.toMatch(/repositories:\s*\[target\.id\]/);
+    expect(workflow).not.toContain("repository_ids");
+  });
+
+  it("rejects an unexpected repository in the token exchange response before use", () => {
+    expect(workflow).toContain("if (exchange.repositories && exchange.repositories.some((item) => item.full_name !== `${owner}/${repo}`)) throw new Error('Installation token repository scope mismatch.');");
+  });
+
+  it("validates repository scope with exactly one GET /installation/repositories call after token exchange", () => {
+    expect(workflow).toContain("const installationRepositoriesPath = '/installation/repositories?per_page=10&page=1';");
+    expect(workflow.match(/installationRepositoriesPath/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(workflow.match(/request\('GET', installationRepositoriesPath, token\)/g)).toHaveLength(1);
+    expect(workflow).toContain("if (verifiedRepositories.length !== 1 || verifiedRepositories[0]?.full_name !== `${owner}/${repo}`) throw new Error('Repository scope mismatch.');");
+    expect(workflow).toContain("const target = verifiedRepositories[0];");
+
+    const tokenExchangeIndex = workflow.indexOf("request('POST'");
+    const repositoriesGetIndex = workflow.indexOf("request('GET', installationRepositoriesPath, token)");
+    const metadataLoopIndex = workflow.indexOf("for (const path of allowed) await request('GET', path, token);");
+    expect(tokenExchangeIndex).toBeGreaterThan(-1);
+    expect(repositoriesGetIndex).toBeGreaterThan(tokenExchangeIndex);
+    expect(metadataLoopIndex).toBeGreaterThan(repositoriesGetIndex);
+  });
+
+  it("obtains the numeric repository ID only from the verified installation/repositories response", () => {
+    const repositoryIdOccurrences = workflow.match(/repositoryId:\s*\S+/g) || [];
+    expect(repositoryIdOccurrences).toHaveLength(1);
+    expect(repositoryIdOccurrences[0]).toBe("repositoryId: target.id,");
+  });
 });
