@@ -35,4 +35,32 @@ describe("GitHub Actions read-only smoke workflow", () => {
     expect(workflow).toContain("retention-days: 7");
     expect(workflow).toContain("PRIVATE KEY|Bearer|Authorization|ghs_");
   });
+
+  it("wraps CommonJS require() with an async IIFE instead of unwrapped top-level await", () => {
+    const inlineScript = workflow.slice(workflow.indexOf("node <<'NODE'"), workflow.indexOf("\n          NODE"));
+    expect(inlineScript).toMatch(/const crypto = require\('node:crypto'\);/);
+    expect(inlineScript).toMatch(/const fs = require\('node:fs'\);/);
+    expect(inlineScript.match(/\(async \(\) => \{/g)).toHaveLength(1);
+    expect(inlineScript.match(/\}\)\(\)\.catch\(\(error\) => \{/g)).toHaveLength(1);
+    expect(inlineScript).toContain("process.exitCode = 1;");
+
+    const requireLines = inlineScript.split("\n").filter((line) => line.includes("require("));
+    const lastRequireLine = requireLines[requireLines.length - 1];
+    if (!lastRequireLine) throw new Error("Expected at least one require() declaration.");
+
+    const iifeStart = inlineScript.indexOf("(async () => {");
+    const iifeEnd = inlineScript.indexOf("})().catch((error) => {");
+    if (iifeStart < 0 || iifeEnd < 0) throw new Error("Expected an async IIFE boundary.");
+    const iifeBody = inlineScript.slice(iifeStart, iifeEnd);
+    for (const statement of ["const app = await request('GET', '/app', jwt);", "const exchange = await request('POST'", "for (const path of allowed) await request('GET', path, token);"]) {
+      expect(iifeBody).toContain(statement);
+    }
+
+    const beforeIife = inlineScript.slice(0, iifeStart).replace(/async function request[\s\S]*?\n {10}\}\n/, "");
+    const topLevelAwaits = beforeIife.match(/(?<!\S)await\s/g) || [];
+    expect(topLevelAwaits).toHaveLength(0);
+
+    const catchBody = inlineScript.slice(inlineScript.indexOf(".catch((error) => {"));
+    expect(catchBody).not.toMatch(/error\.stack|console\.(error|log)\(error\)/);
+  });
 });

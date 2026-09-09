@@ -83,25 +83,31 @@ jobs:
             return json;
           }
 
-          const app = await request('GET', '/app', jwt);
-          if (app.id !== appId) throw new Error('App ID mismatch.');
-          const installation = await request('GET', `/app/installations/${installationId}`, jwt);
-          if (installation.id !== installationId || installation.account?.login !== owner || installation.suspended_at || installation.repository_selection !== 'selected') throw new Error('Installation identity or scope mismatch.');
-          for (const [permission, level] of Object.entries(installation.permissions || {})) if (level !== 'read') throw new Error(`Unexpected ${permission} permission.`);
-          const repositories = installation.repositories || [];
-          const target = repositories.find((item) => item.full_name === `${owner}/${repo}`);
-          if (!target || repositories.some((item) => item.full_name !== `${owner}/${repo}`)) throw new Error('Repository scope mismatch.');
+          (async () => {
+            const app = await request('GET', '/app', jwt);
+            if (app.id !== appId) throw new Error('App ID mismatch.');
+            const installation = await request('GET', `/app/installations/${installationId}`, jwt);
+            if (installation.id !== installationId || installation.account?.login !== owner || installation.suspended_at || installation.repository_selection !== 'selected') throw new Error('Installation identity or scope mismatch.');
+            for (const [permission, level] of Object.entries(installation.permissions || {})) if (level !== 'read') throw new Error(`Unexpected ${permission} permission.`);
+            const repositories = installation.repositories || [];
+            const target = repositories.find((item) => item.full_name === `${owner}/${repo}`);
+            if (!target || repositories.some((item) => item.full_name !== `${owner}/${repo}`)) throw new Error('Repository scope mismatch.');
 
-          const exchange = await request('POST', `/app/installations/${installationId}/access_tokens`, jwt, { repositories: [target.id], permissions: Object.fromEntries(Object.entries(installation.permissions || {}).filter(([, level]) => level === 'read')) });
-          if (!exchange.token || !exchange.expires_at || (exchange.repositories && exchange.repositories.some((item) => item.id !== target.id))) throw new Error('Installation token scope mismatch.');
-          for (const [permission, level] of Object.entries(exchange.permissions || {})) if (level !== 'read') throw new Error(`Unexpected token ${permission} permission.`);
-          const token = exchange.token;
-          for (const path of allowed) await request('GET', path, token);
-          const sanitized = { gateId: 'GITHUB_ACTIONS_READONLY_SMOKE', appId, installationId, repository: `${owner}/${repo}`, repositoryId: target.id, permissions: Object.fromEntries(Object.entries(exchange.permissions || {}).map(([name, level]) => [name, level === 'read' ? 'read' : 'unexpected'])), endpoints: evidence, zeroWriteClaim: true, credentialsDropped: true, generatedAt: new Date().toISOString() };
-          const serialized = JSON.stringify(sanitized, null, 2);
-          if (/PRIVATE KEY|Bearer|Authorization|ghs_|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/.test(serialized)) throw new Error('Evidence failed secret scan.');
-          fs.writeFileSync(evidencePath, `${serialized}\n`, { flag: 'wx' });
-          console.log(`GITHUB_ACTIONS_READONLY_SMOKE=PASS APP_ID=${appId} INSTALLATION_ID=${installationId} REPOSITORY=${owner}/${repo} REPOSITORY_ID=${target.id} ENDPOINT_COUNT=${evidence.length} EVIDENCE_PATH=${evidencePath} CREDENTIALS_DROPPED=true`);
+            const exchange = await request('POST', `/app/installations/${installationId}/access_tokens`, jwt, { repositories: [target.id], permissions: Object.fromEntries(Object.entries(installation.permissions || {}).filter(([, level]) => level === 'read')) });
+            if (!exchange.token || !exchange.expires_at || (exchange.repositories && exchange.repositories.some((item) => item.id !== target.id))) throw new Error('Installation token scope mismatch.');
+            for (const [permission, level] of Object.entries(exchange.permissions || {})) if (level !== 'read') throw new Error(`Unexpected token ${permission} permission.`);
+            const token = exchange.token;
+            for (const path of allowed) await request('GET', path, token);
+            const sanitized = { gateId: 'GITHUB_ACTIONS_READONLY_SMOKE', appId, installationId, repository: `${owner}/${repo}`, repositoryId: target.id, permissions: Object.fromEntries(Object.entries(exchange.permissions || {}).map(([name, level]) => [name, level === 'read' ? 'read' : 'unexpected'])), endpoints: evidence, zeroWriteClaim: true, credentialsDropped: true, generatedAt: new Date().toISOString() };
+            const serialized = JSON.stringify(sanitized, null, 2);
+            if (/PRIVATE KEY|Bearer|Authorization|ghs_|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/.test(serialized)) throw new Error('Evidence failed secret scan.');
+            fs.writeFileSync(evidencePath, `${serialized}\n`, { flag: 'wx' });
+            console.log(`GITHUB_ACTIONS_READONLY_SMOKE=PASS APP_ID=${appId} INSTALLATION_ID=${installationId} REPOSITORY=${owner}/${repo} REPOSITORY_ID=${target.id} ENDPOINT_COUNT=${evidence.length} EVIDENCE_PATH=${evidencePath} CREDENTIALS_DROPPED=true`);
+          })().catch((error) => {
+            const safeMessage = error instanceof Error ? error.message : 'Unknown smoke failure';
+            console.error(`GITHUB_ACTIONS_READONLY_SMOKE=FAIL REASON=${safeMessage}`);
+            process.exitCode = 1;
+          });
           NODE
 
       - name: Upload sanitized evidence
