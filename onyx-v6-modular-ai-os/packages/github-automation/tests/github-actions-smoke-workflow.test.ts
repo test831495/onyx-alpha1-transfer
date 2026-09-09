@@ -153,4 +153,128 @@ describe("GitHub Actions read-only smoke workflow", () => {
     expect(sanitizerBody).toContain(".slice(0, 500)");
     expect(sanitizerBody).not.toMatch(/error\.stack/);
   });
+
+  it("does not assume installation metadata contains a repositories array", () => {
+    expect(workflow).not.toContain("installation.repositories\n");
+    expect(workflow).not.toContain("const repositories = installation.repositories");
+    expect(workflow).not.toMatch(/repositories\.find\(\(item\) => item\.full_name/);
+  });
+
+  it("preserves installation identity, suspension, selection, and read-only permission checks before token exchange", () => {
+    expect(workflow).toContain("installation.id !== installationId");
+    expect(workflow).toContain("installation.account?.login !== owner");
+    expect(workflow).toContain("installation.suspended_at");
+    expect(workflow).toContain("installation.repository_selection !== 'selected'");
+    expect(workflow).toContain("for (const [permission, level] of Object.entries(installation.permissions || {})) if (level !== 'read')");
+  });
+
+  it("restricts the single token exchange by repository name, not a numeric ID", () => {
+    expect(workflow.match(/request\('POST'/g)).toHaveLength(1);
+    expect(workflow).toContain("{ repositories: [repo], permissions:");
+    expect(workflow).not.toMatch(/repositories:\s*\[target\.id\]/);
+    expect(workflow).not.toContain("repository_ids");
+  });
+
+  it("rejects an unexpected repository in the token exchange response before use", () => {
+    expect(workflow).toContain("if (exchange.repositories && exchange.repositories.some((item) => item.full_name !== `${owner}/${repo}`)) throw new Error('Installation token repository scope mismatch.');");
+  });
+
+  it("validates repository scope with exactly one GET /installation/repositories call after token exchange", () => {
+    expect(workflow).toContain("const installationRepositoriesPath = '/installation/repositories?per_page=10&page=1';");
+    expect(workflow.match(/installationRepositoriesPath/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(workflow.match(/request\('GET', installationRepositoriesPath, token\)/g)).toHaveLength(1);
+    expect(workflow).toContain("if (verifiedRepositories.length !== 1 || verifiedRepositories[0]?.full_name !== `${owner}/${repo}`) throw new Error('Repository scope mismatch.');");
+    expect(workflow).toContain("const target = verifiedRepositories[0];");
+
+    const tokenExchangeIndex = workflow.indexOf("request('POST'");
+    const repositoriesGetIndex = workflow.indexOf("request('GET', installationRepositoriesPath, token)");
+    const metadataLoopIndex = workflow.indexOf("for (const path of allowed) await request('GET', path, token);");
+    expect(tokenExchangeIndex).toBeGreaterThan(-1);
+    expect(repositoriesGetIndex).toBeGreaterThan(tokenExchangeIndex);
+    expect(metadataLoopIndex).toBeGreaterThan(repositoriesGetIndex);
+  });
+
+  it("obtains the numeric repository ID only from the verified installation/repositories response", () => {
+    const repositoryIdOccurrences = workflow.match(/repositoryId:\s*\S+/g) || [];
+    expect(repositoryIdOccurrences).toHaveLength(1);
+    expect(repositoryIdOccurrences[0]).toBe("repositoryId: target.id,");
+  });
+
+  it("classifies the token exchange as credential.exchange, distinct from every other endpoint class", () => {
+    expect(workflow).toContain("const accessTokensPath = `/app/installations/${installationId}/access_tokens`;");
+    expect(workflow).toContain("function classifyEndpoint(method, path) {");
+    expect(workflow).toContain("evidence.push({ endpointClass: classifyEndpoint(method, path)");
+    expect(workflow).toContain("request('POST', accessTokensPath, jwt,");
+
+    const classifyMatch = workflow.match(/function classifyEndpoint\(method, path\) \{([\s\S]*?)\n {10}\}\n/);
+    expect(classifyMatch).not.toBeNull();
+    if (!classifyMatch || !classifyMatch[1]) throw new Error("Expected a classifyEndpoint function body.");
+    const body = classifyMatch[1];
+
+    // The credential-exchange branch must require both an exact POST method and exact path equality, and must be evaluated first.
+    const lines = body.split("\n").map((line) => line.trim()).filter(Boolean);
+    expect(lines[0]).toBe("if (method === 'POST' && path === accessTokensPath) return 'credential.exchange';");
+
+    for (const [returnValue, count] of [
+      ["'credential.exchange'", 1],
+      ["'app.metadata'", 1],
+      ["'installation.metadata'", 1],
+      ["'installation.repositories'", 1],
+      ["'repository.pull_requests'", 1],
+      ["'repository.issues'", 1],
+      ["'repository.actions_runs'", 1],
+      ["'repository.metadata'", 1],
+    ] as const) {
+      const occurrences = body.split(`return ${returnValue};`).length - 1;
+      expect(occurrences).toBe(count);
+    }
+  });
+
+  it("permits only exact GET on approved paths or exact POST on the access-token path", () => {
+    const guardMatch = workflow.match(/async function request\(method, path, token, body\) \{\n\s*const isApprovedGet = (.+);\n\s*const isCredentialExchange = (.+);\n\s*if \(!isApprovedGet && !isCredentialExchange\) throw new Error\('Non-allowlisted method or path\.'\);/);
+    expect(guardMatch).not.toBeNull();
+    if (!guardMatch || !guardMatch[1] || !guardMatch[2]) throw new Error("Expected an explicit exact method/path guard using isApprovedGet and isCredentialExchange.");
+    expect(guardMatch[1]).toBe("method === 'GET' && allowedGetPaths.has(path)");
+    expect(guardMatch[2]).toBe("method === 'POST' && path === accessTokensPath");
+    expect(workflow).not.toMatch(/method !== 'GET' && path !== accessTokensPath/);
+
+    // Execute the workflow's real guard expressions against representative method/path pairs.
+    const evaluateGuard = new Function(
+      "method",
+      "path",
+      "allowedGetPaths",
+      "accessTokensPath",
+      `const isApprovedGet = ${guardMatch[1]};
+       const isCredentialExchange = ${guardMatch[2]};
+       return !isApprovedGet && !isCredentialExchange ? 'rejected' : 'allowed';`,
+    ) as (method: string, path: string, allowedGetPaths: Set<string>, accessTokensPath: string) => string;
+
+    const accessTokensPath = "/app/installations/160258443/access_tokens";
+    const allowedGetPaths = new Set([
+      "/repos/test831495/onyx-alpha1-transfer",
+      "/repos/test831495/onyx-alpha1-transfer/pulls?state=all&per_page=10&page=1",
+      "/repos/test831495/onyx-alpha1-transfer/issues?state=all&per_page=10&page=1",
+      "/repos/test831495/onyx-alpha1-transfer/actions/runs?per_page=10&page=1",
+      "/app",
+      "/app/installations/160258443",
+      "/installation/repositories?per_page=10&page=1",
+    ]);
+
+    expect(evaluateGuard("GET", "/app", allowedGetPaths, accessTokensPath)).toBe("allowed");
+    expect(evaluateGuard("GET", "/repos/test831495/onyx-alpha1-transfer", allowedGetPaths, accessTokensPath)).toBe("allowed");
+    expect(evaluateGuard("POST", accessTokensPath, allowedGetPaths, accessTokensPath)).toBe("allowed");
+    expect(evaluateGuard("PATCH", accessTokensPath, allowedGetPaths, accessTokensPath)).toBe("rejected");
+    expect(evaluateGuard("PUT", accessTokensPath, allowedGetPaths, accessTokensPath)).toBe("rejected");
+    expect(evaluateGuard("DELETE", accessTokensPath, allowedGetPaths, accessTokensPath)).toBe("rejected");
+    expect(evaluateGuard("HEAD", accessTokensPath, allowedGetPaths, accessTokensPath)).toBe("rejected");
+    expect(evaluateGuard("OPTIONS", accessTokensPath, allowedGetPaths, accessTokensPath)).toBe("rejected");
+    expect(evaluateGuard("POST", "/repos/test831495/onyx-alpha1-transfer", allowedGetPaths, accessTokensPath)).toBe("rejected");
+    expect(evaluateGuard("post", accessTokensPath, allowedGetPaths, accessTokensPath)).toBe("rejected");
+    expect(evaluateGuard("GET", "/repos/other/unlisted", allowedGetPaths, accessTokensPath)).toBe("rejected");
+  });
+
+  it("keeps evidence receipts free of credentials, request bodies, and response bodies", () => {
+    expect(workflow).toContain("evidence.push({ endpointClass: classifyEndpoint(method, path), status: response.status, latencyMs: Date.now() - started, itemCount: items });");
+    expect(workflow).not.toMatch(/evidence\.push\(\{[^}]*\b(body|headers|token|jwt)\b/);
+  });
 });
