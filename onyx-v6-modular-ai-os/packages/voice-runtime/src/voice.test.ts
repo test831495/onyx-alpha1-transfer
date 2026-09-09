@@ -72,6 +72,21 @@ describe("C1 provider-neutral adapters and deterministic routing",()=>{
    expect(registry.candidates.every(candidate=>candidate.enabled===false)).toBe(true);
  });
 
+ it("rejects duplicate candidate IDs before lookup construction without exposing caller input",()=>{
+   const first={id:"caller-controlled-id", kind:"MODEL" as const, provider:"synthetic-local", enabled:false, quality:0.9, privacy:0.9, reliability:0.9, latencyMs:100, costScore:0.9, expiresAt:"2099-01-01T00:00:00Z"};
+   const duplicate={...first,quality:0.1};
+   const third={...first,id:"unique-id"};
+   const ordered=[first,duplicate,third];
+   const reversed=[third,duplicate,first];
+  expect(createModelRegistry([first,third]).byId.get("caller-controlled-id")).toMatchObject({id:"caller-controlled-id",quality:0.9});
+   for(const candidates of [ordered,reversed,[first,third,duplicate]]){
+     expect(()=>createModelRegistry(candidates)).toThrow("DUPLICATE_ADAPTER_ID");
+     try{createModelRegistry(candidates);}catch(error){expect(String(error)).not.toContain("caller-controlled-id");}
+   }
+   expect(ordered).toEqual([first,duplicate,third]);
+   expect(createModelRegistry([]).candidates).toEqual([]);
+ });
+
  it("keeps a synthetic local model route eligible and deterministic",()=>{
    const registry=createModelRegistry([
      {id:"local-synthetic", kind:"MODEL", provider:"synthetic-local", enabled:true, quality:0.94, privacy:0.96, reliability:0.92, latencyMs:160, costScore:0.92, expiresAt:"2099-01-01T00:00:00Z"},

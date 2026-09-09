@@ -96,6 +96,8 @@ export type C1ModelCandidate = Readonly<{ id:string; kind:"MODEL"|"STT"|"TTS"|"W
 export type C1ModelRouteDecision = Readonly<{ ok:true; value:{ selectedId:string; provider:string; receipt:{ provider:string; quality:number; latencyMs:number; reason:string; }; } } | { ok:false; error:string; }>;
 export function createModelRegistry(candidates: readonly C1ModelCandidate[]) {
   const frozenCandidates=Object.freeze(candidates.map((candidate)=>Object.freeze({...candidate})));
+  const ids=new Set<string>();
+  for(const candidate of frozenCandidates){if(ids.has(candidate.id))throw new Error("DUPLICATE_ADAPTER_ID");ids.add(candidate.id);}
   const index=new Map(frozenCandidates.map((candidate)=>[candidate.id,candidate] as const));
   return Object.freeze({candidates:frozenCandidates,byId:Object.freeze({get:(id:string)=>index.get(id)})});
 }
