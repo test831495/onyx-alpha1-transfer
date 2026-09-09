@@ -1,14 +1,21 @@
 import { readFileSync } from "node:fs";
+import vm from "node:vm";
 import { describe, expect, it } from "vitest";
 
 const workflow = readFileSync(new URL("../../../../.github/workflows/netlify-readonly-smoke.yml", import.meta.url), "utf8");
+const HEREDOC_PATTERN = /node <<'NODE'\n([\s\S]*?)\n {10}NODE(?:\n|$)/g;
 
-function extractInlineScript(): string {
-  const heredocMatches = [...workflow.matchAll(/node <<'NODE'\n([\s\S]*?)\n {10}NODE(?:\n|$)/g)];
+// Reused by the real workflow fixture and by the heredoc-extraction robustness tests below.
+function extractInlineScriptFrom(source: string): string {
+  const heredocMatches = [...source.matchAll(HEREDOC_PATTERN)];
   expect(heredocMatches).toHaveLength(1);
   const heredocMatch = heredocMatches[0];
-  if (!heredocMatch || !heredocMatch[1]) throw new Error("Expected exactly one non-empty inline Node heredoc.");
+  if (!heredocMatch || !heredocMatch[1] || heredocMatch[1].trim().length === 0) throw new Error("Expected exactly one non-empty inline Node heredoc.");
   return heredocMatch[1];
+}
+
+function extractInlineScript(): string {
+  return extractInlineScriptFrom(workflow);
 }
 
 describe("Netlify read-only smoke workflow", () => {
@@ -133,12 +140,44 @@ describe("Netlify read-only smoke workflow", () => {
 });
 
 describe("Netlify read-only smoke workflow inline script syntax", () => {
-  it("passes node --check on the extracted heredoc body", () => {
+  it("compiles the extracted inline Node script without executing it", () => {
     const inlineScript = extractInlineScript();
-    const dedented = inlineScript
-      .split("\n")
-      .map((line) => line.replace(/^ {10}/, ""))
-      .join("\n");
-    expect(() => new Function(dedented.replace(/require\(/g, "globalThis.require ?? require("))).not.toThrow(SyntaxError);
+    expect(() => {
+      new vm.Script(inlineScript, { filename: "netlify-readonly-smoke-inline.js" });
+    }).not.toThrow();
+  });
+
+  it("rejects a malformed script fixture, proving the compiler detects syntax errors", () => {
+    const malformedScript = "const broken = ;";
+    expect(() => {
+      new vm.Script(malformedScript, { filename: "malformed-fixture.js" });
+    }).toThrow();
+  });
+
+  it("extracts exactly one heredoc and rejects a missing opening marker", () => {
+    const missingOpeningMarker = ["          const x = 1;", "          NODE"].join("\n");
+    expect(() => extractInlineScriptFrom(missingOpeningMarker)).toThrow();
+  });
+
+  it("rejects a missing closing marker", () => {
+    const missingClosingMarker = ["          node <<'NODE'", "          const x = 1;"].join("\n");
+    expect(() => extractInlineScriptFrom(missingClosingMarker)).toThrow();
+  });
+
+  it("rejects duplicated heredocs", () => {
+    const duplicatedHeredocs = [
+      "          node <<'NODE'",
+      "          const x = 1;",
+      "          NODE",
+      "          node <<'NODE'",
+      "          const y = 2;",
+      "          NODE",
+    ].join("\n");
+    expect(() => extractInlineScriptFrom(duplicatedHeredocs)).toThrow();
+  });
+
+  it("rejects an empty heredoc body", () => {
+    const emptyBody = ["          node <<'NODE'", "          NODE"].join("\n");
+    expect(() => extractInlineScriptFrom(emptyBody)).toThrow();
   });
 });
