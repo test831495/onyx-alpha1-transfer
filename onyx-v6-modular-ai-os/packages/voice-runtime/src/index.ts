@@ -91,3 +91,49 @@ export class VoiceManager {
     catch{try{await this.speakSystem(text,p);}catch{}return{engine:"system",fallback:true,message:"VOICE CONNECTION NOT ACTIVE · USING SYSTEM VOICE"};}
   }
 }
+
+export type C1ModelCandidate = Readonly<{ id:string; kind:"MODEL"|"STT"|"TTS"|"WAKE_WORD"; provider:string; enabled:boolean; quality:number; privacy:number; reliability:number; latencyMs:number; costScore:number; expiresAt:string; }>;
+export type C1ModelRouteDecision = Readonly<{ ok:true; value:{ selectedId:string; provider:string; receipt:{ provider:string; quality:number; latencyMs:number; reason:string; }; } } | { ok:false; error:string; }>;
+export function createModelRegistry(candidates: readonly C1ModelCandidate[]) {
+  return { candidates: [...candidates], byId: new Map(candidates.map((candidate) => [candidate.id, candidate])) };
+}
+export function createModelRouter({ policyVersion, now }: { policyVersion: string; now: string }) {
+  const t = new Date(now).getTime();
+  return {
+    route(input: { requestId: string; language: string; privacyMode: "private" | "standard" | "full"; budgetMs: number }, registry: { candidates: readonly C1ModelCandidate[] }) {
+      const eligible = registry.candidates.filter((candidate) => candidate.enabled && Number(new Date(candidate.expiresAt).getTime()) > t && candidate.kind === "MODEL");
+      if (eligible.length === 0) return { ok: false, error: "NO_ELIGIBLE_MODEL_PROVIDER" } satisfies C1ModelRouteDecision;
+      const ranked = [...eligible].sort((left, right) => {
+        const scoreLeft = left.quality * 0.45 + left.privacy * 0.25 + left.reliability * 0.2 + left.costScore * 0.1 - left.latencyMs / 10000;
+        const scoreRight = right.quality * 0.45 + right.privacy * 0.25 + right.reliability * 0.2 + right.costScore * 0.1 - right.latencyMs / 10000;
+        return scoreRight - scoreLeft;
+      });
+      const winner = ranked[0]!;
+      return { ok: true, value: { selectedId: winner.id, provider: winner.provider, receipt: { provider: winner.provider, quality: winner.quality, latencyMs: winner.latencyMs, reason: `policy=${policyVersion};privacy=${input.privacyMode};request=${input.requestId}` } } } satisfies C1ModelRouteDecision;
+    }
+  };
+}
+export type SyntheticVoiceSessionState = "IDLE" | "LISTENING" | "INTERRUPTED" | "OFFLINE";
+export function createSyntheticVoiceSession({ language }: { language: string }) {
+  let state: SyntheticVoiceSessionState = "IDLE";
+  return {
+    get language() { return language; },
+    get state() { return state; },
+    startListening() { state = "LISTENING"; return state; },
+    interrupt() { state = "INTERRUPTED"; return state; },
+    reconnect() { state = "LISTENING"; return state; },
+    cancel() { state = "OFFLINE"; return state; },
+  };
+}
+export const DEFAULT_CHARACTER_BIBLE = Object.freeze({
+  identity: "ONYX/NOVA",
+  languages: ["English", "Hindi", "Hinglish"],
+  modes: ["concise", "executive", "natural"],
+  providerNeutral: true,
+  policyBound: true,
+} as const);
+export const GOLDEN_CONVERSATIONS = Object.freeze([
+  { language: "English", prompt: "Hey Onyx, what changed today?", expected: "Provide a concise evidence-grounded summary." },
+  { language: "Hindi", prompt: "नमस्ते, आज क्या बदला है?", expected: "Provide a concise evidence-grounded summary in Hindi." },
+  { language: "Hinglish", prompt: "Hey Onyx, kya update hai today?", expected: "Provide a concise evidence-grounded summary in Hinglish." },
+] as const);
