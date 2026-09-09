@@ -4,6 +4,7 @@ export * from "./gh-command-runner";
 export * from "./read-only-policy";
 export * from "./read-only-client";
 export * from "./read-only-service";
+export * from "./github-app-runtime";
 export * from "./write-contracts";
 export * from "./write-policy";
 export * from "./write-command-runner";
