@@ -230,6 +230,49 @@ describe("GitHub Actions read-only smoke workflow", () => {
     }
   });
 
+  it("permits only exact GET on approved paths or exact POST on the access-token path", () => {
+    const guardMatch = workflow.match(/async function request\(method, path, token, body\) \{\n\s*const isApprovedGet = (.+);\n\s*const isCredentialExchange = (.+);\n\s*if \(!isApprovedGet && !isCredentialExchange\) throw new Error\('Non-allowlisted method or path\.'\);/);
+    expect(guardMatch).not.toBeNull();
+    if (!guardMatch || !guardMatch[1] || !guardMatch[2]) throw new Error("Expected an explicit exact method/path guard using isApprovedGet and isCredentialExchange.");
+    expect(guardMatch[1]).toBe("method === 'GET' && allowedGetPaths.has(path)");
+    expect(guardMatch[2]).toBe("method === 'POST' && path === accessTokensPath");
+    expect(workflow).not.toMatch(/method !== 'GET' && path !== accessTokensPath/);
+
+    // Execute the workflow's real guard expressions against representative method/path pairs.
+    const evaluateGuard = new Function(
+      "method",
+      "path",
+      "allowedGetPaths",
+      "accessTokensPath",
+      `const isApprovedGet = ${guardMatch[1]};
+       const isCredentialExchange = ${guardMatch[2]};
+       return !isApprovedGet && !isCredentialExchange ? 'rejected' : 'allowed';`,
+    ) as (method: string, path: string, allowedGetPaths: Set<string>, accessTokensPath: string) => string;
+
+    const accessTokensPath = "/app/installations/160258443/access_tokens";
+    const allowedGetPaths = new Set([
+      "/repos/test831495/onyx-alpha1-transfer",
+      "/repos/test831495/onyx-alpha1-transfer/pulls?state=all&per_page=10&page=1",
+      "/repos/test831495/onyx-alpha1-transfer/issues?state=all&per_page=10&page=1",
+      "/repos/test831495/onyx-alpha1-transfer/actions/runs?per_page=10&page=1",
+      "/app",
+      "/app/installations/160258443",
+      "/installation/repositories?per_page=10&page=1",
+    ]);
+
+    expect(evaluateGuard("GET", "/app", allowedGetPaths, accessTokensPath)).toBe("allowed");
+    expect(evaluateGuard("GET", "/repos/test831495/onyx-alpha1-transfer", allowedGetPaths, accessTokensPath)).toBe("allowed");
+    expect(evaluateGuard("POST", accessTokensPath, allowedGetPaths, accessTokensPath)).toBe("allowed");
+    expect(evaluateGuard("PATCH", accessTokensPath, allowedGetPaths, accessTokensPath)).toBe("rejected");
+    expect(evaluateGuard("PUT", accessTokensPath, allowedGetPaths, accessTokensPath)).toBe("rejected");
+    expect(evaluateGuard("DELETE", accessTokensPath, allowedGetPaths, accessTokensPath)).toBe("rejected");
+    expect(evaluateGuard("HEAD", accessTokensPath, allowedGetPaths, accessTokensPath)).toBe("rejected");
+    expect(evaluateGuard("OPTIONS", accessTokensPath, allowedGetPaths, accessTokensPath)).toBe("rejected");
+    expect(evaluateGuard("POST", "/repos/test831495/onyx-alpha1-transfer", allowedGetPaths, accessTokensPath)).toBe("rejected");
+    expect(evaluateGuard("post", accessTokensPath, allowedGetPaths, accessTokensPath)).toBe("rejected");
+    expect(evaluateGuard("GET", "/repos/other/unlisted", allowedGetPaths, accessTokensPath)).toBe("rejected");
+  });
+
   it("keeps evidence receipts free of credentials, request bodies, and response bodies", () => {
     expect(workflow).toContain("evidence.push({ endpointClass: classifyEndpoint(method, path), status: response.status, latencyMs: Date.now() - started, itemCount: items });");
     expect(workflow).not.toMatch(/evidence\.push\(\{[^}]*\b(body|headers|token|jwt)\b/);

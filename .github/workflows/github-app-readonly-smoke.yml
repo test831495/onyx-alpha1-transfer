@@ -65,6 +65,7 @@ jobs:
           ]);
           const installationRepositoriesPath = '/installation/repositories?per_page=10&page=1';
           const accessTokensPath = `/app/installations/${installationId}/access_tokens`;
+          const allowedGetPaths = new Set([...allowed, '/app', `/app/installations/${installationId}`, installationRepositoriesPath]);
 
           function classifyEndpoint(method, path) {
             if (method === 'POST' && path === accessTokensPath) return 'credential.exchange';
@@ -78,8 +79,9 @@ jobs:
           }
 
           async function request(method, path, token, body) {
-            if (method !== 'GET' && path !== accessTokensPath) throw new Error('Non-allowlisted method.');
-            if (method === 'GET' && !allowed.has(path) && path !== '/app' && path !== `/app/installations/${installationId}` && path !== installationRepositoriesPath) throw new Error('Non-allowlisted endpoint.');
+            const isApprovedGet = method === 'GET' && allowedGetPaths.has(path);
+            const isCredentialExchange = method === 'POST' && path === accessTokensPath;
+            if (!isApprovedGet && !isCredentialExchange) throw new Error('Non-allowlisted method or path.');
             const started = Date.now();
             const response = await fetch(`${apiBase}${path}`, {
               method,
