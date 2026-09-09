@@ -39,16 +39,16 @@ jobs:
           const siteId = process.env.NETLIFY_SITE_ID;
           const siteName = process.env.NETLIFY_SITE_NAME;
           const evidencePath = process.env.EVIDENCE_PATH;
+          const EXPECTED_NETLIFY_SITE_ID = 'eb638a6a-82b0-4769-a45a-072234f30fd1';
+          const EXPECTED_NETLIFY_SITE_NAME = 'onyx-alpha0';
 
           const evidence = [];
           const allowedGetPaths = new Set([
-            '/accounts',
             `/sites/${siteId}`,
             `/sites/${siteId}/deploys?per_page=10&page=1`,
           ]);
 
           function classifyEndpoint(path) {
-            if (path === '/accounts') return 'accounts.metadata';
             if (path === `/sites/${siteId}`) return 'site.metadata';
             if (path.includes('/deploys')) return 'site.deploys';
             return 'unknown';
@@ -87,11 +87,11 @@ jobs:
           }
 
           (async () => {
-            await request('/accounts');
+            if (siteId !== EXPECTED_NETLIFY_SITE_ID || siteName !== EXPECTED_NETLIFY_SITE_NAME) throw new Error('Configured Netlify sandbox identity mismatch.');
 
             const site = await request(`/sites/${siteId}`);
-            if (site.id !== siteId) throw new Error('Site ID mismatch.');
-            if (site.name !== siteName) throw new Error('Site name mismatch.');
+            if (site.id !== siteId || site.id !== EXPECTED_NETLIFY_SITE_ID) throw new Error('Site ID mismatch.');
+            if (site.name !== siteName || site.name !== EXPECTED_NETLIFY_SITE_NAME) throw new Error('Site name mismatch.');
 
             const deploys = await request(`/sites/${siteId}/deploys?per_page=10&page=1`);
             if (!Array.isArray(deploys) || deploys.length === 0) throw new Error('Deployment history missing.');
