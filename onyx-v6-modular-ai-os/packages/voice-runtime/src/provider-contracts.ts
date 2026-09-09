@@ -16,6 +16,18 @@ export interface AdapterCostProjection {
   readonly evidenceReference: string;
 }
 
+export interface AdapterEvidence {
+  readonly observedAt: string;
+  readonly expiresAt: string;
+  readonly evidenceReference: string;
+}
+
+export interface CostEvidence {
+  readonly known: boolean;
+  readonly budgetCompatible: boolean;
+  readonly evidenceReference: string;
+}
+
 export interface CancellationProjection {
   readonly requestId: string;
   readonly cancelled: boolean;
@@ -26,6 +38,7 @@ export interface ProviderAdapter<K extends AdapterKind = AdapterKind> {
   readonly id: string;
   readonly kind: K;
   readonly enabled: false;
+  readonly declared?: boolean;
   readonly providerReference: string;
   readonly capabilities: readonly AdapterCapability[];
   readonly health: AdapterHealth;
@@ -35,6 +48,9 @@ export interface ProviderAdapter<K extends AdapterKind = AdapterKind> {
   readonly latencyMs: number;
   readonly costScore: number;
   readonly expiresAt?: string;
+  readonly healthEvidence?: AdapterEvidence;
+  readonly costEvidence?: CostEvidence;
+  readonly region?: "LOCAL" | "BROWSER" | "PRIVATE_REGION";
 }
 
 export type ModelAdapter = ProviderAdapter<"MODEL">;
@@ -60,6 +76,14 @@ export interface AdapterRegistry<K extends AdapterKind> {
 }
 
 export function createAdapterRegistry<K extends AdapterKind>(kind: K, candidates: readonly ProviderAdapter<K>[]): AdapterRegistry<K> {
+  const ids = new Set<string>();
+  for (const candidate of candidates) {
+    if (candidate.kind !== kind) throw new Error("Adapter kind mismatch");
+    if (!candidate.id || ids.has(candidate.id)) throw new Error("Duplicate adapter id");
+    ids.add(candidate.id);
+    if (candidate.expiresAt && !Number.isFinite(new Date(candidate.expiresAt).getTime())) throw new Error("Invalid expiry evidence");
+    if (candidate.healthEvidence && (!Number.isFinite(new Date(candidate.healthEvidence.observedAt).getTime()) || !Number.isFinite(new Date(candidate.healthEvidence.expiresAt).getTime()))) throw new Error("Invalid health evidence");
+  }
   const frozen = Object.freeze([...candidates].map((candidate) => Object.freeze({ ...candidate, capabilities: Object.freeze([...candidate.capabilities]) })));
   const byId = new Map(frozen.map((candidate) => [candidate.id, candidate]));
   return Object.freeze({
@@ -81,11 +105,13 @@ export interface ModelRouteRequest {
   readonly budgetMs: number;
   readonly trustedTime?: string;
   readonly cancellation?: CancellationProjection;
+  readonly preferredAdapterId?: string;
+  readonly fallback?: boolean;
 }
 
 export type ModelRouteResult =
   | Readonly<{ ok: true; value: { readonly adapter: ModelAdapter; readonly receipt: AdapterReceipt } }>
-  | Readonly<{ ok: false; error: "TRUSTED_TIME_REQUIRED" | "CANCELLED" | "NO_ELIGIBLE_MODEL_ADAPTER"; receipt?: AdapterReceipt }>;
+  | Readonly<{ ok: false; error: "TRUSTED_TIME_REQUIRED" | "CANCELLED" | "NO_ELIGIBLE_MODEL_ADAPTER" | "FAILOVER_LIMIT_REACHED"; receipt?: AdapterReceipt }>;
 
 const privacyRank: Readonly<Record<PrivacyClass, number>> = Object.freeze({ LOCAL_ONLY: 3, PRIVATE: 2, STANDARD: 1 });
 const validTrustedTime = (trustedTime: string | undefined) => Boolean(trustedTime && Number.isFinite(new Date(trustedTime).getTime()));
@@ -101,13 +127,17 @@ export function createDeterministicModelRouter({ policyVersion }: { readonly pol
       });
       const trustedTime = new Date(request.trustedTime!).getTime();
       const eligible = registry.candidates.filter((candidate) =>
-        candidate.enabled && candidate.health === "HEALTHY" && candidate.capabilities.includes("CHAT") &&
+        candidate.declared && candidate.health === "HEALTHY" && candidate.capabilities.includes("CHAT") &&
         privacyRank[candidate.privacy] >= privacyRank[request.privacy] && candidate.latencyMs <= request.budgetMs &&
-        (!candidate.expiresAt || new Date(candidate.expiresAt).getTime() > trustedTime),
+        (!candidate.expiresAt || new Date(candidate.expiresAt).getTime() > trustedTime) &&
+        (!candidate.healthEvidence || new Date(candidate.healthEvidence.expiresAt).getTime() > trustedTime) &&
+        (!candidate.costEvidence || (candidate.costEvidence.known && candidate.costEvidence.budgetCompatible)),
       );
       if (eligible.length === 0) return Object.freeze({ ok: false, error: "NO_ELIGIBLE_MODEL_ADAPTER" });
       const ranked = [...eligible].sort((left, right) => {
         const score = (candidate: ModelAdapter) => candidate.quality * 0.4 + candidate.reliability * 0.3 + privacyRank[candidate.privacy] * 0.1 + candidate.costScore * 0.1 - candidate.latencyMs / 10000;
+        const preferred = request.preferredAdapterId;
+        if (preferred && (left.id === preferred || right.id === preferred)) return left.id === preferred ? -1 : 1;
         return score(right) - score(left) || left.id.localeCompare(right.id);
       });
       const adapter = ranked[0]!;
@@ -115,9 +145,13 @@ export function createDeterministicModelRouter({ policyVersion }: { readonly pol
         ok: true,
         value: Object.freeze({
           adapter,
-          receipt: Object.freeze({ requestId: request.requestId, adapterId: adapter.id, policyVersion, trustedTime: request.trustedTime!, selectionReason: "eligible-ranked-local-baseline", fallback: false, nonAuthorizing: true }),
+          receipt: Object.freeze({ requestId: request.requestId, adapterId: adapter.id, policyVersion, trustedTime: request.trustedTime!, selectionReason: "eligible-ranked-local-baseline", fallback: request.fallback ?? false, nonAuthorizing: true }),
         }),
       });
+    },
+    failover(receipt: AdapterReceipt, registry: AdapterRegistry<"MODEL">): ModelRouteResult {
+      if (receipt.fallback) return Object.freeze({ ok: false, error: "FAILOVER_LIMIT_REACHED" });
+      return this.route({ requestId: receipt.requestId, privacy: "LOCAL_ONLY", budgetMs: Number.MAX_SAFE_INTEGER, trustedTime: receipt.trustedTime, fallback: true }, createAdapterRegistry("MODEL", registry.candidates.filter((candidate) => candidate.id !== receipt.adapterId)));
     },
   });
 }
