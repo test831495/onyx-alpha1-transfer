@@ -42,13 +42,11 @@ jobs:
 
           const evidence = [];
           const allowedGetPaths = new Set([
-            '/accounts',
             `/sites/${siteId}`,
             `/sites/${siteId}/deploys?per_page=10&page=1`,
           ]);
 
           function classifyEndpoint(path) {
-            if (path === '/accounts') return 'accounts.metadata';
             if (path === `/sites/${siteId}`) return 'site.metadata';
             if (path.includes('/deploys')) return 'site.deploys';
             return 'unknown';
@@ -87,8 +85,6 @@ jobs:
           }
 
           (async () => {
-            await request('/accounts');
-
             const site = await request(`/sites/${siteId}`);
             if (site.id !== siteId) throw new Error('Site ID mismatch.');
             if (site.name !== siteName) throw new Error('Site name mismatch.');
