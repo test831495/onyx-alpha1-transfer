@@ -79,4 +79,30 @@ describe("secondary panel presentation", () => {
     expect(html).not.toContain("MICROSOFT CALENDAR");
     expect(html).not.toContain("Speak");
   });
+
+  it("renders connected Microsoft calendar events without exposing provider internals", () => {
+    const html = renderToStaticMarkup(
+      <CalendarIntelligencePanel
+        summary={undefined}
+        busy={false}
+        onRefresh={() => undefined}
+        onSpeak={() => undefined}
+        connected
+        events={[{
+          id: "event-1",
+          subject: "Planning",
+          start: "2026-09-10T09:00:00.000Z",
+          end: "2026-09-10T10:00:00.000Z",
+          isAllDay: false,
+          isCancelled: false,
+          isOnlineMeeting: false,
+        }]}
+      />,
+    );
+
+    expect(html).toContain("Planning");
+    expect(html).toContain("1 event");
+    expect(html).not.toContain("No connected calendar event data is available.");
+    expect(html).not.toContain("graph.microsoft.com");
+  });
 });
