@@ -68,6 +68,29 @@ describe("Microsoft runtime config reachability", () => {
     expect(getAccessToken).toHaveBeenCalledWith(["Calendars.Read"]);
   });
 
+  it("invokes the existing interactive sign-in flow when explicit reconnect requires interaction", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const loginRedirect = vi.fn().mockResolvedValue(undefined);
+    const interactionError = Object.assign(new Error("interaction required"), { errorCode: "interaction_required" });
+    const getAccessToken = vi.fn().mockRejectedValue(new Error("Microsoft Calendar sign-in is required. Use Reconnect to continue.", { cause: interactionError }));
+    Object.assign(connector, { getAccessToken, application: { loginRedirect }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    await connector.reconnect();
+
+    expect(loginRedirect).toHaveBeenCalledWith({ scopes: ["User.Read", "Calendars.Read"], prompt: "select_account" });
+    expect(getAccessToken).toHaveBeenCalledTimes(1);
+  });
+
+  it("rethrows non-interaction reconnect failures without invoking interactive sign-in", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const loginRedirect = vi.fn().mockResolvedValue(undefined);
+    const getAccessToken = vi.fn().mockRejectedValue(new Error("Microsoft authorization failed. Reconnect Microsoft and try again.", { cause: new Error("network down") }));
+    Object.assign(connector, { getAccessToken, application: { loginRedirect }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    await expect(connector.reconnect()).rejects.toThrow("Microsoft authorization failed. Reconnect Microsoft and try again.");
+    expect(loginRedirect).not.toHaveBeenCalled();
+  });
+
   it("uses the documented default-calendar endpoint for calendarView", async () => {
     const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
     const getAccessToken = vi.fn().mockResolvedValue("access-token");
@@ -327,5 +350,178 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
     expect(event).not.toHaveProperty("organizer");
     expect(event).not.toHaveProperty("joinUrl");
     expect(event).not.toHaveProperty("sensitivity");
+  });
+
+  it("returns a bounded interaction-required diagnostic without triggering an automatic redirect", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const acquireTokenSilent = vi.fn().mockRejectedValue(Object.assign(new Error("interaction required"), { errorCode: "interaction_required" }));
+    const acquireTokenRedirect = vi.fn();
+    const application = { acquireTokenSilent, acquireTokenRedirect };
+    Object.assign(connector, { application, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(result.diagnostic.reasonCode).toBe("MICROSOFT_INTERACTION_REQUIRED");
+    expect(result.diagnostic.interactionRequired).toBe(true);
+    expect(acquireTokenRedirect).not.toHaveBeenCalled();
+    expect(JSON.stringify(result.diagnostic)).not.toMatch(/access-token|Bearer\s|Authorization|eyJ[A-Za-z0-9-_.]+|tenantId|homeAccountId|graph\.microsoft\.com/gi);
+  });
+
+  it("uses a refreshed token once after an initial 401 and succeeds on retry", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const acquireTokenSilent = vi.fn()
+      .mockResolvedValueOnce({ accessToken: "initial-token" })
+      .mockResolvedValueOnce({ accessToken: "refreshed-token" });
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers({ "content-type": "application/json" }), json: async () => ({ value: [] }) });
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { application: { acquireTokenSilent }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(acquireTokenSilent).toHaveBeenCalledTimes(2);
+    expect(acquireTokenSilent).toHaveBeenNthCalledWith(2, expect.objectContaining({ forceRefresh: true }));
+    expect(fetch.mock.calls[1]![1].headers.Authorization).toBe("Bearer refreshed-token");
+    expect(result.diagnostic.reasonCode).toBe("MICROSOFT_GRAPH_RETRY_SUCCEEDED");
+    expect(result.events).toEqual([]);
+    expect(JSON.stringify(result.diagnostic)).not.toContain("initial-token");
+  });
+
+  it("stops after a single retry when the refreshed token still returns 401 without claiming interaction is required", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const acquireTokenRedirect = vi.fn();
+    const acquireTokenPopup = vi.fn();
+    const acquireTokenSilent = vi.fn()
+      .mockResolvedValueOnce({ accessToken: "initial-token" })
+      .mockResolvedValueOnce({ accessToken: "refreshed-token" });
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() });
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { application: { acquireTokenSilent, acquireTokenRedirect, acquireTokenPopup }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(acquireTokenSilent).toHaveBeenCalledTimes(2);
+    expect(acquireTokenRedirect).not.toHaveBeenCalled();
+    expect(acquireTokenPopup).not.toHaveBeenCalled();
+    expect(result.diagnostic).toMatchObject({
+      reasonCode: "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH",
+      finalReasonCode: "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH",
+      initialGraphStatus: 401,
+      refreshAttempted: true,
+      refreshOutcome: "SUCCEEDED",
+      retryAttempted: true,
+      retryGraphStatus: 401,
+      interactionRequired: false,
+    });
+  });
+
+  it("classifies actual MSAL interaction-required during forced refresh without retrying Graph", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const acquireTokenRedirect = vi.fn();
+    const acquireTokenPopup = vi.fn();
+    const acquireTokenSilent = vi.fn()
+      .mockResolvedValueOnce({ accessToken: "initial-token" })
+      .mockRejectedValueOnce(Object.assign(new Error("interaction required"), { errorCode: "interaction_required" }));
+    const fetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() });
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { application: { acquireTokenSilent, acquireTokenRedirect, acquireTokenPopup }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(acquireTokenRedirect).not.toHaveBeenCalled();
+    expect(acquireTokenPopup).not.toHaveBeenCalled();
+    expect(result.diagnostic).toMatchObject({ reasonCode: "MICROSOFT_INTERACTION_REQUIRED", finalReasonCode: "MICROSOFT_INTERACTION_REQUIRED", interactionRequired: true, refreshAttempted: true });
+  });
+
+  it("classifies a non-interaction forced-refresh failure without retrying Graph or claiming interaction is required", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const acquireTokenRedirect = vi.fn();
+    const acquireTokenSilent = vi.fn()
+      .mockResolvedValueOnce({ accessToken: "initial-token" })
+      .mockRejectedValueOnce(new Error("temporary network failure"));
+    const fetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() });
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { application: { acquireTokenSilent, acquireTokenRedirect }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(acquireTokenRedirect).not.toHaveBeenCalled();
+    expect(result.diagnostic).toMatchObject({ reasonCode: "MICROSOFT_TOKEN_FORCE_REFRESH_FAILED", finalReasonCode: "MICROSOFT_TOKEN_FORCE_REFRESH_FAILED", interactionRequired: false });
+  });
+
+  it("preserves proven credential and header facts when the initial Graph request fails on the network", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const acquireTokenSilent = vi.fn().mockResolvedValue({ accessToken: "initial-token" });
+    const fetch = vi.fn().mockRejectedValue(new Error("network unreachable"));
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { application: { acquireTokenSilent }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(result.diagnostic).toMatchObject({
+      reasonCode: "CALENDAR_GRAPH_NETWORK_FAILURE",
+      finalReasonCode: "CALENDAR_GRAPH_NETWORK_FAILURE",
+      credentialPresent: true,
+      headerAttached: true,
+      silentAttempted: true,
+      interactionRequired: false,
+    });
+    expect(JSON.stringify(result.diagnostic)).not.toMatch(/initial-token|Bearer\s|Authorization/i);
+  });
+
+  it("preserves refresh and header facts when the retry Graph request fails on the network", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const acquireTokenSilent = vi.fn()
+      .mockResolvedValueOnce({ accessToken: "initial-token" })
+      .mockResolvedValueOnce({ accessToken: "refreshed-token" });
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockRejectedValueOnce(new Error("network unreachable"));
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { application: { acquireTokenSilent }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(result.diagnostic).toMatchObject({
+      reasonCode: "CALENDAR_GRAPH_NETWORK_FAILURE",
+      finalReasonCode: "CALENDAR_GRAPH_NETWORK_FAILURE",
+      refreshAttempted: true,
+      refreshOutcome: "SUCCEEDED",
+      retryAttempted: true,
+      interactionRequired: false,
+    });
+    expect(JSON.stringify(result.diagnostic)).not.toMatch(/refreshed-token|initial-token|Bearer\s|Authorization/i);
+  });
+
+  it("preserves proven credential and header facts when the initial Graph response is a non-401 failure", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const acquireTokenSilent = vi.fn().mockResolvedValue({ accessToken: "initial-token" });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 403, headers: new Headers() }));
+    Object.assign(connector, { application: { acquireTokenSilent }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(result.diagnostic).toMatchObject({ reasonCode: "CALENDAR_GRAPH_HTTP_403", finalReasonCode: "CALENDAR_GRAPH_HTTP_403", credentialPresent: true, headerAttached: true });
+  });
+
+  it("fails closed when the refresh token request is missing or empty", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const fetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() });
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { application: { acquireTokenSilent: vi.fn().mockResolvedValueOnce({ accessToken: "initial-token" }).mockResolvedValueOnce({ accessToken: "" }) }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(result.diagnostic.reasonCode).toBe("MICROSOFT_ACCESS_TOKEN_ABSENT");
+    expect(result.diagnostic.interactionRequired).toBe(false);
   });
 });
