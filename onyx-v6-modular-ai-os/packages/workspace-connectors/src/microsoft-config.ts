@@ -146,38 +146,44 @@ export function resolveMicrosoftProviderHealthState(
   enabled = true,
 ): MicrosoftProviderHealthState {
   if (!enabled) {
+    const missing: string[] = [];
     return Object.freeze({
       provider: "microsoft",
       state: "disabled",
-      missing: [],
+      missing: Object.freeze(missing) as string[],
       credentialDetected: false,
       diagnostic: "Microsoft provider is disabled by configuration.",
     });
   }
 
-  const config = resolveMicrosoftPublicConfig(input);
+  const normalizedInput = input ?? {};
   const required = [
-    ["ONYX_MS_CLIENT_ID", config.clientId],
-    ["ONYX_MS_TENANT_ID", config.tenantId],
-    ["ONYX_MS_REDIRECT_URI", config.redirectUri],
+    ["ONYX_MS_CLIENT_ID", "clientId"],
+    ["ONYX_MS_TENANT_ID", "tenantId"],
+    ["ONYX_MS_REDIRECT_URI", "redirectUri"],
   ] as const;
 
-  const hasDerivedAuthority = !config.authority && config.tenantId ? false : true;
+  const missingList = required
+    .filter(([, field]) => !readCanonicalOrCompatibility(normalizedInput, field).trim())
+    .map(([key]) => key) as string[];
+  const missing = Object.freeze(missingList) as string[];
 
-  const missing = required
-    .filter(([, value]) => !value || value.trim().length === 0)
-    .map(([key]) => key);
+  if (missing.length > 0) {
+    return Object.freeze({
+      provider: "microsoft",
+      state: "unconfigured",
+      missing,
+      credentialDetected: false,
+      diagnostic: "Microsoft public configuration is missing.",
+    });
+  }
 
-  const state: MicrosoftProviderHealthState["state"] = missing.length === 0 && hasDerivedAuthority ? "configured" : "unconfigured";
-
+  const emptyMissing: string[] = [];
   return Object.freeze({
     provider: "microsoft",
-    state,
-    missing,
+    state: "configured",
+    missing: Object.freeze(emptyMissing) as string[],
     credentialDetected: false,
-    diagnostic:
-      missing.length === 0
-        ? "Microsoft public configuration is present and ready for runtime alignment."
-        : `Missing required Microsoft public configuration values: ${missing.join(", ")}.`,
+    diagnostic: "Microsoft public configuration is available.",
   });
 }

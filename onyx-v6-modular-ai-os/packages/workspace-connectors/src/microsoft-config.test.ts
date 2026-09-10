@@ -130,4 +130,104 @@ describe("microsoft config normalization", () => {
       ONYX_MS_REDIRECT_URI: "https://example.com/callback",
     }).state).toBe("configured");
   });
+
+  it("CONFIGURATION-012 returns deterministic unconfigured state for missing provider-health input", () => {
+    expect(() => resolveMicrosoftProviderHealthState()).not.toThrow();
+    expect(() => resolveMicrosoftProviderHealthState(undefined)).not.toThrow();
+    expect(() => resolveMicrosoftProviderHealthState({})).not.toThrow();
+
+    const emptyCases = [
+      resolveMicrosoftProviderHealthState(),
+      resolveMicrosoftProviderHealthState(undefined),
+      resolveMicrosoftProviderHealthState({}),
+    ];
+
+    for (const state of emptyCases) {
+      expect(state.provider).toBe("microsoft");
+      expect(state.state).toBe("unconfigured");
+      expect(state.credentialDetected).toBe(false);
+      expect(state.missing).toEqual([
+        "ONYX_MS_CLIENT_ID",
+        "ONYX_MS_TENANT_ID",
+        "ONYX_MS_REDIRECT_URI",
+      ]);
+      expect(state.missing).not.toContain("ONYX_MS_AUTHORITY");
+      expect(state.diagnostic).toBe("Microsoft public configuration is missing.");
+      expect(Object.isFrozen(state)).toBe(true);
+      expect(Object.isFrozen(state.missing)).toBe(true);
+    }
+  });
+
+  it("CONFIGURATION-013 classifies partial and complete provider health states correctly", () => {
+    const partial = resolveMicrosoftProviderHealthState({
+      ONYX_MS_CLIENT_ID: "client",
+      ONYX_MS_TENANT_ID: "tenant",
+    });
+
+    expect(partial.state).toBe("unconfigured");
+    expect(partial.missing).toEqual(["ONYX_MS_REDIRECT_URI"]);
+    expect(partial.missing).not.toContain("ONYX_MS_AUTHORITY");
+
+    const configuredWithoutAuthority = resolveMicrosoftProviderHealthState({
+      ONYX_MS_CLIENT_ID: "client",
+      ONYX_MS_TENANT_ID: "tenant",
+      ONYX_MS_REDIRECT_URI: "https://example.com/callback",
+    });
+
+    expect(configuredWithoutAuthority.state).toBe("configured");
+    expect(configuredWithoutAuthority.missing).toEqual([]);
+
+    const configuredWithAuthority = resolveMicrosoftProviderHealthState({
+      ONYX_MS_CLIENT_ID: "client",
+      ONYX_MS_TENANT_ID: "tenant",
+      ONYX_MS_REDIRECT_URI: "https://example.com/callback",
+      ONYX_MS_AUTHORITY: "https://login.microsoftonline.com/tenant",
+    });
+
+    expect(configuredWithAuthority.state).toBe("configured");
+    expect(configuredWithAuthority.missing).toEqual([]);
+  });
+
+  it("CONFIGURATION-014 keeps authority optional and preserves explicit values", () => {
+    const derived = resolveMicrosoftPublicConfig({
+      ONYX_MS_CLIENT_ID: "client",
+      ONYX_MS_TENANT_ID: "tenant-id",
+      ONYX_MS_REDIRECT_URI: "https://example.com/callback",
+    });
+
+    expect(derived.authority).toBe("https://login.microsoftonline.com/tenant-id");
+
+    const explicit = resolveMicrosoftPublicConfig({
+      ONYX_MS_CLIENT_ID: "client",
+      ONYX_MS_TENANT_ID: "tenant-id",
+      ONYX_MS_REDIRECT_URI: "https://example.com/callback",
+      ONYX_MS_AUTHORITY: "https://login.microsoftonline.com/common",
+    });
+
+    expect(explicit.authority).toBe("https://login.microsoftonline.com/common");
+    expect(resolveMicrosoftProviderHealthState({
+      ONYX_MS_CLIENT_ID: "client",
+      ONYX_MS_TENANT_ID: "tenant-id",
+      ONYX_MS_REDIRECT_URI: "https://example.com/callback",
+    }).missing).toEqual([]);
+    expect(resolveMicrosoftProviderHealthState({
+      ONYX_MS_CLIENT_ID: "client",
+      ONYX_MS_TENANT_ID: "tenant-id",
+      ONYX_MS_REDIRECT_URI: "https://example.com/callback",
+    }).state).toBe("configured");
+  });
+
+  it("CONFIGURATION-015 treats secret-bearing inputs as non-authenticated public configuration only", () => {
+    const health = resolveMicrosoftProviderHealthState({
+      ONYX_MS_CLIENT_ID: "client",
+      ONYX_MS_TENANT_ID: "tenant",
+      ONYX_MS_REDIRECT_URI: "https://example.com/callback",
+      VITE_MS_CLIENT_SECRET: "should-not-authenticate",
+    });
+
+    expect(health.state).toBe("configured");
+    expect(health.credentialDetected).toBe(false);
+    expect(health.missing).toEqual([]);
+    expect(health.diagnostic).toBe("Microsoft public configuration is available.");
+  });
 });
