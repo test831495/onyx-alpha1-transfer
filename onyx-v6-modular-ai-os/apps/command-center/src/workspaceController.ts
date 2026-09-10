@@ -4,15 +4,19 @@ import {
   plannedProviderSnapshots,
   resolveRuntimeMicrosoftConfig,
 } from "@onyx/workspace-connectors";
+import { readMicrosoftRuntimeEnv } from "../viteMicrosoftEnvBridge";
 
 const browserOrigin =
   typeof window !== "undefined"
     ? window.location.origin
     : "http://localhost:5200";
 
+const microsoftRuntimeEnv = readMicrosoftRuntimeEnv();
 const runtimeMicrosoftConfig = resolveRuntimeMicrosoftConfig({
-  ...import.meta.env,
-  ONYX_MS_REDIRECT_URI: import.meta.env.ONYX_MS_REDIRECT_URI ?? browserOrigin,
+  ONYX_MS_CLIENT_ID: microsoftRuntimeEnv.ONYX_MS_CLIENT_ID,
+  ONYX_MS_TENANT_ID: microsoftRuntimeEnv.ONYX_MS_TENANT_ID,
+  ONYX_MS_REDIRECT_URI: microsoftRuntimeEnv.ONYX_MS_REDIRECT_URI || browserOrigin,
+  ONYX_MS_AUTHORITY: microsoftRuntimeEnv.ONYX_MS_AUTHORITY,
 });
 
 const microsoft = new MicrosoftWorkspaceConnector({

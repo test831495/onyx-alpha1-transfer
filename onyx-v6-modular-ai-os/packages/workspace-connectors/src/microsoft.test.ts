@@ -1,11 +1,48 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MicrosoftWorkspaceConnector } from "./microsoft";
+import { resolveRuntimeMicrosoftConfig } from "./microsoft-config";
 
 const calendarRange = {
   start: "2026-09-10T00:00:00.000Z",
   end: "2026-09-11T00:00:00.000Z",
   timeZone: "Asia/Kolkata",
 };
+
+describe("Microsoft runtime config reachability", () => {
+  it("resolves approved Microsoft public runtime configuration", () => {
+    const runtimeConfig = resolveRuntimeMicrosoftConfig({
+      ONYX_MS_CLIENT_ID: "client",
+      ONYX_MS_TENANT_ID: "tenant",
+      ONYX_MS_REDIRECT_URI: "https://example.com/callback",
+    });
+
+    expect(runtimeConfig.VITE_MS_CLIENT_ID).toBe("client");
+    expect(runtimeConfig.VITE_MS_TENANT_ID).toBe("tenant");
+    expect(runtimeConfig.VITE_MS_REDIRECT_URI).toBe("https://example.com/callback");
+  });
+
+  it("becomes configured once Microsoft client ID and tenant ID are available", () => {
+    const runtimeConfig = resolveRuntimeMicrosoftConfig({
+      ONYX_MS_CLIENT_ID: "client",
+      ONYX_MS_TENANT_ID: "tenant",
+      ONYX_MS_REDIRECT_URI: "https://example.com/callback",
+    });
+    const connector = new MicrosoftWorkspaceConnector({
+      clientId: runtimeConfig.VITE_MS_CLIENT_ID,
+      tenantId: runtimeConfig.VITE_MS_TENANT_ID,
+      authority: runtimeConfig.VITE_MS_AUTHORITY,
+      redirectUri: runtimeConfig.VITE_MS_REDIRECT_URI,
+    });
+
+    expect(connector.configured).toBe(true);
+  });
+
+  it("remains unconfigured when the required public values are absent", () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "", tenantId: "" });
+
+    expect(connector.configured).toBe(false);
+  });
+});
 
 describe("MicrosoftWorkspaceConnector calendar reads", () => {
   afterEach(() => {
