@@ -11,7 +11,7 @@ import {
   saveVoicePreferences,
   type VoicePreferences,
 } from "@onyx/voice-runtime";
-import { loadCalendar, loadConnectedCalendarEvents, composeCalendarSpeech } from "./calendarController";
+import { loadCalendar, loadConnectedCalendarEvents, loadConnectedCalendarEventsWithDiagnostic, composeCalendarSpeech, type CalendarReadResult } from "./calendarController";
 import { CalendarIntelligencePanel } from "./components/CalendarIntelligencePanel";
 import { NewsPanel } from "./components/NewsPanel";
 import { VoiceSettingsPanel } from "./components/VoiceSettingsPanel";
@@ -221,10 +221,12 @@ export interface MicrosoftReconnectDependencies {
   reconnect: () => Promise<void>;
   refreshWorkspace: () => Promise<WorkspaceSnapshot>;
   loadCalendarEvents: (range: CalendarRangeKind) => Promise<readonly CalendarEventRecord[]>;
+  loadCalendarEventsWithDiagnostic: (range: CalendarRangeKind) => Promise<CalendarReadResult>;
   range: CalendarRangeKind;
   setWorkspace: (snapshot: WorkspaceSnapshot) => void;
   setCalendarEvents: (events: readonly CalendarEventRecord[]) => void;
   setCalendarUnavailable: (unavailable: boolean) => void;
+  setCalendarDiagnostic: (diagnostic: CalendarReadResult["diagnostic"] | undefined) => void;
   requestCoordinator: CalendarRequestCoordinator;
   setBusy: (busy: boolean) => void;
   showError: (message: string) => void;
@@ -276,6 +278,27 @@ export async function readLatestCalendarRange(
   }
 }
 
+export async function readLatestCalendarRangeWithDiagnostic(
+  range: CalendarRangeKind,
+  loadEvents: (range: CalendarRangeKind) => Promise<CalendarReadResult>,
+  coordinator: CalendarRequestCoordinator,
+  onSuccess: (result: CalendarReadResult) => void,
+  onFailure: () => void,
+  onSettled: () => void,
+): Promise<void> {
+  const requestId = coordinator.begin();
+  try {
+    const result = await loadEvents(range);
+    if (!coordinator.isCurrent(requestId)) return;
+    onSuccess(result);
+  } catch {
+    if (!coordinator.isCurrent(requestId)) return;
+    onFailure();
+  } finally {
+    if (coordinator.isCurrent(requestId)) onSettled();
+  }
+}
+
 export async function reconcileMicrosoftReconnect(
   dependencies: MicrosoftReconnectDependencies,
 ): Promise<void> {
@@ -290,13 +313,13 @@ export async function reconcileMicrosoftReconnect(
       dependencies.setCalendarUnavailable(false);
       return;
     }
-    await readLatestCalendarRange(
+    await readLatestCalendarRangeWithDiagnostic(
       dependencies.range,
-      dependencies.loadCalendarEvents,
+      dependencies.loadCalendarEventsWithDiagnostic,
       dependencies.requestCoordinator,
-      dependencies.setCalendarEvents,
+      (result) => { dependencies.setCalendarDiagnostic(result.diagnostic); dependencies.setCalendarEvents(result.events); dependencies.setCalendarUnavailable(false); },
       () => { dependencies.setCalendarEvents([]); dependencies.setCalendarUnavailable(true); },
-      () => dependencies.setCalendarUnavailable(false),
+      () => undefined,
     );
   } catch (error) {
     dependencies.showError(
@@ -325,6 +348,7 @@ export function App() {
   const [calendarSummary, setCalendarSummary] = useState<CalendarAgendaProjection>(() => loadCalendar());
   const [calendarEvents, setCalendarEvents] = useState<readonly CalendarEventRecord[]>([]);
   const [calendarUnavailable, setCalendarUnavailable] = useState(false);
+  const [calendarDiagnostic, setCalendarDiagnostic] = useState<CalendarReadResult["diagnostic"]>();
   const calendarRangeRef = useRef<CalendarRangeKind>("TODAY");
   const calendarRequestCoordinator = useRef(createCalendarRequestCoordinator());
   const [calendarBusy, setCalendarBusy] = useState(false);
@@ -382,14 +406,15 @@ export function App() {
       setCalendarEvents([]);
       setCalendarUnavailable(false);
       setCalendarBusy(false);
+      setCalendarDiagnostic(undefined);
       return;
     }
     setCalendarBusy(true);
-    await readLatestCalendarRange(
+    await readLatestCalendarRangeWithDiagnostic(
       calendarRangeRef.current,
-      loadConnectedCalendarEvents,
+      loadConnectedCalendarEventsWithDiagnostic,
       calendarRequestCoordinator.current,
-      (events) => { setCalendarEvents(events); setCalendarUnavailable(false); },
+      (result) => { setCalendarDiagnostic(result.diagnostic); setCalendarEvents(result.events); setCalendarUnavailable(false); },
       () => { setCalendarEvents([]); setCalendarUnavailable(true); },
       () => setCalendarBusy(false),
     );
@@ -1476,10 +1501,12 @@ export function App() {
                       reconnect: reconnectMicrosoft,
                       refreshWorkspace,
                       loadCalendarEvents: loadConnectedCalendarEvents,
+                      loadCalendarEventsWithDiagnostic: loadConnectedCalendarEventsWithDiagnostic,
                       range: calendarRangeRef.current,
                       setWorkspace,
                       setCalendarEvents,
                       setCalendarUnavailable,
+                      setCalendarDiagnostic,
                       requestCoordinator: calendarRequestCoordinator.current,
                       setBusy: setWorkspaceBusy,
                       showError,
@@ -1490,6 +1517,7 @@ export function App() {
                       setCalendarEvents([]);
                       setCalendarUnavailable(false);
                       setCalendarBusy(false);
+                      setCalendarDiagnostic(undefined);
                       setWorkspace(disconnectedWorkspaceSnapshot());
                     },
                     onWorkspaceRefresh: refreshWorkspace,
@@ -1497,6 +1525,7 @@ export function App() {
                     calendarBusy,
                     calendarConnected: isCalendarConnected(workspace),
                     calendarUnavailable,
+                    calendarDiagnostic,
                     calendarEvents,
                     onCalendarRefresh: async () => {
                       const summary = loadCalendar(calendarSummary.requestedRange.kind);
@@ -1507,16 +1536,17 @@ export function App() {
                         setCalendarEvents([]);
                         setCalendarUnavailable(false);
                         setCalendarBusy(false);
+                        setCalendarDiagnostic(undefined);
                         setCaption(`Local temporal context refreshed for ${summary.requestedRange.displayLabel}.`);
                         setState("wake-armed");
                         return;
                       }
                       setCalendarBusy(true);
-                      await readLatestCalendarRange(
+                      await readLatestCalendarRangeWithDiagnostic(
                         summary.requestedRange.kind,
-                        loadConnectedCalendarEvents,
+                        loadConnectedCalendarEventsWithDiagnostic,
                         calendarRequestCoordinator.current,
-                        (events) => { setCalendarEvents(events); setCalendarUnavailable(false); setCaption(`Calendar refreshed for ${summary.requestedRange.displayLabel}.`); },
+                        (result) => { setCalendarDiagnostic(result.diagnostic); setCalendarEvents(result.events); setCalendarUnavailable(false); setCaption(`Calendar refreshed for ${summary.requestedRange.displayLabel}.`); },
                         () => { setCalendarEvents([]); setCalendarUnavailable(true); setCaption("Calendar refresh could not be completed."); },
                         () => setCalendarBusy(false),
                       );
@@ -1538,14 +1568,15 @@ export function App() {
                         setCalendarEvents([]);
                         setCalendarUnavailable(false);
                         setCalendarBusy(false);
+                        setCalendarDiagnostic(undefined);
                         return;
                       }
                       setCalendarBusy(true);
-                      await readLatestCalendarRange(
+                      await readLatestCalendarRangeWithDiagnostic(
                         range,
-                        loadConnectedCalendarEvents,
+                        loadConnectedCalendarEventsWithDiagnostic,
                         calendarRequestCoordinator.current,
-                        (events) => { setCalendarEvents(events); setCalendarUnavailable(false); },
+                        (result) => { setCalendarDiagnostic(result.diagnostic); setCalendarEvents(result.events); setCalendarUnavailable(false); },
                         () => { setCalendarEvents([]); setCalendarUnavailable(true); },
                         () => setCalendarBusy(false),
                       );

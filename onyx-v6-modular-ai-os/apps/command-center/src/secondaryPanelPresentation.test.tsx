@@ -117,6 +117,7 @@ describe("secondary panel presentation", () => {
       updatedAt: Date.now(),
     });
     const loadCalendarEvents = vi.fn().mockResolvedValue([{ id: "event-1" }]);
+    const loadCalendarEventsWithDiagnostic = vi.fn().mockResolvedValue({ events: [{ id: "event-1" }], diagnostic: { stage: "GRAPH_RESPONSE", outcome: "SUCCEEDED_WITH_EVENTS", reasonCode: "CALENDAR_GRAPH_SUCCEEDED_WITH_EVENTS" } });
     const setWorkspace = vi.fn();
     const setCalendarEvents = vi.fn();
     const setCalendarUnavailable = vi.fn();
@@ -127,10 +128,12 @@ describe("secondary panel presentation", () => {
       reconnect,
       refreshWorkspace,
       loadCalendarEvents,
+      loadCalendarEventsWithDiagnostic,
       range: "TODAY",
       setWorkspace,
       setCalendarEvents,
       setCalendarUnavailable,
+      setCalendarDiagnostic: vi.fn(),
       requestCoordinator: createCalendarRequestCoordinator(),
       setBusy,
       showError,
@@ -138,7 +141,7 @@ describe("secondary panel presentation", () => {
 
     expect(reconnect).toHaveBeenCalledOnce();
     expect(refreshWorkspace).toHaveBeenCalledOnce();
-    expect(loadCalendarEvents).toHaveBeenCalledOnce();
+    expect(loadCalendarEventsWithDiagnostic).toHaveBeenCalledOnce();
     expect(setCalendarEvents).toHaveBeenCalledWith([{ id: "event-1" }]);
     expect(setCalendarUnavailable).toHaveBeenCalledWith(false);
     expect(setBusy).toHaveBeenLastCalledWith(false);
@@ -149,10 +152,12 @@ describe("secondary panel presentation", () => {
       reconnect,
       refreshWorkspace,
       loadCalendarEvents,
+      loadCalendarEventsWithDiagnostic: vi.fn().mockResolvedValue({ events: [{ id: "should-not-load" }], diagnostic: { stage: "GRAPH_RESPONSE", outcome: "SUCCEEDED_WITH_EVENTS", reasonCode: "CALENDAR_GRAPH_SUCCEEDED_WITH_EVENTS" } }),
       range: "TODAY",
       setWorkspace,
       setCalendarEvents,
       setCalendarUnavailable,
+      setCalendarDiagnostic: vi.fn(),
       requestCoordinator: createCalendarRequestCoordinator(),
       setBusy,
       showError,
@@ -181,10 +186,12 @@ describe("secondary panel presentation", () => {
         updatedAt: Date.now(),
       }),
       loadCalendarEvents,
+      loadCalendarEventsWithDiagnostic: vi.fn().mockResolvedValue({ events: [{ id: "should-not-load" }], diagnostic: { stage: "GRAPH_RESPONSE", outcome: "SUCCEEDED_WITH_EVENTS", reasonCode: "CALENDAR_GRAPH_SUCCEEDED_WITH_EVENTS" } }),
       range: "TODAY",
       setWorkspace: vi.fn(),
       setCalendarEvents,
       setCalendarUnavailable,
+      setCalendarDiagnostic: vi.fn(),
       requestCoordinator: createCalendarRequestCoordinator(),
       setBusy: vi.fn(),
       showError: vi.fn(),
@@ -342,6 +349,16 @@ describe("secondary panel presentation", () => {
     expect(html).toContain("Connected, unavailable");
     expect(html).toContain("Microsoft calendar is connected, but events could not be loaded for this range.");
     expect(html).not.toContain("Not configured");
+  });
+
+  it("renders only bounded diagnostic fields", () => {
+    const html = renderToStaticMarkup(<CalendarIntelligencePanel summary={undefined} connected unavailable events={[]} busy={false} onRefresh={() => undefined} onSpeak={() => undefined} diagnostic={{ stage: "GRAPH_RESPONSE", outcome: "FAILED", reasonCode: "CALENDAR_GRAPH_HTTP_403", httpStatus: 403, returnedEventCount: 0 }} />);
+    expect(html).toContain("CALENDAR_GRAPH_HTTP_403");
+    expect(html).toContain("403");
+    expect(html).toContain("Events rendered");
+    expect(html).not.toContain("accessToken");
+    expect(html).not.toContain("Authorization");
+    expect(html).not.toContain("graph.microsoft.com");
   });
 
   it("uses explicit reconnect and disconnect actions for a connected workspace", () => {

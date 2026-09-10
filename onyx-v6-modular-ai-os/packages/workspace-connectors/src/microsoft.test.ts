@@ -238,6 +238,58 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
     );
   });
 
+  it.each([
+    [400, "CALENDAR_GRAPH_HTTP_400"], [401, "CALENDAR_GRAPH_HTTP_401"], [403, "CALENDAR_GRAPH_HTTP_403"],
+    [404, "CALENDAR_GRAPH_HTTP_404"], [429, "CALENDAR_GRAPH_HTTP_429"], [503, "CALENDAR_GRAPH_HTTP_5XX"],
+  ])("classifies Graph status %s without exposing response details", async (status, reasonCode) => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status, headers: new Headers() }));
+    Object.assign(connector, { getAccessToken: vi.fn().mockResolvedValue("access-token") });
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+    expect(result.events).toEqual([]);
+    expect(result.diagnostic).toMatchObject({ stage: "GRAPH_RESPONSE", reasonCode, httpStatus: status });
+    expect(JSON.stringify(result.diagnostic)).not.toContain("access-token");
+  });
+
+  it("classifies network, non-JSON, invalid-envelope, empty, and normalization outcomes with counts", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    Object.assign(connector, { getAccessToken: vi.fn().mockResolvedValue("access-token") });
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("private network detail")));
+    await expect(connector.loadCalendarEventsWithDiagnostic(calendarRange)).resolves.toMatchObject({ diagnostic: { reasonCode: "CALENDAR_GRAPH_NETWORK_FAILURE" } });
+
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, headers: new Headers({ "content-type": "text/html" }), json: async () => ({}) }));
+    await expect(connector.loadCalendarEventsWithDiagnostic(calendarRange)).resolves.toMatchObject({ diagnostic: { reasonCode: "CALENDAR_GRAPH_NON_JSON_RESPONSE" } });
+
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, headers: new Headers({ "content-type": "application/json" }), json: async () => ({ value: {} }) }));
+    await expect(connector.loadCalendarEventsWithDiagnostic(calendarRange)).resolves.toMatchObject({ diagnostic: { reasonCode: "CALENDAR_GRAPH_VALUE_NOT_ARRAY" } });
+
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, headers: new Headers({ "content-type": "application/json" }), json: async () => ({ value: [] }) }));
+    await expect(connector.loadCalendarEventsWithDiagnostic(calendarRange)).resolves.toMatchObject({ events: [], diagnostic: { outcome: "SUCCEEDED_EMPTY", reasonCode: "CALENDAR_GRAPH_SUCCEEDED_EMPTY", returnedEventCount: 0, normalizedEventCount: 0 } });
+  });
+
+  it("classifies token and range failures without retaining exception details", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    Object.assign(connector, { getAccessToken: vi.fn().mockRejectedValue(new Error("secret token detail")) });
+    const tokenResult = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+    expect(tokenResult.diagnostic.reasonCode).toBe("CALENDAR_TOKEN_ACQUISITION_FAILED");
+    expect(JSON.stringify(tokenResult.diagnostic)).not.toContain("secret token detail");
+
+    const rangeResult = await connector.loadCalendarEventsWithDiagnostic({ ...calendarRange, end: calendarRange.start });
+    expect(rangeResult.diagnostic).toMatchObject({ stage: "RANGE_CONSTRUCTION", reasonCode: "CALENDAR_RANGE_INVALID", requestRangeValid: false });
+  });
+
+  it("reports returned, normalized, and rejected event counts", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    Object.assign(connector, { getAccessToken: vi.fn().mockResolvedValue("access-token") });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, headers: new Headers({ "content-type": "application/json" }), json: async () => ({ value: [
+      { id: "valid", subject: "Visible", start: { dateTime: "2026-09-10T09:00:00", timeZone: "UTC" }, end: { dateTime: "2026-09-10T10:00:00", timeZone: "UTC" } },
+      { subject: "Malformed" },
+    ] }) }));
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+    expect(result.diagnostic).toMatchObject({ reasonCode: "CALENDAR_NORMALIZATION_PARTIAL", returnedEventCount: 2, normalizedEventCount: 1, rejectedEventCount: 1 });
+    expect(JSON.stringify(result.diagnostic)).not.toMatch(/Visible|Malformed|access-token/);
+  });
+
   it("redacts private event subjects and excludes confidential fields from UI state", async () => {
     const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
