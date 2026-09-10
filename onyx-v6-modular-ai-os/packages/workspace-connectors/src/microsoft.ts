@@ -1,6 +1,21 @@
 import { BrowserCacheLocation, InteractionRequiredAuthError, PublicClientApplication, type AccountInfo, type Configuration } from "@azure/msal-browser";
 import type { WorkspaceProviderSnapshot, WorkspaceProfile } from "@onyx/workspace-contracts";
 export interface MicrosoftWorkspaceConfig { clientId?: string; tenantId?: string; authority?: string; redirectUri?: string; }
+export interface MicrosoftCalendarRange { start: string; end: string; timeZone: string; }
+export interface MicrosoftCalendarEvent {
+  id: string;
+  subject: string;
+  start: string;
+  end: string;
+  isAllDay: boolean;
+  isCancelled: boolean;
+  showAs?: string;
+  location?: string;
+  organizer?: string;
+  isOnlineMeeting: boolean;
+  joinUrl?: string;
+  sensitivity?: string;
+}
 const profileScopes = ["User.Read"];
 const calendarScopes = ["Calendars.Read"];
 const workspaceScopes = [...profileScopes, ...calendarScopes];
@@ -98,7 +113,80 @@ export class MicrosoftWorkspaceConnector {
     const value = await response.json() as { displayName: string; mail?: string; userPrincipalName?: string; id?: string };
     return { displayName: value.displayName, email: value.mail ?? value.userPrincipalName, tenantId: this.account.tenantId, accountId: value.id ?? this.account.homeAccountId };
   }
+  async loadCalendarEvents(range: MicrosoftCalendarRange): Promise<readonly MicrosoftCalendarEvent[]> {
+    const start = new Date(range.start);
+    const end = new Date(range.end);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end) {
+      throw new Error("Microsoft calendar range is invalid.");
+    }
+
+    const token = await this.getAccessToken(calendarScopes);
+    const parameters = new URLSearchParams({
+      startDateTime: start.toISOString(),
+      endDateTime: end.toISOString(),
+      $select: "id,subject,start,end,isAllDay,isCancelled,showAs,location,organizer,isOnlineMeeting,onlineMeeting,sensitivity",
+      $orderby: "start/dateTime",
+    });
+    const response = await fetch(`https://graph.microsoft.com/v1.0/me/calendarView?${parameters}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Prefer: `outlook.timezone="${range.timeZone}"`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`Microsoft Graph calendar request failed (${response.status}).`);
+    }
+
+    const body = await response.json() as { value?: unknown };
+    if (!Array.isArray(body.value)) {
+      throw new Error("Microsoft Graph calendar response is invalid.");
+    }
+
+    return Object.freeze(body.value.map(normalizeCalendarEvent));
+  }
   snapshot(state?: WorkspaceProviderSnapshot["state"], profile?: WorkspaceProfile): WorkspaceProviderSnapshot {
     return { provider: "microsoft", label: "Microsoft 365", state: state ?? (this.account ? "connected" : this.configured ? "disconnected" : "unconfigured"), profile, capabilities, diagnostic: this.diagnostic };
   }
+}
+
+function normalizeCalendarEvent(value: unknown): MicrosoftCalendarEvent {
+  const event = value as Record<string, unknown>;
+  const start = normalizeGraphDateTime(event.start);
+  const end = normalizeGraphDateTime(event.end);
+  if (!readGraphString(event.id) || !start || !end) {
+    throw new Error("Microsoft Graph calendar event is invalid.");
+  }
+
+  const location = readGraphString((event.location as Record<string, unknown> | undefined)?.displayName);
+  const organizer = readGraphString(((event.organizer as Record<string, unknown> | undefined)?.emailAddress as Record<string, unknown> | undefined)?.address);
+  const joinUrl = readGraphString((event.onlineMeeting as Record<string, unknown> | undefined)?.joinUrl);
+  const normalized: MicrosoftCalendarEvent = {
+    id: readGraphString(event.id),
+    subject: readGraphString(event.subject) || "Untitled event",
+    start,
+    end,
+    isAllDay: event.isAllDay === true,
+    isCancelled: event.isCancelled === true,
+    isOnlineMeeting: event.isOnlineMeeting === true,
+  };
+  const showAs = readGraphString(event.showAs);
+  const sensitivity = readGraphString(event.sensitivity);
+  if (showAs) normalized.showAs = showAs;
+  if (location) normalized.location = location;
+  if (organizer) normalized.organizer = organizer;
+  if (joinUrl) normalized.joinUrl = joinUrl;
+  if (sensitivity) normalized.sensitivity = sensitivity;
+  return Object.freeze(normalized);
+}
+
+function normalizeGraphDateTime(value: unknown): string {
+  const dateTime = readGraphString((value as Record<string, unknown> | undefined)?.dateTime);
+  if (!dateTime) return "";
+  const parsed = new Date(dateTime);
+  return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString();
+}
+
+function readGraphString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
 }

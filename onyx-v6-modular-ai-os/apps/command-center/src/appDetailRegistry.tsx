@@ -6,7 +6,7 @@ import { CalendarIntelligencePanel } from "./components/CalendarIntelligencePane
 import { AutomationDashboard } from "./components/AutomationDashboard";
 import { SettingsCenter } from "./components/SettingsCenter";
 import { ProviderHealthDashboard } from "./components/ProviderHealthDashboard";
-import type { CalendarRangeKind } from "@onyx/calendar-intelligence";
+import type { CalendarEventRecord, CalendarRangeKind } from "@onyx/calendar-intelligence";
 
 export interface AppDetailSpec {
   appId: ShellAppId;
@@ -29,6 +29,8 @@ export const DetailDataContext = React.createContext<{
   onCalendarRefresh?: () => void;
   onCalendarSpeak?: () => void;
   onCalendarSelectRange?: (range: CalendarRangeKind) => void;
+  calendarConnected?: boolean;
+  calendarEvents?: readonly CalendarEventRecord[];
 }>({});
 
 // Real detail components wrapped to match the required signature
@@ -95,6 +97,8 @@ const CalendarDetail: React.FC<{ appId: ShellAppId }> = ({ appId }) => {
       onRefresh={data.onCalendarRefresh ?? (() => {})}
       onSpeak={data.onCalendarSpeak ?? (() => {})}
       onSelectRange={data.onCalendarSelectRange ?? (() => {})}
+      connected={data.calendarConnected}
+      events={data.calendarEvents}
     />
   );
 };

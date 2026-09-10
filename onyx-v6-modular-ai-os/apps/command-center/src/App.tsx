@@ -4,14 +4,14 @@ import { getAssistantProfile, styleAssistantResponse } from "@onyx/identity-runt
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AssistantMode, CoreState, Intent } from "@onyx/contracts";
 import { createIntelligenceRuntime } from "@onyx/intelligence-runtime";
-import type { CalendarAgendaProjection, CalendarRangeKind } from "@onyx/calendar-intelligence";
+import type { CalendarAgendaProjection, CalendarEventRecord, CalendarRangeKind } from "@onyx/calendar-intelligence";
 import {
   VoiceManager,
   loadVoicePreferences,
   saveVoicePreferences,
   type VoicePreferences,
 } from "@onyx/voice-runtime";
-import { loadCalendar, composeCalendarSpeech } from "./calendarController";
+import { loadCalendar, loadConnectedCalendarEvents, composeCalendarSpeech } from "./calendarController";
 import { CalendarIntelligencePanel } from "./components/CalendarIntelligencePanel";
 import { NewsPanel } from "./components/NewsPanel";
 import { VoiceSettingsPanel } from "./components/VoiceSettingsPanel";
@@ -232,6 +232,7 @@ export function App() {
   const [activePanel, setActivePanel] = useState<Panel>(null);
   const [shell, setShell] = useState(shellStateFactory());
   const [calendarSummary, setCalendarSummary] = useState<CalendarAgendaProjection>(() => loadCalendar());
+  const [calendarEvents, setCalendarEvents] = useState<readonly CalendarEventRecord[]>([]);
   const [calendarBusy, setCalendarBusy] = useState(false);
   const [calendarMinimized, setCalendarMinimized] = useState(false);
   const [voicePreferences, setVoicePreferences] = useState<VoicePreferences>(
@@ -1357,10 +1358,28 @@ export function App() {
                     onWorkspaceRefresh: refreshWorkspace,
                     calendarSummary,
                     calendarBusy,
-                    onCalendarRefresh: () => {
+                    calendarConnected: workspace.providers.some((provider) => provider.provider === "microsoft" && provider.state === "connected"),
+                    calendarEvents,
+                    onCalendarRefresh: async () => {
                       const summary = loadCalendar(calendarSummary.requestedRange.kind);
                       setCalendarSummary(summary);
-                      setCaption(`Local temporal context refreshed for ${summary.requestedRange.displayLabel}.`);
+                      const connected = workspace.providers.some((provider) => provider.provider === "microsoft" && provider.state === "connected");
+                      if (!connected) {
+                        setCalendarEvents([]);
+                        setCaption(`Local temporal context refreshed for ${summary.requestedRange.displayLabel}.`);
+                        setState("wake-armed");
+                        return;
+                      }
+                      setCalendarBusy(true);
+                      try {
+                        setCalendarEvents(await loadConnectedCalendarEvents(summary.requestedRange.kind));
+                        setCaption(`Calendar refreshed for ${summary.requestedRange.displayLabel}.`);
+                      } catch (error) {
+                        setCalendarEvents([]);
+                        setCaption(error instanceof Error ? error.message : "Calendar refresh could not be completed.");
+                      } finally {
+                        setCalendarBusy(false);
+                      }
                       setState("wake-armed");
                     },
                     onCalendarSpeak: () => {
