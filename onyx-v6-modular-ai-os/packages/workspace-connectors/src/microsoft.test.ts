@@ -2,6 +2,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { MicrosoftWorkspaceConnector, selectMicrosoftAccount } from "./microsoft";
 import { resolveRuntimeMicrosoftConfig } from "./microsoft-config";
 
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
+
 const calendarRange = {
   start: "2026-09-10T00:00:00.000Z",
   end: "2026-09-11T00:00:00.000Z",
@@ -86,7 +91,7 @@ describe("Microsoft runtime config reachability", () => {
     expect(url.pathname).toBe("/v1.0/me/calendar/calendarView");
   });
 
-  it("validates date range boundaries are exclusive on end", async () => {
+  it("forwards the selected half-open range using the next range start as endDateTime", async () => {
     const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
     const start = "2026-09-10T00:00:00.000Z";
     const end = "2026-09-11T00:00:00.000Z";
@@ -98,10 +103,18 @@ describe("Microsoft runtime config reachability", () => {
 
     await connector.loadCalendarEvents({ start, end, timeZone: "Asia/Kolkata" });
 
+    expect(fetch).toHaveBeenCalledTimes(1);
     const callUrl = (fetch as any).mock.calls[0][0];
-    const params = new URL(callUrl).searchParams;
-    expect(params.get("startDateTime")).toBe(start);
-    expect(params.get("endDateTime")).toBe(end);
+    const url = new URL(callUrl);
+    const params = url.searchParams;
+    expect(url.pathname).toBe("/v1.0/me/calendar/calendarView");
+    expect(params.getAll("startDateTime")).toEqual([start]);
+    expect(params.getAll("endDateTime")).toEqual([end]);
+    expect(new Date(start).getTime()).toBeLessThan(new Date(end).getTime());
+    expect(new Date(end).getTime() - new Date(start).getTime()).toBe(24 * 60 * 60 * 1000);
+    expect(new Date(start).toISOString()).toBe(start);
+    expect(new Date(end).toISOString()).toBe(end);
+    expect(params.get("endDateTime")).not.toBe("2026-09-10T23:59:59.999Z");
   });
 
   it("includes only privacy-safe fields in $select", async () => {
@@ -158,10 +171,6 @@ describe("Microsoft runtime config reachability", () => {
 });
 
 describe("MicrosoftWorkspaceConnector calendar reads", () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
   it("reads calendarView with Calendars.Read and normalizes public event fields", async () => {
     const connector = new MicrosoftWorkspaceConnector({
       clientId: "client",
