@@ -18,7 +18,8 @@
       "publicEnv": [
         "ONYX_MS_CLIENT_ID",
         "ONYX_MS_TENANT_ID",
-        "ONYX_MS_REDIRECT_URI"
+        "ONYX_MS_REDIRECT_URI",
+        "ONYX_MS_AUTHORITY"
       ],
       "secretEnv": []
     },
