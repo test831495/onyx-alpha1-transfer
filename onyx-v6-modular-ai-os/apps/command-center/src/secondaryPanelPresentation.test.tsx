@@ -396,6 +396,17 @@ describe("secondary panel presentation", () => {
     expect(html).not.toContain("graph.microsoft.com");
   });
 
+  it("contains long diagnostic values with responsive wrapping", () => {
+    const html = renderToStaticMarkup(<CalendarIntelligencePanel summary={undefined} connected unavailable events={[]} busy={false} onRefresh={() => undefined} onSpeak={() => undefined} diagnostic={{ stage: "GRAPH_RESPONSE", outcome: "FAILED", reasonCode: "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH_EXTENDED_TEST_VALUE" as any }} />);
+
+    expect(html).toContain("MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH_EXTENDED_TEST_VALUE");
+    expect(html).toContain("min-width:0");
+    expect(html).toContain("max-width:100%");
+    expect(html).toContain("overflow-wrap:anywhere");
+    expect(html).toContain("word-break:break-word");
+    expect(html).toContain("white-space:normal");
+  });
+
   it("uses explicit reconnect and disconnect actions for a connected workspace", () => {
     const snapshot: WorkspaceSnapshot = {
       updatedAt: Date.now(),
