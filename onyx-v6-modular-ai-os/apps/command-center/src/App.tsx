@@ -19,6 +19,7 @@ import type { WorkspaceSnapshot } from "@onyx/workspace-contracts";
 import { WorkspacePanel } from "./components/WorkspacePanel";
 import {
   connectMicrosoft,
+  reconnectMicrosoft,
   disconnectMicrosoft,
   disconnectedWorkspaceSnapshot,
   loadWorkspaceSnapshot,
@@ -216,6 +217,49 @@ function normalizeCommand(raw: string): string {
     .trim();
 }
 
+export interface MicrosoftReconnectDependencies {
+  reconnect: () => Promise<void>;
+  refreshWorkspace: () => Promise<WorkspaceSnapshot>;
+  loadCalendarEvents: (range: CalendarRangeKind) => Promise<readonly CalendarEventRecord[]>;
+  range: CalendarRangeKind;
+  setWorkspace: (snapshot: WorkspaceSnapshot) => void;
+  setCalendarEvents: (events: readonly CalendarEventRecord[]) => void;
+  setCalendarUnavailable: (unavailable: boolean) => void;
+  setBusy: (busy: boolean) => void;
+  showError: (message: string) => void;
+}
+
+export async function reconcileMicrosoftReconnect(
+  dependencies: MicrosoftReconnectDependencies,
+): Promise<void> {
+  dependencies.setBusy(true);
+  try {
+    await dependencies.reconnect();
+    const nextWorkspace = await dependencies.refreshWorkspace();
+    dependencies.setWorkspace(nextWorkspace);
+    if (nextWorkspace.activeProvider !== "microsoft") {
+      dependencies.setCalendarEvents([]);
+      dependencies.setCalendarUnavailable(false);
+      return;
+    }
+
+    try {
+      const events = await dependencies.loadCalendarEvents(dependencies.range);
+      dependencies.setCalendarEvents(events);
+      dependencies.setCalendarUnavailable(false);
+    } catch {
+      dependencies.setCalendarEvents([]);
+      dependencies.setCalendarUnavailable(true);
+    }
+  } catch (error) {
+    dependencies.showError(
+      error instanceof Error ? error.message : "Microsoft reconnection failed.",
+    );
+  } finally {
+    dependencies.setBusy(false);
+  }
+}
+
 export function App() {
   const touch = matchMedia("(hover: none), (pointer: coarse)").matches;
   const [mode, setMode] = useState<AssistantMode>(() => loadCharacterSelection());
@@ -233,6 +277,8 @@ export function App() {
   const [shell, setShell] = useState(shellStateFactory());
   const [calendarSummary, setCalendarSummary] = useState<CalendarAgendaProjection>(() => loadCalendar());
   const [calendarEvents, setCalendarEvents] = useState<readonly CalendarEventRecord[]>([]);
+  const [calendarUnavailable, setCalendarUnavailable] = useState(false);
+  const calendarRangeRef = useRef<CalendarRangeKind>("TODAY");
   const [calendarBusy, setCalendarBusy] = useState(false);
   const [calendarMinimized, setCalendarMinimized] = useState(false);
   const [voicePreferences, setVoicePreferences] = useState<VoicePreferences>(
@@ -273,15 +319,36 @@ export function App() {
     setWorkspaceBusy(true);
 
     try {
-      setWorkspace(await loadWorkspaceSnapshot());
+      const nextWorkspace = await loadWorkspaceSnapshot();
+      setWorkspace(nextWorkspace);
+      return nextWorkspace;
     } finally {
       setWorkspaceBusy(false);
     }
   }, []);
 
-  useEffect(() => {
-    void refreshWorkspace();
+  const reconcileWorkspaceAndCalendar = useCallback(async () => {
+    const nextWorkspace = await refreshWorkspace();
+    if (nextWorkspace.activeProvider !== "microsoft") {
+      setCalendarEvents([]);
+      setCalendarUnavailable(false);
+      return;
+    }
+    setCalendarBusy(true);
+    try {
+      setCalendarEvents(await loadConnectedCalendarEvents(calendarRangeRef.current));
+      setCalendarUnavailable(false);
+    } catch {
+      setCalendarEvents([]);
+      setCalendarUnavailable(true);
+    } finally {
+      setCalendarBusy(false);
+    }
   }, [refreshWorkspace]);
+
+  useEffect(() => {
+    void reconcileWorkspaceAndCalendar();
+  }, [reconcileWorkspaceAndCalendar]);
 
   const clearTimers = () => {
     timers.current.forEach(window.clearTimeout);
@@ -1353,12 +1420,31 @@ export function App() {
                   <DetailDataContext.Provider value={{
                     workspaceSnapshot: workspace,
                     workspaceBusy,
-                    onWorkspaceConnect: () => void connectMicrosoft(),
-                    onWorkspaceDisconnect: () => void disconnectMicrosoft(),
+                    onWorkspaceConnect: async () => {
+                      await connectMicrosoft();
+                    },
+                    onWorkspaceReconnect: () => reconcileMicrosoftReconnect({
+                      reconnect: reconnectMicrosoft,
+                      refreshWorkspace,
+                      loadCalendarEvents: loadConnectedCalendarEvents,
+                      range: calendarRangeRef.current,
+                      setWorkspace,
+                      setCalendarEvents,
+                      setCalendarUnavailable,
+                      setBusy: setWorkspaceBusy,
+                      showError,
+                    }),
+                    onWorkspaceDisconnect: async () => {
+                      await disconnectMicrosoft();
+                      setCalendarEvents([]);
+                      setCalendarUnavailable(false);
+                      setWorkspace(disconnectedWorkspaceSnapshot());
+                    },
                     onWorkspaceRefresh: refreshWorkspace,
                     calendarSummary,
                     calendarBusy,
                     calendarConnected: workspace.providers.some((provider) => provider.provider === "microsoft" && provider.state === "connected"),
+                    calendarUnavailable,
                     calendarEvents,
                     onCalendarRefresh: async () => {
                       const summary = loadCalendar(calendarSummary.requestedRange.kind);
@@ -1366,6 +1452,7 @@ export function App() {
                       const connected = workspace.providers.some((provider) => provider.provider === "microsoft" && provider.state === "connected");
                       if (!connected) {
                         setCalendarEvents([]);
+                        setCalendarUnavailable(false);
                         setCaption(`Local temporal context refreshed for ${summary.requestedRange.displayLabel}.`);
                         setState("wake-armed");
                         return;
@@ -1373,9 +1460,11 @@ export function App() {
                       setCalendarBusy(true);
                       try {
                         setCalendarEvents(await loadConnectedCalendarEvents(summary.requestedRange.kind));
+                        setCalendarUnavailable(false);
                         setCaption(`Calendar refreshed for ${summary.requestedRange.displayLabel}.`);
                       } catch (error) {
                         setCalendarEvents([]);
+                        setCalendarUnavailable(true);
                         setCaption(error instanceof Error ? error.message : "Calendar refresh could not be completed.");
                       } finally {
                         setCalendarBusy(false);
@@ -1389,7 +1478,10 @@ export function App() {
                         .catch(() => setVoiceStatus("System voice ready."))
                         .finally(reset);
                     },
-                    onCalendarSelectRange: (range: CalendarRangeKind) => setCalendarSummary(loadCalendar(range)),
+                    onCalendarSelectRange: (range: CalendarRangeKind) => {
+                      calendarRangeRef.current = range;
+                      setCalendarSummary(loadCalendar(range));
+                    },
                   }}>
                     <DetailShell
                       appId={detailAppId}

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { MicrosoftWorkspaceConnector } from "./microsoft";
+import { MicrosoftWorkspaceConnector, selectMicrosoftAccount } from "./microsoft";
 import { resolveRuntimeMicrosoftConfig } from "./microsoft-config";
 
 const calendarRange = {
@@ -9,6 +9,15 @@ const calendarRange = {
 };
 
 describe("Microsoft runtime config reachability", () => {
+  it("selects the redirect account or one cached account and fails closed for ambiguity", () => {
+    const redirectAccount = { homeAccountId: "redirect" } as any;
+    const cachedAccount = { homeAccountId: "cached" } as any;
+
+    expect(selectMicrosoftAccount(redirectAccount, [cachedAccount])).toBe(redirectAccount);
+    expect(selectMicrosoftAccount(undefined, [cachedAccount])).toBe(cachedAccount);
+    expect(() => selectMicrosoftAccount(undefined, [cachedAccount, redirectAccount])).toThrow(/multiple/i);
+  });
+
   it("resolves approved Microsoft public runtime configuration", () => {
     const runtimeConfig = resolveRuntimeMicrosoftConfig({
       ONYX_MS_CLIENT_ID: "client",
@@ -41,6 +50,49 @@ describe("Microsoft runtime config reachability", () => {
     const connector = new MicrosoftWorkspaceConnector({ clientId: "", tenantId: "" });
 
     expect(connector.configured).toBe(false);
+  });
+
+  it("reconnects by validating the calendar capability scope", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const getAccessToken = vi.fn().mockResolvedValue("access-token");
+    Object.assign(connector, { getAccessToken });
+
+    Object.assign(connector, { application: {}, account: {} });
+    await connector.reconnect();
+
+    expect(getAccessToken).toHaveBeenCalledWith(["Calendars.Read"]);
+  });
+
+  it("releases a failed initialization attempt so a later call can retry", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const initializeOnce = vi.fn()
+      .mockResolvedValueOnce({ provider: "microsoft", state: "error", diagnostic: "temporary failure" })
+      .mockResolvedValueOnce({ provider: "microsoft", state: "connected", diagnostic: "connected" });
+    Object.assign(connector, { initializeOnce });
+
+    await expect(connector.initialize()).resolves.toMatchObject({ state: "error" });
+    await expect(connector.initialize()).resolves.toMatchObject({ state: "connected" });
+    expect(initializeOnce).toHaveBeenCalledTimes(2);
+  });
+
+  it("releases a rejected initialization attempt and shares concurrent attempts", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    let rejectAttempt: ((error: Error) => void) | undefined;
+    const initializeOnce = vi.fn()
+      .mockImplementationOnce(() => new Promise((_, reject) => { rejectAttempt = reject; }))
+      .mockResolvedValueOnce({ provider: "microsoft", state: "connected", diagnostic: "connected" });
+    Object.assign(connector, { initializeOnce });
+
+    const first = connector.initialize();
+    const concurrent = connector.initialize();
+    await Promise.resolve();
+    expect(initializeOnce).toHaveBeenCalledTimes(1);
+    rejectAttempt?.(new Error("temporary failure"));
+    await expect(first).rejects.toThrow("temporary failure");
+    await expect(concurrent).rejects.toThrow("temporary failure");
+
+    await expect(connector.initialize()).resolves.toMatchObject({ state: "connected" });
+    expect(initializeOnce).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -87,10 +139,7 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
         isCancelled: false,
         showAs: "busy",
         location: "Studio",
-        organizer: "organizer@example.com",
         isOnlineMeeting: true,
-        joinUrl: "https://meet.example.com/event-1",
-        sensitivity: "normal",
       },
     ]);
     expect(getAccessToken).toHaveBeenCalledWith(["Calendars.Read"]);
@@ -117,5 +166,28 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
     await expect(connector.loadCalendarEvents(calendarRange)).rejects.toThrow(
       "Microsoft Graph calendar request failed (403).",
     );
+  });
+
+  it("redacts private event subjects and excludes confidential fields from UI state", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ value: [{
+        id: "private-event",
+        subject: "Secret meeting",
+        sensitivity: "private",
+        organizer: { emailAddress: { address: "private@example.com" } },
+        onlineMeeting: { joinUrl: "https://private.example.com" },
+        start: { dateTime: "2026-09-10T09:00:00", timeZone: "UTC" },
+        end: { dateTime: "2026-09-10T10:00:00", timeZone: "UTC" },
+      }] }),
+    }));
+    Object.assign(connector, { getAccessToken: vi.fn().mockResolvedValue("access-token") });
+
+    const [event] = await connector.loadCalendarEvents(calendarRange);
+    expect(event?.subject).toBe("Private event");
+    expect(event).not.toHaveProperty("organizer");
+    expect(event).not.toHaveProperty("joinUrl");
+    expect(event).not.toHaveProperty("sensitivity");
   });
 });

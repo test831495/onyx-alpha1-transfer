@@ -22,6 +22,7 @@ export const DetailDataContext = React.createContext<{
   workspaceSnapshot?: any;
   workspaceBusy?: boolean;
   onWorkspaceConnect?: () => void;
+  onWorkspaceReconnect?: () => void;
   onWorkspaceDisconnect?: () => void;
   onWorkspaceRefresh?: () => void;
   calendarSummary?: any;
@@ -30,6 +31,7 @@ export const DetailDataContext = React.createContext<{
   onCalendarSpeak?: () => void;
   onCalendarSelectRange?: (range: CalendarRangeKind) => void;
   calendarConnected?: boolean;
+  calendarUnavailable?: boolean;
   calendarEvents?: readonly CalendarEventRecord[];
 }>({});
 
@@ -64,6 +66,7 @@ const WorkspaceDetail: React.FC<{ appId: ShellAppId }> = ({ appId }) => {
       snapshot={data.workspaceSnapshot || { providers: [], activeProvider: undefined, updatedAt: Date.now() }}
       busy={data.workspaceBusy ?? false}
       onConnect={data.onWorkspaceConnect ?? (() => {})}
+      onReconnect={data.onWorkspaceReconnect ?? (() => {})}
       onDisconnect={data.onWorkspaceDisconnect ?? (() => {})}
       onRefresh={data.onWorkspaceRefresh ?? (() => {})}
     />
@@ -98,6 +101,7 @@ const CalendarDetail: React.FC<{ appId: ShellAppId }> = ({ appId }) => {
       onSpeak={data.onCalendarSpeak ?? (() => {})}
       onSelectRange={data.onCalendarSelectRange ?? (() => {})}
       connected={data.calendarConnected}
+      unavailable={data.calendarUnavailable}
       events={data.calendarEvents}
     />
   );
