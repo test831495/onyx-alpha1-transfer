@@ -62,7 +62,7 @@ export class MicrosoftWorkspaceConnector {
   async reconnect(): Promise<void> {
     if (!this.application) await this.initialize();
     if (!this.application || !this.account) throw new Error("Microsoft workspace is not connected.");
-    await this.getAccessToken([]);
+    await this.getAccessToken(calendarScopes);
   }
   async disconnect(): Promise<void> {
     if (!this.application || !this.account) return;

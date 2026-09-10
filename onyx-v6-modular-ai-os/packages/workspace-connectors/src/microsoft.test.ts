@@ -51,6 +51,17 @@ describe("Microsoft runtime config reachability", () => {
 
     expect(connector.configured).toBe(false);
   });
+
+  it("reconnects by validating the calendar capability scope", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const getAccessToken = vi.fn().mockResolvedValue("access-token");
+    Object.assign(connector, { getAccessToken });
+
+    Object.assign(connector, { application: {}, account: {} });
+    await connector.reconnect();
+
+    expect(getAccessToken).toHaveBeenCalledWith(["Calendars.Read"]);
+  });
 });
 
 describe("MicrosoftWorkspaceConnector calendar reads", () => {

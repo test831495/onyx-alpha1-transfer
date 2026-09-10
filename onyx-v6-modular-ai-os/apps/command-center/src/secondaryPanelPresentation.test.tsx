@@ -116,6 +116,26 @@ describe("secondary panel presentation", () => {
     expect(html).not.toContain("No connected calendar event data is available.");
   });
 
+  it("labels a connected but unavailable calendar truthfully", () => {
+    const html = renderToStaticMarkup(
+      <CalendarIntelligencePanel summary={{
+        requestedRange: { kind: "TODAY", start: "2026-09-10", end: "2026-09-11", displayLabel: "Today", timeZone: "UTC" },
+        currentDateTime: "Today",
+        connectionState: "NOT_CONFIGURED",
+        eventCount: "UNKNOWN",
+        events: [],
+        limitations: [],
+        nextAvailableAction: "REFRESH_LOCAL_TEMPORAL_CONTEXT",
+        privacyStatus: "LOCAL_FACTS_ONLY",
+        speech: "",
+      }} connected unavailable events={[]} busy={false} onRefresh={() => undefined} onSpeak={() => undefined} />,
+    );
+
+    expect(html).toContain("Connected, unavailable");
+    expect(html).toContain("Microsoft calendar is connected, but events could not be loaded for this range.");
+    expect(html).not.toContain("Not configured");
+  });
+
   it("uses explicit reconnect and disconnect actions for a connected workspace", () => {
     const snapshot: WorkspaceSnapshot = {
       updatedAt: Date.now(),

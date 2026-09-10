@@ -235,6 +235,7 @@ export function App() {
   const [calendarSummary, setCalendarSummary] = useState<CalendarAgendaProjection>(() => loadCalendar());
   const [calendarEvents, setCalendarEvents] = useState<readonly CalendarEventRecord[]>([]);
   const [calendarUnavailable, setCalendarUnavailable] = useState(false);
+  const calendarRangeRef = useRef<CalendarRangeKind>("TODAY");
   const [calendarBusy, setCalendarBusy] = useState(false);
   const [calendarMinimized, setCalendarMinimized] = useState(false);
   const [voicePreferences, setVoicePreferences] = useState<VoicePreferences>(
@@ -275,7 +276,23 @@ export function App() {
     setWorkspaceBusy(true);
 
     try {
-      setWorkspace(await loadWorkspaceSnapshot());
+      const nextWorkspace = await loadWorkspaceSnapshot();
+      setWorkspace(nextWorkspace);
+      if (nextWorkspace.activeProvider === "microsoft") {
+        setCalendarBusy(true);
+        try {
+          setCalendarEvents(await loadConnectedCalendarEvents(calendarRangeRef.current));
+          setCalendarUnavailable(false);
+        } catch {
+          setCalendarEvents([]);
+          setCalendarUnavailable(true);
+        } finally {
+          setCalendarBusy(false);
+        }
+      } else {
+        setCalendarEvents([]);
+        setCalendarUnavailable(false);
+      }
     } finally {
       setWorkspaceBusy(false);
     }
@@ -861,12 +878,6 @@ export function App() {
           setWorkspaceBusy(true);
           try {
             await connectMicrosoft();
-            const nextWorkspace = await loadWorkspaceSnapshot();
-            setWorkspace(nextWorkspace);
-            if (nextWorkspace.activeProvider === "microsoft") {
-              setCalendarEvents(await loadConnectedCalendarEvents(calendarSummary.requestedRange.kind));
-              setCalendarUnavailable(false);
-            }
           } catch (error) {
             showError(
               error instanceof Error
@@ -1363,8 +1374,6 @@ export function App() {
                     workspaceBusy,
                     onWorkspaceConnect: async () => {
                       await connectMicrosoft();
-                      const nextWorkspace = await loadWorkspaceSnapshot();
-                      setWorkspace(nextWorkspace);
                     },
                     onWorkspaceReconnect: () => void reconnectMicrosoft(),
                     onWorkspaceDisconnect: async () => {
@@ -1411,7 +1420,10 @@ export function App() {
                         .catch(() => setVoiceStatus("System voice ready."))
                         .finally(reset);
                     },
-                    onCalendarSelectRange: (range: CalendarRangeKind) => setCalendarSummary(loadCalendar(range)),
+                    onCalendarSelectRange: (range: CalendarRangeKind) => {
+                      calendarRangeRef.current = range;
+                      setCalendarSummary(loadCalendar(range));
+                    },
                   }}>
                     <DetailShell
                       appId={detailAppId}
