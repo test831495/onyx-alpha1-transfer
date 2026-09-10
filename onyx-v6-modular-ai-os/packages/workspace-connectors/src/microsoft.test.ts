@@ -328,4 +328,71 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
     expect(event).not.toHaveProperty("joinUrl");
     expect(event).not.toHaveProperty("sensitivity");
   });
+
+  it("returns a bounded interaction-required diagnostic without triggering an automatic redirect", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const acquireTokenSilent = vi.fn().mockRejectedValue(Object.assign(new Error("interaction required"), { errorCode: "interaction_required" }));
+    const acquireTokenRedirect = vi.fn();
+    const application = { acquireTokenSilent, acquireTokenRedirect };
+    Object.assign(connector, { application, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(result.diagnostic.reasonCode).toBe("MICROSOFT_INTERACTION_REQUIRED");
+    expect(result.diagnostic.interactionRequired).toBe(true);
+    expect(acquireTokenRedirect).not.toHaveBeenCalled();
+    expect(JSON.stringify(result.diagnostic)).not.toMatch(/access-token|Bearer\s|Authorization|eyJ[A-Za-z0-9-_.]+|tenantId|homeAccountId|graph\.microsoft\.com/gi);
+  });
+
+  it("uses a refreshed token once after an initial 401 and succeeds on retry", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const acquireTokenSilent = vi.fn()
+      .mockResolvedValueOnce({ accessToken: "initial-token" })
+      .mockResolvedValueOnce({ accessToken: "refreshed-token" });
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers({ "content-type": "application/json" }), json: async () => ({ value: [] }) });
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { application: { acquireTokenSilent }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(acquireTokenSilent).toHaveBeenCalledTimes(2);
+    expect(acquireTokenSilent).toHaveBeenNthCalledWith(2, expect.objectContaining({ forceRefresh: true }));
+    expect(fetch.mock.calls[1]![1].headers.Authorization).toBe("Bearer refreshed-token");
+    expect(result.diagnostic.reasonCode).toBe("MICROSOFT_GRAPH_RETRY_SUCCEEDED");
+    expect(result.events).toEqual([]);
+    expect(JSON.stringify(result.diagnostic)).not.toContain("initial-token");
+  });
+
+  it("stops after a single retry when the refreshed token still returns 401", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const acquireTokenSilent = vi.fn()
+      .mockResolvedValueOnce({ accessToken: "initial-token" })
+      .mockResolvedValueOnce({ accessToken: "refreshed-token" });
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() });
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { application: { acquireTokenSilent }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(result.diagnostic.reasonCode).toBe("MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH");
+    expect(result.diagnostic.retryAttempted).toBe(true);
+  });
+
+  it("fails closed when the refresh token request is missing or empty", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const fetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() });
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { application: { acquireTokenSilent: vi.fn().mockResolvedValueOnce({ accessToken: "initial-token" }).mockResolvedValueOnce({ accessToken: "" }) }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(result.diagnostic.reasonCode).toBe("MICROSOFT_ACCESS_TOKEN_ABSENT");
+  });
 });
