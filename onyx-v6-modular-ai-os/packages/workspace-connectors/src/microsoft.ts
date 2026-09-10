@@ -131,7 +131,7 @@ export class MicrosoftWorkspaceConnector {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
-        Prefer: `outlook.timezone="${range.timeZone}"`,
+        Prefer: 'outlook.timezone="UTC"',
       },
     });
     if (!response.ok) {
@@ -181,9 +181,16 @@ function normalizeCalendarEvent(value: unknown): MicrosoftCalendarEvent {
 }
 
 function normalizeGraphDateTime(value: unknown): string {
-  const dateTime = readGraphString((value as Record<string, unknown> | undefined)?.dateTime);
+  const dateTimeTimeZone = value as Record<string, unknown> | undefined;
+  const dateTime = readGraphString(dateTimeTimeZone?.dateTime);
   if (!dateTime) return "";
-  const parsed = new Date(dateTime);
+  const timeZone = readGraphString(dateTimeTimeZone?.timeZone);
+  const normalized = /(?:Z|[+-]\d{2}:\d{2})$/i.test(dateTime)
+    ? dateTime
+    : timeZone === "UTC"
+      ? `${dateTime}Z`
+      : "";
+  const parsed = new Date(normalized);
   return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString();
 }
 

@@ -32,8 +32,8 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
           isOnlineMeeting: true,
           onlineMeeting: { joinUrl: "https://meet.example.com/event-1" },
           sensitivity: "normal",
-          start: { dateTime: "2026-09-10T09:00:00", timeZone: "Asia/Kolkata" },
-          end: { dateTime: "2026-09-10T10:00:00", timeZone: "Asia/Kolkata" },
+          start: { dateTime: "2026-09-10T09:00:00", timeZone: "UTC" },
+          end: { dateTime: "2026-09-10T10:00:00", timeZone: "UTC" },
         }],
       }),
     });
@@ -63,7 +63,7 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
         method: "GET",
         headers: expect.objectContaining({
           Authorization: "Bearer access-token",
-          Prefer: 'outlook.timezone="Asia/Kolkata"',
+          Prefer: 'outlook.timezone="UTC"',
         }),
       }),
     );
