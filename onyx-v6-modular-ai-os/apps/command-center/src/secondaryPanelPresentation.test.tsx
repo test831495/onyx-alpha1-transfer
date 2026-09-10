@@ -1,11 +1,59 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { CalendarIntelligencePanel } from "./components/CalendarIntelligencePanel";
 import { NewsPanel } from "./components/NewsPanel";
 import { WorkspacePanel } from "./components/WorkspacePanel";
 import type { WorkspaceSnapshot } from "@onyx/workspace-contracts";
+import { reconcileMicrosoftReconnect } from "./App";
 
 describe("secondary panel presentation", () => {
+  it("awaits reconnect, refreshes Workspace and Calendar, and handles reconnect failures", async () => {
+    const reconnect = vi.fn().mockResolvedValue(undefined);
+    const refreshWorkspace = vi.fn().mockResolvedValue({ activeProvider: "microsoft" });
+    const loadCalendarEvents = vi.fn().mockResolvedValue([{ id: "event-1" }]);
+    const setWorkspace = vi.fn();
+    const setCalendarEvents = vi.fn();
+    const setCalendarUnavailable = vi.fn();
+    const setBusy = vi.fn();
+    const showError = vi.fn();
+
+    await reconcileMicrosoftReconnect({
+      reconnect,
+      refreshWorkspace,
+      loadCalendarEvents,
+      range: "TODAY",
+      setWorkspace,
+      setCalendarEvents,
+      setCalendarUnavailable,
+      setBusy,
+      showError,
+    });
+
+    expect(reconnect).toHaveBeenCalledOnce();
+    expect(refreshWorkspace).toHaveBeenCalledOnce();
+    expect(loadCalendarEvents).toHaveBeenCalledOnce();
+    expect(setCalendarEvents).toHaveBeenCalledWith([{ id: "event-1" }]);
+    expect(setCalendarUnavailable).toHaveBeenCalledWith(false);
+    expect(setBusy).toHaveBeenLastCalledWith(false);
+    expect(showError).not.toHaveBeenCalled();
+
+    reconnect.mockRejectedValueOnce(new Error("recoverable reconnect failure"));
+    await reconcileMicrosoftReconnect({
+      reconnect,
+      refreshWorkspace,
+      loadCalendarEvents,
+      range: "TODAY",
+      setWorkspace,
+      setCalendarEvents,
+      setCalendarUnavailable,
+      setBusy,
+      showError,
+    });
+
+    expect(showError).toHaveBeenCalledWith("recoverable reconnect failure");
+    expect(setBusy).toHaveBeenLastCalledWith(false);
+  });
+
   it("uses friendly workspace statuses and hides alpha release details from default view", () => {
     const snapshot: WorkspaceSnapshot = {
       updatedAt: Date.now(),

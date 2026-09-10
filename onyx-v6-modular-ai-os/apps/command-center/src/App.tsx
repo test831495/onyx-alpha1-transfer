@@ -217,6 +217,45 @@ function normalizeCommand(raw: string): string {
     .trim();
 }
 
+export interface MicrosoftReconnectDependencies {
+  reconnect: () => Promise<void>;
+  refreshWorkspace: () => Promise<WorkspaceSnapshot>;
+  loadCalendarEvents: (range: CalendarRangeKind) => Promise<readonly CalendarEventRecord[]>;
+  range: CalendarRangeKind;
+  setWorkspace: (snapshot: WorkspaceSnapshot) => void;
+  setCalendarEvents: (events: readonly CalendarEventRecord[]) => void;
+  setCalendarUnavailable: (unavailable: boolean) => void;
+  setBusy: (busy: boolean) => void;
+  showError: (message: string) => void;
+}
+
+export async function reconcileMicrosoftReconnect(
+  dependencies: MicrosoftReconnectDependencies,
+): Promise<void> {
+  dependencies.setBusy(true);
+  try {
+    await dependencies.reconnect();
+    const nextWorkspace = await dependencies.refreshWorkspace();
+    dependencies.setWorkspace(nextWorkspace);
+    if (nextWorkspace.activeProvider !== "microsoft") return;
+
+    try {
+      const events = await dependencies.loadCalendarEvents(dependencies.range);
+      dependencies.setCalendarEvents(events);
+      dependencies.setCalendarUnavailable(false);
+    } catch {
+      dependencies.setCalendarEvents([]);
+      dependencies.setCalendarUnavailable(true);
+    }
+  } catch (error) {
+    dependencies.showError(
+      error instanceof Error ? error.message : "Microsoft reconnection failed.",
+    );
+  } finally {
+    dependencies.setBusy(false);
+  }
+}
+
 export function App() {
   const touch = matchMedia("(hover: none), (pointer: coarse)").matches;
   const [mode, setMode] = useState<AssistantMode>(() => loadCharacterSelection());
@@ -278,29 +317,34 @@ export function App() {
     try {
       const nextWorkspace = await loadWorkspaceSnapshot();
       setWorkspace(nextWorkspace);
-      if (nextWorkspace.activeProvider === "microsoft") {
-        setCalendarBusy(true);
-        try {
-          setCalendarEvents(await loadConnectedCalendarEvents(calendarRangeRef.current));
-          setCalendarUnavailable(false);
-        } catch {
-          setCalendarEvents([]);
-          setCalendarUnavailable(true);
-        } finally {
-          setCalendarBusy(false);
-        }
-      } else {
-        setCalendarEvents([]);
-        setCalendarUnavailable(false);
-      }
+      return nextWorkspace;
     } finally {
       setWorkspaceBusy(false);
     }
   }, []);
 
-  useEffect(() => {
-    void refreshWorkspace();
+  const reconcileWorkspaceAndCalendar = useCallback(async () => {
+    const nextWorkspace = await refreshWorkspace();
+    if (nextWorkspace.activeProvider !== "microsoft") {
+      setCalendarEvents([]);
+      setCalendarUnavailable(false);
+      return;
+    }
+    setCalendarBusy(true);
+    try {
+      setCalendarEvents(await loadConnectedCalendarEvents(calendarRangeRef.current));
+      setCalendarUnavailable(false);
+    } catch {
+      setCalendarEvents([]);
+      setCalendarUnavailable(true);
+    } finally {
+      setCalendarBusy(false);
+    }
   }, [refreshWorkspace]);
+
+  useEffect(() => {
+    void reconcileWorkspaceAndCalendar();
+  }, [reconcileWorkspaceAndCalendar]);
 
   const clearTimers = () => {
     timers.current.forEach(window.clearTimeout);
@@ -1375,7 +1419,17 @@ export function App() {
                     onWorkspaceConnect: async () => {
                       await connectMicrosoft();
                     },
-                    onWorkspaceReconnect: () => void reconnectMicrosoft(),
+                    onWorkspaceReconnect: () => reconcileMicrosoftReconnect({
+                      reconnect: reconnectMicrosoft,
+                      refreshWorkspace,
+                      loadCalendarEvents: loadConnectedCalendarEvents,
+                      range: calendarRangeRef.current,
+                      setWorkspace,
+                      setCalendarEvents,
+                      setCalendarUnavailable,
+                      setBusy: setWorkspaceBusy,
+                      showError,
+                    }),
                     onWorkspaceDisconnect: async () => {
                       await disconnectMicrosoft();
                       setCalendarEvents([]);
