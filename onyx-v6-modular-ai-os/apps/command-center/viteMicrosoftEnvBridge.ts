@@ -1,4 +1,8 @@
-export const FORBIDDEN_BROWSER_ENV_KEYS = ["ONYX_MS_CLIENT_SECRET", "VITE_MS_CLIENT_SECRET"] as const;
+export const FORBIDDEN_BROWSER_ENV_KEYS = [
+  "MICROSOFT_CLIENT_SECRET",
+  "ONYX_MS_CLIENT_SECRET",
+  "VITE_MS_CLIENT_SECRET",
+] as const;
 
 // Only these exact names are bridged into import.meta.env; no other ONYX_* variable is exposed.
 export const APPROVED_MICROSOFT_PUBLIC_ENV_KEYS = [
@@ -27,4 +31,24 @@ export function buildApprovedMicrosoftPublicDefine(env: Record<string, string | 
     define[`import.meta.env.${key}`] = JSON.stringify(env[key] ?? "");
   }
   return define;
+}
+
+export interface MicrosoftRuntimePublicEnv {
+  ONYX_MS_CLIENT_ID: string;
+  ONYX_MS_TENANT_ID: string;
+  ONYX_MS_REDIRECT_URI: string;
+  ONYX_MS_AUTHORITY: string;
+}
+
+// Static property references so Vite's `define` can replace them at build time; never spread or index import.meta.env.
+export function readMicrosoftRuntimeEnv(overrides?: MicrosoftRuntimePublicEnv): MicrosoftRuntimePublicEnv {
+  if (overrides) {
+    return overrides;
+  }
+  return {
+    ONYX_MS_CLIENT_ID: import.meta.env.ONYX_MS_CLIENT_ID ?? "",
+    ONYX_MS_TENANT_ID: import.meta.env.ONYX_MS_TENANT_ID ?? "",
+    ONYX_MS_REDIRECT_URI: import.meta.env.ONYX_MS_REDIRECT_URI ?? "",
+    ONYX_MS_AUTHORITY: import.meta.env.ONYX_MS_AUTHORITY ?? "",
+  };
 }

@@ -3,6 +3,7 @@ import {
   APPROVED_MICROSOFT_PUBLIC_ENV_KEYS,
   buildApprovedMicrosoftPublicDefine,
   ensureNoForbiddenBrowserEnv,
+  readMicrosoftRuntimeEnv,
 } from "./viteMicrosoftEnvBridge";
 
 describe("Microsoft runtime config visibility bridge", () => {
@@ -44,6 +45,14 @@ describe("Microsoft runtime config visibility bridge", () => {
     expect(Object.values(define).some((value) => value.includes("secret-value"))).toBe(false);
   });
 
+  it("does not bridge legacy MICROSOFT_CLIENT_SECRET even if present", () => {
+    const define = buildApprovedMicrosoftPublicDefine({ MICROSOFT_CLIENT_SECRET: "legacy-secret-value" });
+    expect(Object.keys(define)).toEqual(
+      APPROVED_MICROSOFT_PUBLIC_ENV_KEYS.map((key) => `import.meta.env.${key}`),
+    );
+    expect(Object.values(define).some((value) => value.includes("legacy-secret-value"))).toBe(false);
+  });
+
   it("fails closed when ONYX_MS_CLIENT_SECRET is present", () => {
     expect(() => ensureNoForbiddenBrowserEnv({ ONYX_MS_CLIENT_SECRET: "secret-value" })).toThrow(
       /forbidden|secret/i,
@@ -56,9 +65,41 @@ describe("Microsoft runtime config visibility bridge", () => {
     );
   });
 
+  it("fails closed when legacy MICROSOFT_CLIENT_SECRET is present", () => {
+    expect(() => ensureNoForbiddenBrowserEnv({ MICROSOFT_CLIENT_SECRET: "legacy-secret-value" })).toThrow(
+      /MICROSOFT_CLIENT_SECRET/,
+    );
+  });
+
+  it("names only the forbidden key and never the supplied secret value", () => {
+    try {
+      ensureNoForbiddenBrowserEnv({ MICROSOFT_CLIENT_SECRET: "legacy-secret-value" });
+      throw new Error("expected ensureNoForbiddenBrowserEnv to throw");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      expect(message).toContain("MICROSOFT_CLIENT_SECRET");
+      expect(message).not.toContain("legacy-secret-value");
+    }
+  });
+
   it("does not throw when no forbidden secret keys are present", () => {
     expect(() =>
       ensureNoForbiddenBrowserEnv({ ONYX_MS_CLIENT_ID: "client", ONYX_MS_TENANT_ID: "tenant" }),
     ).not.toThrow();
+  });
+
+  it("readMicrosoftRuntimeEnv never exposes a client-secret property", () => {
+    const runtimeEnv = readMicrosoftRuntimeEnv({
+      ONYX_MS_CLIENT_ID: "client",
+      ONYX_MS_TENANT_ID: "tenant",
+      ONYX_MS_REDIRECT_URI: "https://example.invalid/callback",
+      ONYX_MS_AUTHORITY: "",
+    });
+    expect(Object.keys(runtimeEnv)).toEqual([
+      "ONYX_MS_CLIENT_ID",
+      "ONYX_MS_TENANT_ID",
+      "ONYX_MS_REDIRECT_URI",
+      "ONYX_MS_AUTHORITY",
+    ]);
   });
 });
