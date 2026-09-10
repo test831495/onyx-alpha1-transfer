@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { loadConnectedCalendarEvents } from "./calendarController";
+import { loadConnectedCalendarEvents, loadConnectedCalendarEventsWithDiagnostic } from "./calendarController";
 
 describe("loadConnectedCalendarEvents", () => {
   it("derives the selected local date range and delegates the read to the connector", async () => {
@@ -15,4 +15,10 @@ describe("loadConnectedCalendarEvents", () => {
       timeZone: "UTC",
     });
   });
+});
+
+it("forwards the selected range through the diagnostic read path", async () => {
+  const loadEvents = vi.fn().mockResolvedValue({ events: [], diagnostic: { stage: "GRAPH_RESPONSE", outcome: "SUCCEEDED_EMPTY", reasonCode: "CALENDAR_GRAPH_SUCCEEDED_EMPTY" } });
+  await expect(loadConnectedCalendarEventsWithDiagnostic("CURRENT_WEEK", loadEvents, "2026-09-10T12:00:00.000Z", "UTC", "en-IN")).resolves.toMatchObject({ events: [], diagnostic: { reasonCode: "CALENDAR_GRAPH_SUCCEEDED_EMPTY" } });
+  expect(loadEvents).toHaveBeenCalledOnce();
 });

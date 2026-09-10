@@ -7,6 +7,7 @@ import { AutomationDashboard } from "./components/AutomationDashboard";
 import { SettingsCenter } from "./components/SettingsCenter";
 import { ProviderHealthDashboard } from "./components/ProviderHealthDashboard";
 import type { CalendarEventRecord, CalendarRangeKind } from "@onyx/calendar-intelligence";
+import type { MicrosoftCalendarReadDiagnostic } from "@onyx/workspace-connectors";
 
 export interface AppDetailSpec {
   appId: ShellAppId;
@@ -33,6 +34,7 @@ export const DetailDataContext = React.createContext<{
   calendarConnected?: boolean;
   calendarUnavailable?: boolean;
   calendarEvents?: readonly CalendarEventRecord[];
+  calendarDiagnostic?: MicrosoftCalendarReadDiagnostic;
 }>({});
 
 // Real detail components wrapped to match the required signature
@@ -103,6 +105,7 @@ const CalendarDetail: React.FC<{ appId: ShellAppId }> = ({ appId }) => {
       connected={data.calendarConnected}
       unavailable={data.calendarUnavailable}
       events={data.calendarEvents}
+      diagnostic={data.calendarDiagnostic}
     />
   );
 };

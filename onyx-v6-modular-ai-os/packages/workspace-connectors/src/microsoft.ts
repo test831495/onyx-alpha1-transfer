@@ -13,6 +13,50 @@ export interface MicrosoftCalendarEvent {
   location?: string;
   isOnlineMeeting: boolean;
 }
+export type MicrosoftCalendarDiagnosticStage = "ADAPTER_SELECTION" | "RANGE_CONSTRUCTION" | "TOKEN_ACQUISITION" | "GRAPH_REQUEST" | "GRAPH_RESPONSE" | "RESPONSE_VALIDATION" | "NORMALIZATION";
+export type MicrosoftCalendarDiagnosticOutcome = "NOT_STARTED" | "STARTED" | "SUCCEEDED" | "SUCCEEDED_EMPTY" | "FAILED" | "REJECTED";
+export type MicrosoftCalendarDiagnosticReasonCode =
+  | "CALENDAR_RANGE_INVALID"
+  | "CALENDAR_TOKEN_ACQUISITION_FAILED"
+  | "CALENDAR_GRAPH_REQUEST_STARTED"
+  | "CALENDAR_GRAPH_HTTP_400"
+  | "CALENDAR_GRAPH_HTTP_401"
+  | "CALENDAR_GRAPH_HTTP_403"
+  | "CALENDAR_GRAPH_HTTP_404"
+  | "CALENDAR_GRAPH_HTTP_429"
+  | "CALENDAR_GRAPH_HTTP_5XX"
+  | "CALENDAR_GRAPH_NETWORK_FAILURE"
+  | "CALENDAR_GRAPH_NON_JSON_RESPONSE"
+  | "CALENDAR_GRAPH_INVALID_ENVELOPE"
+  | "CALENDAR_GRAPH_VALUE_NOT_ARRAY"
+  | "CALENDAR_GRAPH_SUCCEEDED_EMPTY"
+  | "CALENDAR_GRAPH_SUCCEEDED_WITH_EVENTS"
+  | "CALENDAR_NORMALIZATION_REJECTED_ALL"
+  | "CALENDAR_NORMALIZATION_PARTIAL"
+  | "CALENDAR_NORMALIZATION_SUCCEEDED"
+  | "CALENDAR_UNKNOWN_BOUNDED_FAILURE";
+export interface MicrosoftCalendarReadDiagnostic {
+  stage: MicrosoftCalendarDiagnosticStage;
+  outcome: MicrosoftCalendarDiagnosticOutcome;
+  reasonCode: MicrosoftCalendarDiagnosticReasonCode;
+  httpStatus?: number;
+  returnedEventCount?: number;
+  normalizedEventCount?: number;
+  rejectedEventCount?: number;
+  requestRangeClass?: string;
+  requestRangeValid?: boolean;
+  retryable?: boolean;
+}
+export interface MicrosoftCalendarReadResult {
+  events: readonly MicrosoftCalendarEvent[];
+  diagnostic: MicrosoftCalendarReadDiagnostic;
+}
+export function isSuccessfulMicrosoftCalendarDiagnostic(diagnostic: MicrosoftCalendarReadDiagnostic): boolean {
+  return diagnostic.outcome === "SUCCEEDED" || diagnostic.outcome === "SUCCEEDED_EMPTY";
+}
+export function isFailedMicrosoftCalendarDiagnostic(diagnostic: MicrosoftCalendarReadDiagnostic): boolean {
+  return diagnostic.outcome === "FAILED" || diagnostic.outcome === "REJECTED";
+}
 const profileScopes = ["User.Read"];
 const calendarScopes = ["Calendars.Read"];
 const workspaceScopes = [...profileScopes, ...calendarScopes];
@@ -137,36 +181,80 @@ export class MicrosoftWorkspaceConnector {
     return { displayName: value.displayName, email: value.mail ?? value.userPrincipalName, tenantId: this.account.tenantId, accountId: value.id ?? this.account.homeAccountId };
   }
   async loadCalendarEvents(range: MicrosoftCalendarRange): Promise<readonly MicrosoftCalendarEvent[]> {
+    const result = await this.loadCalendarEventsWithDiagnostic(range);
+    if (!isSuccessfulMicrosoftCalendarDiagnostic(result.diagnostic)) {
+      if (result.diagnostic.reasonCode === "CALENDAR_RANGE_INVALID") throw new Error("Microsoft calendar range is invalid.");
+      if (result.diagnostic.httpStatus) throw new Error(`Microsoft Graph calendar request failed (${result.diagnostic.httpStatus}).`);
+      if (result.diagnostic.reasonCode === "CALENDAR_GRAPH_NETWORK_FAILURE") throw new Error("Microsoft Graph calendar request failed.");
+      throw new Error(result.diagnostic.outcome === "REJECTED" ? "Microsoft Graph calendar normalization failed." : "Microsoft Graph calendar response is invalid.");
+    }
+    return result.events;
+  }
+  async loadCalendarEventsWithDiagnostic(range: MicrosoftCalendarRange): Promise<MicrosoftCalendarReadResult> {
     const start = new Date(range.start);
     const end = new Date(range.end);
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end) {
-      throw new Error("Microsoft calendar range is invalid.");
+      return { events: [], diagnostic: { stage: "RANGE_CONSTRUCTION", outcome: "FAILED", reasonCode: "CALENDAR_RANGE_INVALID", requestRangeValid: false } };
     }
 
-    const token = await this.getAccessToken(calendarScopes);
+    let token: string;
+    try {
+      token = await this.getAccessToken(calendarScopes);
+    } catch {
+      return { events: [], diagnostic: { stage: "TOKEN_ACQUISITION", outcome: "FAILED", reasonCode: "CALENDAR_TOKEN_ACQUISITION_FAILED", requestRangeValid: true, retryable: true } };
+    }
     const parameters = new URLSearchParams({
       startDateTime: start.toISOString(),
       endDateTime: end.toISOString(),
       $select: "id,subject,start,end,isAllDay,isCancelled,showAs,location,organizer,isOnlineMeeting,onlineMeeting,sensitivity",
       $orderby: "start/dateTime",
     });
-    const response = await fetch(`https://graph.microsoft.com/v1.0/me/calendar/calendarView?${parameters}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Prefer: 'outlook.timezone="UTC"',
-      },
-    });
+    let response: Response;
+    try {
+      response = await fetch(`https://graph.microsoft.com/v1.0/me/calendar/calendarView?${parameters}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Prefer: 'outlook.timezone="UTC"',
+        },
+      });
+    } catch {
+      return { events: [], diagnostic: { stage: "GRAPH_REQUEST", outcome: "FAILED", reasonCode: "CALENDAR_GRAPH_NETWORK_FAILURE", requestRangeValid: true, retryable: true } };
+    }
     if (!response.ok) {
-      throw new Error(`Microsoft Graph calendar request failed (${response.status}).`);
+      const reasonCode = response.status === 400 ? "CALENDAR_GRAPH_HTTP_400" : response.status === 401 ? "CALENDAR_GRAPH_HTTP_401" : response.status === 403 ? "CALENDAR_GRAPH_HTTP_403" : response.status === 404 ? "CALENDAR_GRAPH_HTTP_404" : response.status === 429 ? "CALENDAR_GRAPH_HTTP_429" : response.status >= 500 ? "CALENDAR_GRAPH_HTTP_5XX" : "CALENDAR_UNKNOWN_BOUNDED_FAILURE";
+      return { events: [], diagnostic: { stage: "GRAPH_RESPONSE", outcome: "FAILED", reasonCode, httpStatus: response.status, requestRangeValid: true, retryable: response.status === 429 || response.status >= 500 } };
     }
 
-    const body = await response.json() as { value?: unknown };
+    let body: { value?: unknown };
+    try {
+      const contentType = response.headers?.get?.("content-type");
+      if (contentType && !contentType.toLowerCase().includes("json")) {
+        return { events: [], diagnostic: { stage: "GRAPH_RESPONSE", outcome: "FAILED", reasonCode: "CALENDAR_GRAPH_NON_JSON_RESPONSE", httpStatus: response.status, requestRangeValid: true } };
+      }
+      body = await response.json() as { value?: unknown };
+    } catch {
+      return { events: [], diagnostic: { stage: "RESPONSE_VALIDATION", outcome: "FAILED", reasonCode: "CALENDAR_GRAPH_INVALID_ENVELOPE", httpStatus: response.status, requestRangeValid: true } };
+    }
     if (!Array.isArray(body.value)) {
-      throw new Error("Microsoft Graph calendar response is invalid.");
+      return { events: [], diagnostic: { stage: "RESPONSE_VALIDATION", outcome: "FAILED", reasonCode: "CALENDAR_GRAPH_VALUE_NOT_ARRAY", httpStatus: response.status, requestRangeValid: true } };
     }
 
-    return Object.freeze(body.value.map(normalizeCalendarEvent));
+    const normalized: MicrosoftCalendarEvent[] = [];
+    for (const value of body.value) {
+      try { normalized.push(normalizeCalendarEvent(value)); } catch { /* bounded rejection count only */ }
+    }
+    const returnedEventCount = body.value.length;
+    const normalizedEventCount = normalized.length;
+    const rejectedEventCount = returnedEventCount - normalizedEventCount;
+    const diagnostic = normalizedEventCount === 0 && returnedEventCount > 0
+      ? { stage: "NORMALIZATION" as const, outcome: "REJECTED" as const, reasonCode: "CALENDAR_NORMALIZATION_REJECTED_ALL" as const }
+      : rejectedEventCount > 0
+        ? { stage: "NORMALIZATION" as const, outcome: "SUCCEEDED" as const, reasonCode: "CALENDAR_NORMALIZATION_PARTIAL" as const }
+        : normalizedEventCount === 0
+          ? { stage: "GRAPH_RESPONSE" as const, outcome: "SUCCEEDED_EMPTY" as const, reasonCode: "CALENDAR_GRAPH_SUCCEEDED_EMPTY" as const }
+          : { stage: "NORMALIZATION" as const, outcome: "SUCCEEDED" as const, reasonCode: "CALENDAR_NORMALIZATION_SUCCEEDED" as const };
+    return { events: Object.freeze(normalized), diagnostic: { ...diagnostic, httpStatus: response.status, returnedEventCount, normalizedEventCount, rejectedEventCount, requestRangeValid: true } };
   }
   snapshot(state?: WorkspaceProviderSnapshot["state"], profile?: WorkspaceProfile): WorkspaceProviderSnapshot {
     return { provider: "microsoft", label: "Microsoft 365", state: state ?? (this.account ? "connected" : this.configured ? "disconnected" : "unconfigured"), profile, capabilities, diagnostic: this.diagnostic };

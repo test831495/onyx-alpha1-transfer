@@ -6,7 +6,13 @@ import {
   type CalendarAgendaProjection,
   type CalendarRangeKind,
 } from "@onyx/calendar-intelligence";
-import { loadMicrosoftCalendarEvents } from "./workspaceController";
+import { loadMicrosoftCalendarEvents, loadMicrosoftCalendarEventsWithDiagnostic } from "./workspaceController";
+import type { MicrosoftCalendarReadDiagnostic } from "@onyx/workspace-connectors";
+
+export interface CalendarReadResult {
+  events: readonly CalendarEventRecord[];
+  diagnostic: MicrosoftCalendarReadDiagnostic;
+}
 
 export function loadCalendar(
   range: CalendarRangeKind = "TODAY",
@@ -28,6 +34,22 @@ export async function loadConnectedCalendarEvents(
   timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
   locale = typeof navigator === "undefined" ? "en-IN" : navigator.language || "en-IN",
 ): Promise<readonly CalendarEventRecord[]> {
+  const context = createTemporalContext({ instant, timeZone, locale });
+  const selected = selectCalendarRange(context, range);
+  return loadEvents({
+    start: new Date(`${selected.start}T00:00:00.000Z`).toISOString(),
+    end: new Date(`${selected.end}T00:00:00.000Z`).toISOString(),
+    timeZone: selected.timeZone,
+  });
+}
+
+export async function loadConnectedCalendarEventsWithDiagnostic(
+  range: CalendarRangeKind = "TODAY",
+  loadEvents: (request: { start: string; end: string; timeZone: string }) => Promise<CalendarReadResult> = loadMicrosoftCalendarEventsWithDiagnostic,
+  instant = new Date().toISOString(),
+  timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+  locale = typeof navigator === "undefined" ? "en-IN" : navigator.language || "en-IN",
+): Promise<CalendarReadResult> {
   const context = createTemporalContext({ instant, timeZone, locale });
   const selected = selectCalendarRange(context, range);
   return loadEvents({
