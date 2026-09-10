@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { MicrosoftWorkspaceConnector } from "./microsoft";
+import { MicrosoftWorkspaceConnector, selectMicrosoftAccount } from "./microsoft";
 import { resolveRuntimeMicrosoftConfig } from "./microsoft-config";
 
 const calendarRange = {
@@ -9,6 +9,15 @@ const calendarRange = {
 };
 
 describe("Microsoft runtime config reachability", () => {
+  it("selects the redirect account or one cached account and fails closed for ambiguity", () => {
+    const redirectAccount = { homeAccountId: "redirect" } as any;
+    const cachedAccount = { homeAccountId: "cached" } as any;
+
+    expect(selectMicrosoftAccount(redirectAccount, [cachedAccount])).toBe(redirectAccount);
+    expect(selectMicrosoftAccount(undefined, [cachedAccount])).toBe(cachedAccount);
+    expect(() => selectMicrosoftAccount(undefined, [cachedAccount, redirectAccount])).toThrow(/multiple/i);
+  });
+
   it("resolves approved Microsoft public runtime configuration", () => {
     const runtimeConfig = resolveRuntimeMicrosoftConfig({
       ONYX_MS_CLIENT_ID: "client",
@@ -87,10 +96,7 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
         isCancelled: false,
         showAs: "busy",
         location: "Studio",
-        organizer: "organizer@example.com",
         isOnlineMeeting: true,
-        joinUrl: "https://meet.example.com/event-1",
-        sensitivity: "normal",
       },
     ]);
     expect(getAccessToken).toHaveBeenCalledWith(["Calendars.Read"]);
@@ -117,5 +123,28 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
     await expect(connector.loadCalendarEvents(calendarRange)).rejects.toThrow(
       "Microsoft Graph calendar request failed (403).",
     );
+  });
+
+  it("redacts private event subjects and excludes confidential fields from UI state", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ value: [{
+        id: "private-event",
+        subject: "Secret meeting",
+        sensitivity: "private",
+        organizer: { emailAddress: { address: "private@example.com" } },
+        onlineMeeting: { joinUrl: "https://private.example.com" },
+        start: { dateTime: "2026-09-10T09:00:00", timeZone: "UTC" },
+        end: { dateTime: "2026-09-10T10:00:00", timeZone: "UTC" },
+      }] }),
+    }));
+    Object.assign(connector, { getAccessToken: vi.fn().mockResolvedValue("access-token") });
+
+    const [event] = await connector.loadCalendarEvents(calendarRange);
+    expect(event?.subject).toBe("Private event");
+    expect(event).not.toHaveProperty("organizer");
+    expect(event).not.toHaveProperty("joinUrl");
+    expect(event).not.toHaveProperty("sensitivity");
   });
 });

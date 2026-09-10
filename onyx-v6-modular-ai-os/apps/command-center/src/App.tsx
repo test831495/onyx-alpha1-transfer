@@ -19,6 +19,7 @@ import type { WorkspaceSnapshot } from "@onyx/workspace-contracts";
 import { WorkspacePanel } from "./components/WorkspacePanel";
 import {
   connectMicrosoft,
+  reconnectMicrosoft,
   disconnectMicrosoft,
   disconnectedWorkspaceSnapshot,
   loadWorkspaceSnapshot,
@@ -233,6 +234,7 @@ export function App() {
   const [shell, setShell] = useState(shellStateFactory());
   const [calendarSummary, setCalendarSummary] = useState<CalendarAgendaProjection>(() => loadCalendar());
   const [calendarEvents, setCalendarEvents] = useState<readonly CalendarEventRecord[]>([]);
+  const [calendarUnavailable, setCalendarUnavailable] = useState(false);
   const [calendarBusy, setCalendarBusy] = useState(false);
   const [calendarMinimized, setCalendarMinimized] = useState(false);
   const [voicePreferences, setVoicePreferences] = useState<VoicePreferences>(
@@ -859,6 +861,12 @@ export function App() {
           setWorkspaceBusy(true);
           try {
             await connectMicrosoft();
+            const nextWorkspace = await loadWorkspaceSnapshot();
+            setWorkspace(nextWorkspace);
+            if (nextWorkspace.activeProvider === "microsoft") {
+              setCalendarEvents(await loadConnectedCalendarEvents(calendarSummary.requestedRange.kind));
+              setCalendarUnavailable(false);
+            }
           } catch (error) {
             showError(
               error instanceof Error
@@ -1353,12 +1361,23 @@ export function App() {
                   <DetailDataContext.Provider value={{
                     workspaceSnapshot: workspace,
                     workspaceBusy,
-                    onWorkspaceConnect: () => void connectMicrosoft(),
-                    onWorkspaceDisconnect: () => void disconnectMicrosoft(),
+                    onWorkspaceConnect: async () => {
+                      await connectMicrosoft();
+                      const nextWorkspace = await loadWorkspaceSnapshot();
+                      setWorkspace(nextWorkspace);
+                    },
+                    onWorkspaceReconnect: () => void reconnectMicrosoft(),
+                    onWorkspaceDisconnect: async () => {
+                      await disconnectMicrosoft();
+                      setCalendarEvents([]);
+                      setCalendarUnavailable(false);
+                      setWorkspace(disconnectedWorkspaceSnapshot());
+                    },
                     onWorkspaceRefresh: refreshWorkspace,
                     calendarSummary,
                     calendarBusy,
                     calendarConnected: workspace.providers.some((provider) => provider.provider === "microsoft" && provider.state === "connected"),
+                    calendarUnavailable,
                     calendarEvents,
                     onCalendarRefresh: async () => {
                       const summary = loadCalendar(calendarSummary.requestedRange.kind);
@@ -1366,6 +1385,7 @@ export function App() {
                       const connected = workspace.providers.some((provider) => provider.provider === "microsoft" && provider.state === "connected");
                       if (!connected) {
                         setCalendarEvents([]);
+                        setCalendarUnavailable(false);
                         setCaption(`Local temporal context refreshed for ${summary.requestedRange.displayLabel}.`);
                         setState("wake-armed");
                         return;
@@ -1373,9 +1393,11 @@ export function App() {
                       setCalendarBusy(true);
                       try {
                         setCalendarEvents(await loadConnectedCalendarEvents(summary.requestedRange.kind));
+                        setCalendarUnavailable(false);
                         setCaption(`Calendar refreshed for ${summary.requestedRange.displayLabel}.`);
                       } catch (error) {
                         setCalendarEvents([]);
+                        setCalendarUnavailable(true);
                         setCaption(error instanceof Error ? error.message : "Calendar refresh could not be completed.");
                       } finally {
                         setCalendarBusy(false);

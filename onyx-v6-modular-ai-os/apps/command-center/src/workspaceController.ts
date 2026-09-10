@@ -32,5 +32,6 @@ export async function loadWorkspaceSnapshot(): Promise<WorkspaceSnapshot> { let 
 export const getMicrosoftAccessToken=(scopes:string[])=>microsoft.getAccessToken(scopes);
 export const loadMicrosoftCalendarEvents=(range:{start:string;end:string;timeZone:string})=>microsoft.loadCalendarEvents(range);
 export const connectMicrosoft=()=>microsoft.connect();
+export const reconnectMicrosoft=()=>microsoft.reconnect();
 export const disconnectMicrosoft=()=>microsoft.disconnect();
 export function disconnectedWorkspaceSnapshot():WorkspaceSnapshot{return{providers:[microsoft.snapshot(),...plannedProviderSnapshots()],updatedAt:Date.now()};}

@@ -11,10 +11,7 @@ export interface MicrosoftCalendarEvent {
   isCancelled: boolean;
   showAs?: string;
   location?: string;
-  organizer?: string;
   isOnlineMeeting: boolean;
-  joinUrl?: string;
-  sensitivity?: string;
 }
 const profileScopes = ["User.Read"];
 const calendarScopes = ["Calendars.Read"];
@@ -30,16 +27,29 @@ export class MicrosoftWorkspaceConnector {
   private application?: PublicClientApplication;
   private account?: AccountInfo;
   private diagnostic = "Microsoft workspace is not configured.";
+  private initialization?: Promise<WorkspaceProviderSnapshot>;
   constructor(private readonly config: MicrosoftWorkspaceConfig) {}
   get configured() { return Boolean(this.config.clientId && this.config.tenantId); }
   async initialize(): Promise<WorkspaceProviderSnapshot> {
+    if (this.initialization) return this.initialization;
+    this.initialization = this.initializeOnce();
+    return this.initialization;
+  }
+  private async initializeOnce(): Promise<WorkspaceProviderSnapshot> {
     if (!this.configured) return this.snapshot("unconfigured");
     const authority = this.config.authority ?? "https://login.microsoftonline.com/common";
     const configuration: Configuration = { auth: { clientId: this.config.clientId!, authority, redirectUri: this.config.redirectUri ?? window.location.origin }, cache: { cacheLocation: BrowserCacheLocation.SessionStorage } };
     this.application = new PublicClientApplication(configuration);
     await this.application.initialize();
-    const redirect = await this.application.handleRedirectPromise();
-    this.account = redirect?.account ?? this.application.getAllAccounts()[0];
+    try {
+      const redirect = await this.application.handleRedirectPromise();
+      const accounts = this.application.getAllAccounts();
+      this.account = selectMicrosoftAccount(redirect?.account, accounts);
+      if (this.account) this.application.setActiveAccount(this.account);
+    } catch (error) {
+      this.diagnostic = error instanceof Error ? error.message : "Microsoft sign-in could not be completed.";
+      return this.snapshot("error");
+    }
     this.diagnostic = this.account ? "Microsoft workspace session is connected." : "Microsoft workspace is ready to connect.";
     return this.snapshot(this.account ? "connected" : "disconnected");
   }
@@ -48,6 +58,11 @@ export class MicrosoftWorkspaceConnector {
     if (!this.application || !this.configured) throw new Error("Microsoft workspace configuration is incomplete.");
     this.diagnostic = "Redirecting to Microsoft sign-in.";
     await this.application.loginRedirect({ scopes: workspaceScopes, prompt: "select_account" });
+  }
+  async reconnect(): Promise<void> {
+    if (!this.application) await this.initialize();
+    if (!this.application || !this.account) throw new Error("Microsoft workspace is not connected.");
+    await this.getAccessToken([]);
   }
   async disconnect(): Promise<void> {
     if (!this.application || !this.account) return;
@@ -150,6 +165,18 @@ export class MicrosoftWorkspaceConnector {
   }
 }
 
+export function selectMicrosoftAccount(
+  redirectAccount: AccountInfo | undefined,
+  cachedAccounts: AccountInfo[],
+): AccountInfo | undefined {
+  if (redirectAccount) return redirectAccount;
+  if (cachedAccounts.length === 0) return undefined;
+  if (cachedAccounts.length > 1) {
+    throw new Error("Multiple Microsoft accounts are cached; select an account before continuing.");
+  }
+  return cachedAccounts[0];
+}
+
 function normalizeCalendarEvent(value: unknown): MicrosoftCalendarEvent {
   const event = value as Record<string, unknown>;
   const start = normalizeGraphDateTime(event.start);
@@ -159,11 +186,11 @@ function normalizeCalendarEvent(value: unknown): MicrosoftCalendarEvent {
   }
 
   const location = readGraphString((event.location as Record<string, unknown> | undefined)?.displayName);
-  const organizer = readGraphString(((event.organizer as Record<string, unknown> | undefined)?.emailAddress as Record<string, unknown> | undefined)?.address);
-  const joinUrl = readGraphString((event.onlineMeeting as Record<string, unknown> | undefined)?.joinUrl);
   const normalized: MicrosoftCalendarEvent = {
     id: readGraphString(event.id),
-    subject: readGraphString(event.subject) || "Untitled event",
+    subject: /^(private|confidential)$/i.test(readGraphString(event.sensitivity))
+      ? "Private event"
+      : readGraphString(event.subject) || "Untitled event",
     start,
     end,
     isAllDay: event.isAllDay === true,
@@ -171,12 +198,8 @@ function normalizeCalendarEvent(value: unknown): MicrosoftCalendarEvent {
     isOnlineMeeting: event.isOnlineMeeting === true,
   };
   const showAs = readGraphString(event.showAs);
-  const sensitivity = readGraphString(event.sensitivity);
   if (showAs) normalized.showAs = showAs;
   if (location) normalized.location = location;
-  if (organizer) normalized.organizer = organizer;
-  if (joinUrl) normalized.joinUrl = joinUrl;
-  if (sensitivity) normalized.sensitivity = sensitivity;
   return Object.freeze(normalized);
 }
 

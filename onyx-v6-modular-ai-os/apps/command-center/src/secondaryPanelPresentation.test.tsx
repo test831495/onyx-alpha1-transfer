@@ -42,6 +42,7 @@ describe("secondary panel presentation", () => {
         snapshot={snapshot}
         busy={false}
         onConnect={() => undefined}
+        onReconnect={() => undefined}
         onDisconnect={() => undefined}
         onRefresh={() => undefined}
       />,
@@ -104,5 +105,35 @@ describe("secondary panel presentation", () => {
     expect(html).toContain("1 event");
     expect(html).not.toContain("No connected calendar event data is available.");
     expect(html).not.toContain("graph.microsoft.com");
+  });
+
+  it("distinguishes connected empty results from the provider-free fallback", () => {
+    const html = renderToStaticMarkup(
+      <CalendarIntelligencePanel summary={undefined} connected events={[]} busy={false} onRefresh={() => undefined} onSpeak={() => undefined} />,
+    );
+
+    expect(html).toContain("No events are scheduled for this range.");
+    expect(html).not.toContain("No connected calendar event data is available.");
+  });
+
+  it("uses explicit reconnect and disconnect actions for a connected workspace", () => {
+    const snapshot: WorkspaceSnapshot = {
+      updatedAt: Date.now(),
+      activeProvider: "microsoft",
+      providers: [{
+        provider: "microsoft",
+        label: "Microsoft 365",
+        state: "connected",
+        diagnostic: "Connected",
+        capabilities: [{ id: "calendar", label: "Microsoft calendar", enabled: true }],
+      }],
+    };
+    const html = renderToStaticMarkup(
+      <WorkspacePanel snapshot={snapshot} busy={false} onConnect={() => undefined} onReconnect={() => undefined} onDisconnect={() => undefined} onRefresh={() => undefined} />,
+    );
+
+    expect(html).toContain("Reconnect");
+    expect(html).toContain("Disconnect");
+    expect(html).not.toContain(">Manage<");
   });
 });
