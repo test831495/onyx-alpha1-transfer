@@ -225,8 +225,55 @@ export interface MicrosoftReconnectDependencies {
   setWorkspace: (snapshot: WorkspaceSnapshot) => void;
   setCalendarEvents: (events: readonly CalendarEventRecord[]) => void;
   setCalendarUnavailable: (unavailable: boolean) => void;
+  requestCoordinator: CalendarRequestCoordinator;
   setBusy: (busy: boolean) => void;
   showError: (message: string) => void;
+}
+
+export function isCalendarConnected(snapshot: WorkspaceSnapshot): boolean {
+  if (!snapshot.activeProvider) return false;
+  const provider = snapshot.providers.find((entry) => entry.provider === snapshot.activeProvider);
+  return Boolean(provider?.capabilities.some((capability) => capability.id === "calendar" && capability.enabled));
+}
+
+export function isMicrosoftCalendarAdapterEligible(snapshot: WorkspaceSnapshot): boolean {
+  return snapshot.activeProvider === "microsoft" && isCalendarConnected(snapshot);
+}
+
+export interface CalendarRequestCoordinator {
+  begin: () => number;
+  invalidate: () => void;
+  isCurrent: (requestId: number) => boolean;
+}
+
+export function createCalendarRequestCoordinator(): CalendarRequestCoordinator {
+  let latestRequestId = 0;
+  return {
+    begin: () => ++latestRequestId,
+    invalidate: () => { latestRequestId += 1; },
+    isCurrent: (requestId) => requestId === latestRequestId,
+  };
+}
+
+export async function readLatestCalendarRange(
+  range: CalendarRangeKind,
+  loadEvents: (range: CalendarRangeKind) => Promise<readonly CalendarEventRecord[]>,
+  coordinator: CalendarRequestCoordinator,
+  onSuccess: (events: readonly CalendarEventRecord[]) => void,
+  onFailure: () => void,
+  onSettled: () => void,
+): Promise<void> {
+  const requestId = coordinator.begin();
+  try {
+    const events = await loadEvents(range);
+    if (!coordinator.isCurrent(requestId)) return;
+    onSuccess(events);
+  } catch {
+    if (!coordinator.isCurrent(requestId)) return;
+    onFailure();
+  } finally {
+    if (coordinator.isCurrent(requestId)) onSettled();
+  }
 }
 
 export async function reconcileMicrosoftReconnect(
@@ -237,20 +284,20 @@ export async function reconcileMicrosoftReconnect(
     await dependencies.reconnect();
     const nextWorkspace = await dependencies.refreshWorkspace();
     dependencies.setWorkspace(nextWorkspace);
-    if (nextWorkspace.activeProvider !== "microsoft") {
+    if (!isMicrosoftCalendarAdapterEligible(nextWorkspace)) {
+      dependencies.requestCoordinator.invalidate();
       dependencies.setCalendarEvents([]);
       dependencies.setCalendarUnavailable(false);
       return;
     }
-
-    try {
-      const events = await dependencies.loadCalendarEvents(dependencies.range);
-      dependencies.setCalendarEvents(events);
-      dependencies.setCalendarUnavailable(false);
-    } catch {
-      dependencies.setCalendarEvents([]);
-      dependencies.setCalendarUnavailable(true);
-    }
+    await readLatestCalendarRange(
+      dependencies.range,
+      dependencies.loadCalendarEvents,
+      dependencies.requestCoordinator,
+      dependencies.setCalendarEvents,
+      () => { dependencies.setCalendarEvents([]); dependencies.setCalendarUnavailable(true); },
+      () => dependencies.setCalendarUnavailable(false),
+    );
   } catch (error) {
     dependencies.showError(
       error instanceof Error ? error.message : "Microsoft reconnection failed.",
@@ -279,6 +326,7 @@ export function App() {
   const [calendarEvents, setCalendarEvents] = useState<readonly CalendarEventRecord[]>([]);
   const [calendarUnavailable, setCalendarUnavailable] = useState(false);
   const calendarRangeRef = useRef<CalendarRangeKind>("TODAY");
+  const calendarRequestCoordinator = useRef(createCalendarRequestCoordinator());
   const [calendarBusy, setCalendarBusy] = useState(false);
   const [calendarMinimized, setCalendarMinimized] = useState(false);
   const [voicePreferences, setVoicePreferences] = useState<VoicePreferences>(
@@ -329,21 +377,22 @@ export function App() {
 
   const reconcileWorkspaceAndCalendar = useCallback(async () => {
     const nextWorkspace = await refreshWorkspace();
-    if (nextWorkspace.activeProvider !== "microsoft") {
+    if (!isMicrosoftCalendarAdapterEligible(nextWorkspace)) {
+      calendarRequestCoordinator.current.invalidate();
       setCalendarEvents([]);
       setCalendarUnavailable(false);
+      setCalendarBusy(false);
       return;
     }
     setCalendarBusy(true);
-    try {
-      setCalendarEvents(await loadConnectedCalendarEvents(calendarRangeRef.current));
-      setCalendarUnavailable(false);
-    } catch {
-      setCalendarEvents([]);
-      setCalendarUnavailable(true);
-    } finally {
-      setCalendarBusy(false);
-    }
+    await readLatestCalendarRange(
+      calendarRangeRef.current,
+      loadConnectedCalendarEvents,
+      calendarRequestCoordinator.current,
+      (events) => { setCalendarEvents(events); setCalendarUnavailable(false); },
+      () => { setCalendarEvents([]); setCalendarUnavailable(true); },
+      () => setCalendarBusy(false),
+    );
   }, [refreshWorkspace]);
 
   useEffect(() => {
@@ -1431,44 +1480,46 @@ export function App() {
                       setWorkspace,
                       setCalendarEvents,
                       setCalendarUnavailable,
+                      requestCoordinator: calendarRequestCoordinator.current,
                       setBusy: setWorkspaceBusy,
                       showError,
                     }),
                     onWorkspaceDisconnect: async () => {
                       await disconnectMicrosoft();
+                      calendarRequestCoordinator.current.invalidate();
                       setCalendarEvents([]);
                       setCalendarUnavailable(false);
+                      setCalendarBusy(false);
                       setWorkspace(disconnectedWorkspaceSnapshot());
                     },
                     onWorkspaceRefresh: refreshWorkspace,
                     calendarSummary,
                     calendarBusy,
-                    calendarConnected: workspace.providers.some((provider) => provider.provider === "microsoft" && provider.state === "connected"),
+                    calendarConnected: isCalendarConnected(workspace),
                     calendarUnavailable,
                     calendarEvents,
                     onCalendarRefresh: async () => {
                       const summary = loadCalendar(calendarSummary.requestedRange.kind);
                       setCalendarSummary(summary);
-                      const connected = workspace.providers.some((provider) => provider.provider === "microsoft" && provider.state === "connected");
+                      const connected = isMicrosoftCalendarAdapterEligible(workspace);
                       if (!connected) {
+                        calendarRequestCoordinator.current.invalidate();
                         setCalendarEvents([]);
                         setCalendarUnavailable(false);
+                        setCalendarBusy(false);
                         setCaption(`Local temporal context refreshed for ${summary.requestedRange.displayLabel}.`);
                         setState("wake-armed");
                         return;
                       }
                       setCalendarBusy(true);
-                      try {
-                        setCalendarEvents(await loadConnectedCalendarEvents(summary.requestedRange.kind));
-                        setCalendarUnavailable(false);
-                        setCaption(`Calendar refreshed for ${summary.requestedRange.displayLabel}.`);
-                      } catch (error) {
-                        setCalendarEvents([]);
-                        setCalendarUnavailable(true);
-                        setCaption(error instanceof Error ? error.message : "Calendar refresh could not be completed.");
-                      } finally {
-                        setCalendarBusy(false);
-                      }
+                      await readLatestCalendarRange(
+                        summary.requestedRange.kind,
+                        loadConnectedCalendarEvents,
+                        calendarRequestCoordinator.current,
+                        (events) => { setCalendarEvents(events); setCalendarUnavailable(false); setCaption(`Calendar refreshed for ${summary.requestedRange.displayLabel}.`); },
+                        () => { setCalendarEvents([]); setCalendarUnavailable(true); setCaption("Calendar refresh could not be completed."); },
+                        () => setCalendarBusy(false),
+                      );
                       setState("wake-armed");
                     },
                     onCalendarSpeak: () => {
@@ -1478,9 +1529,26 @@ export function App() {
                         .catch(() => setVoiceStatus("System voice ready."))
                         .finally(reset);
                     },
-                    onCalendarSelectRange: (range: CalendarRangeKind) => {
+                    onCalendarSelectRange: async (range: CalendarRangeKind) => {
                       calendarRangeRef.current = range;
-                      setCalendarSummary(loadCalendar(range));
+                      const summary = loadCalendar(range);
+                      setCalendarSummary(summary);
+                      if (!isMicrosoftCalendarAdapterEligible(workspace)) {
+                        calendarRequestCoordinator.current.invalidate();
+                        setCalendarEvents([]);
+                        setCalendarUnavailable(false);
+                        setCalendarBusy(false);
+                        return;
+                      }
+                      setCalendarBusy(true);
+                      await readLatestCalendarRange(
+                        range,
+                        loadConnectedCalendarEvents,
+                        calendarRequestCoordinator.current,
+                        (events) => { setCalendarEvents(events); setCalendarUnavailable(false); },
+                        () => { setCalendarEvents([]); setCalendarUnavailable(true); },
+                        () => setCalendarBusy(false),
+                      );
                     },
                   }}>
                     <DetailShell
