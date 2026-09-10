@@ -3,8 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 import { CalendarIntelligencePanel } from "./components/CalendarIntelligencePanel";
 import { NewsPanel } from "./components/NewsPanel";
 import { WorkspacePanel } from "./components/WorkspacePanel";
+import type { CalendarEventRecord } from "@onyx/calendar-intelligence";
 import type { WorkspaceSnapshot } from "@onyx/workspace-contracts";
-import { isCalendarConnected, reconcileMicrosoftReconnect } from "./App";
+import { createCalendarRequestCoordinator, isCalendarConnected, isMicrosoftCalendarAdapterEligible, readLatestCalendarRange, reconcileMicrosoftReconnect } from "./App";
 
 describe("secondary panel presentation", () => {
   it("derives Calendar readiness from the canonical active provider and capability", () => {
@@ -31,6 +32,75 @@ describe("secondary panel presentation", () => {
       }],
       updatedAt: Date.now(),
     })).toBe(false);
+  });
+
+  it("guards the Microsoft adapter at its provider-specific boundary", () => {
+    const microsoft = {
+      activeProvider: "microsoft" as const,
+      providers: [{ provider: "microsoft" as const, label: "Microsoft 365", state: "connected" as const, diagnostic: "Connected", capabilities: [{ id: "calendar" as const, label: "Microsoft calendar", enabled: true }] }],
+      updatedAt: Date.now(),
+    };
+    expect(isMicrosoftCalendarAdapterEligible(microsoft)).toBe(true);
+    expect(isMicrosoftCalendarAdapterEligible({
+      activeProvider: "google",
+      providers: [{ provider: "google", label: "Google", state: "connected", diagnostic: "Connected", capabilities: [{ id: "calendar", label: "Google calendar", enabled: true }] }],
+      updatedAt: Date.now(),
+    })).toBe(false);
+    expect(isMicrosoftCalendarAdapterEligible({
+      ...microsoft,
+      providers: [{ provider: "microsoft", label: "Microsoft 365", state: "connected", diagnostic: "Connected", capabilities: [{ id: "calendar", label: "Microsoft calendar", enabled: false }] }],
+    })).toBe(false);
+  });
+
+  it("ignores stale range success, failure, and empty results", async () => {
+    const coordinator = createCalendarRequestCoordinator();
+    const pending: Array<{ resolve: (events: readonly CalendarEventRecord[]) => void; reject: () => void }> = [];
+    const loadEvents = vi.fn(() => new Promise<readonly CalendarEventRecord[]>((resolve, reject) => pending.push({ resolve, reject })));
+    const events = vi.fn();
+    const failure = vi.fn();
+    const settled = vi.fn();
+    const today = readLatestCalendarRange("TODAY", loadEvents, coordinator, events, failure, settled);
+    const tomorrow = readLatestCalendarRange("TOMORROW", loadEvents, coordinator, events, failure, settled);
+
+    pending[1]!.resolve([{ id: "tomorrow", subject: "Tomorrow", start: "2026-09-11T09:00:00.000Z", end: "2026-09-11T10:00:00.000Z", isAllDay: false, isCancelled: false, isOnlineMeeting: false }]);
+    await tomorrow;
+    pending[0]!.resolve([]);
+    await today;
+
+    expect(events).toHaveBeenCalledTimes(1);
+    expect(events).toHaveBeenCalledWith([{ id: "tomorrow", subject: "Tomorrow", start: "2026-09-11T09:00:00.000Z", end: "2026-09-11T10:00:00.000Z", isAllDay: false, isCancelled: false, isOnlineMeeting: false }]);
+    expect(failure).not.toHaveBeenCalled();
+    expect(settled).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores a pending Microsoft result after request invalidation", async () => {
+    const coordinator = createCalendarRequestCoordinator();
+    let resolveRequest: ((events: readonly CalendarEventRecord[]) => void) | undefined;
+    const request = readLatestCalendarRange("TODAY", () => new Promise<readonly CalendarEventRecord[]>((resolve) => { resolveRequest = resolve; }), coordinator, vi.fn(), vi.fn(), vi.fn());
+    coordinator.invalidate();
+    resolveRequest?.([{ id: "stale", subject: "Stale", start: "2026-09-10T09:00:00.000Z", end: "2026-09-10T10:00:00.000Z", isAllDay: false, isCancelled: false, isOnlineMeeting: false }]);
+    await request;
+    expect(coordinator.isCurrent(1)).toBe(false);
+  });
+
+  it("ignores an older failure but reports the current request failure", async () => {
+    const coordinator = createCalendarRequestCoordinator();
+    const pending: Array<{ resolve: (events: readonly CalendarEventRecord[]) => void; reject: () => void }> = [];
+    const loadEvents = vi.fn(() => new Promise<readonly CalendarEventRecord[]>((resolve, reject) => pending.push({ resolve, reject })));
+    const events = vi.fn();
+    const failure = vi.fn();
+    const settled = vi.fn();
+    const today = readLatestCalendarRange("TODAY", loadEvents, coordinator, events, failure, settled);
+    const tomorrow = readLatestCalendarRange("TOMORROW", loadEvents, coordinator, events, failure, settled);
+
+    pending[0]!.reject();
+    await today;
+    expect(failure).not.toHaveBeenCalled();
+
+    pending[1]!.reject();
+    await tomorrow;
+    expect(failure).toHaveBeenCalledOnce();
+    expect(settled).toHaveBeenCalledOnce();
   });
 
   it("awaits reconnect, refreshes Workspace and Calendar, and handles reconnect failures", async () => {
@@ -61,6 +131,7 @@ describe("secondary panel presentation", () => {
       setWorkspace,
       setCalendarEvents,
       setCalendarUnavailable,
+      requestCoordinator: createCalendarRequestCoordinator(),
       setBusy,
       showError,
     });
@@ -82,6 +153,7 @@ describe("secondary panel presentation", () => {
       setWorkspace,
       setCalendarEvents,
       setCalendarUnavailable,
+      requestCoordinator: createCalendarRequestCoordinator(),
       setBusy,
       showError,
     });
@@ -113,6 +185,7 @@ describe("secondary panel presentation", () => {
       setWorkspace: vi.fn(),
       setCalendarEvents,
       setCalendarUnavailable,
+      requestCoordinator: createCalendarRequestCoordinator(),
       setBusy: vi.fn(),
       showError: vi.fn(),
     });
