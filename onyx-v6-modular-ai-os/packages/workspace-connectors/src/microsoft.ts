@@ -150,7 +150,7 @@ export class MicrosoftWorkspaceConnector {
       $select: "id,subject,start,end,isAllDay,isCancelled,showAs,location,organizer,isOnlineMeeting,onlineMeeting,sensitivity",
       $orderby: "start/dateTime",
     });
-    const response = await fetch(`https://graph.microsoft.com/v1.0/me/calendarView?${parameters}`, {
+    const response = await fetch(`https://graph.microsoft.com/v1.0/me/calendar/calendarView?${parameters}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
