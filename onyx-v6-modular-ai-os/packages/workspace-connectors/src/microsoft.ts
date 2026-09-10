@@ -51,6 +51,12 @@ export interface MicrosoftCalendarReadResult {
   events: readonly MicrosoftCalendarEvent[];
   diagnostic: MicrosoftCalendarReadDiagnostic;
 }
+export function isSuccessfulMicrosoftCalendarDiagnostic(diagnostic: MicrosoftCalendarReadDiagnostic): boolean {
+  return diagnostic.outcome === "SUCCEEDED" || diagnostic.outcome === "SUCCEEDED_EMPTY";
+}
+export function isFailedMicrosoftCalendarDiagnostic(diagnostic: MicrosoftCalendarReadDiagnostic): boolean {
+  return diagnostic.outcome === "FAILED" || diagnostic.outcome === "REJECTED";
+}
 const profileScopes = ["User.Read"];
 const calendarScopes = ["Calendars.Read"];
 const workspaceScopes = [...profileScopes, ...calendarScopes];
@@ -176,11 +182,11 @@ export class MicrosoftWorkspaceConnector {
   }
   async loadCalendarEvents(range: MicrosoftCalendarRange): Promise<readonly MicrosoftCalendarEvent[]> {
     const result = await this.loadCalendarEventsWithDiagnostic(range);
-    if (result.diagnostic.outcome === "FAILED") {
+    if (!isSuccessfulMicrosoftCalendarDiagnostic(result.diagnostic)) {
       if (result.diagnostic.reasonCode === "CALENDAR_RANGE_INVALID") throw new Error("Microsoft calendar range is invalid.");
       if (result.diagnostic.httpStatus) throw new Error(`Microsoft Graph calendar request failed (${result.diagnostic.httpStatus}).`);
       if (result.diagnostic.reasonCode === "CALENDAR_GRAPH_NETWORK_FAILURE") throw new Error("Microsoft Graph calendar request failed.");
-      throw new Error("Microsoft Graph calendar response is invalid.");
+      throw new Error(result.diagnostic.outcome === "REJECTED" ? "Microsoft Graph calendar normalization failed." : "Microsoft Graph calendar response is invalid.");
     }
     return result.events;
   }

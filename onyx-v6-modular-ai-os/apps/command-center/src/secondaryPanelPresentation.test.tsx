@@ -5,7 +5,7 @@ import { NewsPanel } from "./components/NewsPanel";
 import { WorkspacePanel } from "./components/WorkspacePanel";
 import type { CalendarEventRecord } from "@onyx/calendar-intelligence";
 import type { WorkspaceSnapshot } from "@onyx/workspace-contracts";
-import { createCalendarRequestCoordinator, isCalendarConnected, isMicrosoftCalendarAdapterEligible, readLatestCalendarRange, reconcileMicrosoftReconnect } from "./App";
+import { createCalendarRequestCoordinator, isCalendarConnected, isMicrosoftCalendarAdapterEligible, readLatestCalendarRange, readLatestCalendarRangeWithDiagnostic, reconcileMicrosoftReconnect } from "./App";
 
 describe("secondary panel presentation", () => {
   it("derives Calendar readiness from the canonical active provider and capability", () => {
@@ -103,6 +103,41 @@ describe("secondary panel presentation", () => {
     expect(settled).toHaveBeenCalledOnce();
   });
 
+  it.each([
+    ["FAILED", "CALENDAR_GRAPH_HTTP_403"],
+    ["REJECTED", "CALENDAR_NORMALIZATION_REJECTED_ALL"],
+  ] as const)("keeps a resolved %s diagnostic unavailable", async (outcome, reasonCode) => {
+    const coordinator = createCalendarRequestCoordinator();
+    const onSuccess = vi.fn();
+    const onFailure = vi.fn();
+    await readLatestCalendarRangeWithDiagnostic(
+      "TODAY",
+      vi.fn().mockResolvedValue({ events: [], diagnostic: { stage: "GRAPH_RESPONSE", outcome, reasonCode } }),
+      coordinator,
+      onSuccess,
+      onFailure,
+      vi.fn(),
+    );
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(onFailure.mock.calls[0]?.[0]).toMatchObject({ diagnostic: { outcome, reasonCode } });
+  });
+
+  it("treats successful empty as success and ignores a stale failed diagnostic", async () => {
+    const coordinator = createCalendarRequestCoordinator();
+    const pending: Array<{ resolve: (result: { events: readonly CalendarEventRecord[]; diagnostic: { stage: "GRAPH_RESPONSE"; outcome: "SUCCEEDED" | "FAILED"; reasonCode: "CALENDAR_GRAPH_SUCCEEDED_WITH_EVENTS" | "CALENDAR_GRAPH_HTTP_403" } }) => void }> = [];
+    const loadEvents = vi.fn(() => new Promise<any>((resolve) => pending.push({ resolve })));
+    const onSuccess = vi.fn();
+    const onFailure = vi.fn();
+    const first = readLatestCalendarRangeWithDiagnostic("TODAY", loadEvents, coordinator, onSuccess, onFailure, vi.fn());
+    const second = readLatestCalendarRangeWithDiagnostic("TOMORROW", loadEvents, coordinator, onSuccess, onFailure, vi.fn());
+    pending[1]!.resolve({ events: [], diagnostic: { stage: "GRAPH_RESPONSE", outcome: "SUCCEEDED", reasonCode: "CALENDAR_GRAPH_SUCCEEDED_WITH_EVENTS" } });
+    await second;
+    pending[0]!.resolve({ events: [], diagnostic: { stage: "GRAPH_RESPONSE", outcome: "FAILED", reasonCode: "CALENDAR_GRAPH_HTTP_403" } });
+    await first;
+    expect(onSuccess).toHaveBeenCalledOnce();
+    expect(onFailure).not.toHaveBeenCalled();
+  });
+
   it("awaits reconnect, refreshes Workspace and Calendar, and handles reconnect failures", async () => {
     const reconnect = vi.fn().mockResolvedValue(undefined);
     const refreshWorkspace = vi.fn().mockResolvedValue({
@@ -117,7 +152,7 @@ describe("secondary panel presentation", () => {
       updatedAt: Date.now(),
     });
     const loadCalendarEvents = vi.fn().mockResolvedValue([{ id: "event-1" }]);
-    const loadCalendarEventsWithDiagnostic = vi.fn().mockResolvedValue({ events: [{ id: "event-1" }], diagnostic: { stage: "GRAPH_RESPONSE", outcome: "SUCCEEDED_WITH_EVENTS", reasonCode: "CALENDAR_GRAPH_SUCCEEDED_WITH_EVENTS" } });
+    const loadCalendarEventsWithDiagnostic = vi.fn().mockResolvedValue({ events: [{ id: "event-1" }], diagnostic: { stage: "GRAPH_RESPONSE", outcome: "SUCCEEDED", reasonCode: "CALENDAR_GRAPH_SUCCEEDED_WITH_EVENTS" } });
     const setWorkspace = vi.fn();
     const setCalendarEvents = vi.fn();
     const setCalendarUnavailable = vi.fn();
@@ -152,7 +187,7 @@ describe("secondary panel presentation", () => {
       reconnect,
       refreshWorkspace,
       loadCalendarEvents,
-      loadCalendarEventsWithDiagnostic: vi.fn().mockResolvedValue({ events: [{ id: "should-not-load" }], diagnostic: { stage: "GRAPH_RESPONSE", outcome: "SUCCEEDED_WITH_EVENTS", reasonCode: "CALENDAR_GRAPH_SUCCEEDED_WITH_EVENTS" } }),
+      loadCalendarEventsWithDiagnostic: vi.fn().mockResolvedValue({ events: [{ id: "should-not-load" }], diagnostic: { stage: "GRAPH_RESPONSE", outcome: "SUCCEEDED", reasonCode: "CALENDAR_GRAPH_SUCCEEDED_WITH_EVENTS" } }),
       range: "TODAY",
       setWorkspace,
       setCalendarEvents,
@@ -186,7 +221,7 @@ describe("secondary panel presentation", () => {
         updatedAt: Date.now(),
       }),
       loadCalendarEvents,
-      loadCalendarEventsWithDiagnostic: vi.fn().mockResolvedValue({ events: [{ id: "should-not-load" }], diagnostic: { stage: "GRAPH_RESPONSE", outcome: "SUCCEEDED_WITH_EVENTS", reasonCode: "CALENDAR_GRAPH_SUCCEEDED_WITH_EVENTS" } }),
+      loadCalendarEventsWithDiagnostic: vi.fn().mockResolvedValue({ events: [{ id: "should-not-load" }], diagnostic: { stage: "GRAPH_RESPONSE", outcome: "SUCCEEDED", reasonCode: "CALENDAR_GRAPH_SUCCEEDED_WITH_EVENTS" } }),
       range: "TODAY",
       setWorkspace: vi.fn(),
       setCalendarEvents,

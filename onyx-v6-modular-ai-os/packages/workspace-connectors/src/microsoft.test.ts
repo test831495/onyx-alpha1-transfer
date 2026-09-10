@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { MicrosoftWorkspaceConnector, selectMicrosoftAccount } from "./microsoft";
+import { isFailedMicrosoftCalendarDiagnostic, isSuccessfulMicrosoftCalendarDiagnostic, MicrosoftWorkspaceConnector, selectMicrosoftAccount } from "./microsoft";
 import { resolveRuntimeMicrosoftConfig } from "./microsoft-config";
 
 afterEach(() => {
@@ -276,6 +276,22 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
 
     const rangeResult = await connector.loadCalendarEventsWithDiagnostic({ ...calendarRange, end: calendarRange.start });
     expect(rangeResult.diagnostic).toMatchObject({ stage: "RANGE_CONSTRUCTION", reasonCode: "CALENDAR_RANGE_INVALID", requestRangeValid: false });
+  });
+
+  it("centralizes success and failure diagnostic vocabulary", () => {
+    expect(isSuccessfulMicrosoftCalendarDiagnostic({ stage: "GRAPH_RESPONSE", outcome: "SUCCEEDED", reasonCode: "CALENDAR_GRAPH_SUCCEEDED_WITH_EVENTS" })).toBe(true);
+    expect(isSuccessfulMicrosoftCalendarDiagnostic({ stage: "GRAPH_RESPONSE", outcome: "SUCCEEDED_EMPTY", reasonCode: "CALENDAR_GRAPH_SUCCEEDED_EMPTY" })).toBe(true);
+    expect(isFailedMicrosoftCalendarDiagnostic({ stage: "GRAPH_RESPONSE", outcome: "FAILED", reasonCode: "CALENDAR_GRAPH_HTTP_403" })).toBe(true);
+    expect(isFailedMicrosoftCalendarDiagnostic({ stage: "NORMALIZATION", outcome: "REJECTED", reasonCode: "CALENDAR_NORMALIZATION_REJECTED_ALL" })).toBe(true);
+  });
+
+  it("rejects compatibility reads for rejected normalization and preserves successful empty", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    Object.assign(connector, { loadCalendarEventsWithDiagnostic: vi.fn()
+      .mockResolvedValueOnce({ events: [], diagnostic: { stage: "NORMALIZATION", outcome: "REJECTED", reasonCode: "CALENDAR_NORMALIZATION_REJECTED_ALL" } })
+      .mockResolvedValueOnce({ events: [], diagnostic: { stage: "GRAPH_RESPONSE", outcome: "SUCCEEDED_EMPTY", reasonCode: "CALENDAR_GRAPH_SUCCEEDED_EMPTY", returnedEventCount: 0, normalizedEventCount: 0 } }) });
+    await expect(connector.loadCalendarEvents(calendarRange)).rejects.toThrow("normalization failed");
+    await expect(connector.loadCalendarEvents(calendarRange)).resolves.toEqual([]);
   });
 
   it("reports returned, normalized, and rejected event counts", async () => {

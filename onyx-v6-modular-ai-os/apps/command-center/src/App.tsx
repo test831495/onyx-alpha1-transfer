@@ -16,6 +16,7 @@ import { CalendarIntelligencePanel } from "./components/CalendarIntelligencePane
 import { NewsPanel } from "./components/NewsPanel";
 import { VoiceSettingsPanel } from "./components/VoiceSettingsPanel";
 import type { WorkspaceSnapshot } from "@onyx/workspace-contracts";
+import { isFailedMicrosoftCalendarDiagnostic, isSuccessfulMicrosoftCalendarDiagnostic } from "@onyx/workspace-connectors";
 import { WorkspacePanel } from "./components/WorkspacePanel";
 import {
   connectMicrosoft,
@@ -283,14 +284,16 @@ export async function readLatestCalendarRangeWithDiagnostic(
   loadEvents: (range: CalendarRangeKind) => Promise<CalendarReadResult>,
   coordinator: CalendarRequestCoordinator,
   onSuccess: (result: CalendarReadResult) => void,
-  onFailure: () => void,
+  onFailure: (result?: CalendarReadResult) => void,
   onSettled: () => void,
 ): Promise<void> {
   const requestId = coordinator.begin();
   try {
     const result = await loadEvents(range);
     if (!coordinator.isCurrent(requestId)) return;
-    onSuccess(result);
+    if (isSuccessfulMicrosoftCalendarDiagnostic(result.diagnostic)) onSuccess(result);
+    else if (isFailedMicrosoftCalendarDiagnostic(result.diagnostic)) onFailure(result);
+    else onFailure(result);
   } catch {
     if (!coordinator.isCurrent(requestId)) return;
     onFailure();
@@ -311,6 +314,7 @@ export async function reconcileMicrosoftReconnect(
       dependencies.requestCoordinator.invalidate();
       dependencies.setCalendarEvents([]);
       dependencies.setCalendarUnavailable(false);
+      dependencies.setCalendarDiagnostic(undefined);
       return;
     }
     await readLatestCalendarRangeWithDiagnostic(
@@ -318,7 +322,7 @@ export async function reconcileMicrosoftReconnect(
       dependencies.loadCalendarEventsWithDiagnostic,
       dependencies.requestCoordinator,
       (result) => { dependencies.setCalendarDiagnostic(result.diagnostic); dependencies.setCalendarEvents(result.events); dependencies.setCalendarUnavailable(false); },
-      () => { dependencies.setCalendarEvents([]); dependencies.setCalendarUnavailable(true); },
+      (result) => { if (result) dependencies.setCalendarDiagnostic(result.diagnostic); dependencies.setCalendarEvents([]); dependencies.setCalendarUnavailable(true); },
       () => undefined,
     );
   } catch (error) {
@@ -415,7 +419,7 @@ export function App() {
       loadConnectedCalendarEventsWithDiagnostic,
       calendarRequestCoordinator.current,
       (result) => { setCalendarDiagnostic(result.diagnostic); setCalendarEvents(result.events); setCalendarUnavailable(false); },
-      () => { setCalendarEvents([]); setCalendarUnavailable(true); },
+      (result) => { if (result) setCalendarDiagnostic(result.diagnostic); setCalendarEvents([]); setCalendarUnavailable(true); },
       () => setCalendarBusy(false),
     );
   }, [refreshWorkspace]);
@@ -1547,7 +1551,7 @@ export function App() {
                         loadConnectedCalendarEventsWithDiagnostic,
                         calendarRequestCoordinator.current,
                         (result) => { setCalendarDiagnostic(result.diagnostic); setCalendarEvents(result.events); setCalendarUnavailable(false); setCaption(`Calendar refreshed for ${summary.requestedRange.displayLabel}.`); },
-                        () => { setCalendarEvents([]); setCalendarUnavailable(true); setCaption("Calendar refresh could not be completed."); },
+                        (result) => { if (result) setCalendarDiagnostic(result.diagnostic); setCalendarEvents([]); setCalendarUnavailable(true); setCaption("Calendar refresh could not be completed."); },
                         () => setCalendarBusy(false),
                       );
                       setState("wake-armed");
@@ -1577,7 +1581,7 @@ export function App() {
                         loadConnectedCalendarEventsWithDiagnostic,
                         calendarRequestCoordinator.current,
                         (result) => { setCalendarDiagnostic(result.diagnostic); setCalendarEvents(result.events); setCalendarUnavailable(false); },
-                        () => { setCalendarEvents([]); setCalendarUnavailable(true); },
+                        (result) => { if (result) setCalendarDiagnostic(result.diagnostic); setCalendarEvents([]); setCalendarUnavailable(true); },
                         () => setCalendarBusy(false),
                       );
                     },
