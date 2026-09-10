@@ -9,7 +9,19 @@ const calendarRange = {
 };
 
 describe("Microsoft runtime config reachability", () => {
-  it("becomes configured once ONYX_MS_CLIENT_ID, ONYX_MS_TENANT_ID, and ONYX_MS_REDIRECT_URI are visible", () => {
+  it("resolves approved Microsoft public runtime configuration", () => {
+    const runtimeConfig = resolveRuntimeMicrosoftConfig({
+      ONYX_MS_CLIENT_ID: "client",
+      ONYX_MS_TENANT_ID: "tenant",
+      ONYX_MS_REDIRECT_URI: "https://example.com/callback",
+    });
+
+    expect(runtimeConfig.VITE_MS_CLIENT_ID).toBe("client");
+    expect(runtimeConfig.VITE_MS_TENANT_ID).toBe("tenant");
+    expect(runtimeConfig.VITE_MS_REDIRECT_URI).toBe("https://example.com/callback");
+  });
+
+  it("becomes configured once Microsoft client ID and tenant ID are available", () => {
     const runtimeConfig = resolveRuntimeMicrosoftConfig({
       ONYX_MS_CLIENT_ID: "client",
       ONYX_MS_TENANT_ID: "tenant",

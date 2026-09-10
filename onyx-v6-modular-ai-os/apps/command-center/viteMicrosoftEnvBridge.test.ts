@@ -21,6 +21,16 @@ describe("Microsoft runtime config visibility bridge", () => {
     expect(define["import.meta.env.ONYX_MS_REDIRECT_URI"]).toBe(JSON.stringify("https://example.com/callback"));
   });
 
+  it("bridges optional ONYX_MS_AUTHORITY into import.meta.env", () => {
+    const define = buildApprovedMicrosoftPublicDefine({ ONYX_MS_AUTHORITY: "https://login.microsoftonline.com/common" });
+    expect(Object.keys(define)).toEqual(
+      APPROVED_MICROSOFT_PUBLIC_ENV_KEYS.map((key) => `import.meta.env.${key}`),
+    );
+    expect(define["import.meta.env.ONYX_MS_AUTHORITY"]).toBe(
+      JSON.stringify("https://login.microsoftonline.com/common"),
+    );
+  });
+
   it("does not bridge arbitrary ONYX_* variables", () => {
     const define = buildApprovedMicrosoftPublicDefine({ ONYX_UNRELATED_SETTING: "value" });
     expect(Object.keys(define)).toEqual(
@@ -46,7 +56,7 @@ describe("Microsoft runtime config visibility bridge", () => {
     );
   });
 
-  it("passes closed when no forbidden secret keys are present", () => {
+  it("does not throw when no forbidden secret keys are present", () => {
     expect(() =>
       ensureNoForbiddenBrowserEnv({ ONYX_MS_CLIENT_ID: "client", ONYX_MS_TENANT_ID: "tenant" }),
     ).not.toThrow();
