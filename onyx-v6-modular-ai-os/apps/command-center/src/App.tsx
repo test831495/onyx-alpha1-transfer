@@ -229,6 +229,12 @@ export interface MicrosoftReconnectDependencies {
   showError: (message: string) => void;
 }
 
+export function isCalendarConnected(snapshot: WorkspaceSnapshot): boolean {
+  if (!snapshot.activeProvider) return false;
+  const provider = snapshot.providers.find((entry) => entry.provider === snapshot.activeProvider);
+  return Boolean(provider?.capabilities.some((capability) => capability.id === "calendar" && capability.enabled));
+}
+
 export async function reconcileMicrosoftReconnect(
   dependencies: MicrosoftReconnectDependencies,
 ): Promise<void> {
@@ -237,7 +243,7 @@ export async function reconcileMicrosoftReconnect(
     await dependencies.reconnect();
     const nextWorkspace = await dependencies.refreshWorkspace();
     dependencies.setWorkspace(nextWorkspace);
-    if (nextWorkspace.activeProvider !== "microsoft") {
+    if (!isCalendarConnected(nextWorkspace)) {
       dependencies.setCalendarEvents([]);
       dependencies.setCalendarUnavailable(false);
       return;
@@ -329,7 +335,7 @@ export function App() {
 
   const reconcileWorkspaceAndCalendar = useCallback(async () => {
     const nextWorkspace = await refreshWorkspace();
-    if (nextWorkspace.activeProvider !== "microsoft") {
+    if (!isCalendarConnected(nextWorkspace)) {
       setCalendarEvents([]);
       setCalendarUnavailable(false);
       return;
@@ -1443,13 +1449,13 @@ export function App() {
                     onWorkspaceRefresh: refreshWorkspace,
                     calendarSummary,
                     calendarBusy,
-                    calendarConnected: workspace.providers.some((provider) => provider.provider === "microsoft" && provider.state === "connected"),
+                    calendarConnected: isCalendarConnected(workspace),
                     calendarUnavailable,
                     calendarEvents,
                     onCalendarRefresh: async () => {
                       const summary = loadCalendar(calendarSummary.requestedRange.kind);
                       setCalendarSummary(summary);
-                      const connected = workspace.providers.some((provider) => provider.provider === "microsoft" && provider.state === "connected");
+                      const connected = isCalendarConnected(workspace);
                       if (!connected) {
                         setCalendarEvents([]);
                         setCalendarUnavailable(false);
@@ -1478,9 +1484,25 @@ export function App() {
                         .catch(() => setVoiceStatus("System voice ready."))
                         .finally(reset);
                     },
-                    onCalendarSelectRange: (range: CalendarRangeKind) => {
+                    onCalendarSelectRange: async (range: CalendarRangeKind) => {
                       calendarRangeRef.current = range;
-                      setCalendarSummary(loadCalendar(range));
+                      const summary = loadCalendar(range);
+                      setCalendarSummary(summary);
+                      if (!isCalendarConnected(workspace)) {
+                        setCalendarEvents([]);
+                        setCalendarUnavailable(false);
+                        return;
+                      }
+                      setCalendarBusy(true);
+                      try {
+                        setCalendarEvents(await loadConnectedCalendarEvents(range));
+                        setCalendarUnavailable(false);
+                      } catch {
+                        setCalendarEvents([]);
+                        setCalendarUnavailable(true);
+                      } finally {
+                        setCalendarBusy(false);
+                      }
                     },
                   }}>
                     <DetailShell

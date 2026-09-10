@@ -4,12 +4,48 @@ import { CalendarIntelligencePanel } from "./components/CalendarIntelligencePane
 import { NewsPanel } from "./components/NewsPanel";
 import { WorkspacePanel } from "./components/WorkspacePanel";
 import type { WorkspaceSnapshot } from "@onyx/workspace-contracts";
-import { reconcileMicrosoftReconnect } from "./App";
+import { isCalendarConnected, reconcileMicrosoftReconnect } from "./App";
 
 describe("secondary panel presentation", () => {
+  it("derives Calendar readiness from the canonical active provider and capability", () => {
+    expect(isCalendarConnected({
+      activeProvider: "microsoft",
+      providers: [{
+        provider: "microsoft",
+        label: "Microsoft 365",
+        state: "unconfigured",
+        diagnostic: "Restored active provider",
+        capabilities: [{ id: "calendar", label: "Microsoft calendar", enabled: true }],
+      }],
+      updatedAt: Date.now(),
+    })).toBe(true);
+
+    expect(isCalendarConnected({
+      activeProvider: "google",
+      providers: [{
+        provider: "google",
+        label: "Google",
+        state: "connected",
+        diagnostic: "Connected",
+        capabilities: [{ id: "calendar", label: "Google calendar", enabled: false }],
+      }],
+      updatedAt: Date.now(),
+    })).toBe(false);
+  });
+
   it("awaits reconnect, refreshes Workspace and Calendar, and handles reconnect failures", async () => {
     const reconnect = vi.fn().mockResolvedValue(undefined);
-    const refreshWorkspace = vi.fn().mockResolvedValue({ activeProvider: "microsoft" });
+    const refreshWorkspace = vi.fn().mockResolvedValue({
+      activeProvider: "microsoft",
+      providers: [{
+        provider: "microsoft",
+        label: "Microsoft 365",
+        state: "connected",
+        diagnostic: "Connected",
+        capabilities: [{ id: "calendar", label: "Microsoft calendar", enabled: true }],
+      }],
+      updatedAt: Date.now(),
+    });
     const loadCalendarEvents = vi.fn().mockResolvedValue([{ id: "event-1" }]);
     const setWorkspace = vi.fn();
     const setCalendarEvents = vi.fn();
@@ -61,7 +97,17 @@ describe("secondary panel presentation", () => {
 
     await reconcileMicrosoftReconnect({
       reconnect: vi.fn().mockResolvedValue(undefined),
-      refreshWorkspace: vi.fn().mockResolvedValue({ activeProvider: "google" }),
+      refreshWorkspace: vi.fn().mockResolvedValue({
+        activeProvider: "google",
+        providers: [{
+          provider: "google",
+          label: "Google",
+          state: "connected",
+          diagnostic: "Connected",
+          capabilities: [{ id: "calendar", label: "Google calendar", enabled: false }],
+        }],
+        updatedAt: Date.now(),
+      }),
       loadCalendarEvents,
       range: "TODAY",
       setWorkspace: vi.fn(),
