@@ -24,6 +24,11 @@ export const FORBIDDEN_SECRET_KEYS = [
   "VITE_MS_CLIENT_SECRET",
 ] as const;
 
+export const FORBIDDEN_BROWSER_SECRET_KEYS = [
+  "ONYX_MS_CLIENT_SECRET",
+  "VITE_MS_CLIENT_SECRET",
+] as const;
+
 export type MicrosoftPublicConfig = {
   clientId: string;
   tenantId: string;
@@ -63,6 +68,13 @@ function ensureNoLegacyOrSecret(input: Record<string, unknown>): void {
   if (forbiddenSecret.length > 0) {
     throw new Error(
       `Client-secret values are not permitted in browser runtime configuration: ${forbiddenSecret.join(", ")}`,
+    );
+  }
+
+  const forbiddenBrowserSecret = FORBIDDEN_BROWSER_SECRET_KEYS.filter((key) => readString(input, key).length > 0);
+  if (forbiddenBrowserSecret.length > 0) {
+    throw new Error(
+      `Browser-exposed secret names are forbidden: ${forbiddenBrowserSecret.join(", ")}`,
     );
   }
 }
@@ -105,7 +117,7 @@ export function resolveMicrosoftPublicConfig(input: Record<string, unknown> = {}
   const tenantId = readCanonicalOrCompatibility(input, "tenantId");
   const redirectUri = readCanonicalOrCompatibility(input, "redirectUri");
   const explicitAuthority = readCanonicalOrCompatibility(input, "authority");
-  const authority = explicitAuthority || deriveMicrosoftAuthority(tenantId);
+  const authority = explicitAuthority || (tenantId ? deriveMicrosoftAuthority(tenantId) : "");
 
   return Object.freeze({
     clientId,
@@ -150,11 +162,13 @@ export function resolveMicrosoftProviderHealthState(
     ["ONYX_MS_REDIRECT_URI", config.redirectUri],
   ] as const;
 
+  const hasDerivedAuthority = !config.authority && config.tenantId ? false : true;
+
   const missing = required
     .filter(([, value]) => !value || value.trim().length === 0)
     .map(([key]) => key);
 
-  const state: MicrosoftProviderHealthState["state"] = missing.length === 0 ? "configured" : "unconfigured";
+  const state: MicrosoftProviderHealthState["state"] = missing.length === 0 && hasDerivedAuthority ? "configured" : "unconfigured";
 
   return Object.freeze({
     provider: "microsoft",

@@ -104,4 +104,30 @@ describe("microsoft config normalization", () => {
     expect(() => resolveMicrosoftPublicConfig({})).toThrow();
     expect(deriveMicrosoftAuthority("tenant-id")).toBe("https://login.microsoftonline.com/tenant-id");
   });
+
+  it("CONFIGURATION-010 fail-closes on secret-bearing browser env names", () => {
+    expect(() =>
+      resolveRuntimeMicrosoftConfig({
+        ONYX_MS_CLIENT_ID: "client",
+        ONYX_MS_TENANT_ID: "tenant",
+        ONYX_MS_REDIRECT_URI: "https://example.com",
+        ONYX_MS_CLIENT_SECRET: "should-fail",
+      }),
+    ).toThrow(/secret|forbidden|browser/i);
+  });
+
+  it("CONFIGURATION-011 derives authority from tenant when authority is absent", () => {
+    const config = resolveMicrosoftPublicConfig({
+      ONYX_MS_CLIENT_ID: "client",
+      ONYX_MS_TENANT_ID: "tenant-id",
+      ONYX_MS_REDIRECT_URI: "https://example.com/callback",
+    });
+
+    expect(config.authority).toBe("https://login.microsoftonline.com/tenant-id");
+    expect(resolveMicrosoftProviderHealthState({
+      ONYX_MS_CLIENT_ID: "client",
+      ONYX_MS_TENANT_ID: "tenant-id",
+      ONYX_MS_REDIRECT_URI: "https://example.com/callback",
+    }).state).toBe("configured");
+  });
 });
