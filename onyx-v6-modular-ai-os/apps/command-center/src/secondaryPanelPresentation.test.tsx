@@ -54,6 +54,28 @@ describe("secondary panel presentation", () => {
     expect(setBusy).toHaveBeenLastCalledWith(false);
   });
 
+  it("clears stale Microsoft calendar projection when reconnect leaves Microsoft inactive", async () => {
+    const loadCalendarEvents = vi.fn().mockResolvedValue([{ id: "should-not-load" }]);
+    const setCalendarEvents = vi.fn();
+    const setCalendarUnavailable = vi.fn();
+
+    await reconcileMicrosoftReconnect({
+      reconnect: vi.fn().mockResolvedValue(undefined),
+      refreshWorkspace: vi.fn().mockResolvedValue({ activeProvider: "google" }),
+      loadCalendarEvents,
+      range: "TODAY",
+      setWorkspace: vi.fn(),
+      setCalendarEvents,
+      setCalendarUnavailable,
+      setBusy: vi.fn(),
+      showError: vi.fn(),
+    });
+
+    expect(loadCalendarEvents).not.toHaveBeenCalled();
+    expect(setCalendarEvents).toHaveBeenCalledWith([]);
+    expect(setCalendarUnavailable).toHaveBeenCalledWith(false);
+  });
+
   it("uses friendly workspace statuses and hides alpha release details from default view", () => {
     const snapshot: WorkspaceSnapshot = {
       updatedAt: Date.now(),

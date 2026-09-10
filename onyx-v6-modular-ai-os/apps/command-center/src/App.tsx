@@ -237,7 +237,11 @@ export async function reconcileMicrosoftReconnect(
     await dependencies.reconnect();
     const nextWorkspace = await dependencies.refreshWorkspace();
     dependencies.setWorkspace(nextWorkspace);
-    if (nextWorkspace.activeProvider !== "microsoft") return;
+    if (nextWorkspace.activeProvider !== "microsoft") {
+      dependencies.setCalendarEvents([]);
+      dependencies.setCalendarUnavailable(false);
+      return;
+    }
 
     try {
       const events = await dependencies.loadCalendarEvents(dependencies.range);
