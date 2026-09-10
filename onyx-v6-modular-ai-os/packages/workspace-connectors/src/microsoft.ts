@@ -32,8 +32,16 @@ export class MicrosoftWorkspaceConnector {
   get configured() { return Boolean(this.config.clientId && this.config.tenantId); }
   async initialize(): Promise<WorkspaceProviderSnapshot> {
     if (this.initialization) return this.initialization;
-    this.initialization = this.initializeOnce();
-    return this.initialization;
+    const attempt = Promise.resolve().then(() => this.initializeOnce());
+    this.initialization = attempt;
+    try {
+      const snapshot = await attempt;
+      if (snapshot.state === "error") this.initialization = undefined;
+      return snapshot;
+    } catch (error) {
+      this.initialization = undefined;
+      throw error;
+    }
   }
   private async initializeOnce(): Promise<WorkspaceProviderSnapshot> {
     if (!this.configured) return this.snapshot("unconfigured");

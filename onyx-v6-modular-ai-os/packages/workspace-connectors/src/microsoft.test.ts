@@ -62,6 +62,38 @@ describe("Microsoft runtime config reachability", () => {
 
     expect(getAccessToken).toHaveBeenCalledWith(["Calendars.Read"]);
   });
+
+  it("releases a failed initialization attempt so a later call can retry", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const initializeOnce = vi.fn()
+      .mockResolvedValueOnce({ provider: "microsoft", state: "error", diagnostic: "temporary failure" })
+      .mockResolvedValueOnce({ provider: "microsoft", state: "connected", diagnostic: "connected" });
+    Object.assign(connector, { initializeOnce });
+
+    await expect(connector.initialize()).resolves.toMatchObject({ state: "error" });
+    await expect(connector.initialize()).resolves.toMatchObject({ state: "connected" });
+    expect(initializeOnce).toHaveBeenCalledTimes(2);
+  });
+
+  it("releases a rejected initialization attempt and shares concurrent attempts", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    let rejectAttempt: ((error: Error) => void) | undefined;
+    const initializeOnce = vi.fn()
+      .mockImplementationOnce(() => new Promise((_, reject) => { rejectAttempt = reject; }))
+      .mockResolvedValueOnce({ provider: "microsoft", state: "connected", diagnostic: "connected" });
+    Object.assign(connector, { initializeOnce });
+
+    const first = connector.initialize();
+    const concurrent = connector.initialize();
+    await Promise.resolve();
+    expect(initializeOnce).toHaveBeenCalledTimes(1);
+    rejectAttempt?.(new Error("temporary failure"));
+    await expect(first).rejects.toThrow("temporary failure");
+    await expect(concurrent).rejects.toThrow("temporary failure");
+
+    await expect(connector.initialize()).resolves.toMatchObject({ state: "connected" });
+    expect(initializeOnce).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe("MicrosoftWorkspaceConnector calendar reads", () => {

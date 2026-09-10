@@ -126,6 +126,25 @@ describe("secondary panel presentation", () => {
     expect(html).not.toContain("PHASE 1 WORKSPACE");
   });
 
+  it("labels an unconfigured Microsoft Connect action as configuration-unavailable", () => {
+    const snapshot: WorkspaceSnapshot = {
+      updatedAt: Date.now(),
+      providers: [{
+        provider: "microsoft",
+        label: "Microsoft 365",
+        state: "unconfigured",
+        diagnostic: "Microsoft workspace is not configured.",
+        capabilities: [{ id: "calendar", label: "Microsoft calendar", enabled: true }],
+      }],
+    };
+    const html = renderToStaticMarkup(
+      <WorkspacePanel snapshot={snapshot} busy={false} onConnect={() => undefined} onReconnect={() => undefined} onDisconnect={() => undefined} onRefresh={() => undefined} />,
+    );
+
+    expect(html).toContain("Connect Microsoft unavailable because Microsoft is not configured");
+    expect(html).not.toContain("not connected");
+  });
+
   it("renders a complete empty state for news", () => {
     const html = renderToStaticMarkup(
       <NewsPanel loading={false} connected={false} onRefresh={() => undefined} onManage={() => undefined} />,
