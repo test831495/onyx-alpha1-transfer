@@ -63,6 +63,67 @@ describe("Microsoft runtime config reachability", () => {
     expect(getAccessToken).toHaveBeenCalledWith(["Calendars.Read"]);
   });
 
+  it("uses the documented default-calendar endpoint for calendarView", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const getAccessToken = vi.fn().mockResolvedValue("access-token");
+    const fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ value: [] }),
+    });
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { getAccessToken });
+
+    Object.assign(connector, { application: {}, account: { tenantId: "tenant-id", homeAccountId: "account" } });
+    await connector.loadCalendarEvents({ start: "2026-09-10T00:00:00.000Z", end: "2026-09-11T00:00:00.000Z", timeZone: "Asia/Kolkata" });
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("https://graph.microsoft.com/v1.0/me/calendar/calendarView"),
+      expect.any(Object),
+    );
+
+    const callArgs = (fetch as any).mock.calls[0];
+    const url = new URL(callArgs[0]);
+    expect(url.pathname).toBe("/v1.0/me/calendar/calendarView");
+  });
+
+  it("validates date range boundaries are exclusive on end", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const start = "2026-09-10T00:00:00.000Z";
+    const end = "2026-09-11T00:00:00.000Z";
+
+    const getAccessToken = vi.fn().mockResolvedValue("access-token");
+    const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ value: [] }) });
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { getAccessToken, application: {}, account: { tenantId: "t", homeAccountId: "a" } });
+
+    await connector.loadCalendarEvents({ start, end, timeZone: "Asia/Kolkata" });
+
+    const callUrl = (fetch as any).mock.calls[0][0];
+    const params = new URL(callUrl).searchParams;
+    expect(params.get("startDateTime")).toBe(start);
+    expect(params.get("endDateTime")).toBe(end);
+  });
+
+  it("includes only privacy-safe fields in $select", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const getAccessToken = vi.fn().mockResolvedValue("access-token");
+    const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ value: [] }) });
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { getAccessToken, application: {}, account: { tenantId: "t", homeAccountId: "a" } });
+
+    await connector.loadCalendarEvents({ start: "2026-09-10T00:00:00.000Z", end: "2026-09-11T00:00:00.000Z", timeZone: "Asia/Kolkata" });
+
+    const callUrl = (fetch as any).mock.calls[0][0];
+    const params = new URL(callUrl).searchParams;
+    const selectFields = params.get("$select")?.split(",") ?? [];
+    expect(selectFields).toContain("id");
+    expect(selectFields).toContain("subject");
+    expect(selectFields).toContain("start");
+    expect(selectFields).toContain("end");
+    expect(selectFields).not.toContain("body");
+    expect(selectFields).not.toContain("bodyPreview");
+  });
+
   it("releases a failed initialization attempt so a later call can retry", async () => {
     const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
     const initializeOnce = vi.fn()
@@ -144,7 +205,7 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
     ]);
     expect(getAccessToken).toHaveBeenCalledWith(["Calendars.Read"]);
     expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining("https://graph.microsoft.com/v1.0/me/calendarView?"),
+      expect.stringContaining("https://graph.microsoft.com/v1.0/me/calendar/calendarView?"),
       expect.objectContaining({
         method: "GET",
         headers: expect.objectContaining({
