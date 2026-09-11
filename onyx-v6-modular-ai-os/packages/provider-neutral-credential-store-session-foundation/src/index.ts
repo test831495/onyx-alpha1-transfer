@@ -6,5 +6,6 @@ export * from "./session.js";
 export * from "./database.js";
 export * from "./sql-store.js";
 export * from "./session-gateway.js";
+export * from "./session-issuer.js";
 export * from "./audit.js";
 export * from "./lifecycle.js";

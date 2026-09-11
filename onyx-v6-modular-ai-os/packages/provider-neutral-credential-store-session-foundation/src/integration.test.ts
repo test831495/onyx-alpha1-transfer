@@ -15,8 +15,8 @@ describe("foundation integration boundaries", () => {
     const authority = { issue: async () => "proof", verify: async (proof: string) => proof === "proof" ? context : undefined };
     const gateway = new ServerSessionGateway(authority, () => Date.parse("2026-06-01T00:00:00.000Z"));
     const csrf = gateway.issueCsrf(context.sessionRef);
-    await expect(gateway.validate({ sessionProof: "proof", method: "POST", origin: "https://app.example", expectedOrigin: "https://app.example", csrfToken: csrf }, "credential.disconnect", "cap-1", "account-1")).resolves.toMatchObject({ sessionVersion: 3, accountSwitchGeneration: 2 });
-    await expect(gateway.validate({ sessionProof: "proof", method: "POST", origin: "https://app.example", expectedOrigin: "https://app.example", csrfToken: csrf }, "credential.disconnect", "cap-1", "account-1")).rejects.toThrow("CSRF");
+    await expect(gateway.validate({ sessionProof: "proof", method: "POST", origin: "https://app.example", expectedOrigin: "https://app.example", contentType: "application/json", idempotencyKey: "request-1", csrfToken: csrf }, "credential.disconnect", "cap-1", "account-1")).resolves.toMatchObject({ sessionVersion: 3, accountSwitchGeneration: 2 });
+    await expect(gateway.validate({ sessionProof: "proof", method: "POST", origin: "https://app.example", expectedOrigin: "https://app.example", contentType: "application/json", idempotencyKey: "request-1", csrfToken: csrf }, "credential.disconnect", "cap-1", "account-1")).rejects.toThrow("CSRF");
     gateway.revoke(context);
     await expect(gateway.validate({ sessionProof: "proof", method: "GET" }, "credential.read", "cap-1", "account-1")).rejects.toThrow("revoked");
   });

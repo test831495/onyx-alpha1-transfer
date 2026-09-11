@@ -24,4 +24,8 @@ describe("credential configuration and runtime isolation", () => {
     expect(() => createDatabaseRuntimePolicy("local", false, true)).toThrow("connection");
     expect(createDatabaseRuntimePolicy("test", false, true)).toMatchObject({ databaseAccessEnabled: true });
   });
+
+  it("rejects duplicate active and previous key versions", () => {
+    expect(() => parseCredentialKeyRing({ ONYX_CREDENTIAL_ENCRYPTION_KEY: key, ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION: "v1", ONYX_CREDENTIAL_PREVIOUS_KEY_RING: JSON.stringify([{ key, version: "v1" }]) }, "production")).toThrow("unique");
+  });
 });

@@ -1,4 +1,5 @@
 import { getDatabase, type DatabaseConnection } from "@netlify/database";
+import { parseCredentialKeyRing } from "./config.js";
 
 export type DatabaseRuntimeContext = "production" | "deploy-preview" | "branch-deploy" | "local" | "test" | "unknown";
 
@@ -50,6 +51,12 @@ export function createNetlifyDatabase(options: DatabaseRuntimeOptions): Database
   if (!policy.databaseAccessEnabled) throw new Error("Database access is disabled for this runtime");
   if (options.connectionString !== undefined && (!options.testOnly || options.context !== "test")) throw new Error("Explicit database connection is test-only");
   return options.connectionString === undefined ? getDatabase() : getDatabase({ connectionString: options.connectionString });
+}
+
+export function createConfiguredNetlifyDatabase(environment: Record<string, string | undefined> = process.env, options: Omit<DatabaseRuntimeOptions, "context" | "hasProductionKey"> = {}): DatabaseConnection {
+  const context = readDatabaseRuntimeContext(environment);
+  const keyRing = parseCredentialKeyRing(environment, context);
+  return createNetlifyDatabase({ ...options, context, hasProductionKey: keyRing.active !== undefined });
 }
 
 export async function withDatabaseTransaction<T>(database: DatabaseConnection, operation: (query: (text: string, values?: readonly unknown[]) => Promise<unknown>) => Promise<T>): Promise<T> {

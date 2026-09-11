@@ -44,7 +44,10 @@ export function parseCredentialKeyRing(environment: Environment, context: "produ
   const previewVersion = environment.ONYX_CREDENTIAL_PREVIEW_ENCRYPTION_KEY_VERSION;
   if (context === "production") {
     if (previewKey) throw new Error("Preview credential key is forbidden in production");
-    return { active: parseKey(productionKey, productionVersion), previous: parsePrevious(environment) };
+    const active = parseKey(productionKey, productionVersion);
+    const previous = parsePrevious(environment);
+    if (new Set([active.version, ...previous.map((key) => key.version)]).size !== previous.length + 1) throw new Error("Credential key versions must be unique");
+    return { active, previous };
   }
   if (productionKey || productionVersion) throw new Error("Production credential key is forbidden outside production");
   if (!previewKey) return { previous: [] };
