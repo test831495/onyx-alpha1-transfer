@@ -1,0 +1,21 @@
+{
+  "name": "@onyx/provider-neutral-credential-store-session-foundation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.7"
+  },
+  "dependencies": {
+    "@netlify/database": "2.0.1"
+  }
+}
