@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const migrationPath = new URL("../../../netlify/database/migrations/001_credential_session_foundation.sql", import.meta.url);
 const legacyMigrationPath = new URL("../migrations/001_credential_session_foundation.sql", import.meta.url);
+const idempotencyMigrationPath = new URL("../../../netlify/database/migrations/002_google_oauth_idempotency.sql", import.meta.url);
 
 describe("Netlify migration discovery", () => {
   it("has one canonical ordered migration with the required schema", () => {
@@ -19,5 +20,13 @@ describe("Netlify migration discovery", () => {
     expect(sql).toMatch(/CREATE TABLE IF NOT EXISTS session_csrf_tokens/);
     expect(sql).toMatch(/CREATE UNIQUE INDEX IF NOT EXISTS credential_records_one_active/);
     expect(sql).not.toMatch(/access_token|refresh_token|event_subject|event_description|mail_content|drive_content|calendar_body/i);
+  });
+
+  it("keeps Google OAuth idempotency in a forward-only migration", () => {
+    expect(existsSync(idempotencyMigrationPath)).toBe(true);
+    const sql = readFileSync(idempotencyMigrationPath, "utf8");
+    expect(sql).toMatch(/CREATE TABLE IF NOT EXISTS oauth_idempotency_receipts/);
+    expect(sql).toMatch(/idempotency_key_digest/);
+    expect(sql).toMatch(/encrypted_authorization_url/);
   });
 });

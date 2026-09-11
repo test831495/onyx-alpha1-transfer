@@ -70,6 +70,19 @@ describe("OnyxSessionAuthorityFactory", () => {
     await expect(factory.authority.verify("canonical-proof")).resolves.toMatchObject(serverSession);
   });
 
+  it("rejects malformed canonical expiry timestamps", async () => {
+    const factory = createOnyxSessionAuthorityFactory({
+      authenticationProvider: {
+        ...provider("allow"),
+        deriveAuthenticatedContext: () => ({ ...authenticatedContext, expiresAt: "not-a-date" }),
+      },
+      mapContext: mapper,
+      runtimeContext: "production",
+      now: () => Date.parse("2026-09-11T00:30:00.000Z"),
+    });
+    await expect(factory.verifyContext("proof")).resolves.toBeUndefined();
+  });
+
   it.each([
     ["missing", undefined],
     ["expired", provider("expired")],

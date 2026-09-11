@@ -1,18 +1,31 @@
 import type { WorkspaceSnapshot } from "@onyx/workspace-contracts";
 import type { WorkspaceProviderId } from "@onyx/workspace-contracts";
 
-const friendlyStatus = (state: string) => {
+export const friendlyStatus = (state: string) => {
   switch (state) {
+    case "unconfigured":
+    case "disconnected":
+      return "Not Connected";
+    case "connecting":
+      return "Connecting";
     case "connected":
       return "Available";
     case "connected-partial":
       return "Connected Partial";
-    case "disconnected":
-    case "unconfigured":
+    case "connected-empty":
+      return "Connected Empty";
+    case "reauthentication-required":
+      return "Reconnect Required";
+    case "insufficient-scope":
+      return "Insufficient Scope";
+    case "unavailable":
+      return "Unavailable";
+    case "rate-limited":
+      return "Temporarily Rate Limited";
     case "error":
-      return "Not Connected";
+      return "Error";
     default:
-      return "Coming Soon";
+      return "Unavailable";
   }
 };
 

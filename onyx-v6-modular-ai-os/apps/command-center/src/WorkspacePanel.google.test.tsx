@@ -35,4 +35,18 @@ describe("Google Workspace card", () => {
     expect(html).toContain("Refresh Google workspace status");
     expect(html).not.toContain("Coming Soon");
   });
+
+  it.each([
+    ["connected-partial", "Connected Partial"],
+    ["connected-empty", "Connected Empty"],
+    ["reauthentication-required", "Reconnect Required"],
+    ["insufficient-scope", "Insufficient Scope"],
+    ["unavailable", "Unavailable"],
+    ["rate-limited", "Temporarily Rate Limited"],
+    ["error", "Error"],
+  ] as const)("renders %s truthfully", (state, label) => {
+    const html = renderToStaticMarkup(<WorkspacePanel snapshot={{ updatedAt: Date.now(), providers: [{ provider: "google", label: "Google", state, diagnostic: "safe", capabilities: [] }] }} busy={false} onConnect={() => undefined} onReconnect={() => undefined} onDisconnect={() => undefined} onRefresh={() => undefined} />);
+    expect(html).toContain(label);
+    expect(html).not.toContain("Coming Soon");
+  });
 });

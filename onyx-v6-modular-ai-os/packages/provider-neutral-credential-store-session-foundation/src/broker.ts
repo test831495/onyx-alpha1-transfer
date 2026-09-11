@@ -29,7 +29,7 @@ export class TokenBroker {
     const refreshToken = await this.store.read(context.recordId, context, this.key);
     const result = await refresh(refreshToken, context);
     if (result.refreshToken !== undefined) {
-      this.store.replace(context.recordId, context, context.expectedVersion, result.refreshToken, this.key);
+      await this.store.replace(context.recordId, context, context.expectedVersion, result.refreshToken, this.key);
     }
     const used = await use(result.accessToken);
     return { value: used.value, expiresInSeconds: Math.min(used.expiresInSeconds, result.expiresInSeconds) };

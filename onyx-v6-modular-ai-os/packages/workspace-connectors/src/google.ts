@@ -110,6 +110,8 @@ export interface CalendarEventProjection {
   readonly allDay: boolean;
   readonly timeZone?: string;
   readonly location?: string;
+  readonly participants?: readonly string[];
+  readonly organizer?: string;
   readonly recurrenceId?: string;
   readonly status?: string;
   readonly sourceProvider: "google";
@@ -148,6 +150,8 @@ type GoogleCalendarEvent = {
   start?: { date?: unknown; dateTime?: unknown; timeZone?: unknown };
   end?: { date?: unknown; dateTime?: unknown; timeZone?: unknown };
   location?: unknown;
+  attendees?: readonly { email?: unknown; displayName?: unknown }[];
+  organizer?: { email?: unknown; displayName?: unknown };
   recurringEventId?: unknown;
   status?: unknown;
 };
@@ -167,6 +171,8 @@ export function normalizeGoogleCalendarEvent(event: GoogleCalendarEvent): Calend
     allDay: typeof event.start?.date === "string" && typeof event.start?.dateTime !== "string",
     ...(typeof event.start?.timeZone === "string" ? { timeZone: event.start.timeZone } : {}),
     ...(typeof event.location === "string" ? { location: event.location } : {}),
+    ...(event.attendees ? { participants: event.attendees.flatMap((attendee) => [attendee.email, attendee.displayName].filter((value): value is string => typeof value === "string")) } : {}),
+    ...(event.organizer && typeof (event.organizer.email ?? event.organizer.displayName) === "string" ? { organizer: String(event.organizer.email ?? event.organizer.displayName) } : {}),
     ...(typeof event.recurringEventId === "string" ? { recurrenceId: event.recurringEventId } : {}),
     ...(typeof event.status === "string" ? { status: event.status } : {}),
     sourceProvider: "google",
@@ -266,6 +272,12 @@ export function createGoogleReadAdapter(input: {
 }): GoogleReadAdapter {
   const maxPages = Math.max(1, Math.min(input.maxPages ?? 5, 10));
   const maxItems = Math.max(1, Math.min(input.maxItems ?? 100, 500));
+  const queryLimit = (value: number | undefined): number => {
+    if (value === undefined) return maxItems;
+    if (!Number.isFinite(value) || !Number.isInteger(value) || value < 1 || value > maxItems) throw new GoogleProviderError("MALFORMED_RESPONSE", "Google result limit is invalid.");
+    return value;
+  };
+  const driveLiteral = (value: string): string => value.replaceAll("\\", "\\\\").replaceAll("'", "\\'");
 
   async function request<T>(url: URL): Promise<GoogleListResponse<T>> {
     let response: Response;
@@ -300,11 +312,14 @@ export function createGoogleReadAdapter(input: {
     baseUrl: URL,
     normalize: (value: T) => U,
     continuation?: string,
+    aggregateLimit = maxItems,
+    accept: (value: U) => boolean = () => true,
   ): Promise<{ items: readonly U[]; continuation?: string }> {
     const items: U[] = [];
+    let scanned = 0;
     let pageToken = continuation;
     const seenTokens = new Set<string>();
-    for (let page = 0; page < maxPages && items.length < maxItems; page += 1) {
+    for (let page = 0; page < maxPages && items.length < aggregateLimit && scanned < maxItems; page += 1) {
       const url = new URL(baseUrl);
       if (pageToken) {
         if (seenTokens.has(pageToken)) throw new GoogleProviderError("MALFORMED_RESPONSE", "Google returned a repeated continuation token.");
@@ -314,8 +329,10 @@ export function createGoogleReadAdapter(input: {
       }
       const response = await request<T>(url);
       for (const item of response.items ?? []) {
-        if (items.length >= maxItems) break;
-        items.push(normalize(item));
+        if (scanned >= maxItems || items.length >= aggregateLimit) break;
+        scanned += 1;
+        const normalized = normalize(item);
+        if (accept(normalized)) items.push(normalized);
       }
       pageToken = typeof response.nextPageToken === "string" ? response.nextPageToken : undefined;
       if (!pageToken) return { items };
@@ -332,8 +349,14 @@ export function createGoogleReadAdapter(input: {
       url.searchParams.set("orderBy", "startTime");
       url.searchParams.set("showDeleted", query.status === "cancelled" ? "true" : "false");
       if (query.text) url.searchParams.set("q", query.text);
-      if (query.maximumResults) url.searchParams.set("maxResults", String(Math.min(query.maximumResults, maxItems)));
-      return collect(url, normalizeGoogleCalendarEvent, query.continuation);
+      const limit = queryLimit(query.maximumResults);
+      url.searchParams.set("maxResults", String(limit));
+      const participant = query.participant?.trim().toLowerCase();
+      return collect(url, normalizeGoogleCalendarEvent, query.continuation, limit, (event) => {
+        const statusMatches = query.status === undefined || event.status === query.status;
+        const participantMatches = !participant || [...(event.participants ?? []), event.organizer ?? ""].some((value) => value.toLowerCase().includes(participant));
+        return statusMatches && participantMatches;
+      });
     },
     listMail: async (query) => {
       const url = new URL("https://gmail.googleapis.com/gmail/v1/users/me/messages");
@@ -346,15 +369,16 @@ export function createGoogleReadAdapter(input: {
         query.endExclusive ? `before:${query.endExclusive.slice(0, 10).replaceAll("-", "/")}` : undefined,
       ].filter((term): term is string => Boolean(term));
       if (terms.length) url.searchParams.set("q", terms.join(" "));
-      if (query.maximumResults) url.searchParams.set("maxResults", String(Math.min(query.maximumResults, maxItems)));
-      return collect(url, normalizeGmailMessage, query.continuation);
+      const limit = queryLimit(query.maximumResults);
+      url.searchParams.set("maxResults", String(limit));
+      return collect(url, normalizeGmailMessage, query.continuation, limit);
     },
     listFiles: async (query) => {
       const url = new URL("https://www.googleapis.com/drive/v3/files");
       const clauses = ["trashed = false"];
-      if (query.parentReference) clauses.push(`'${query.parentReference.replaceAll("'", "\\'")}' in parents`);
-      if (query.text) clauses.push(`name contains '${query.text.replaceAll("'", "\\'")}'`);
-      if (query.mimeTypes?.length) clauses.push(`(${query.mimeTypes.map((mime) => `mimeType = '${mime.replaceAll("'", "\\'")}'`).join(" or ")})`);
+      if (query.parentReference) clauses.push(`'${driveLiteral(query.parentReference)}' in parents`);
+      if (query.text) clauses.push(`name contains '${driveLiteral(query.text)}'`);
+      if (query.mimeTypes?.length) clauses.push(`(${query.mimeTypes.map((mime) => `mimeType = '${driveLiteral(mime)}'`).join(" or ")})`);
       if (query.modifiedStartInclusive) clauses.push(`modifiedTime >= '${query.modifiedStartInclusive}'`);
       if (query.modifiedEndExclusive) clauses.push(`modifiedTime < '${query.modifiedEndExclusive}'`);
       if (query.createdStartInclusive) clauses.push(`createdTime >= '${query.createdStartInclusive}'`);
@@ -363,8 +387,9 @@ export function createGoogleReadAdapter(input: {
       if (query.sharedWithMe !== undefined) clauses.push(`sharedWithMe = ${query.sharedWithMe}`);
       url.searchParams.set("q", clauses.join(" and "));
       url.searchParams.set("fields", "nextPageToken,files(id,name,mimeType,parents,createdTime,modifiedTime,size,starred,trashed,webViewLink)");
-      if (query.maximumResults) url.searchParams.set("pageSize", String(Math.min(query.maximumResults, maxItems)));
-      return collect(url, normalizeGoogleDriveFile, query.continuation);
+      const limit = queryLimit(query.maximumResults);
+      url.searchParams.set("pageSize", String(limit));
+      return collect(url, normalizeGoogleDriveFile, query.continuation, limit);
     },
   };
 }

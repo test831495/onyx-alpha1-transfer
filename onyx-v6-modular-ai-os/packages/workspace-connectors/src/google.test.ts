@@ -89,11 +89,36 @@ describe("Google Workspace connector contracts", () => {
       },
     });
 
-    const result = await adapter.listMail({ maximumResults: 1 });
+    const result = await adapter.listMail({ maximumResults: 2 });
     expect(result.items).toHaveLength(2);
     expect(requests.every((request) => request.method === "GET")).toBe(true);
     expect(requests[0]!.url).toContain("users/me/messages");
     expect(requests[1]!.url).toContain("pageToken=next");
     expect(requests[0]!.headers.get("authorization")).toBe("Bearer server-only-token");
+  });
+
+  it("enforces aggregate Calendar limits and applies participant/status filters", async () => {
+    const requests: Request[] = [];
+    const adapter = createGoogleReadAdapter({
+      accessToken: async () => "token",
+      fetch: async (input, init) => {
+        requests.push(new Request(input, init));
+        return new Response(JSON.stringify({ items: [
+          { id: "confirmed", summary: "A", status: "confirmed", start: { dateTime: "2026-09-11T10:00:00Z" }, end: { dateTime: "2026-09-11T11:00:00Z" }, attendees: [{ email: "rahul@example.com" }] },
+          { id: "tentative", summary: "B", status: "tentative", start: { dateTime: "2026-09-11T12:00:00Z" }, end: { dateTime: "2026-09-11T13:00:00Z" }, attendees: [{ email: "other@example.com" }] },
+        ], nextPageToken: "unneeded" }), { status: 200 });
+      },
+    });
+    const result = await adapter.listCalendar({ startInclusive: "2026-09-11T00:00:00Z", endExclusive: "2026-09-12T00:00:00Z", maximumResults: 1, participant: "rahul@example.com", status: "confirmed" });
+    expect(result.items).toHaveLength(1);
+    expect(requests).toHaveLength(1);
+  });
+
+  it("escapes Drive backslashes before apostrophes", async () => {
+    let requestUrl = "";
+    const adapter = createGoogleReadAdapter({ accessToken: async () => "token", fetch: async (input) => { requestUrl = new URL(typeof input === "string" ? input : input instanceof URL ? input : input.url).searchParams.get("q") ?? ""; return new Response(JSON.stringify({ files: [] }), { status: 200 }); } });
+    await adapter.listFiles({ text: "trailing\\" });
+    expect(requestUrl).toContain("trailing\\\\");
+    expect(requestUrl).toContain("trashed = false");
   });
 });

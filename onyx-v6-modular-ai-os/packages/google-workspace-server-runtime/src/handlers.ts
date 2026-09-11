@@ -51,8 +51,23 @@ export function createGoogleInitiateHandler(runtime: GoogleServerRuntime): Googl
       const requested = Array.isArray(body.capabilities) ? body.capabilities.filter((value): value is string => typeof value === "string") : [...GOOGLE_CAPABILITIES];
       if (requested.some((capability) => !GOOGLE_CAPABILITIES.includes(capability as (typeof GOOGLE_CAPABILITIES)[number]))) throw new Error("Google capability request rejected.");
       const validation = await runtime.sessionGateway.validate(sessionRequest(event), GOOGLE_PURPOSE, GOOGLE_CAPABILITY_FINGERPRINT);
-      const pending = await runtime.oauthPendingStore.create({ providerId: GOOGLE_PROVIDER_ID, canonicalAccountRef: validation.context.canonicalAccountRef, sessionRef: validation.context.sessionRef, purpose: GOOGLE_PURPOSE, capabilityFingerprint: canonicalCapabilities(requested), redirectUriFingerprint: redirectFingerprint(runtime.config.redirectUri) });
-      return json(200, { status: "CONNECTING", authorizationUrl: runtime.oauth.authorizationUrl({ state: pending.state, codeChallenge: codeChallenge(pending.codeVerifier), reconnect }) });
+      const capabilityFingerprint = canonicalCapabilities(requested);
+      const idempotencyKey = header(event, "idempotency-key");
+      if (!idempotencyKey) throw new Error("Idempotency key required.");
+      const pending = await runtime.oauthPendingStore.createOrReplay({ providerId: GOOGLE_PROVIDER_ID, canonicalAccountRef: validation.context.canonicalAccountRef, sessionRef: validation.context.sessionRef, purpose: GOOGLE_PURPOSE, capabilityFingerprint, redirectUriFingerprint: redirectFingerprint(runtime.config.redirectUri) }, idempotencyKey, (state, verifier) => runtime.oauth.authorizationUrl({ state, codeChallenge: codeChallenge(verifier), reconnect }));
+      return json(200, { status: "CONNECTING", authorizationUrl: pending.authorizationUrl, replayed: pending.replayed });
+    } catch (error) { return failure(error); }
+  };
+}
+
+export function createGoogleCsrfHandler(runtime: GoogleServerRuntime): GoogleFunctionHandler {
+  return async (event) => {
+    if (event.httpMethod !== "GET") return json(405, { status: "ERROR_SAFE", message: "Method not allowed." }, { allow: "GET", "content-type": "application/json" });
+    const inactive = active(runtime); if (inactive) return inactive;
+    try {
+      const validation = await runtime.sessionGateway.validate(sessionRequest(event), `${GOOGLE_PURPOSE}:csrf`, GOOGLE_CAPABILITY_FINGERPRINT);
+      const csrfToken = await runtime.sessionGateway.issueCsrf(validation.context.sessionRef);
+      return json(200, { csrfToken, expiresInSeconds: 900 });
     } catch (error) { return failure(error); }
   };
 }

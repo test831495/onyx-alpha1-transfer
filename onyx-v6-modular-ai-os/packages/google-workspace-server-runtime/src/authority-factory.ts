@@ -46,7 +46,9 @@ export function createOnyxSessionAuthorityFactory(input: {
         decision.proof,
         nextRequestId(),
       );
-      if (new Date(canonicalContext.expiresAt).getTime() <= now()) return undefined;
+      const issuedAt = new Date(canonicalContext.issuedAt).getTime();
+      const expiresAt = new Date(canonicalContext.expiresAt).getTime();
+      if (!Number.isFinite(issuedAt) || !Number.isFinite(expiresAt) || expiresAt <= now() || issuedAt > expiresAt) return undefined;
       const context = input.mapContext(canonicalContext);
       if (context.authorizationState !== "AUTHORIZED") return undefined;
       if (!context.sessionRef || !context.canonicalAccountRef || !context.actorId) return undefined;
