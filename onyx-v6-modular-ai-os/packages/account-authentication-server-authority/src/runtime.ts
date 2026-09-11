@@ -1,5 +1,6 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
-import type { AcceptanceRegistryRecord, AccountRecordRepository, AuditEnvelope, AuditSink, AuthenticatedRequestContext, AuthenticationProvider, AuthorizationPolicy, EntraAdapterConfiguration, ProtectedRequest, ProtectedResponse, RateLimiter, RequestIdGenerator, ServerAuthorityCode, ServerAuthorityDecision, TokenClaims, TokenVerifier, VerificationDecision, VerifiedProof } from "./contracts";
+import type { AcceptanceRegistryRecord, AccountRecordRepository, AuditEnvelope, AuditSink, AuthenticatedRequestContext, AuthenticationProvider, AuthorizationPolicy, EntraAdapterConfiguration, ProtectedRequest, ProtectedResponse, RateLimiter, RequestIdGenerator, ServerAuthorityCode, ServerAuthorityDecision, TokenClaims, TokenVerifier, VerificationDecision, VerifiedProof } from "./contracts.js";
+import { OidcJwksResolver, Rs256JwksTokenVerifier, type TrustedJwk } from "./rs256-jwks-verifier.js";
 
 const MAX_BODY_BYTES = 4096;
 const header = { "cache-control": "no-store", "content-type": "application/json", "x-content-type-options": "nosniff" } as const;
@@ -52,6 +53,48 @@ export class SyntheticAuthenticationProvider implements AuthenticationProvider {
   public invalidateSessionProjection(sessionId: string): void { this.revokedSessions.add(sessionId); }
   public invalidateDeviceProjection(deviceId: string): void { this.revokedDevices.add(deviceId); }
   public describeCapabilities(): readonly string[] { return Object.freeze(["synthetic-verification", "server-derived-opaque-scope", "session-revocation-projection"]); }
+}
+
+export class EntraExternalIdAuthenticationProvider implements AuthenticationProvider {
+  private readonly revokedSessions = new Set<string>(); private readonly revokedDevices = new Set<string>();
+  public constructor(private readonly verifier: TokenVerifier, private readonly scopeSalt: string) {}
+  public verifyProof(proof: string, nowSeconds: number) { const result = this.verifier.verify(proof, nowSeconds); if (!result.allowed || !result.proof) return result; if (this.revokedSessions.has(result.proof.claims.sid ?? "")) return deny("SESSION_REVOKED"); return this.revokedDevices.has(result.proof.claims.dv ?? "") ? deny("DEVICE_REVOKED") : result; }
+  public deriveAuthenticatedContext(proof: VerifiedProof, requestId: `request_${string}`): AuthenticatedRequestContext {
+    const claims = proof.claims;
+    const audience = typeof claims.aud === "string" ? claims.aud : claims.aud?.[0];
+    if (!claims.sub || !claims.sid || !claims.dv || !claims.iss || !audience || claims.sv === undefined || claims.rv === undefined || !claims.assurance) throw new Error("verified proof is incomplete");
+    return Object.freeze({ schemaVersion: "ACCOUNT_AUTHORITY_CONTEXT_V1", opaqueAccountScope: `account-scope_${digest(this.scopeSalt, `${claims.iss}|${audience}|${claims.sub}`)}`, sessionId: `session_${claims.sid}`, sessionVersion: claims.sv, authenticationAssurance: claims.assurance, deviceReference: `device_${digest(this.scopeSalt, claims.dv)}`, issuedAt: new Date((claims.iat ?? 0) * 1000).toISOString(), expiresAt: new Date((claims.exp ?? 0) * 1000).toISOString(), policyVersion: "policy-1", revocationVersion: claims.rv, requestId, issuer: claims.iss, audience });
+  }
+  public invalidateSessionProjection(sessionId: string): void { this.revokedSessions.add(sessionId); }
+  public invalidateDeviceProjection(deviceId: string): void { this.revokedDevices.add(deviceId); }
+  public describeCapabilities(): readonly string[] { return Object.freeze(["entra-external-id-verification", "rs256-jwks-signature-verification", "server-derived-opaque-scope", "session-revocation-projection"]); }
+}
+
+export interface EntraProductionProviderConfiguration {
+  readonly issuer: string;
+  readonly audience: string;
+  readonly jwksKeys: readonly TrustedJwk[];
+  readonly clockSkewSeconds?: number;
+  readonly maxTokenBytes?: number;
+  readonly scopeSalt: string;
+}
+
+export function createEntraExternalIdProductionProvider(configuration: EntraProductionProviderConfiguration): AuthenticationProvider {
+  if (!configuration.issuer || !configuration.issuer.startsWith("https://")) throw new Error("Invalid Entra production issuer");
+  if (!configuration.audience || configuration.audience.length === 0) throw new Error("Invalid Entra production audience");
+  if (!configuration.jwksKeys || configuration.jwksKeys.length === 0) throw new Error("Entra production JWKS keys required");
+  if (!configuration.scopeSalt || configuration.scopeSalt.length < 16) throw new Error("Invalid Entra production scope salt");
+
+  const resolver = new OidcJwksResolver(configuration.jwksKeys);
+  const verifier = new Rs256JwksTokenVerifier({
+    issuer: configuration.issuer,
+    audiences: [configuration.audience],
+    resolver,
+    clockSkewSeconds: configuration.clockSkewSeconds ?? 30,
+    maxTokenBytes: configuration.maxTokenBytes ?? 4096,
+  });
+
+  return new EntraExternalIdAuthenticationProvider(verifier, configuration.scopeSalt);
 }
 
 export const createEntraAdapterSeam = (configuration: EntraAdapterConfiguration, verifier: TokenVerifier): AuthenticationProvider => new SyntheticAuthenticationProvider(verifier, configuration.opaqueScopeSalt);

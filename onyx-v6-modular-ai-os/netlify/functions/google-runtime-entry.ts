@@ -21,9 +21,11 @@ import {
   readDatabaseRuntimeContext,
 } from "@onyx/provider-neutral-credential-store-session-foundation";
 import type { DatabaseConnection } from "@netlify/database";
-import type {
-  AuthenticatedRequestContext,
-  AuthenticationProvider,
+import {
+  createEntraExternalIdProductionProvider,
+  type AuthenticatedRequestContext,
+  type AuthenticationProvider,
+  type TrustedJwk,
 } from "@onyx/account-authentication-server-authority";
 
 export const inactiveGoogleHandler: GoogleFunctionHandler = async (_event: GoogleFunctionEvent): Promise<GoogleFunctionResponse> => ({
@@ -31,6 +33,31 @@ export const inactiveGoogleHandler: GoogleFunctionHandler = async (_event: Googl
   headers: { "content-type": "application/json" },
   body: JSON.stringify({ status: "UNAVAILABLE", message: "Google Workspace is not active in this environment." }),
 });
+
+export function createProductionAuthenticationProvider(
+  environment: Record<string, string | undefined> = process.env,
+): AuthenticationProvider | undefined {
+  const issuer = environment.ONYX_AUTH_ISSUER ?? environment.ONYX_AUTH_EXPECTED_ISSUER;
+  const audience = environment.ONYX_AUTH_AUDIENCE ?? environment.ONYX_AUTH_EXPECTED_AUDIENCE;
+  const jwksJson = environment.ONYX_AUTH_JWKS_KEYS;
+  const scopeSalt = environment.ONYX_AUTH_SCOPE_SALT;
+
+  if (!issuer || !audience || !jwksJson || !scopeSalt) {
+    return undefined;
+  }
+
+  try {
+    const jwksKeys = JSON.parse(jwksJson) as TrustedJwk[];
+    return createEntraExternalIdProductionProvider({
+      issuer,
+      audience,
+      jwksKeys,
+      scopeSalt,
+    });
+  } catch {
+    return undefined;
+  }
+}
 
 export function defaultOnyxContextMapper(context: AuthenticatedRequestContext): OnyxSessionContext {
   return {
@@ -60,17 +87,20 @@ export function createGoogleRuntimeFromEnvironment(
   } = {},
 ): GoogleServerRuntime | undefined {
   if (readDatabaseRuntimeContext(environment) !== "production") return undefined;
-  if (!options.authenticationProvider) {
-    // Production runtime requires a canonical non-synthetic AuthenticationProvider.
-    // SyntheticAuthenticationProvider must never be imported, instantiated, or used in production composition.
+
+  const authenticationProvider =
+    options.authenticationProvider ?? createProductionAuthenticationProvider(environment);
+
+  if (!authenticationProvider) {
     return undefined;
   }
+
   try {
     const keyRing = parseCredentialKeyRing(environment, "production");
     const database = options.database ?? createConfiguredNetlifyDatabase(environment);
     return createGoogleServerRuntimeWithCanonicalAuthority({
       database,
-      authenticationProvider: options.authenticationProvider,
+      authenticationProvider,
       mapContext: defaultOnyxContextMapper,
       runtimeContext: "production",
       encryptionKey: keyRing.active ?? { version: "production-v1", bytes: new Uint8Array(32) },

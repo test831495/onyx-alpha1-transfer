@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { generateKeyPairSync, sign } from "node:crypto";
-import { AUTHORITY_ACCEPTANCE_REGISTRY, COMPLETE_ACCEPTANCE_REGISTRY, FixedWindowRateLimiter, InMemoryAccountRecordRepository, InMemoryAuditSink, SYNTHETIC_AUDIENCE, SYNTHETIC_ISSUER, SYNTHETIC_KEYS, SyntheticAuthenticationProvider, SyntheticHmacTokenVerifier, SyntheticRs256JwksVerifier, protectRequest, sameAccountPolicy, signSyntheticToken, syntheticClaims, validateCompleteAcceptanceRegistry, validateEntraConfiguration } from "../src";
+import { AUTHORITY_ACCEPTANCE_REGISTRY, COMPLETE_ACCEPTANCE_REGISTRY, FixedWindowRateLimiter, InMemoryAccountRecordRepository, InMemoryAuditSink, SYNTHETIC_AUDIENCE, SYNTHETIC_ISSUER, SYNTHETIC_KEYS, SyntheticAuthenticationProvider, SyntheticHmacTokenVerifier, SyntheticRs256JwksVerifier, createEntraExternalIdProductionProvider, protectRequest, sameAccountPolicy, signSyntheticToken, syntheticClaims, validateCompleteAcceptanceRegistry, validateEntraConfiguration } from "../src";
 import type { AuthenticatedRequestContext, AuthenticationProvider, RequestIdGenerator } from "../src";
 
 const now = 1_700_000_100;
@@ -45,4 +45,25 @@ describe("synthetic authentication and server authority foundation", () => {
   it("exposes device invalidation through the provider-neutral interface", () => { const interfaceTypedProvider: AuthenticationProvider = provider(); interfaceTypedProvider.invalidateDeviceProjection("synthetic-device-a"); expect(interfaceTypedProvider.verifyProof(signSyntheticToken(), now).code).toBe("DEVICE_REVOKED"); });
   it("isolates rate limits per server-derived account scope and bounds scope buckets", () => { const activeProvider = provider(); const accountA = activeProvider.verifyProof(signSyntheticToken(), now); const accountB = activeProvider.verifyProof(signSyntheticToken(syntheticClaims({ sub: "synthetic-account-b" })), now); if (!accountA.proof || !accountB.proof) throw new Error("missing synthetic proof"); const contextA = activeProvider.deriveAuthenticatedContext(accountA.proof, "request_a"); const contextB = activeProvider.deriveAuthenticatedContext(accountB.proof, "request_b"); let clock = 0; const limiter = new FixedWindowRateLimiter(1, 1, 60, () => clock); expect(limiter.reserve(contextA, "request_a")).toBe(true); expect(limiter.reserve(contextA, "request_a")).toBe(false); expect(limiter.reserve(contextB, "request_b")).toBe(true); clock = 60; expect(limiter.reserve(contextA, "request_rollover")).toBe(true); const malformedContext = { ...contextA, opaqueAccountScope: "invalid" } as unknown as AuthenticatedRequestContext; expect(limiter.reserve(malformedContext, "request_invalid")).toBe(false); });
   it("RID-001 through RID-012 use bounded opaque injected fallback request IDs", () => { const activeProvider = provider(); const verified = activeProvider.verifyProof(signSyntheticToken(), now); if (!verified.proof) throw new Error("missing synthetic proof"); const context = activeProvider.deriveAuthenticatedContext(verified.proof, "request_scope"); const ids = ["request_rid_01", "request_rid_02", "request_rid_03"]; let index = 0; const generator: RequestIdGenerator = { next: () => ids[index++] }; const limiter = new FixedWindowRateLimiter(10); const responses = Array.from({ length: 3 }, () => protectRequest({ ...request(signSyntheticToken(), { targetScope: context.opaqueAccountScope }), requestId: undefined }, activeProvider, sameAccountPolicy(), new InMemoryAuditSink(), limiter, now, generator)); expect(responses.map((response) => response.code)).toEqual(["AUTHENTICATED", "AUTHENTICATED", "AUTHENTICATED"]); expect(ids.every((id) => /^request_[A-Za-z0-9_-]{1,96}$/.test(id) && id.length <= 104 && !id.includes("synthetic") && !id.includes("character-preference"))).toBe(true); expect(protectRequest(request(signSyntheticToken(), { targetScope: context.opaqueAccountScope, requestId: "request_caller" }), activeProvider, sameAccountPolicy(), new InMemoryAuditSink(), new FixedWindowRateLimiter(), now, { next: () => "request_unused" }).code).toBe("AUTHENTICATED"); expect(protectRequest({ ...request(signSyntheticToken(), { targetScope: context.opaqueAccountScope }), requestId: "bad id" }, activeProvider, sameAccountPolicy(), new InMemoryAuditSink(), new FixedWindowRateLimiter(), now).code).toBe("SERVICE_UNAVAILABLE"); expect(protectRequest({ ...request(signSyntheticToken(), { targetScope: context.opaqueAccountScope }), requestId: undefined }, activeProvider, sameAccountPolicy(), new InMemoryAuditSink(), new FixedWindowRateLimiter(), now, { next: () => undefined }).code).toBe("SERVICE_UNAVAILABLE"); });
+  it("instantiates EntraExternalIdAuthenticationProvider and validates RS256 token while rejecting malformed configuration", () => {
+    const provider = createEntraExternalIdProductionProvider({
+      issuer: SYNTHETIC_ISSUER,
+      audience: SYNTHETIC_AUDIENCE,
+      jwksKeys: [{ ...jwk, kid: "current", alg: "RS256", use: "sig" }],
+      scopeSalt: "onyx-production-scope-salt-v1",
+    });
+    expect(provider.describeCapabilities()).toContain("entra-external-id-verification");
+    const verified = provider.verifyProof(rsToken(), now);
+    expect(verified.code).toBe("AUTHENTICATED");
+    if (!verified.proof) throw new Error("missing proof");
+    const derived = provider.deriveAuthenticatedContext(verified.proof, "request_entra_1");
+    expect(derived.schemaVersion).toBe("ACCOUNT_AUTHORITY_CONTEXT_V1");
+    expect(derived.opaqueAccountScope).toContain("account-scope_");
+
+    // Rejection of invalid config
+    expect(() => createEntraExternalIdProductionProvider({ issuer: "http://insecure", audience: "aud", jwksKeys: [{ ...jwk, kid: "current" }], scopeSalt: "onyx-production-scope-salt-v1" })).toThrow("Invalid Entra production issuer");
+    expect(() => createEntraExternalIdProductionProvider({ issuer: SYNTHETIC_ISSUER, audience: "", jwksKeys: [{ ...jwk, kid: "current" }], scopeSalt: "onyx-production-scope-salt-v1" })).toThrow("Invalid Entra production audience");
+    expect(() => createEntraExternalIdProductionProvider({ issuer: SYNTHETIC_ISSUER, audience: SYNTHETIC_AUDIENCE, jwksKeys: [], scopeSalt: "onyx-production-scope-salt-v1" })).toThrow("Entra production JWKS keys required");
+    expect(() => createEntraExternalIdProductionProvider({ issuer: SYNTHETIC_ISSUER, audience: SYNTHETIC_AUDIENCE, jwksKeys: [{ ...jwk, kid: "current" }], scopeSalt: "short" })).toThrow("Invalid Entra production scope salt");
+  });
 });
