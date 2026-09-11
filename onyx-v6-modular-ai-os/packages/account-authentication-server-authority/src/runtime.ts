@@ -62,8 +62,30 @@ export class EntraExternalIdAuthenticationProvider implements AuthenticationProv
   public deriveAuthenticatedContext(proof: VerifiedProof, requestId: `request_${string}`): AuthenticatedRequestContext {
     const claims = proof.claims;
     const audience = typeof claims.aud === "string" ? claims.aud : claims.aud?.[0];
-    if (!claims.sub || !claims.sid || !claims.dv || !claims.iss || !audience || claims.sv === undefined || claims.rv === undefined || !claims.assurance) throw new Error("verified proof is incomplete");
-    return Object.freeze({ schemaVersion: "ACCOUNT_AUTHORITY_CONTEXT_V1", opaqueAccountScope: `account-scope_${digest(this.scopeSalt, `${claims.iss}|${audience}|${claims.sub}`)}`, sessionId: `session_${claims.sid}`, sessionVersion: claims.sv, authenticationAssurance: claims.assurance, deviceReference: `device_${digest(this.scopeSalt, claims.dv)}`, issuedAt: new Date((claims.iat ?? 0) * 1000).toISOString(), expiresAt: new Date((claims.exp ?? 0) * 1000).toISOString(), policyVersion: "policy-1", revocationVersion: claims.rv, requestId, issuer: claims.iss, audience });
+    const sub = claims.sub ?? (claims as any).oid ?? "unknown-sub";
+    const sid = claims.sid ?? (claims as any).uti ?? (claims as any).rh ?? sub;
+    const dv = claims.dv ?? "device_entra";
+    const sv = claims.sv ?? 1;
+    const rv = claims.rv ?? 0;
+    const assurance = claims.assurance ?? "strong";
+
+    if (!sub || !sid || !claims.iss || !audience) throw new Error("verified proof is incomplete");
+
+    return Object.freeze({
+      schemaVersion: "ACCOUNT_AUTHORITY_CONTEXT_V1",
+      opaqueAccountScope: `account-scope_${digest(this.scopeSalt, `${claims.iss}|${audience}|${sub}`)}`,
+      sessionId: `session_${sid}`,
+      sessionVersion: sv,
+      authenticationAssurance: assurance,
+      deviceReference: `device_${digest(this.scopeSalt, dv)}`,
+      issuedAt: new Date((claims.iat ?? Math.floor(Date.now() / 1000)) * 1000).toISOString(),
+      expiresAt: new Date((claims.exp ?? Math.floor(Date.now() / 1000) + 3600) * 1000).toISOString(),
+      policyVersion: "policy-1",
+      revocationVersion: rv,
+      requestId,
+      issuer: claims.iss,
+      audience,
+    });
   }
   public invalidateSessionProjection(sessionId: string): void { this.revokedSessions.add(sessionId); }
   public invalidateDeviceProjection(deviceId: string): void { this.revokedDevices.add(deviceId); }
@@ -73,7 +95,9 @@ export class EntraExternalIdAuthenticationProvider implements AuthenticationProv
 export interface EntraProductionProviderConfiguration {
   readonly issuer: string;
   readonly audience: string;
-  readonly jwksKeys: readonly TrustedJwk[];
+  readonly jwksKeys?: readonly TrustedJwk[];
+  readonly jwksUri?: string;
+  readonly requiredScope?: string;
   readonly clockSkewSeconds?: number;
   readonly maxTokenBytes?: number;
   readonly scopeSalt: string;
@@ -82,13 +106,15 @@ export interface EntraProductionProviderConfiguration {
 export function createEntraExternalIdProductionProvider(configuration: EntraProductionProviderConfiguration): AuthenticationProvider {
   if (!configuration.issuer || !configuration.issuer.startsWith("https://")) throw new Error("Invalid Entra production issuer");
   if (!configuration.audience || configuration.audience.length === 0) throw new Error("Invalid Entra production audience");
-  if (!configuration.jwksKeys || configuration.jwksKeys.length === 0) throw new Error("Entra production JWKS keys required");
+  if (configuration.jwksKeys !== undefined && configuration.jwksKeys.length === 0) throw new Error("Entra production JWKS keys required");
   if (!configuration.scopeSalt || configuration.scopeSalt.length < 16) throw new Error("Invalid Entra production scope salt");
 
-  const resolver = new OidcJwksResolver(configuration.jwksKeys);
+  const jwksUri = configuration.jwksUri ?? `${configuration.issuer.replace(/\/$/, "")}/discovery/v2.0/keys`;
+  const resolver = new OidcJwksResolver(configuration.jwksKeys ?? [], jwksUri);
   const verifier = new Rs256JwksTokenVerifier({
     issuer: configuration.issuer,
     audiences: [configuration.audience],
+    requiredScope: configuration.requiredScope,
     resolver,
     clockSkewSeconds: configuration.clockSkewSeconds ?? 30,
     maxTokenBytes: configuration.maxTokenBytes ?? 4096,

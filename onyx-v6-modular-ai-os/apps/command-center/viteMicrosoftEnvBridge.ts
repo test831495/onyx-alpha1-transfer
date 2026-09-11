@@ -10,6 +10,9 @@ export const APPROVED_MICROSOFT_PUBLIC_ENV_KEYS = [
   "ONYX_MS_TENANT_ID",
   "ONYX_MS_REDIRECT_URI",
   "ONYX_MS_AUTHORITY",
+  "ONYX_AUTH_CLIENT_ID",
+  "ONYX_AUTH_SCOPE",
+  "ONYX_AUTH_AUTHORITY",
 ] as const;
 
 export function ensureNoForbiddenBrowserEnv(env: Record<string, string | undefined>): void {
@@ -38,17 +41,31 @@ export interface MicrosoftRuntimePublicEnv {
   ONYX_MS_TENANT_ID: string;
   ONYX_MS_REDIRECT_URI: string;
   ONYX_MS_AUTHORITY: string;
+  ONYX_AUTH_CLIENT_ID?: string;
+  ONYX_AUTH_SCOPE?: string;
+  ONYX_AUTH_AUTHORITY?: string;
 }
 
 // Static property references so Vite's `define` can replace them at build time; never spread or index import.meta.env.
 export function readMicrosoftRuntimeEnv(overrides?: MicrosoftRuntimePublicEnv): MicrosoftRuntimePublicEnv {
   if (overrides) {
-    return overrides;
+    return {
+      ONYX_MS_CLIENT_ID: overrides.ONYX_MS_CLIENT_ID,
+      ONYX_MS_TENANT_ID: overrides.ONYX_MS_TENANT_ID,
+      ONYX_MS_REDIRECT_URI: overrides.ONYX_MS_REDIRECT_URI,
+      ONYX_MS_AUTHORITY: overrides.ONYX_MS_AUTHORITY,
+      ONYX_AUTH_CLIENT_ID: overrides.ONYX_AUTH_CLIENT_ID ?? "",
+      ONYX_AUTH_SCOPE: overrides.ONYX_AUTH_SCOPE ?? "",
+      ONYX_AUTH_AUTHORITY: overrides.ONYX_AUTH_AUTHORITY ?? "",
+    };
   }
   return {
     ONYX_MS_CLIENT_ID: import.meta.env.ONYX_MS_CLIENT_ID ?? "",
     ONYX_MS_TENANT_ID: import.meta.env.ONYX_MS_TENANT_ID ?? "",
     ONYX_MS_REDIRECT_URI: import.meta.env.ONYX_MS_REDIRECT_URI ?? "",
     ONYX_MS_AUTHORITY: import.meta.env.ONYX_MS_AUTHORITY ?? "",
+    ONYX_AUTH_CLIENT_ID: import.meta.env.ONYX_AUTH_CLIENT_ID ?? "",
+    ONYX_AUTH_SCOPE: import.meta.env.ONYX_AUTH_SCOPE ?? "",
+    ONYX_AUTH_AUTHORITY: import.meta.env.ONYX_AUTH_AUTHORITY ?? "",
   };
 }

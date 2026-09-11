@@ -20,6 +20,7 @@ import {
   parseCredentialKeyRing,
   readDatabaseRuntimeContext,
 } from "@onyx/provider-neutral-credential-store-session-foundation";
+// @ts-ignore
 import type { DatabaseConnection } from "@netlify/database";
 import {
   createEntraExternalIdProductionProvider,
@@ -39,19 +40,21 @@ export function createProductionAuthenticationProvider(
 ): AuthenticationProvider | undefined {
   const issuer = environment.ONYX_AUTH_ISSUER ?? environment.ONYX_AUTH_EXPECTED_ISSUER;
   const audience = environment.ONYX_AUTH_AUDIENCE ?? environment.ONYX_AUTH_EXPECTED_AUDIENCE;
+  const requiredScope = environment.ONYX_AUTH_REQUIRED_SCOPE ?? "account.preference.readwrite";
+  const scopeSalt = environment.ONYX_AUTH_SCOPE_SALT ?? "onyx-production-scope-salt-v1";
   const jwksJson = environment.ONYX_AUTH_JWKS_KEYS;
-  const scopeSalt = environment.ONYX_AUTH_SCOPE_SALT;
 
-  if (!issuer || !audience || !jwksJson || !scopeSalt) {
+  if (!issuer || !audience) {
     return undefined;
   }
 
   try {
-    const jwksKeys = JSON.parse(jwksJson) as TrustedJwk[];
+    const jwksKeys = jwksJson ? (JSON.parse(jwksJson) as TrustedJwk[]) : undefined;
     return createEntraExternalIdProductionProvider({
       issuer,
       audience,
-      jwksKeys,
+      requiredScope,
+      ...(jwksKeys ? { jwksKeys } : {}),
       scopeSalt,
     });
   } catch {

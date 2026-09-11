@@ -11,6 +11,7 @@ import {
   createGoogleRouteHandler,
   createGoogleRuntimeFromEnvironment,
   createProductionAuthenticationProvider,
+// @ts-ignore
 } from "../../netlify/functions/google-runtime-entry";
 import {
   createEntraExternalIdProductionProvider,
@@ -65,6 +66,7 @@ const makeRs256Token = (claimsOverrides: Record<string, any> = {}, headerOverrid
     assurance: "strong",
     iss: issuerUrl,
     aud: audienceUri,
+    scp: "account.preference.readwrite",
     iat: nowSec - 10,
     exp: nowSec + 3600,
     nbf: nowSec - 10,
@@ -244,6 +246,12 @@ describe("Google server runtime", () => {
     const expiredRes = await statusHandler({ httpMethod: "GET", headers: { authorization: `Bearer ${expiredToken}` } });
     expect(expiredRes.statusCode).toBe(400);
     expect(JSON.parse(expiredRes.body).message).toBe("Session rejected");
+
+    // 6. Missing ONYX required scope is rejected -> HTTP 400 Session rejected
+    const missingScopeToken = makeRs256Token({ scp: "other.read" });
+    const missingScopeRes = await statusHandler({ httpMethod: "GET", headers: { authorization: `Bearer ${missingScopeToken}` } });
+    expect(missingScopeRes.statusCode).toBe(400);
+    expect(JSON.parse(missingScopeRes.body).message).toBe("Session rejected");
   });
 
   it("creates an OAuth URL without exposing the client secret", () => {

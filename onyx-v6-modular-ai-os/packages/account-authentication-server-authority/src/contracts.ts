@@ -37,6 +37,9 @@ export interface TokenClaims {
   readonly iat?: number;
   readonly exp?: number;
   readonly nbf?: number;
+  readonly scp?: string | readonly string[];
+  readonly scope?: string | readonly string[];
+  readonly roles?: readonly string[];
 }
 
 export interface VerifiedProof { readonly claims: TokenClaims; readonly keyId: string; }
