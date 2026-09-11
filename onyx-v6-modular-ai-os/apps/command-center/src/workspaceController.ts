@@ -39,11 +39,41 @@ export const reconnectMicrosoft=()=>microsoft.reconnect();
 export const disconnectMicrosoft=()=>microsoft.disconnect();
 type GoogleAction = "connect" | "reconnect" | "disconnect" | "refresh";
 const googleHeaders = async (mutating: boolean): Promise<HeadersInit> => {
-  if (!mutating) return { "content-type": "application/json" };
-  const csrfResponse = await fetch("/.netlify/functions/google-csrf", { method: "GET", credentials: "include" });
-  const csrf = await csrfResponse.json() as { csrfToken?: string };
+  let proof = "";
+  try {
+    const scope = microsoftRuntimeEnv.ONYX_AUTH_SCOPE || "account.preference.readwrite";
+    proof = await microsoft.getAccessToken([scope]);
+  } catch {
+    // Proof omitted if MSAL token unavailable
+  }
+
+  if (!mutating) {
+    const headers: Record<string, string> = { "content-type": "application/json" };
+    if (proof) {
+      headers["authorization"] = `Bearer ${proof}`;
+      headers["x-onyx-session-proof"] = proof;
+    }
+    return headers;
+  }
+
+  const csrfResponse = await fetch("/.netlify/functions/google-csrf", {
+    method: "GET",
+    credentials: "include",
+    headers: proof ? { authorization: `Bearer ${proof}`, "x-onyx-session-proof": proof } : {},
+  });
+  const csrf = (await csrfResponse.json()) as { csrfToken?: string };
   if (!csrfResponse.ok || !csrf.csrfToken) throw new Error("Google action authorization is unavailable.");
-  return { "content-type": "application/json", "x-csrf-token": csrf.csrfToken, "idempotency-key": crypto.randomUUID() };
+
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+    "x-csrf-token": csrf.csrfToken,
+    "idempotency-key": crypto.randomUUID(),
+  };
+  if (proof) {
+    headers["authorization"] = `Bearer ${proof}`;
+    headers["x-onyx-session-proof"] = proof;
+  }
+  return headers;
 };
 export async function runGoogleWorkspaceAction(action: GoogleAction): Promise<void> {
   if (action === "connect" || action === "reconnect") {

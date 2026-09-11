@@ -3,19 +3,54 @@ import type { ServerAuthorityDecision, TokenClaims, TokenVerifier, VerificationD
 
 export interface TrustedJwk { readonly kty: "RSA"; readonly kid: string; readonly n: string; readonly e: string; readonly use?: "sig"; readonly alg?: "RS256"; }
 export interface TrustedJwkResolver { resolve(kid: string): TrustedJwk | undefined; }
-export interface Rs256VerifierConfiguration { readonly issuer: string; readonly audiences: readonly string[]; readonly resolver: TrustedJwkResolver; readonly clockSkewSeconds: number; readonly maxTokenBytes: number; }
+export interface Rs256VerifierConfiguration { readonly issuer: string; readonly audiences: readonly string[]; readonly requiredScope?: string; readonly resolver: TrustedJwkResolver; readonly clockSkewSeconds: number; readonly maxTokenBytes: number; }
 const deny = (code: ServerAuthorityDecision["code"]): VerificationDecision => Object.freeze({ allowed: false, code });
 const decode = (value: string): string | undefined => { try { return Buffer.from(value, "base64url").toString("utf8"); } catch { return undefined; } };
 
 export class OidcJwksResolver implements TrustedJwkResolver {
   private readonly cache = new Map<string, TrustedJwk>();
-  public constructor(jwks: readonly TrustedJwk[]) {
+  private lastFetchMs = 0;
+  private inFlightFetch?: Promise<void>;
+
+  public constructor(jwks: readonly TrustedJwk[] = [], private readonly jwksUri?: string) {
     for (const key of jwks) {
       if (key.kid) this.cache.set(key.kid, key);
     }
   }
+
   public resolve(kid: string): TrustedJwk | undefined {
-    return this.cache.get(kid);
+    const existing = this.cache.get(kid);
+    if (existing) return existing;
+    if (this.jwksUri && Date.now() - this.lastFetchMs > 60000) {
+      void this.refresh();
+    }
+    return undefined;
+  }
+
+  public async refresh(): Promise<void> {
+    if (!this.jwksUri) return;
+    const uri = this.jwksUri;
+    if (this.inFlightFetch) return this.inFlightFetch;
+    this.inFlightFetch = (async () => {
+      try {
+        const res = await fetch(uri);
+        if (!res.ok) return;
+        const data = (await res.json()) as { keys?: TrustedJwk[] };
+        if (Array.isArray(data.keys)) {
+          for (const key of data.keys) {
+            if (key.kid && key.kty === "RSA") {
+              this.cache.set(key.kid, key);
+            }
+          }
+        }
+        this.lastFetchMs = Date.now();
+      } catch {
+        // Safe fail-closed handling on network error
+      } finally {
+        this.inFlightFetch = undefined;
+      }
+    })();
+    return this.inFlightFetch;
   }
 }
 
@@ -48,8 +83,27 @@ export class SyntheticRs256JwksVerifier {
     if (!audiences?.some((audience) => this.configuration.audiences.includes(audience))) return deny("TOKEN_AUDIENCE_INVALID");
     if (typeof claims.exp !== "number" || nowSeconds - this.configuration.clockSkewSeconds >= claims.exp) return deny("TOKEN_EXPIRED");
     if (typeof claims.nbf === "number" && nowSeconds + this.configuration.clockSkewSeconds < claims.nbf) return deny("TOKEN_NOT_YET_VALID");
-    if (!claims.sub || !claims.sid || !claims.dv || typeof claims.sv !== "number" || typeof claims.rv !== "number" || !claims.assurance) return deny("UNAUTHENTICATED");
-    const verified: VerifiedProof = Object.freeze({ claims: Object.freeze({ ...claims }), keyId: header.kid });
+    
+    if (this.configuration.requiredScope) {
+      const tokenScopes = typeof claims.scp === "string"
+        ? claims.scp.split(" ")
+        : Array.isArray(claims.scp)
+        ? claims.scp
+        : typeof claims.scope === "string"
+        ? claims.scope.split(" ")
+        : Array.isArray(claims.scope)
+        ? claims.scope
+        : Array.isArray(claims.roles)
+        ? claims.roles
+        : [];
+      if (!tokenScopes.includes(this.configuration.requiredScope)) return deny("UNAUTHENTICATED");
+    }
+
+    const sub = claims.sub ?? (claims as any).oid;
+    const sid = claims.sid ?? (claims as any).uti ?? (claims as any).rh ?? sub;
+    if (!sub || !sid) return deny("UNAUTHENTICATED");
+
+    const verified: VerifiedProof = Object.freeze({ claims: Object.freeze({ ...claims, sub, sid }), keyId: header.kid });
     return Object.freeze({ allowed: true, code: "AUTHENTICATED", proof: verified });
   }
 }

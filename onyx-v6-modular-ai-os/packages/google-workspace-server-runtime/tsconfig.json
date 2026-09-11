@@ -1,5 +1,5 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "target": "ES2022", "module": "ESNext", "moduleResolution": "Bundler", "lib": ["ES2022", "DOM"], "rootDir": "src", "noEmit": true },
-  "include": ["src"]
+  "compilerOptions": { "target": "ES2022", "module": "ESNext", "moduleResolution": "Bundler", "lib": ["ES2022", "DOM"], "noEmit": true },
+  "include": ["src", "../../netlify/functions/google-runtime-entry.ts"]
 }
