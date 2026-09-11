@@ -398,19 +398,21 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
       .mockResolvedValueOnce({ accessToken: "refreshed-token" });
     const fetch = vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
-      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() });
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), json: async () => ({ id: "redacted" }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), json: async () => ({ id: "redacted" }) });
     vi.stubGlobal("fetch", fetch);
     Object.assign(connector, { application: { acquireTokenSilent, acquireTokenRedirect, acquireTokenPopup }, account: { homeAccountId: "acct", tenantId: "tenant" } });
 
     const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
 
-    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledTimes(4);
     expect(acquireTokenSilent).toHaveBeenCalledTimes(2);
     expect(acquireTokenRedirect).not.toHaveBeenCalled();
     expect(acquireTokenPopup).not.toHaveBeenCalled();
     expect(result.diagnostic).toMatchObject({
-      reasonCode: "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH",
-      finalReasonCode: "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH",
+      reasonCode: "MICROSOFT_GRAPH_CALENDAR_VIEW_SPECIFIC_REJECTION",
+      finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_VIEW_SPECIFIC_REJECTION",
       initialGraphStatus: 401,
       refreshAttempted: true,
       refreshOutcome: "SUCCEEDED",
@@ -523,5 +525,120 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(result.diagnostic.reasonCode).toBe("MICROSOFT_ACCESS_TOKEN_ABSENT");
     expect(result.diagnostic.interactionRequired).toBe(false);
+  });
+
+  it.each([
+    ["global token rejection", 401, undefined, "MICROSOFT_GRAPH_TOKEN_REJECTED_GLOBALLY"],
+    ["calendar root rejection", 200, 401, "MICROSOFT_GRAPH_CALENDAR_ROOT_REJECTED"],
+    ["calendar permission rejection", 200, 403, "MICROSOFT_GRAPH_CALENDAR_PERMISSION_FORBIDDEN"],
+    ["calendar view-specific rejection", 200, 200, "MICROSOFT_GRAPH_CALENDAR_VIEW_SPECIFIC_REJECTION"],
+  ])("isolates persistent 401 at the %s boundary", async (_label, meStatus, calendarStatus, reasonCode) => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const acquireTokenSilent = vi.fn()
+      .mockResolvedValueOnce({ accessToken: "initial-token" })
+      .mockResolvedValueOnce({ accessToken: "refreshed-token" });
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() });
+    if (meStatus === 401) {
+      fetch.mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers(), json: async () => ({ error: { code: "InvalidAuthenticationToken" } }) });
+    } else {
+      fetch.mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), json: async () => ({ id: "redacted" }) });
+      fetch.mockResolvedValueOnce({ ok: calendarStatus === 200, status: calendarStatus, headers: new Headers(), json: async () => calendarStatus === 200 ? ({ id: "redacted" }) : ({ error: { code: calendarStatus === 403 ? "ErrorAccessDenied" : "InvalidAuthenticationToken" } }) });
+    }
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { application: { acquireTokenSilent }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(result.diagnostic.reasonCode).toBe(reasonCode);
+    expect(fetch).toHaveBeenCalledTimes(meStatus === 401 ? 3 : 4);
+    if (meStatus === 401) expect(result.diagnostic.graphErrorClass).toBe("INVALID_AUTHENTICATION_TOKEN");
+    expect(JSON.stringify(result.diagnostic)).not.toMatch(/redacted|initial-token|refreshed-token|acct|tenant|Authorization|Bearer|InvalidAuthenticationToken|ErrorAccessDenied/);
+  });
+
+  it.each([
+    ["missing id", { value: {} }],
+    ["empty id", { value: { id: "" } }],
+    ["non-string id", { value: { id: 123 } }],
+  ])("stops after an invalid /me envelope: %s", async (_label, meBody) => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const acquireTokenSilent = vi.fn().mockResolvedValueOnce({ accessToken: "initial-token" }).mockResolvedValueOnce({ accessToken: "refreshed-token" });
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), json: async () => meBody.value });
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { application: { acquireTokenSilent }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(fetch).toHaveBeenCalledTimes(3);
+    expect(result.diagnostic.graphMeEnvelopeValid).toBe(false);
+    expect(result.diagnostic.graphCalendarRootStatus).toBeUndefined();
+    expect(result.diagnostic.reasonCode).toBe("MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER");
+    expect(JSON.stringify(result.diagnostic)).not.toMatch(/acct|tenant|initial-token|refreshed-token/);
+  });
+
+  it("stops after an invalid Calendar root envelope", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const acquireTokenSilent = vi.fn().mockResolvedValueOnce({ accessToken: "initial-token" }).mockResolvedValueOnce({ accessToken: "refreshed-token" });
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), json: async () => ({ id: "redacted" }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), json: async () => ({ id: "" }) });
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { application: { acquireTokenSilent }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(fetch).toHaveBeenCalledTimes(4);
+    expect(result.diagnostic.graphMeEnvelopeValid).toBe(true);
+    expect(result.diagnostic.graphCalendarRootEnvelopeValid).toBe(false);
+    expect(result.diagnostic.reasonCode).toBe("MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER");
+    expect(JSON.stringify(result.diagnostic)).not.toContain("redacted");
+  });
+
+  it.each([
+    ["InvalidAuthenticationToken", "INVALID_AUTHENTICATION_TOKEN"],
+    ["ERROR_ACCESS_DENIED", "ERROR_ACCESS_DENIED"],
+    ["error-access-denied", "ERROR_ACCESS_DENIED"],
+    ["invalid authentication token", "INVALID_AUTHENTICATION_TOKEN"],
+    ["TokenExpired", "TOKEN_EXPIRED"],
+    ["TokenNotYetValid", "TOKEN_NOT_YET_VALID"],
+    ["InvalidAudience", "INVALID_AUDIENCE"],
+    ["NoPermissionsInAccessToken", "NO_PERMISSIONS_IN_ACCESS_TOKEN"],
+    ["AccessDenied", "ACCESS_DENIED"],
+  ])("normalizes Graph error code %s to %s without retaining the raw code", async (rawCode, expectedClass) => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const acquireTokenSilent = vi.fn().mockResolvedValueOnce({ accessToken: "initial-token" }).mockResolvedValueOnce({ accessToken: "refreshed-token" });
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers(), json: async () => ({ error: { code: rawCode } }) });
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { application: { acquireTokenSilent }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(result.diagnostic.graphErrorClass).toBe(expectedClass);
+    if (rawCode !== expectedClass) expect(JSON.stringify(result.diagnostic)).not.toContain(rawCode);
+  });
+
+  it("fails closed for unknown Graph error codes", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const acquireTokenSilent = vi.fn().mockResolvedValueOnce({ accessToken: "initial-token" }).mockResolvedValueOnce({ accessToken: "refreshed-token" });
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers(), json: async () => ({ error: { code: "FuturePrivateErrorCode" } }) });
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { application: { acquireTokenSilent }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(result.diagnostic.graphErrorClass).toBe("UNKNOWN_BOUNDED_GRAPH_ERROR");
+    expect(JSON.stringify(result.diagnostic)).not.toContain("FuturePrivateErrorCode");
   });
 });

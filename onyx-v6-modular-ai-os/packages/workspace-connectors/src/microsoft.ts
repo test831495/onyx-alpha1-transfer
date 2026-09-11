@@ -52,7 +52,13 @@ export type MicrosoftCalendarDiagnosticReasonCode =
   | "MICROSOFT_INTERACTION_REQUIRED"
   | "MICROSOFT_REAUTHENTICATION_REQUIRED"
   | "MICROSOFT_TOKEN_REQUEST_STALE_IGNORED"
-  | "MICROSOFT_TOKEN_UNKNOWN_BOUNDED_FAILURE";
+  | "MICROSOFT_TOKEN_UNKNOWN_BOUNDED_FAILURE"
+  | "MICROSOFT_GRAPH_TOKEN_REJECTED_GLOBALLY"
+  | "MICROSOFT_GRAPH_CALENDAR_ROOT_REJECTED"
+  | "MICROSOFT_GRAPH_CALENDAR_PERMISSION_FORBIDDEN"
+  | "MICROSOFT_GRAPH_CALENDAR_VIEW_SPECIFIC_REJECTION"
+  | "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER";
+export type MicrosoftGraphErrorClass = "INVALID_AUTHENTICATION_TOKEN" | "TOKEN_EXPIRED" | "TOKEN_NOT_YET_VALID" | "INVALID_AUDIENCE" | "NO_PERMISSIONS_IN_ACCESS_TOKEN" | "ACCESS_DENIED" | "ERROR_ACCESS_DENIED" | "UNKNOWN_BOUNDED_GRAPH_ERROR";
 export interface MicrosoftCalendarReadDiagnostic {
   stage: MicrosoftCalendarDiagnosticStage;
   outcome: MicrosoftCalendarDiagnosticOutcome;
@@ -73,6 +79,14 @@ export interface MicrosoftCalendarReadDiagnostic {
   refreshOutcome?: "SUCCEEDED" | "FAILED" | "INTERACTION_REQUIRED" | "ABSENT" | "UNKNOWN";
   retryAttempted?: boolean;
   retryGraphStatus?: number;
+  graphMeStatus?: number;
+  graphMeEnvelopeValid?: boolean;
+  graphCalendarRootStatus?: number;
+  graphCalendarRootEnvelopeValid?: boolean;
+  graphErrorClass?: MicrosoftGraphErrorClass;
+  tokenAudience?: "MICROSOFT_GRAPH" | "OTHER" | "UNKNOWN";
+  calendarScope?: "AVAILABLE" | "ABSENT" | "UNKNOWN";
+  accountBinding?: "MATCHED" | "MISMATCHED" | "UNKNOWN";
   interactionRequired?: boolean;
   finalReasonCode?: MicrosoftCalendarDiagnosticReasonCode;
   httpStatus?: number;
@@ -342,8 +356,8 @@ export class MicrosoftWorkspaceConnector {
             return { events: parsed.events, diagnostic: { ...parsed.diagnostic, stage: "GRAPH_RESPONSE", outcome: parsed.diagnostic.outcome, reasonCode: parsed.diagnostic.reasonCode, finalReasonCode: parsed.diagnostic.reasonCode, refreshAttempted: true, refreshOutcome: "SUCCEEDED", retryAttempted: true, retryGraphStatus: retryResponse.status, headerAttached: true, interactionRequired: false, httpStatus: retryResponse.status } };
           }
           if (retryResponse.status === 401) {
-            // A second 401 after a successful refresh proves only that Graph rejected the refreshed token, not that MSAL requires interaction.
-            return { events: [], diagnostic: { ...refreshBase, refreshOutcome: "SUCCEEDED", retryAttempted: true, retryGraphStatus: retryResponse.status, reasonCode: "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH", finalReasonCode: "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH", interactionRequired: false, headerAttached: true } };
+            const persistent401 = await this.diagnosePersistent401(refreshedToken, { ...refreshBase, refreshOutcome: "SUCCEEDED", retryAttempted: true, retryGraphStatus: retryResponse.status, reasonCode: "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH", finalReasonCode: "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH", interactionRequired: false, headerAttached: true });
+            return { events: [], diagnostic: persistent401 };
           }
           const retryReasonCode = retryResponse.status === 400 ? "CALENDAR_GRAPH_HTTP_400" : retryResponse.status === 403 ? "CALENDAR_GRAPH_HTTP_403" : retryResponse.status === 404 ? "CALENDAR_GRAPH_HTTP_404" : retryResponse.status === 429 ? "CALENDAR_GRAPH_HTTP_429" : retryResponse.status >= 500 ? "CALENDAR_GRAPH_HTTP_5XX" : "CALENDAR_UNKNOWN_BOUNDED_FAILURE";
           return { events: [], diagnostic: { ...refreshBase, refreshOutcome: "SUCCEEDED", retryAttempted: true, retryGraphStatus: retryResponse.status, reasonCode: retryReasonCode, finalReasonCode: retryReasonCode, interactionRequired: false, headerAttached: true } };
@@ -395,6 +409,39 @@ export class MicrosoftWorkspaceConnector {
           ? { stage: "GRAPH_RESPONSE" as const, outcome: "SUCCEEDED_EMPTY" as const, reasonCode: "CALENDAR_GRAPH_SUCCEEDED_EMPTY" as const }
           : { stage: "NORMALIZATION" as const, outcome: "SUCCEEDED" as const, reasonCode: "CALENDAR_NORMALIZATION_SUCCEEDED" as const };
     return { ok: true, events: Object.freeze(normalized), diagnostic: { ...diagnostic, httpStatus: response.status, returnedEventCount, normalizedEventCount, rejectedEventCount, requestRangeValid: true, headerAttached: true, finalReasonCode: diagnostic.reasonCode } };
+  }
+  private async probeGraphEndpoint(token: string, path: string): Promise<{ status?: number; envelopeValid: boolean; errorClass?: MicrosoftGraphErrorClass }> {
+    try {
+      const response = await fetch(`https://graph.microsoft.com/v1.0/${path}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      let envelopeValid = false;
+      let errorClass: MicrosoftGraphErrorClass | undefined;
+      try {
+        const body = await response.json() as { value?: unknown; id?: unknown; error?: { code?: unknown } };
+        envelopeValid = response.ok ? typeof body.id === "string" && body.id.trim().length > 0 : Boolean(body.error && typeof body.error.code === "string");
+        errorClass = typeof body.error?.code === "string" ? classifyGraphErrorCode(body.error.code) : undefined;
+      } catch {
+        envelopeValid = false;
+      }
+      return { status: response.status, envelopeValid, errorClass };
+    } catch {
+      return { envelopeValid: false };
+    }
+  }
+  private async diagnosePersistent401(token: string, base: MicrosoftCalendarReadDiagnostic): Promise<MicrosoftCalendarReadDiagnostic> {
+    const me = await this.probeGraphEndpoint(token, "me?$select=id");
+    const diagnostic = { ...base, graphMeStatus: me.status, graphMeEnvelopeValid: me.envelopeValid, graphErrorClass: me.errorClass };
+    if (me.status === 401) return { ...diagnostic, reasonCode: "MICROSOFT_GRAPH_TOKEN_REJECTED_GLOBALLY", finalReasonCode: "MICROSOFT_GRAPH_TOKEN_REJECTED_GLOBALLY" };
+    if (me.status !== 200 || !me.envelopeValid) return { ...diagnostic, reasonCode: "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER", finalReasonCode: "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER" };
+
+    const calendar = await this.probeGraphEndpoint(token, "me/calendar?$select=id");
+    const calendarDiagnostic = { ...diagnostic, graphCalendarRootStatus: calendar.status, graphCalendarRootEnvelopeValid: calendar.envelopeValid, graphErrorClass: calendar.errorClass ?? diagnostic.graphErrorClass };
+    if (calendar.status === 401) return { ...calendarDiagnostic, reasonCode: "MICROSOFT_GRAPH_CALENDAR_ROOT_REJECTED", finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_ROOT_REJECTED" };
+    if (calendar.status === 403) return { ...calendarDiagnostic, reasonCode: "MICROSOFT_GRAPH_CALENDAR_PERMISSION_FORBIDDEN", finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_PERMISSION_FORBIDDEN" };
+    if (calendar.status !== 200 || !calendar.envelopeValid) return { ...calendarDiagnostic, reasonCode: "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER", finalReasonCode: "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER" };
+    return { ...calendarDiagnostic, reasonCode: "MICROSOFT_GRAPH_CALENDAR_VIEW_SPECIFIC_REJECTION", finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_VIEW_SPECIFIC_REJECTION" };
   }
   snapshot(state?: WorkspaceProviderSnapshot["state"], profile?: WorkspaceProfile): WorkspaceProviderSnapshot {
     return { provider: "microsoft", label: "Microsoft 365", state: state ?? (this.account ? "connected" : this.configured ? "disconnected" : "unconfigured"), profile, capabilities, diagnostic: this.diagnostic };
@@ -455,4 +502,18 @@ function normalizeGraphDateTime(value: unknown): string {
 
 function readGraphString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function classifyGraphErrorCode(code: string): MicrosoftGraphErrorClass {
+  const normalized = code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  switch (normalized) {
+    case "INVALIDAUTHENTICATIONTOKEN": return "INVALID_AUTHENTICATION_TOKEN";
+    case "TOKENEXPIRED": return "TOKEN_EXPIRED";
+    case "TOKENNOTYETVALID": return "TOKEN_NOT_YET_VALID";
+    case "INVALIDAUDIENCE": return "INVALID_AUDIENCE";
+    case "NOPERMISSIONSINACCESSTOKEN": return "NO_PERMISSIONS_IN_ACCESS_TOKEN";
+    case "ACCESSDENIED": return "ACCESS_DENIED";
+    case "ERRORACCESSDENIED": return "ERROR_ACCESS_DENIED";
+    default: return "UNKNOWN_BOUNDED_GRAPH_ERROR";
+  }
 }
