@@ -1,4 +1,4 @@
-CREATE TABLE credential_records (
+CREATE TABLE IF NOT EXISTS credential_records (
   record_id uuid PRIMARY KEY,
   canonical_account_ref text NOT NULL,
   household_scope_ref text,
@@ -22,10 +22,10 @@ CREATE TABLE credential_records (
   provenance_ref text NOT NULL
 );
 
-CREATE UNIQUE INDEX credential_records_one_active ON credential_records (canonical_account_ref, provider_id, connector_account_ref, credential_type, purpose) WHERE state IN ('ACTIVE', 'ROTATING');
-CREATE INDEX credential_records_lookup ON credential_records (canonical_account_ref, provider_id, purpose);
+CREATE UNIQUE INDEX IF NOT EXISTS credential_records_one_active ON credential_records (canonical_account_ref, provider_id, connector_account_ref, credential_type, purpose) WHERE state IN ('ACTIVE', 'ROTATING');
+CREATE INDEX IF NOT EXISTS credential_records_lookup ON credential_records (canonical_account_ref, provider_id, purpose);
 
-CREATE TABLE credential_tombstones (
+CREATE TABLE IF NOT EXISTS credential_tombstones (
   tombstone_id uuid PRIMARY KEY,
   record_id uuid NOT NULL UNIQUE,
   canonical_account_ref text NOT NULL,
@@ -34,7 +34,7 @@ CREATE TABLE credential_tombstones (
   created_at timestamptz NOT NULL
 );
 
-CREATE TABLE oauth_pending_transactions (
+CREATE TABLE IF NOT EXISTS oauth_pending_transactions (
   transaction_id uuid PRIMARY KEY,
   protected_state_digest text NOT NULL UNIQUE,
   encrypted_pkce_verifier jsonb NOT NULL,
@@ -51,9 +51,9 @@ CREATE TABLE oauth_pending_transactions (
   tombstone_state text NOT NULL CHECK (tombstone_state IN ('PENDING', 'CONSUMED', 'EXPIRED'))
 );
 
-CREATE INDEX oauth_pending_expiry ON oauth_pending_transactions (expires_at);
+CREATE INDEX IF NOT EXISTS oauth_pending_expiry ON oauth_pending_transactions (expires_at);
 
-CREATE TABLE credential_audit_events (
+CREATE TABLE IF NOT EXISTS credential_audit_events (
   event_id uuid PRIMARY KEY,
   event_name text NOT NULL,
   correlation_ref text NOT NULL,
@@ -64,9 +64,9 @@ CREATE TABLE credential_audit_events (
   created_at timestamptz NOT NULL
 );
 
-CREATE INDEX credential_audit_correlation ON credential_audit_events (correlation_ref, created_at);
+CREATE INDEX IF NOT EXISTS credential_audit_correlation ON credential_audit_events (correlation_ref, created_at);
 
-CREATE TABLE server_sessions (
+CREATE TABLE IF NOT EXISTS server_sessions (
   session_ref text PRIMARY KEY,
   canonical_account_ref text NOT NULL,
   household_scope_ref text,
@@ -81,4 +81,4 @@ CREATE TABLE server_sessions (
   revoked_at timestamptz
 );
 
-CREATE INDEX server_sessions_account ON server_sessions (canonical_account_ref, expires_at);
+CREATE INDEX IF NOT EXISTS server_sessions_account ON server_sessions (canonical_account_ref, expires_at);
