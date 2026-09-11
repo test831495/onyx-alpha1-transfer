@@ -1644,9 +1644,7 @@ export function App() {
             <button onClick={() => openShellApp("tasks")}>Tasks</button>
             <button onClick={() => openShellApp("news")}>News</button>
             <button onClick={() => openShellApp("workspace")}>Workspace</button>
-            {mode === "onyx" && (
-              <button onClick={() => openShellApp("calendar")}>Calendar</button>
-            )}
+            <button onClick={() => openShellApp("calendar")}>Calendar</button>
             <button onClick={() => openShellApp("automation")}>Automation</button>
             <button onClick={() => openShellApp("settings")}>Settings</button>
             <button onClick={() => openShellApp("health")}>Health</button>
