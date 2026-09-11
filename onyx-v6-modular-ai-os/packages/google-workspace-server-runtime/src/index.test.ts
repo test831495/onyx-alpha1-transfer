@@ -13,7 +13,12 @@ import {
 import {
   signSyntheticToken,
   syntheticClaims,
+  SYNTHETIC_AUDIENCE,
+  SYNTHETIC_ISSUER,
   SYNTHETIC_KEYS,
+  SyntheticAuthenticationProvider,
+  SyntheticHmacTokenVerifier,
+  type AuthenticationProvider,
 } from "@onyx/account-authentication-server-authority";
 import type { DatabaseConnection } from "@netlify/database";
 
@@ -34,38 +39,75 @@ const prodEnvironment = {
   ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION: "v1",
 };
 
+function createTestAuthenticationProvider(
+  issuer = SYNTHETIC_ISSUER,
+  audience = SYNTHETIC_AUDIENCE,
+): AuthenticationProvider {
+  const verifier = new SyntheticHmacTokenVerifier(
+    issuer,
+    audience,
+    { current: SYNTHETIC_KEYS.current, rotated: SYNTHETIC_KEYS.rotated },
+    ["HS256"],
+    30,
+  );
+  return new SyntheticAuthenticationProvider(verifier, "test-scope-salt");
+}
+
 function createMockDatabase(): DatabaseConnection {
   const sessions = new Map<string, any>();
+  const sql = async (strings: TemplateStringsArray, ...values: any[]) => {
+    const query = strings.join("?");
+    if (query.includes("SELECT") && query.includes("server_sessions")) {
+      const ref = values[0];
+      const row = sessions.get(ref);
+      return {
+        rows: [
+          row ?? {
+            session_ref: ref,
+            canonical_account_ref: "account-scope_fCHi6JOBnULgAWEjNJNq0UyfcmrwD65OV3ObaE1ZqQw",
+            household_scope_ref: "account-scope_fCHi6JOBnULgAWEjNJNq0UyfcmrwD65OV3ObaE1ZqQw",
+            account_switch_generation: 1,
+            authentication_assurance: "standard",
+            device_trust: "trusted",
+            role_class: "owner",
+            policy_version: "policy-1",
+            session_version: 1,
+            issued_at: new Date(Date.now() - 10000).toISOString(),
+            expires_at: new Date(Date.now() + 3600000).toISOString(),
+            revoked_at: null,
+          },
+        ],
+      };
+    }
+    if (query.includes("INSERT INTO server_sessions") || query.includes("session_csrf_tokens")) {
+      if (values[0]) {
+        sessions.set(values[0], {
+          session_ref: values[0],
+          canonical_account_ref: values[1],
+          household_scope_ref: values[2] ?? values[1],
+          account_switch_generation: values[3] ?? 1,
+          authentication_assurance: values[4] ?? "standard",
+          device_trust: values[5] ?? "trusted",
+          role_class: values[6] ?? "owner",
+          policy_version: values[7] ?? "policy-1",
+          session_version: values[8] ?? 1,
+          issued_at: values[9] ?? new Date().toISOString(),
+          expires_at: values[10] ?? new Date(Date.now() + 3600000).toISOString(),
+          revoked_at: null,
+        });
+      }
+      return { rows: [] };
+    }
+    if (query.includes("DELETE FROM session_csrf_tokens")) {
+      return { rows: [{ session_ref: values[0] }] };
+    }
+    return { rows: [] };
+  };
   return {
+    sql,
     pool: {
       connect: async () => ({
-        query: async (text: string, values?: any[]) => {
-          if (text.includes("SELECT") && text.includes("server_sessions")) {
-            const ref = values?.[0];
-            const row = sessions.get(ref);
-            return { rows: row ? [row] : [] };
-          }
-          if (text.includes("INSERT INTO server_sessions") || text.includes("UPSERT") || text.includes("UPDATE")) {
-            if (values?.[0]) {
-              sessions.set(values[0], {
-                session_ref: values[0],
-                canonical_account_ref: values[1],
-                household_scope_ref: values[2] ?? values[1],
-                account_switch_generation: values[3] ?? 1,
-                authentication_assurance: values[4] ?? "strong",
-                device_trust: values[5] ?? "trusted",
-                role_class: values[6] ?? "owner",
-                policy_version: values[7] ?? "policy-1",
-                session_version: values[8] ?? 1,
-                issued_at: values[9] ?? new Date().toISOString(),
-                expires_at: values[10] ?? new Date(Date.now() + 3600000).toISOString(),
-                revoked_at: null,
-              });
-            }
-            return { rows: [] };
-          }
-          return { rows: [] };
-        },
+        query: async () => ({ rows: [] }),
         release: () => undefined,
       }),
     },
@@ -94,10 +136,13 @@ describe("Google server runtime", () => {
     })).toThrow("Google runtime context denied");
   });
 
-  it("routes production requests through the real Google runtime only when the environment is production-scoped", () => {
-    const route = createGoogleRouteHandler(createGoogleStatusHandler, { ...environment, CONTEXT: "production", NODE_ENV: "production" });
+  it("fails closed in production composition without an explicitly supplied canonical provider", () => {
+    // Production Netlify function entrypoint must NOT import or instantiate SyntheticAuthenticationProvider
+    const runtime = createGoogleRuntimeFromEnvironment(prodEnvironment);
+    expect(runtime).toBeUndefined();
+
+    const route = createGoogleRouteHandler(createGoogleStatusHandler, prodEnvironment);
     expect(typeof route).toBe("function");
-    expect(route).not.toBeNull();
   });
 
   it("creates an OAuth URL without exposing the client secret", () => {
@@ -109,9 +154,10 @@ describe("Google server runtime", () => {
     expect(url).not.toContain("synthetic-client-secret");
   });
 
-  it("creates an active production runtime with canonical authority and rejects placeholders", async () => {
+  it("creates an active production runtime when authenticationProvider is explicitly injected for test fixtures", async () => {
     const database = createMockDatabase();
-    const runtime = createGoogleRuntimeFromEnvironment(prodEnvironment, { database });
+    const authenticationProvider = createTestAuthenticationProvider();
+    const runtime = createGoogleRuntimeFromEnvironment(prodEnvironment, { database, authenticationProvider });
     expect(runtime).toBeDefined();
     expect(runtime?.runtimeKind).toBe("ACTIVE_PRODUCTION_RUNTIME");
 
@@ -123,30 +169,73 @@ describe("Google server runtime", () => {
     expect(verified?.canonicalAccountRef).toContain("account-scope_");
   });
 
-  it("rejects missing proof, malformed proof, expired proof, and nf_edge headers", async () => {
+  it("verifies canonical proof acceptance and rejects missing, malformed, expired, or invalid proof", async () => {
     const database = createMockDatabase();
-    const statusHandler = createGoogleRouteHandler(createGoogleStatusHandler, prodEnvironment, { database });
+    const authenticationProvider = createTestAuthenticationProvider();
+    const statusHandler = createGoogleRouteHandler(createGoogleStatusHandler, prodEnvironment, { database, authenticationProvider });
 
-    // Missing proof
+    const nowSec = Math.floor(Date.now() / 1000);
+    const validProof = signSyntheticToken(syntheticClaims({ iat: nowSec - 10, exp: nowSec + 3600 }));
+
+    // Valid canonical proof is accepted and status returns NOT_CONNECTED before Google consent
+    const validRes = await statusHandler({ httpMethod: "GET", headers: { authorization: `Bearer ${validProof}` } });
+    if (validRes.statusCode !== 200) console.log("STATUS ERROR BODY:", validRes.body);
+    expect(validRes.statusCode).toBe(200);
+    expect(JSON.parse(validRes.body).status).toBe("NOT_CONNECTED");
+
+    // Missing proof rejected
     const missingRes = await statusHandler({ httpMethod: "GET", headers: {} });
     expect(missingRes.statusCode).toBe(400);
     expect(JSON.parse(missingRes.body).message).toBe("Session required");
 
-    // Malformed proof
+    // Malformed proof rejected
     const malformedRes = await statusHandler({ httpMethod: "GET", headers: { authorization: "Bearer invalid.token.value" } });
     expect(malformedRes.statusCode).toBe(400);
     expect(JSON.parse(malformedRes.body).message).toBe("Session rejected");
 
-    // Expired proof
-    const expiredProof = signSyntheticToken(syntheticClaims({ exp: Math.floor(Date.now() / 1000) - 300 }));
+    // Expired proof rejected
+    const expiredProof = signSyntheticToken(syntheticClaims({ exp: nowSec - 300 }));
     const expiredRes = await statusHandler({ httpMethod: "GET", headers: { authorization: `Bearer ${expiredProof}` } });
     expect(expiredRes.statusCode).toBe(400);
     expect(JSON.parse(expiredRes.body).message).toBe("Session rejected");
 
-    // nf_edge header alone
+    // Wrong issuer rejected
+    const wrongIssuerProof = signSyntheticToken(syntheticClaims({ iss: "https://wrong.issuer.invalid" }));
+    const wrongIssuerRes = await statusHandler({ httpMethod: "GET", headers: { authorization: `Bearer ${wrongIssuerProof}` } });
+    expect(wrongIssuerRes.statusCode).toBe(400);
+    expect(JSON.parse(wrongIssuerRes.body).message).toBe("Session rejected");
+
+    // Wrong audience rejected
+    const wrongAudienceProof = signSyntheticToken(syntheticClaims({ aud: "wrong-audience" }));
+    const wrongAudienceRes = await statusHandler({ httpMethod: "GET", headers: { authorization: `Bearer ${wrongAudienceProof}` } });
+    expect(wrongAudienceRes.statusCode).toBe(400);
+    expect(JSON.parse(wrongAudienceRes.body).message).toBe("Session rejected");
+
+    // nf_edge header alone does not authorize
     const nfEdgeRes = await statusHandler({ httpMethod: "GET", headers: { "x-nf-edge-functions": "true" } });
     expect(nfEdgeRes.statusCode).toBe(400);
     expect(JSON.parse(nfEdgeRes.body).message).toBe("Session required");
+  });
+
+  it("issues CSRF token only after valid canonical authentication", async () => {
+    const database = createMockDatabase();
+    const authenticationProvider = createTestAuthenticationProvider();
+    const csrfHandler = createGoogleRouteHandler(createGoogleCsrfHandler, prodEnvironment, { database, authenticationProvider });
+
+    const nowSec = Math.floor(Date.now() / 1000);
+    const validProof = signSyntheticToken(syntheticClaims({ iat: nowSec - 10, exp: nowSec + 3600 }));
+
+    // Valid canonical proof gets CSRF token
+    const validRes = await csrfHandler({ httpMethod: "GET", headers: { authorization: `Bearer ${validProof}` } });
+    expect(validRes.statusCode).toBe(200);
+    const body = JSON.parse(validRes.body);
+    expect(body.csrfToken).toBeDefined();
+    expect(body.expiresInSeconds).toBe(900);
+
+    // Missing proof rejected for CSRF
+    const missingRes = await csrfHandler({ httpMethod: "GET", headers: {} });
+    expect(missingRes.statusCode).toBe(400);
+    expect(JSON.parse(missingRes.body).message).toBe("Session required");
   });
 
   it("returns UNAVAILABLE for deploy-preview or unknown contexts", async () => {
