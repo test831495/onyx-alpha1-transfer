@@ -420,7 +420,7 @@ export class MicrosoftWorkspaceConnector {
       let errorClass: MicrosoftGraphErrorClass | undefined;
       try {
         const body = await response.json() as { value?: unknown; id?: unknown; error?: { code?: unknown } };
-        envelopeValid = response.ok ? typeof body.id === "string" : Boolean(body.error && typeof body.error.code === "string");
+        envelopeValid = response.ok ? typeof body.id === "string" && body.id.trim().length > 0 : Boolean(body.error && typeof body.error.code === "string");
         errorClass = typeof body.error?.code === "string" ? classifyGraphErrorCode(body.error.code) : undefined;
       } catch {
         envelopeValid = false;
@@ -434,13 +434,13 @@ export class MicrosoftWorkspaceConnector {
     const me = await this.probeGraphEndpoint(token, "me?$select=id");
     const diagnostic = { ...base, graphMeStatus: me.status, graphMeEnvelopeValid: me.envelopeValid, graphErrorClass: me.errorClass };
     if (me.status === 401) return { ...diagnostic, reasonCode: "MICROSOFT_GRAPH_TOKEN_REJECTED_GLOBALLY", finalReasonCode: "MICROSOFT_GRAPH_TOKEN_REJECTED_GLOBALLY" };
-    if (me.status !== 200) return { ...diagnostic, reasonCode: "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER", finalReasonCode: "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER" };
+    if (me.status !== 200 || !me.envelopeValid) return { ...diagnostic, reasonCode: "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER", finalReasonCode: "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER" };
 
     const calendar = await this.probeGraphEndpoint(token, "me/calendar?$select=id");
     const calendarDiagnostic = { ...diagnostic, graphCalendarRootStatus: calendar.status, graphCalendarRootEnvelopeValid: calendar.envelopeValid, graphErrorClass: calendar.errorClass ?? diagnostic.graphErrorClass };
     if (calendar.status === 401) return { ...calendarDiagnostic, reasonCode: "MICROSOFT_GRAPH_CALENDAR_ROOT_REJECTED", finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_ROOT_REJECTED" };
     if (calendar.status === 403) return { ...calendarDiagnostic, reasonCode: "MICROSOFT_GRAPH_CALENDAR_PERMISSION_FORBIDDEN", finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_PERMISSION_FORBIDDEN" };
-    if (calendar.status !== 200) return { ...calendarDiagnostic, reasonCode: "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER", finalReasonCode: "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER" };
+    if (calendar.status !== 200 || !calendar.envelopeValid) return { ...calendarDiagnostic, reasonCode: "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER", finalReasonCode: "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER" };
     return { ...calendarDiagnostic, reasonCode: "MICROSOFT_GRAPH_CALENDAR_VIEW_SPECIFIC_REJECTION", finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_VIEW_SPECIFIC_REJECTION" };
   }
   snapshot(state?: WorkspaceProviderSnapshot["state"], profile?: WorkspaceProfile): WorkspaceProviderSnapshot {
@@ -505,13 +505,15 @@ function readGraphString(value: unknown): string {
 }
 
 function classifyGraphErrorCode(code: string): MicrosoftGraphErrorClass {
-  const normalized = code.toUpperCase();
-  if (normalized.includes("INVALID_AUTHENTICATION") || normalized.includes("INVALIDAUTHENTICATION")) return "INVALID_AUTHENTICATION_TOKEN";
-  if (normalized.includes("TOKEN_EXPIRED")) return "TOKEN_EXPIRED";
-  if (normalized.includes("NOT_YET_VALID")) return "TOKEN_NOT_YET_VALID";
-  if (normalized.includes("INVALID_AUDIENCE")) return "INVALID_AUDIENCE";
-  if (normalized.includes("NO_PERMISSIONS")) return "NO_PERMISSIONS_IN_ACCESS_TOKEN";
-  if (normalized === "ACCESS_DENIED") return "ACCESS_DENIED";
-  if (normalized === "ERROR_ACCESS_DENIED") return "ERROR_ACCESS_DENIED";
-  return "UNKNOWN_BOUNDED_GRAPH_ERROR";
+  const normalized = code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  switch (normalized) {
+    case "INVALIDAUTHENTICATIONTOKEN": return "INVALID_AUTHENTICATION_TOKEN";
+    case "TOKENEXPIRED": return "TOKEN_EXPIRED";
+    case "TOKENNOTYETVALID": return "TOKEN_NOT_YET_VALID";
+    case "INVALIDAUDIENCE": return "INVALID_AUDIENCE";
+    case "NOPERMISSIONSINACCESSTOKEN": return "NO_PERMISSIONS_IN_ACCESS_TOKEN";
+    case "ACCESSDENIED": return "ACCESS_DENIED";
+    case "ERRORACCESSDENIED": return "ERROR_ACCESS_DENIED";
+    default: return "UNKNOWN_BOUNDED_GRAPH_ERROR";
+  }
 }
