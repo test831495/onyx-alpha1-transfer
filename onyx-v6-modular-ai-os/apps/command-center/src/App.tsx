@@ -24,6 +24,7 @@ import {
   disconnectMicrosoft,
   disconnectedWorkspaceSnapshot,
   loadWorkspaceSnapshot,
+  runGoogleWorkspaceAction,
 } from "./workspaceController";
 import { NovaDashboard } from "./components/NovaDashboard";
 import { OnyxDashboard } from "./components/OnyxDashboard";
@@ -1525,6 +1526,17 @@ export function App() {
                       setWorkspace(disconnectedWorkspaceSnapshot());
                     },
                     onWorkspaceRefresh: refreshWorkspace,
+                    onWorkspaceProviderAction: async (_provider, action) => {
+                      setWorkspaceBusy(true);
+                      try {
+                        await runGoogleWorkspaceAction(action);
+                        if (action === "refresh" || action === "disconnect") await refreshWorkspace();
+                      } catch (error) {
+                        showError(error instanceof Error ? error.message : "Google Workspace action was unavailable.");
+                      } finally {
+                        setWorkspaceBusy(false);
+                      }
+                    },
                     calendarSummary,
                     calendarBusy,
                     calendarConnected: isCalendarConnected(workspace),

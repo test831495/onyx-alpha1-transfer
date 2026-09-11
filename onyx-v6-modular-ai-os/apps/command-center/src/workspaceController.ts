@@ -37,4 +37,21 @@ export const loadMicrosoftCalendarEventsWithDiagnostic=(range:MicrosoftCalendarR
 export const connectMicrosoft=()=>microsoft.connect();
 export const reconnectMicrosoft=()=>microsoft.reconnect();
 export const disconnectMicrosoft=()=>microsoft.disconnect();
+type GoogleAction = "connect" | "reconnect" | "disconnect" | "refresh";
+const googleHeaders = (mutating: boolean): HeadersInit => ({
+  "content-type": "application/json",
+  ...(mutating ? { "x-csrf-token": document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? "", "idempotency-key": crypto.randomUUID() } : {}),
+});
+export async function runGoogleWorkspaceAction(action: GoogleAction): Promise<void> {
+  if (action === "connect" || action === "reconnect") {
+    const response = await fetch("/.netlify/functions/oauth-google-initiate", { method: "POST", credentials: "include", headers: googleHeaders(true), body: JSON.stringify({ reconnect: action === "reconnect" }) });
+    const payload = await response.json() as { authorizationUrl?: string; message?: string };
+    if (!response.ok || !payload.authorizationUrl) throw new Error(payload.message ?? "Google connection is unavailable.");
+    window.location.assign(payload.authorizationUrl);
+    return;
+  }
+  const response = await fetch(action === "disconnect" ? "/.netlify/functions/google-workspace-disconnect" : "/.netlify/functions/google-workspace-status", { method: action === "disconnect" ? "POST" : "GET", credentials: "include", headers: googleHeaders(action === "disconnect"), ...(action === "disconnect" ? { body: "{}" } : {}) });
+  const payload = await response.json() as { message?: string };
+  if (!response.ok) throw new Error(payload.message ?? "Google Workspace status is unavailable.");
+}
 export function disconnectedWorkspaceSnapshot():WorkspaceSnapshot{return{providers:[microsoft.snapshot(),...plannedProviderSnapshots()],updatedAt:Date.now()};}

@@ -61,6 +61,12 @@ export class SqlCredentialStore {
     });
   }
 
+  async findActive(binding: CredentialBinding): Promise<CredentialRecord | undefined> {
+    const result = await this.database.sql`SELECT * FROM credential_records WHERE canonical_account_ref = ${binding.canonicalAccountRef} AND provider_id = ${binding.providerId} AND connector_account_ref = ${binding.connectorAccountRef} AND credential_type = ${binding.credentialType} AND purpose = ${binding.purpose} AND capability_fingerprint = ${binding.capabilityFingerprint} AND state IN ('ACTIVE','ROTATING') LIMIT 1`;
+    const row = rowOf(result);
+    return row ? recordFromRow(row) : undefined;
+  }
+
   async replace(recordId: string, binding: CredentialBinding, expectedVersion: number, plaintext: string): Promise<CredentialRecord> {
     return withDatabaseTransaction(this.database, async (query) => {
       const result = await query("SELECT * FROM credential_records WHERE record_id = $1 FOR UPDATE", [recordId]);

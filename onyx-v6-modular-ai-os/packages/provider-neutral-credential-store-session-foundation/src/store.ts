@@ -99,6 +99,11 @@ export class InMemoryCredentialStore {
 
   getAuditEvents(): readonly CredentialAuditEvent[] { return this.auditEvents; }
 
+  findActive(binding: CredentialBinding): CredentialRecord | undefined {
+    const recordId = this.active.get(activeKey(binding));
+    return recordId ? this.records.get(recordId) : undefined;
+  }
+
   private require(recordId: string): CredentialRecord { const record = this.records.get(recordId); if (!record) throw new Error("Credential not found"); return record; }
   private assertBinding(record: CredentialRecord, binding: CredentialBinding): void { if (activeKey(record) !== activeKey(binding) || record.capabilityFingerprint !== binding.capabilityFingerprint) throw new Error("Credential binding mismatch"); }
   private audit(event: CredentialAuditEvent["event"], record: CredentialRecord): void { this.auditEvents.push({ event, recordId: record.recordId, canonicalAccountRef: record.canonicalAccountRef, providerId: record.providerId, purpose: record.purpose, at: new Date().toISOString() }); }
