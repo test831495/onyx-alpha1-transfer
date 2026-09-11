@@ -1,21 +1,62 @@
 import { getDatabase, type DatabaseConnection } from "@netlify/database";
+import { parseCredentialKeyRing } from "./config.js";
 
-export type DatabaseRuntimeContext = "production" | "deploy-preview" | "branch-deploy" | "local";
+export type DatabaseRuntimeContext = "production" | "deploy-preview" | "branch-deploy" | "local" | "test" | "unknown";
 
 export type DatabaseRuntimePolicy = {
   readonly context: DatabaseRuntimeContext;
   readonly credentialOperationsEnabled: boolean;
   readonly providerCallsEnabled: boolean;
+  readonly databaseAccessEnabled: boolean;
 };
 
-export function createDatabaseRuntimePolicy(context: DatabaseRuntimeContext, hasProductionKey: boolean): DatabaseRuntimePolicy {
-  if (context === "production" && !hasProductionKey) throw new Error("Production credential key is required");
-  if (context !== "production" && hasProductionKey) throw new Error("Production credential key is forbidden outside production");
-  return { context, credentialOperationsEnabled: context === "production", providerCallsEnabled: false };
+export function readDatabaseRuntimeContext(environment: Record<string, string | undefined>): DatabaseRuntimeContext {
+  switch (environment.CONTEXT) {
+    case "production": return "production";
+    case "deploy-preview": return "deploy-preview";
+    case "branch-deploy": return "branch-deploy";
+    case "test": return "test";
+    case "local": return "local";
+    default: return environment.NODE_ENV === "test" ? "test" : "unknown";
+  }
 }
 
-export function getNetlifyDatabase(connectionString?: string): DatabaseConnection {
-  return getDatabase(connectionString === undefined ? undefined : { connectionString });
+export function createDatabaseRuntimePolicy(context: DatabaseRuntimeContext, hasProductionKey: boolean, hasExplicitConnectionOverride = false, credentialActivationEnabled = false): DatabaseRuntimePolicy {
+  if (context === "unknown") throw new Error("Unknown database runtime context");
+  if (context === "production" && !hasProductionKey) throw new Error("Production credential key is required");
+  if (context !== "production" && hasProductionKey) throw new Error("Production credential key is forbidden outside production");
+  if (hasExplicitConnectionOverride && context !== "test") throw new Error("Explicit database connection is test-only");
+  return {
+    context,
+    credentialOperationsEnabled: context === "production" && credentialActivationEnabled,
+    providerCallsEnabled: false,
+    databaseAccessEnabled: context === "production" || context === "test",
+  };
+}
+
+export type DatabaseRuntimeOptions = {
+  readonly context: DatabaseRuntimeContext;
+  readonly hasProductionKey: boolean;
+  readonly connectionString?: string;
+  readonly testOnly?: boolean;
+  readonly credentialActivationEnabled?: boolean;
+};
+
+function createApprovedNetlifyDatabase(options: DatabaseRuntimeOptions): DatabaseConnection {
+  const policy = createDatabaseRuntimePolicy(options.context, options.hasProductionKey, options.connectionString !== undefined, options.credentialActivationEnabled);
+  if (!policy.databaseAccessEnabled) throw new Error("Database access is disabled for this runtime");
+  if (options.connectionString !== undefined && (!options.testOnly || options.context !== "test")) throw new Error("Explicit database connection is test-only");
+  return options.connectionString === undefined ? getDatabase() : getDatabase({ connectionString: options.connectionString });
+}
+
+export function createTestNetlifyDatabase(connectionString: string): DatabaseConnection {
+  return createApprovedNetlifyDatabase({ context: "test", hasProductionKey: false, connectionString, testOnly: true });
+}
+
+export function createConfiguredNetlifyDatabase(environment: Record<string, string | undefined> = process.env, options: Omit<DatabaseRuntimeOptions, "context" | "hasProductionKey"> = {}): DatabaseConnection {
+  const context = readDatabaseRuntimeContext(environment);
+  const keyRing = parseCredentialKeyRing(environment, context);
+  return createApprovedNetlifyDatabase({ ...options, context, hasProductionKey: keyRing.active !== undefined });
 }
 
 export async function withDatabaseTransaction<T>(database: DatabaseConnection, operation: (query: (text: string, values?: readonly unknown[]) => Promise<unknown>) => Promise<T>): Promise<T> {
