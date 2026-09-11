@@ -1,2 +1,3 @@
-import { inactiveGoogleHandler } from "./google-runtime-entry";
-export const handler = inactiveGoogleHandler;
+import { createGoogleGmailHandler } from "@onyx/google-workspace-server-runtime";
+import { createGoogleRouteHandler } from "./google-runtime-entry";
+export const handler = createGoogleRouteHandler(createGoogleGmailHandler);

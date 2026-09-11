@@ -1,11 +1,33 @@
 import { createPublicKey, verify } from "node:crypto";
-import type { ServerAuthorityDecision, TokenClaims, VerificationDecision, VerifiedProof } from "./contracts";
+import type { ServerAuthorityDecision, TokenClaims, TokenVerifier, VerificationDecision, VerifiedProof } from "./contracts";
 
 export interface TrustedJwk { readonly kty: "RSA"; readonly kid: string; readonly n: string; readonly e: string; readonly use?: "sig"; readonly alg?: "RS256"; }
 export interface TrustedJwkResolver { resolve(kid: string): TrustedJwk | undefined; }
 export interface Rs256VerifierConfiguration { readonly issuer: string; readonly audiences: readonly string[]; readonly resolver: TrustedJwkResolver; readonly clockSkewSeconds: number; readonly maxTokenBytes: number; }
 const deny = (code: ServerAuthorityDecision["code"]): VerificationDecision => Object.freeze({ allowed: false, code });
 const decode = (value: string): string | undefined => { try { return Buffer.from(value, "base64url").toString("utf8"); } catch { return undefined; } };
+
+export class OidcJwksResolver implements TrustedJwkResolver {
+  private readonly cache = new Map<string, TrustedJwk>();
+  public constructor(jwks: readonly TrustedJwk[]) {
+    for (const key of jwks) {
+      if (key.kid) this.cache.set(key.kid, key);
+    }
+  }
+  public resolve(kid: string): TrustedJwk | undefined {
+    return this.cache.get(kid);
+  }
+}
+
+export class Rs256JwksTokenVerifier implements TokenVerifier {
+  private readonly verifier: SyntheticRs256JwksVerifier;
+  public constructor(configuration: Rs256VerifierConfiguration) {
+    this.verifier = new SyntheticRs256JwksVerifier(configuration);
+  }
+  public verify(proof: string, nowSeconds: number): VerificationDecision {
+    return this.verifier.verify(proof, nowSeconds);
+  }
+}
 
 export class SyntheticRs256JwksVerifier {
   public constructor(private readonly configuration: Rs256VerifierConfiguration) {}
