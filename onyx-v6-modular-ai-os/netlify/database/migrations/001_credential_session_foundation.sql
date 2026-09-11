@@ -78,7 +78,22 @@ CREATE TABLE IF NOT EXISTS server_sessions (
   issued_at timestamptz NOT NULL,
   expires_at timestamptz NOT NULL,
   session_version integer NOT NULL CHECK (session_version >= 0),
-  revoked_at timestamptz
+  revoked_at timestamptz,
+  revocation_reason text CHECK (revocation_reason IN ('logout', 'account-switch', 'expired'))
 );
 
 CREATE INDEX IF NOT EXISTS server_sessions_account ON server_sessions (canonical_account_ref, expires_at);
+
+CREATE TABLE IF NOT EXISTS session_account_switch_generations (
+  canonical_account_ref text PRIMARY KEY,
+  generation integer NOT NULL CHECK (generation >= 0),
+  updated_at timestamptz NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS session_csrf_tokens (
+  session_ref text PRIMARY KEY,
+  token_digest text NOT NULL,
+  expires_at timestamptz NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS session_csrf_expiry ON session_csrf_tokens (expires_at);

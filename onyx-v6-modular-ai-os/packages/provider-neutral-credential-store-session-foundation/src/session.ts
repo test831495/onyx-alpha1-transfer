@@ -38,7 +38,13 @@ type SessionRepositoryLike = {
 
 const cookieProof = (header: string | undefined): string | undefined => {
   const match = header?.split(";").map((part) => part.trim()).find((part) => part.startsWith("onyx_session="));
-  return match ? decodeURIComponent(match.slice("onyx_session=".length)) : undefined;
+  if (!match) return undefined;
+  try {
+    const value = decodeURIComponent(match.slice("onyx_session=".length));
+    return value.length <= 4096 ? value : undefined;
+  } catch {
+    return undefined;
+  }
 };
 
 export class OnyxServerSessionValidator {

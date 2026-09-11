@@ -42,21 +42,21 @@ export type DatabaseRuntimeOptions = {
   readonly credentialActivationEnabled?: boolean;
 };
 
-export function getNetlifyDatabase(): DatabaseConnection {
-  return getDatabase();
-}
-
-export function createNetlifyDatabase(options: DatabaseRuntimeOptions): DatabaseConnection {
+function createApprovedNetlifyDatabase(options: DatabaseRuntimeOptions): DatabaseConnection {
   const policy = createDatabaseRuntimePolicy(options.context, options.hasProductionKey, options.connectionString !== undefined, options.credentialActivationEnabled);
   if (!policy.databaseAccessEnabled) throw new Error("Database access is disabled for this runtime");
   if (options.connectionString !== undefined && (!options.testOnly || options.context !== "test")) throw new Error("Explicit database connection is test-only");
   return options.connectionString === undefined ? getDatabase() : getDatabase({ connectionString: options.connectionString });
 }
 
+export function createTestNetlifyDatabase(connectionString: string): DatabaseConnection {
+  return createApprovedNetlifyDatabase({ context: "test", hasProductionKey: false, connectionString, testOnly: true });
+}
+
 export function createConfiguredNetlifyDatabase(environment: Record<string, string | undefined> = process.env, options: Omit<DatabaseRuntimeOptions, "context" | "hasProductionKey"> = {}): DatabaseConnection {
   const context = readDatabaseRuntimeContext(environment);
   const keyRing = parseCredentialKeyRing(environment, context);
-  return createNetlifyDatabase({ ...options, context, hasProductionKey: keyRing.active !== undefined });
+  return createApprovedNetlifyDatabase({ ...options, context, hasProductionKey: keyRing.active !== undefined });
 }
 
 export async function withDatabaseTransaction<T>(database: DatabaseConnection, operation: (query: (text: string, values?: readonly unknown[]) => Promise<unknown>) => Promise<T>): Promise<T> {

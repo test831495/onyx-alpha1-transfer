@@ -40,7 +40,7 @@ describe("ONYX server session issuer", () => {
     const issuer = new OnyxServerSessionIssuer(authority, repository, () => Date.parse("2026-09-11T00:00:00.000Z"));
     const issued = await issuer.issue(authentication, 900, true);
     const gateway = new ServerSessionGateway(authority, () => Date.parse("2026-09-11T00:00:00.000Z"), repository);
-    const csrf = gateway.issueCsrf(issued.context.sessionRef);
+    const csrf = await gateway.issueCsrf(issued.context.sessionRef);
     await expect(gateway.validate({ cookieHeader: `onyx_session=${issued.proof}`, method: "POST", origin: "https://app.example", expectedOrigin: "https://app.example", contentType: "application/json", idempotencyKey: "request-1", csrfToken: csrf }, "credential.disconnect", "cap-1", "account-1", 4)).resolves.toMatchObject({ sessionVersion: 0 });
     await issuer.switchAccount("account-1", 5);
     await expect(gateway.validate({ cookieHeader: `onyx_session=${issued.proof}`, method: "GET" }, "credential.read", "cap-1", "account-1", 4)).rejects.toThrow("account switch");

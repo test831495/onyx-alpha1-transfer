@@ -14,6 +14,9 @@ describe("Netlify migration discovery", () => {
     expect(sql).toMatch(/CREATE TABLE IF NOT EXISTS oauth_pending_transactions/);
     expect(sql).toMatch(/CREATE TABLE IF NOT EXISTS credential_audit_events/);
     expect(sql).toMatch(/CREATE TABLE IF NOT EXISTS server_sessions/);
+    expect(sql).toMatch(/revocation_reason/);
+    expect(sql).toMatch(/CREATE TABLE IF NOT EXISTS session_account_switch_generations/);
+    expect(sql).toMatch(/CREATE TABLE IF NOT EXISTS session_csrf_tokens/);
     expect(sql).toMatch(/CREATE UNIQUE INDEX IF NOT EXISTS credential_records_one_active/);
     expect(sql).not.toMatch(/access_token|refresh_token|event_subject|event_description|mail_content|drive_content|calendar_body/i);
   });

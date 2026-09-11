@@ -5,6 +5,7 @@ import { parseEncryptionKey } from "./crypto.js";
 import { CredentialLifecycleService } from "./lifecycle.js";
 import { ServerSessionGateway } from "./session-gateway.js";
 import { InMemoryCredentialStore } from "./store.js";
+import { InMemoryServerSessionRepository } from "./session-issuer.js";
 
 const binding = { canonicalAccountRef: "account-1", providerId: "google", connectorAccountRef: "connector-1", credentialType: "oauth-refresh-token", purpose: "calendar.read", capabilityFingerprint: "cap-1" };
 const key = parseEncryptionKey(Buffer.alloc(32, 9).toString("base64url"), "test-v1");
@@ -13,11 +14,13 @@ describe("foundation integration boundaries", () => {
   it("requires same-origin CSRF for state changes and rejects revoked sessions", async () => {
     const context = { sessionRef: "session-1", canonicalAccountRef: "account-1", accountSwitchGeneration: 2, authenticationAssurance: "strong", deviceTrust: "trusted", roleClass: "member", policyVersion: "policy-1", issuedAt: "2026-01-01T00:00:00.000Z", expiresAt: "2027-01-01T00:00:00.000Z", sessionVersion: 3 };
     const authority = { issue: async () => "proof", verify: async (proof: string) => proof === "proof" ? context : undefined };
-    const gateway = new ServerSessionGateway(authority, () => Date.parse("2026-06-01T00:00:00.000Z"));
-    const csrf = gateway.issueCsrf(context.sessionRef);
+    const repository = new InMemoryServerSessionRepository();
+    await repository.create(context);
+    const gateway = new ServerSessionGateway(authority, () => Date.parse("2026-06-01T00:00:00.000Z"), repository);
+    const csrf = await gateway.issueCsrf(context.sessionRef);
     await expect(gateway.validate({ sessionProof: "proof", method: "POST", origin: "https://app.example", expectedOrigin: "https://app.example", contentType: "application/json", idempotencyKey: "request-1", csrfToken: csrf }, "credential.disconnect", "cap-1", "account-1")).resolves.toMatchObject({ sessionVersion: 3, accountSwitchGeneration: 2 });
     await expect(gateway.validate({ sessionProof: "proof", method: "POST", origin: "https://app.example", expectedOrigin: "https://app.example", contentType: "application/json", idempotencyKey: "request-1", csrfToken: csrf }, "credential.disconnect", "cap-1", "account-1")).rejects.toThrow("CSRF");
-    gateway.revoke(context);
+    await gateway.revoke(context);
     await expect(gateway.validate({ sessionProof: "proof", method: "GET" }, "credential.read", "cap-1", "account-1")).rejects.toThrow("revoked");
   });
 
