@@ -1,0 +1,16 @@
+{
+  "name": "@onyx/google-workspace-server-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run" },
+  "dependencies": {
+    "@onyx/account-authentication-server-authority": "workspace:*",
+    "@netlify/database": "^2.0.1",
+    "@onyx/provider-neutral-credential-store-session-foundation": "workspace:*",
+    "@onyx/workspace-connectors": "workspace:*",
+    "google-auth-library": "^11.0.2"
+  },
+  "devDependencies": { "typescript": "^5.9.2", "vitest": "^3.2.7" }
+}

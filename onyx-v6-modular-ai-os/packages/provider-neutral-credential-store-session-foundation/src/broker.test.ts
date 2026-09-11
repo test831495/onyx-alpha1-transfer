@@ -21,4 +21,23 @@ describe("token broker", () => {
     expect(result).toEqual({ value: "provider-result", expiresInSeconds: 90 });
     expect(store.read(record.recordId, binding, key)).toBe("rotated");
   });
+
+  it("awaits asynchronous refresh-token rotation before using the access token", async () => {
+    const store = new InMemoryCredentialStore();
+    const record = store.create(binding, "refresh-token", key);
+    let replaced = false;
+    const delayedStore = {
+      read: (id: string, b: typeof binding, k: typeof key) => store.read(id, b, k),
+      replace: async (id: string, b: typeof binding, version: number, value: string, k: typeof key) => {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        replaced = true;
+        return store.replace(id, b, version, value, k);
+      },
+    };
+    const broker = new TokenBroker(delayedStore, key);
+    await broker.withAccessToken({ ...binding, recordId: record.recordId, expectedVersion: 0 }, async () => ({ accessToken: "short-lived", refreshToken: "rotated", expiresInSeconds: 120 }), async (accessToken) => {
+      expect(replaced).toBe(true);
+      return { value: accessToken, expiresInSeconds: 60 };
+    });
+  });
 });

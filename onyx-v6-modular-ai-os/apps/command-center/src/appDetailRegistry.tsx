@@ -8,6 +8,7 @@ import { SettingsCenter } from "./components/SettingsCenter";
 import { ProviderHealthDashboard } from "./components/ProviderHealthDashboard";
 import type { CalendarEventRecord, CalendarRangeKind } from "@onyx/calendar-intelligence";
 import type { MicrosoftCalendarReadDiagnostic } from "@onyx/workspace-connectors";
+import type { WorkspaceProviderId } from "@onyx/workspace-contracts";
 
 export interface AppDetailSpec {
   appId: ShellAppId;
@@ -26,6 +27,7 @@ export const DetailDataContext = React.createContext<{
   onWorkspaceReconnect?: () => void;
   onWorkspaceDisconnect?: () => void;
   onWorkspaceRefresh?: () => void;
+  onWorkspaceProviderAction?: (provider: WorkspaceProviderId, action: "connect" | "reconnect" | "disconnect" | "refresh") => void;
   calendarSummary?: any;
   calendarBusy?: boolean;
   onCalendarRefresh?: () => void;
@@ -71,6 +73,7 @@ const WorkspaceDetail: React.FC<{ appId: ShellAppId }> = ({ appId }) => {
       onReconnect={data.onWorkspaceReconnect ?? (() => {})}
       onDisconnect={data.onWorkspaceDisconnect ?? (() => {})}
       onRefresh={data.onWorkspaceRefresh ?? (() => {})}
+      onProviderAction={data.onWorkspaceProviderAction}
     />
   );
 };

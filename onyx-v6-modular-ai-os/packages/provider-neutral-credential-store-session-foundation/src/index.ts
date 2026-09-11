@@ -2,6 +2,7 @@ export * from "./crypto.js";
 export * from "./store.js";
 export * from "./broker.js";
 export * from "./oauth.js";
+export * from "./oauth-sql-store.js";
 export * from "./session.js";
 export { createConfiguredNetlifyDatabase, createDatabaseRuntimePolicy, createTestNetlifyDatabase, readDatabaseRuntimeContext, withDatabaseTransaction } from "./database.js";
 export * from "./sql-store.js";
