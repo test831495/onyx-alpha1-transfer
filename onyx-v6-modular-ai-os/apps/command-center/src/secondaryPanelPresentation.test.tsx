@@ -4,6 +4,7 @@ import { CalendarIntelligencePanel } from "./components/CalendarIntelligencePane
 import { NewsPanel } from "./components/NewsPanel";
 import { WorkspacePanel } from "./components/WorkspacePanel";
 import type { CalendarEventRecord } from "@onyx/calendar-intelligence";
+import type { MicrosoftCalendarReadDiagnostic } from "@onyx/workspace-connectors";
 import type { WorkspaceSnapshot } from "@onyx/workspace-contracts";
 import { createCalendarRequestCoordinator, isCalendarConnected, isMicrosoftCalendarAdapterEligible, readLatestCalendarRange, readLatestCalendarRangeWithDiagnostic, reconcileMicrosoftReconnect } from "./App";
 
@@ -397,7 +398,12 @@ describe("secondary panel presentation", () => {
   });
 
   it("contains long diagnostic values with responsive wrapping", () => {
-    const html = renderToStaticMarkup(<CalendarIntelligencePanel summary={undefined} connected unavailable events={[]} busy={false} onRefresh={() => undefined} onSpeak={() => undefined} diagnostic={{ stage: "GRAPH_RESPONSE", outcome: "FAILED", reasonCode: "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH_EXTENDED_TEST_VALUE" as any }} />);
+    const futureDiagnostic = {
+      stage: "GRAPH_RESPONSE",
+      outcome: "FAILED",
+      reasonCode: "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH_EXTENDED_TEST_VALUE",
+    } as unknown as MicrosoftCalendarReadDiagnostic;
+    const html = renderToStaticMarkup(<CalendarIntelligencePanel summary={undefined} connected unavailable events={[]} busy={false} onRefresh={() => undefined} onSpeak={() => undefined} diagnostic={futureDiagnostic} />);
 
     expect(html).toContain("MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH_EXTENDED_TEST_VALUE");
     expect(html).toContain("min-width:0");
