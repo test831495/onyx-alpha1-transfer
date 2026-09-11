@@ -33,6 +33,18 @@
       ],
       "@onyx/avatar-runtime": [
         "packages/avatar-runtime/src/index"
+      ],
+      "@onyx/google-workspace-server-runtime": [
+        "packages/google-workspace-server-runtime/src/index"
+      ],
+      "@onyx/provider-neutral-credential-store-session-foundation": [
+        "packages/provider-neutral-credential-store-session-foundation/src/index"
+      ],
+      "@onyx/account-authentication-server-authority": [
+        "packages/account-authentication-server-authority/src/index"
+      ],
+      "@onyx/workspace-connectors": [
+        "packages/workspace-connectors/src/index"
       ]
     },
     "jsx": "react-jsx"

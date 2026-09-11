@@ -21,16 +21,20 @@ const parseBody = (event: GoogleFunctionEvent): Record<string, unknown> => {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Request body rejected.");
   return value as Record<string, unknown>;
 };
-const sessionRequest = (event: GoogleFunctionEvent): GatewayRequest => ({
-  method: event.httpMethod ?? "",
-  cookieHeader: header(event, "cookie"),
-  sessionProof: header(event, "x-onyx-session-proof"),
-  origin: header(event, "origin"),
-  expectedOrigin: expectedOrigin(event),
-  csrfToken: header(event, "x-csrf-token"),
-  idempotencyKey: header(event, "idempotency-key"),
-  contentType: header(event, "content-type")?.split(";", 1)[0],
-});
+const sessionRequest = (event: GoogleFunctionEvent): GatewayRequest => {
+  const authHeader = header(event, "authorization");
+  const bearerProof = authHeader?.toLowerCase().startsWith("bearer ") ? authHeader.slice(7).trim() : undefined;
+  return {
+    method: event.httpMethod ?? "",
+    cookieHeader: header(event, "cookie"),
+    sessionProof: header(event, "x-onyx-session-proof") ?? bearerProof,
+    origin: header(event, "origin"),
+    expectedOrigin: expectedOrigin(event),
+    csrfToken: header(event, "x-csrf-token"),
+    idempotencyKey: header(event, "idempotency-key"),
+    contentType: header(event, "content-type")?.split(";", 1)[0],
+  };
+};
 const redirectFingerprint = (redirectUri: string): string => createHash("sha256").update(redirectUri).digest("base64url");
 const codeChallenge = (verifier: string): string => createHash("sha256").update(verifier).digest("base64url");
 const canonicalCapabilities = (capabilities: readonly string[]): string => [...capabilities].sort().join("|");

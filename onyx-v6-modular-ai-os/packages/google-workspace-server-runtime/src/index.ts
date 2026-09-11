@@ -93,6 +93,7 @@ export function createGoogleOAuthTransport(config: GoogleServerConfig, client: O
 }
 
 export type GoogleServerRuntime = {
+  readonly runtimeKind: "ACTIVE_PRODUCTION_RUNTIME";
   readonly policy: ReturnType<typeof createDatabaseRuntimePolicy>;
   readonly config: GoogleServerConfig;
   readonly sessionGateway: ServerSessionGateway;
@@ -124,6 +125,7 @@ export function createGoogleServerRuntime(input: {
   const credentialStore = new SqlCredentialStore(input.database, input.encryptionKey);
   const oauthPendingStore = new SqlOAuthPendingStore(input.database, input.encryptionKey, now);
   return {
+    runtimeKind: "ACTIVE_PRODUCTION_RUNTIME",
     policy, config, now,
     sessionGateway: new ServerSessionGateway(input.authorityFactory?.authority ?? input.authority, now, repository),
     credentialStore,
