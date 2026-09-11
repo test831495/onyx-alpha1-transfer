@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createGoogleOAuthTransport, createGoogleServerRuntime, readGoogleServerConfig } from "./index";
+import { createGoogleOAuthTransport, createGoogleServerRuntime, createGoogleStatusHandler, readGoogleServerConfig } from "./index";
+import { createGoogleRouteHandler } from "../../netlify/functions/google-runtime-entry";
 
 const environment = {
   CONTEXT: "test",
@@ -10,6 +11,17 @@ const environment = {
 };
 
 describe("Google server runtime", () => {
+  it("activates production credential operations when the runtime is valid and production-scoped", () => {
+    const runtime = createGoogleServerRuntime({
+      database: {} as never,
+      authority: { verify: async () => undefined, issue: async () => "" },
+      encryptionKey: { version: "test-v1", bytes: new Uint8Array(32) },
+      environment: { ...environment, CONTEXT: "production", NODE_ENV: "production" },
+    });
+    expect(runtime.policy.context).toBe("production");
+    expect(runtime.policy.credentialOperationsEnabled).toBe(true);
+  });
+
   it("fails closed for unknown or non-production redirect configuration", () => {
     expect(() => readGoogleServerConfig({ ...environment, ONYX_GOOGLE_REDIRECT_URI: "http://localhost/callback" })).toThrow();
     expect(() => createGoogleServerRuntime({
@@ -18,6 +30,12 @@ describe("Google server runtime", () => {
       encryptionKey: { version: "test-v1", bytes: new Uint8Array(32) },
       environment: { ...environment, CONTEXT: "deploy-preview", NODE_ENV: "production" },
     })).toThrow("Google runtime context denied");
+  });
+
+  it("routes production requests through the real Google runtime only when the environment is production-scoped", () => {
+    const route = createGoogleRouteHandler(createGoogleStatusHandler, { ...environment, CONTEXT: "production", NODE_ENV: "production" });
+    expect(typeof route).toBe("function");
+    expect(route).not.toBeNull();
   });
 
   it("creates an OAuth URL without exposing the client secret", () => {

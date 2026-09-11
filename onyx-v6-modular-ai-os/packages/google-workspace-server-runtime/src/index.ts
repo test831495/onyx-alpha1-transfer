@@ -7,6 +7,7 @@ import {
   ServerSessionGateway,
   TokenBroker,
   createDatabaseRuntimePolicy,
+  readDatabaseRuntimeContext,
   type CredentialEncryptionKey,
   type OnyxSessionAuthority,
 } from "@onyx/provider-neutral-credential-store-session-foundation";
@@ -114,11 +115,11 @@ export function createGoogleServerRuntime(input: {
   readonly oauth?: GoogleOAuthTransport;
 }): GoogleServerRuntime {
   const environment = input.environment ?? process.env;
-  const context = environment.CONTEXT === "production" ? "production" : environment.NODE_ENV === "test" ? "test" : "unknown";
-  if (context === "unknown") throw new Error("Google runtime context denied.");
+  const context = readDatabaseRuntimeContext(environment);
+  if (context !== "production" && context !== "test") throw new Error("Google runtime context denied.");
   const config = readGoogleServerConfig(environment);
   const now = input.now ?? Date.now;
-  const policy = createDatabaseRuntimePolicy(context, context === "production", false, false);
+  const policy = createDatabaseRuntimePolicy(context, context === "production", false, context === "production");
   const repository = new SqlServerSessionRepository(input.database);
   const credentialStore = new SqlCredentialStore(input.database, input.encryptionKey);
   const oauthPendingStore = new SqlOAuthPendingStore(input.database, input.encryptionKey, now);
