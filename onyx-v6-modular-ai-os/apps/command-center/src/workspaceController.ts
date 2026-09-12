@@ -6,6 +6,9 @@ import {
   type MicrosoftCalendarRange,
   type MicrosoftCalendarReadResult,
   type MicrosoftMailReadResult,
+  type MicrosoftMailRuntimeTrace,
+  type MicrosoftMailRuntimeTraceOptions,
+  type MicrosoftMailTraceBuildIdentity,
 } from "@onyx/workspace-connectors";
 import { readMicrosoftRuntimeEnv } from "../viteMicrosoftEnvBridge";
 
@@ -35,7 +38,14 @@ export async function loadWorkspaceSnapshot(): Promise<WorkspaceSnapshot> { let 
 export const getMicrosoftAccessToken=(scopes:string[])=>microsoft.getAccessToken(scopes);
 export const loadMicrosoftCalendarEvents=(range:{start:string;end:string;timeZone:string})=>microsoft.loadCalendarEvents(range);
 export const loadMicrosoftCalendarEventsWithDiagnostic=(range:MicrosoftCalendarRange):Promise<MicrosoftCalendarReadResult>=>microsoft.loadCalendarEventsWithDiagnostic(range);
-export const loadMicrosoftMailMessagesWithDiagnostic=():Promise<MicrosoftMailReadResult>=>microsoft.loadMailMessagesWithDiagnostic();
+export const getMailBuildIdentity=():MicrosoftMailTraceBuildIdentity=>({sha:typeof import.meta.env.VITE_GIT_SHA === "string" ? import.meta.env.VITE_GIT_SHA : "UNKNOWN",context:import.meta.env.CONTEXT === "production" || import.meta.env.CONTEXT === "preview" ? import.meta.env.CONTEXT : import.meta.env.DEV ? "local" : "unknown",version:"6.0.0-alpha.3.1.1b"});
+export async function loadMicrosoftMailMessagesWithDiagnostic(options?: MicrosoftMailRuntimeTraceOptions): Promise<MicrosoftMailReadResult> {
+  if (!options?.diagnosticsEnabled) return microsoft.loadMailMessagesWithDiagnostic();
+  let latest: MicrosoftMailRuntimeTrace | undefined;
+  const result = await microsoft.loadMailMessagesWithDiagnostic({ ...options, onTrace: (trace) => { latest = trace; options.onTrace(trace); } });
+  if (latest) options.onTrace(Object.freeze({ ...latest, stage: "CONTROLLER_RESULT_ASSIGNED" }));
+  return result;
+}
 export const connectMicrosoftMail=()=>microsoft.connectMail();
 export const connectMicrosoft=()=>microsoft.connect();
 export const reconnectMicrosoft=()=>microsoft.reconnect();

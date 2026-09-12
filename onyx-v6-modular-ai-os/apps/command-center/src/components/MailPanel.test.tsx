@@ -57,4 +57,11 @@ describe("Outlook Mail panel", () => {
     const html = renderToStaticMarkup(<MailPanel connected busy={false} messages={[]} reasonCode="MAIL_EMPTY" onConnect={() => undefined} onRefresh={() => undefined} />);
     expect(html).toContain("Refresh Mail");
   });
+
+  it("MAIL_TRACE_UI_001 renders only bounded diagnostics when explicitly enabled", () => {
+    const html = renderToStaticMarkup(<MailPanel connected busy={false} messages={[]} diagnosticsEnabled runtimeTrace={{ schemaVersion: 1, correlationId: "local-trace", buildIdentity: { sha: "e623e5e", context: "local", version: "6.0.0-alpha.3.1.1b" }, stage: "COMPLETED", statusClass: "SUCCESS_2XX", retryAttempted: false, tokenStage: "SILENT_SUCCEEDED", accountBindingEvidence: { expectedHomePresent: true, returnedHomePresent: true, homeMatch: "MATCH", expectedTenantPresent: false, returnedTenantPresent: false, tenantMatch: "NOT_COMPARABLE", activeAccountCountClass: "ONE", bindingDecision: "MATCHED" }, responseEnvelopeClass: "OBJECT_WITH_VALUE_ARRAY", normalizedItemCount: 0, rejectedItemCount: 0, requestCompleted: true }} onConnect={() => undefined} onRefresh={() => undefined} onTraceClear={() => undefined} />);
+    expect(html).toContain("Diagnostic · privacy-safe");
+    expect(html).toContain("e623e5e");
+    expect(html).not.toMatch(/accessToken|homeAccountId|tenantId|bodyPreview|message-id/i);
+  });
 });

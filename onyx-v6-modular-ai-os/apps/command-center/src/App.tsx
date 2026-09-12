@@ -16,7 +16,7 @@ import { CalendarIntelligencePanel } from "./components/CalendarIntelligencePane
 import { NewsPanel } from "./components/NewsPanel";
 import { VoiceSettingsPanel } from "./components/VoiceSettingsPanel";
 import type { WorkspaceSnapshot } from "@onyx/workspace-contracts";
-import { isFailedMicrosoftCalendarDiagnostic, isSuccessfulMicrosoftCalendarDiagnostic, type MicrosoftMailMessage, type MicrosoftMailDiagnosticReasonCode } from "@onyx/workspace-connectors";
+import { isFailedMicrosoftCalendarDiagnostic, isSuccessfulMicrosoftCalendarDiagnostic, type MicrosoftMailMessage, type MicrosoftMailDiagnosticReasonCode, type MicrosoftMailRuntimeTrace } from "@onyx/workspace-connectors";
 import { WorkspacePanel } from "./components/WorkspacePanel";
 import {
   connectMicrosoft,
@@ -25,6 +25,7 @@ import {
   disconnectMicrosoft,
   disconnectedWorkspaceSnapshot,
   loadWorkspaceSnapshot,
+  getMailBuildIdentity,
   loadMicrosoftMailMessagesWithDiagnostic,
   runGoogleWorkspaceAction,
 } from "./workspaceController";
@@ -373,6 +374,8 @@ export function App() {
   const [mailMessages, setMailMessages] = useState<readonly MicrosoftMailMessage[]>([]);
   const [mailReasonCode, setMailReasonCode] = useState<MicrosoftMailDiagnosticReasonCode>();
   const [mailBusy, setMailBusy] = useState(false);
+  const [mailRuntimeTrace, setMailRuntimeTrace] = useState<MicrosoftMailRuntimeTrace>();
+  const mailDiagnosticsEnabled = import.meta.env.DEV && typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mailDiagnostics") === "1";
   const modeRef = useRef(mode);
   const timers = useRef<number[]>([]);
   const commandSequence = useRef(0);
@@ -1531,6 +1534,7 @@ export function App() {
                     }),
                     onWorkspaceDisconnect: async () => {
                       await disconnectMicrosoft();
+                        setMailRuntimeTrace(undefined);
                       calendarRequestCoordinator.current.invalidate();
                       setCalendarEvents([]);
                       setCalendarUnavailable(false);
@@ -1543,7 +1547,11 @@ export function App() {
                     mailBusy,
                     mailMessages,
                     mailReasonCode,
+                      mailRuntimeTrace,
+                      mailDiagnosticsEnabled,
+                      onMailTraceClear: () => setMailRuntimeTrace(undefined),
                     onMailConnect: async () => {
+                        setMailRuntimeTrace(undefined);
                       setMailBusy(true);
                       try {
                         await connectMicrosoftMail();
@@ -1554,11 +1562,13 @@ export function App() {
                       }
                     },
                     onMailRefresh: async () => {
+                        setMailRuntimeTrace(undefined);
                       setMailBusy(true);
                       try {
-                        const result = await loadMicrosoftMailMessagesWithDiagnostic();
+                          const result = await loadMicrosoftMailMessagesWithDiagnostic(mailDiagnosticsEnabled ? { diagnosticsEnabled: true, buildIdentity: getMailBuildIdentity(), onTrace: setMailRuntimeTrace } : undefined);
                         setMailMessages(result.messages);
                         setMailReasonCode(result.diagnostic.reasonCode);
+                          if (mailDiagnosticsEnabled) setMailRuntimeTrace((trace) => trace ? Object.freeze({ ...trace, stage: "UI_PROJECTION_RECEIVED" }) : trace);
                       } catch {
                         setMailMessages([]);
                         setMailReasonCode("MAIL_TRANSPORT_FAILURE");
