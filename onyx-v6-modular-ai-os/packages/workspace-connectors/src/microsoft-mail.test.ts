@@ -101,8 +101,6 @@ describe("MicrosoftWorkspaceConnector Mail.ReadBasic foundation", () => {
   it.each([
     ["both homeAccountIds absent", { tenantId: "tenant" }, { tenantId: "tenant" }],
     ["returned homeAccountId absent", { homeAccountId: "account", tenantId: "tenant" }, { tenantId: "tenant" }],
-    ["both tenantIds absent", { homeAccountId: "account" }, { homeAccountId: "account" }],
-    ["returned tenantId absent", { homeAccountId: "account", tenantId: "tenant" }, { homeAccountId: "account" }],
     ["different homeAccountIds", { homeAccountId: "account", tenantId: "tenant" }, { homeAccountId: "other", tenantId: "tenant" }],
     ["different tenantIds", { homeAccountId: "account", tenantId: "tenant" }, { homeAccountId: "account", tenantId: "other" }],
   ])("MAIL-AUTH-005 fails closed when %s", async (_label, expectedAccount, returnedAccount) => {
@@ -116,6 +114,22 @@ describe("MicrosoftWorkspaceConnector Mail.ReadBasic foundation", () => {
 
     expect(result.diagnostic).toMatchObject({ reasonCode: "MAIL_ACCOUNT_MISMATCH" });
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["both tenantIds absent", { homeAccountId: "account" }, { homeAccountId: "account" }],
+    ["returned tenantId absent", { homeAccountId: "account", tenantId: "tenant" }, { homeAccountId: "account" }],
+  ])("MAIL-AUTH-005 allows Graph eligibility when %s and homeAccountId matches", async (_label, expectedAccount, returnedAccount) => {
+    const acquireTokenSilent = vi.fn().mockResolvedValue(mailToken(returnedAccount));
+    const fetch = vi.fn().mockResolvedValue(emptyMailboxResponse({ value: [] }));
+    vi.stubGlobal("fetch", fetch);
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    Object.assign(connector, { application: { acquireTokenSilent }, account: expectedAccount });
+
+    const result = await connector.loadMailMessagesWithDiagnostic();
+
+    expect(result.diagnostic).toMatchObject({ reasonCode: "MAIL_EMPTY", accountBinding: "MATCHED" });
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 
   it("MAIL-READ-005 treats an empty mailbox as success", async () => {
@@ -196,7 +210,7 @@ describe("MicrosoftWorkspaceConnector Mail.ReadBasic foundation", () => {
   it("MAIL-AUTH-006 rejects refreshed missing identity evidence without a retry", async () => {
     const acquireTokenSilent = vi.fn()
       .mockResolvedValueOnce(mailToken({ homeAccountId: "account", tenantId: "tenant" }))
-      .mockResolvedValueOnce(mailToken({ homeAccountId: "account" }));
+      .mockResolvedValueOnce(mailToken({ tenantId: "tenant" }));
     const fetch = vi.fn().mockResolvedValue({ ok: false, status: 401, headers: new Headers() });
     vi.stubGlobal("fetch", fetch);
 
