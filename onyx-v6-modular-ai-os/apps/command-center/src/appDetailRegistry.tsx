@@ -1,6 +1,7 @@
 import React, { useContext, useEffect } from "react";
 import { ShellAppId } from "./shellState";
 import { NewsPanel } from "./components/NewsPanel";
+import { MailPanel } from "./components/MailPanel";
 import { WorkspacePanel } from "./components/WorkspacePanel";
 import { CalendarIntelligencePanel } from "./components/CalendarIntelligencePanel";
 import { AutomationDashboard } from "./components/AutomationDashboard";
@@ -28,6 +29,12 @@ export const DetailDataContext = React.createContext<{
   onWorkspaceDisconnect?: () => void;
   onWorkspaceRefresh?: () => void;
   onWorkspaceProviderAction?: (provider: WorkspaceProviderId, action: "connect" | "reconnect" | "disconnect" | "refresh") => void;
+  mailBusy?: boolean;
+  mailMessages?: readonly import("@onyx/workspace-connectors").MicrosoftMailMessage[];
+  mailReasonCode?: import("@onyx/workspace-connectors").MicrosoftMailDiagnosticReasonCode;
+  mailConnected?: boolean;
+  onMailConnect?: () => void;
+  onMailRefresh?: () => void;
   calendarSummary?: any;
   calendarBusy?: boolean;
   onCalendarRefresh?: () => void;
@@ -76,6 +83,11 @@ const WorkspaceDetail: React.FC<{ appId: ShellAppId }> = ({ appId }) => {
       onProviderAction={data.onWorkspaceProviderAction}
     />
   );
+};
+
+const MailDetail: React.FC<{ appId: ShellAppId }> = () => {
+  const data = useContext(DetailDataContext);
+  return <MailPanel connected={data.mailConnected ?? false} busy={data.mailBusy ?? false} messages={data.mailMessages ?? []} reasonCode={data.mailReasonCode} onConnect={data.onMailConnect ?? (() => {})} onRefresh={data.onMailRefresh ?? (() => {})} />;
 };
 
 const AutomationDetail: React.FC<{ appId: ShellAppId }> = ({ appId }) => {
@@ -170,6 +182,14 @@ export const APP_DETAIL_REGISTRY: AppDetailSpec[] = [
     icon: "▣",
     cardComponent: () => <SimpleCard appId="workspace" title="Workspace" />,
     detailComponent: WorkspaceDetail,
+    supportsDetails: true,
+  },
+  {
+    appId: "mail",
+    label: "Mail",
+    icon: "✉",
+    cardComponent: () => <SimpleCard appId="mail" title="Mail" />,
+    detailComponent: MailDetail,
     supportsDetails: true,
   },
   {

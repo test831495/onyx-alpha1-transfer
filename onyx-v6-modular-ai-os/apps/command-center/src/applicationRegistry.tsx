@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { AutomationDashboard } from "./components/AutomationDashboard";
+import { MailPanel } from "./components/MailPanel";
 import { WorkspacePanel } from "./components/WorkspacePanel";
 
 export type AppRegistryEntry = {
@@ -85,12 +86,25 @@ export const APP_REGISTRY: AppRegistryEntry[] = [
     compactSummary: "Connected providers: 0 • Microsoft: disconnected • Google: disconnected • Yahoo: disconnected.",
   },
   {
+    appId: "mail",
+    friendlyLabel: "Mail",
+    accessibleLabel: "Outlook Mail",
+    component: <MailPanel connected={false} busy={false} messages={[]} onConnect={() => undefined} onRefresh={() => undefined} />,
+    detailComponent: <MailPanel connected={false} busy={false} messages={[]} onConnect={() => undefined} onRefresh={() => undefined} />,
+    launcherOrder: 5,
+    icon: "✉",
+    supportsMinimize: true,
+    supportsClose: true,
+    supportsDetails: true,
+    compactSummary: "Outlook Mail is ready to connect.",
+  },
+  {
     appId: "automation",
     friendlyLabel: "Automation",
     accessibleLabel: "Automation",
     component: <AutomationDashboard />,
     detailComponent: <AutomationDashboard />,
-    launcherOrder: 5,
+    launcherOrder: 6,
     icon: "◎",
     supportsMinimize: true,
     supportsClose: true,

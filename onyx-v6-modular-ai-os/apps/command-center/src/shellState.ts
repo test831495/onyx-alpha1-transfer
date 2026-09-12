@@ -12,6 +12,7 @@ export type ShellAppId =
   | "tasks"
   | "news"
   | "workspace"
+  | "mail"
   | "calendar"
   | "automation"
   | "settings"
@@ -556,6 +557,8 @@ const SHELL_APP_ALIASES: Record<string, ShellAppId> = {
   task: "tasks",
   news: "news",
   workspace: "workspace",
+  mail: "mail",
+  outlook: "mail",
   files: "workspace",
   calendar: "calendar",
   automation: "automation",

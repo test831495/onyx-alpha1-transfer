@@ -30,6 +30,7 @@ export const MinimizedAppTray: React.FC<MinimizedAppTrayProps> = ({
       settings: "⚙",
       health: "♥",
       messages: "✉",
+      mail: "✉",
       calendar: "◫",
       news: "◍",
       tasks: "✓",
