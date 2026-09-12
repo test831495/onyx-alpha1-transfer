@@ -56,6 +56,9 @@ export type MicrosoftCalendarDiagnosticReasonCode =
   | "MICROSOFT_TOKEN_UNKNOWN_BOUNDED_FAILURE"
   | "MICROSOFT_GRAPH_TOKEN_REJECTED_GLOBALLY"
   | "MICROSOFT_GRAPH_CALENDAR_ROOT_REJECTED"
+  | "MICROSOFT_GRAPH_CALENDAR_RESOURCE_EXTERNAL_401"
+  | "MICROSOFT_GRAPH_CALENDAR_CLAIMS_CHALLENGE"
+  | "MICROSOFT_GRAPH_CALENDAR_PERMISSION_NOT_ACCEPTED"
   | "MICROSOFT_GRAPH_CALENDAR_PERMISSION_FORBIDDEN"
   | "MICROSOFT_GRAPH_CALENDAR_VIEW_SPECIFIC_REJECTION"
   | "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER";
@@ -88,6 +91,11 @@ export interface MicrosoftCalendarReadDiagnostic {
   graphMeEnvelopeValid?: boolean;
   graphCalendarRootStatus?: number;
   graphCalendarRootEnvelopeValid?: boolean;
+  defaultCalendarStatus?: number;
+  calendarsCollectionStatus?: number;
+  defaultCalendarViewStatus?: number;
+  directCalendarViewStatus?: number;
+  eventsCollectionStatus?: number;
   graphErrorClass?: MicrosoftGraphErrorClass;
   tokenAudience?: MicrosoftTokenAudienceClass;
   calendarScope?: MicrosoftCalendarScopeReport;
@@ -565,7 +573,7 @@ export class MicrosoftWorkspaceConnector {
             return { events: parsed.events, diagnostic: { ...refreshBase, ...parsed.diagnostic, stage: "GRAPH_RESPONSE", outcome: parsed.diagnostic.outcome, reasonCode: parsed.diagnostic.reasonCode, finalReasonCode: parsed.diagnostic.reasonCode, refreshAttempted: true, refreshOutcome: "SUCCEEDED", retryAttempted: true, retryGraphStatus: retryResponse.status, headerAttached: true, interactionRequired: false, httpStatus: retryResponse.status, forceRefreshAttempted: true } };
           }
           if (retryResponse.status === 401) {
-            const persistent401 = await this.diagnosePersistent401(refreshedToken, { ...refreshBase, retryAttempted: true, retryGraphStatus: retryResponse.status, reasonCode: "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH", finalReasonCode: "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH", interactionRequired: false, headerAttached: true });
+            const persistent401 = await this.diagnosePersistent401(refreshedToken, { ...refreshBase, retryAttempted: true, retryGraphStatus: retryResponse.status, reasonCode: "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH", finalReasonCode: "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH", interactionRequired: false, headerAttached: true }, range);
             return { events: [], diagnostic: persistent401 };
           }
           const retryReasonCode = retryResponse.status === 400 ? "CALENDAR_GRAPH_HTTP_400" : retryResponse.status === 403 ? "CALENDAR_GRAPH_HTTP_403" : retryResponse.status === 404 ? "CALENDAR_GRAPH_HTTP_404" : retryResponse.status === 429 ? "CALENDAR_GRAPH_HTTP_429" : retryResponse.status >= 500 ? "CALENDAR_GRAPH_HTTP_5XX" : "CALENDAR_UNKNOWN_BOUNDED_FAILURE";
@@ -651,36 +659,104 @@ export class MicrosoftWorkspaceConnector {
       return { envelopeValid: false, requestIdPresent: false, clientRequestIdPresent: false, claimsChallengePresent: false, wwwAuthenticateClass: "ABSENT" };
     }
   }
-  private async diagnosePersistent401(token: string, base: MicrosoftCalendarReadDiagnostic): Promise<MicrosoftCalendarReadDiagnostic> {
-    const me = await this.probeGraphEndpoint(token, "me?$select=id");
-    const diagnostic = {
-      ...base,
-      graphRequestIdPresent: me.requestIdPresent,
-      graphClientRequestIdPresent: me.clientRequestIdPresent,
-      claimsChallengePresent: me.claimsChallengePresent,
-      wwwAuthenticateClass: me.wwwAuthenticateClass,
-      graphMeStatus: me.status,
-      graphMeEnvelopeValid: me.envelopeValid,
-      graphErrorClass: me.errorClass,
+  private buildCalendarRangeParams(range: MicrosoftCalendarRange): string {
+    const start = new Date(range.start);
+    const end = new Date(range.end);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end) return "";
+    return new URLSearchParams({
+      startDateTime: start.toISOString(),
+      endDateTime: end.toISOString(),
+      $select: "id,subject,start,end,isAllDay,isCancelled,showAs,location,isOnlineMeeting",
+    }).toString();
+  }
+  private async executeCalendarEndpointMatrix(token: string, range: MicrosoftCalendarRange): Promise<{ defaultCalendarStatus?: number; calendarsCollectionStatus?: number; defaultCalendarViewStatus?: number; directCalendarViewStatus?: number; eventsCollectionStatus?: number; requestIdPresent: boolean; clientRequestIdPresent: boolean; claimsChallengePresent: boolean; graphErrorClass?: MicrosoftGraphErrorClass; wwwAuthenticateClass: MicrosoftGraphWwwAuthenticateClass }> {
+    const rangeParams = this.buildCalendarRangeParams(range);
+    const defaultCalendar = await this.probeGraphEndpoint(token, "me/calendar?$select=id");
+    const calendarsCollection = await this.probeGraphEndpoint(token, "me/calendars?$select=id");
+    const defaultCalendarView = rangeParams ? await this.probeGraphEndpoint(token, `me/calendar/calendarView?${rangeParams}`) : undefined;
+    const directCalendarView = rangeParams ? await this.probeGraphEndpoint(token, `me/calendarView?${rangeParams}`) : undefined;
+    const eventsCollection = rangeParams ? await this.probeGraphEndpoint(token, `me/events?$select=id&$top=1`) : undefined;
+
+    const aggregated = aggregateMatrixProbes([
+      defaultCalendar,
+      calendarsCollection,
+      defaultCalendarView,
+      directCalendarView,
+      eventsCollection,
+    ]);
+
+    return {
+      defaultCalendarStatus: defaultCalendar.status,
+      calendarsCollectionStatus: calendarsCollection.status,
+      defaultCalendarViewStatus: defaultCalendarView?.status,
+      directCalendarViewStatus: directCalendarView?.status,
+      eventsCollectionStatus: eventsCollection?.status,
+      ...aggregated,
     };
-    if (me.status === 401) return { ...diagnostic, reasonCode: "MICROSOFT_GRAPH_TOKEN_REJECTED_GLOBALLY", finalReasonCode: "MICROSOFT_GRAPH_TOKEN_REJECTED_GLOBALLY" };
-    if (me.status !== 200 || !me.envelopeValid) return { ...diagnostic, reasonCode: "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER", finalReasonCode: "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER" };
+  }
+  private async diagnosePersistent401(token: string, base: MicrosoftCalendarReadDiagnostic, range: MicrosoftCalendarRange): Promise<MicrosoftCalendarReadDiagnostic> {
+    const me = await this.probeGraphEndpoint(token, "me?$select=id");
+    if (me.status === 401) {
+      return { ...base, graphMeStatus: me.status, graphMeEnvelopeValid: me.envelopeValid, graphRequestIdPresent: me.requestIdPresent, graphClientRequestIdPresent: me.clientRequestIdPresent, claimsChallengePresent: me.claimsChallengePresent, wwwAuthenticateClass: me.wwwAuthenticateClass, graphErrorClass: me.errorClass, reasonCode: "MICROSOFT_GRAPH_TOKEN_REJECTED_GLOBALLY", finalReasonCode: "MICROSOFT_GRAPH_TOKEN_REJECTED_GLOBALLY" };
+    }
+    if (me.status !== 200 || !me.envelopeValid) {
+      return { ...base, graphMeStatus: me.status, graphMeEnvelopeValid: me.envelopeValid, graphRequestIdPresent: me.requestIdPresent, graphClientRequestIdPresent: me.clientRequestIdPresent, claimsChallengePresent: me.claimsChallengePresent, wwwAuthenticateClass: me.wwwAuthenticateClass, graphErrorClass: me.errorClass, reasonCode: "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER", finalReasonCode: "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER" };
+    }
 
     const calendar = await this.probeGraphEndpoint(token, "me/calendar?$select=id");
-    const calendarDiagnostic = {
-      ...diagnostic,
-      graphRequestIdPresent: calendar.requestIdPresent || diagnostic.graphRequestIdPresent,
-      graphClientRequestIdPresent: calendar.clientRequestIdPresent || diagnostic.graphClientRequestIdPresent,
-      claimsChallengePresent: calendar.claimsChallengePresent || diagnostic.claimsChallengePresent,
-      wwwAuthenticateClass: calendar.wwwAuthenticateClass !== "ABSENT" ? calendar.wwwAuthenticateClass : diagnostic.wwwAuthenticateClass,
+    const diagnostic = {
+      ...base,
+      graphRequestIdPresent: me.requestIdPresent || calendar.requestIdPresent,
+      graphClientRequestIdPresent: me.clientRequestIdPresent || calendar.clientRequestIdPresent,
+      claimsChallengePresent: me.claimsChallengePresent || calendar.claimsChallengePresent,
+      wwwAuthenticateClass: calendar.wwwAuthenticateClass !== "ABSENT" ? calendar.wwwAuthenticateClass : me.wwwAuthenticateClass,
+      graphMeStatus: me.status,
+      graphMeEnvelopeValid: me.envelopeValid,
       graphCalendarRootStatus: calendar.status,
       graphCalendarRootEnvelopeValid: calendar.envelopeValid,
-      graphErrorClass: calendar.errorClass ?? diagnostic.graphErrorClass,
+      graphErrorClass: calendar.errorClass ?? me.errorClass,
     };
-    if (calendar.status === 401) return { ...calendarDiagnostic, reasonCode: "MICROSOFT_GRAPH_CALENDAR_ROOT_REJECTED", finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_ROOT_REJECTED" };
-    if (calendar.status === 403) return { ...calendarDiagnostic, reasonCode: "MICROSOFT_GRAPH_CALENDAR_PERMISSION_FORBIDDEN", finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_PERMISSION_FORBIDDEN" };
-    if (calendar.status !== 200 || !calendar.envelopeValid) return { ...calendarDiagnostic, reasonCode: "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER", finalReasonCode: "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER" };
-    return { ...calendarDiagnostic, reasonCode: "MICROSOFT_GRAPH_CALENDAR_VIEW_SPECIFIC_REJECTION", finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_VIEW_SPECIFIC_REJECTION" };
+
+    if (calendar.status === 401) {
+      const matrix = await this.executeCalendarEndpointMatrix(token, range);
+      const aggregated = aggregateMatrixProbes([
+        me,
+        calendar,
+        {
+          status: undefined,
+          envelopeValid: false,
+          errorClass: matrix.graphErrorClass,
+          requestIdPresent: matrix.requestIdPresent,
+          clientRequestIdPresent: matrix.clientRequestIdPresent,
+          claimsChallengePresent: matrix.claimsChallengePresent,
+          wwwAuthenticateClass: matrix.wwwAuthenticateClass,
+        },
+      ]);
+
+      const calendarDiagnostic = {
+        ...diagnostic,
+        defaultCalendarStatus: matrix.defaultCalendarStatus,
+        calendarsCollectionStatus: matrix.calendarsCollectionStatus,
+        defaultCalendarViewStatus: matrix.defaultCalendarViewStatus,
+        directCalendarViewStatus: matrix.directCalendarViewStatus,
+        eventsCollectionStatus: matrix.eventsCollectionStatus,
+        graphRequestIdPresent: aggregated.requestIdPresent,
+        graphClientRequestIdPresent: aggregated.clientRequestIdPresent,
+        claimsChallengePresent: aggregated.claimsChallengePresent,
+        wwwAuthenticateClass: aggregated.wwwAuthenticateClass,
+        graphErrorClass: aggregated.graphErrorClass,
+      };
+
+      const allCalendarEndpointsRejected = [matrix.defaultCalendarStatus, matrix.calendarsCollectionStatus, matrix.defaultCalendarViewStatus, matrix.directCalendarViewStatus, matrix.eventsCollectionStatus].every((status) => status === 401 || typeof status === "undefined");
+      if (calendarDiagnostic.claimsChallengePresent) return { ...calendarDiagnostic, reasonCode: "MICROSOFT_GRAPH_CALENDAR_CLAIMS_CHALLENGE", finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_CLAIMS_CHALLENGE" };
+      if (calendarDiagnostic.graphErrorClass === "NO_PERMISSIONS_IN_ACCESS_TOKEN") return { ...calendarDiagnostic, reasonCode: "MICROSOFT_GRAPH_CALENDAR_PERMISSION_NOT_ACCEPTED", finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_PERMISSION_NOT_ACCEPTED" };
+      const additionalEndpointEvidence = [matrix.calendarsCollectionStatus, matrix.defaultCalendarViewStatus, matrix.directCalendarViewStatus, matrix.eventsCollectionStatus].filter((status) => typeof status === "number").length > 0;
+      if (allCalendarEndpointsRejected && additionalEndpointEvidence) return { ...calendarDiagnostic, reasonCode: "MICROSOFT_GRAPH_CALENDAR_RESOURCE_EXTERNAL_401", finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_RESOURCE_EXTERNAL_401" };
+      return { ...calendarDiagnostic, reasonCode: "MICROSOFT_GRAPH_CALENDAR_ROOT_REJECTED", finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_ROOT_REJECTED" };
+    }
+    if (calendar.status === 403) return { ...diagnostic, reasonCode: "MICROSOFT_GRAPH_CALENDAR_PERMISSION_FORBIDDEN", finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_PERMISSION_FORBIDDEN" };
+    if (calendar.status !== 200 || !calendar.envelopeValid) return { ...diagnostic, reasonCode: "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER", finalReasonCode: "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER" };
+    return { ...diagnostic, reasonCode: "MICROSOFT_GRAPH_CALENDAR_VIEW_SPECIFIC_REJECTION", finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_VIEW_SPECIFIC_REJECTION" };
   }
   snapshot(state?: WorkspaceProviderSnapshot["state"], profile?: WorkspaceProfile): WorkspaceProviderSnapshot {
     return { provider: "microsoft", label: "Microsoft 365", state: state ?? (this.account ? "connected" : this.configured ? "disconnected" : "unconfigured"), profile, capabilities, diagnostic: this.diagnostic };
@@ -764,4 +840,70 @@ function classifyWwwAuthenticateHeader(headerValue: string): MicrosoftGraphWwwAu
   if (upper.includes("CLAIMS")) return "CLAIMS_CHALLENGE";
   if (upper.startsWith("BEARER")) return "BEARER_CHALLENGE";
   return "OTHER_BOUNDED";
+}
+
+interface GraphProbePartial {
+  status?: number;
+  envelopeValid?: boolean;
+  errorClass?: MicrosoftGraphErrorClass;
+  requestIdPresent?: boolean;
+  clientRequestIdPresent?: boolean;
+  claimsChallengePresent?: boolean;
+  wwwAuthenticateClass?: MicrosoftGraphWwwAuthenticateClass;
+}
+
+const ERROR_CLASS_PRECEDENCE: Record<MicrosoftGraphErrorClass, number> = {
+  NO_PERMISSIONS_IN_ACCESS_TOKEN: 1,
+  INVALID_AUDIENCE: 2,
+  ACCESS_DENIED: 3,
+  ERROR_ACCESS_DENIED: 4,
+  INVALID_AUTHENTICATION_TOKEN: 5,
+  TOKEN_EXPIRED: 6,
+  TOKEN_NOT_YET_VALID: 7,
+  UNKNOWN_BOUNDED_GRAPH_ERROR: 8,
+};
+
+function aggregateMatrixProbes(probes: Array<GraphProbePartial | undefined>): {
+  requestIdPresent: boolean;
+  clientRequestIdPresent: boolean;
+  claimsChallengePresent: boolean;
+  wwwAuthenticateClass: MicrosoftGraphWwwAuthenticateClass;
+  graphErrorClass?: MicrosoftGraphErrorClass;
+} {
+  const activeProbes = probes.filter((p): p is GraphProbePartial => Boolean(p));
+
+  const requestIdPresent = activeProbes.some((p) => Boolean(p.requestIdPresent));
+  const clientRequestIdPresent = activeProbes.some((p) => Boolean(p.clientRequestIdPresent));
+  const claimsChallengePresent = activeProbes.some((p) => Boolean(p.claimsChallengePresent));
+
+  let wwwAuthenticateClass: MicrosoftGraphWwwAuthenticateClass = "ABSENT";
+  if (activeProbes.some((p) => p.wwwAuthenticateClass === "CLAIMS_CHALLENGE" || p.claimsChallengePresent)) {
+    wwwAuthenticateClass = "CLAIMS_CHALLENGE";
+  } else if (activeProbes.some((p) => p.wwwAuthenticateClass === "BEARER_CHALLENGE")) {
+    wwwAuthenticateClass = "BEARER_CHALLENGE";
+  } else if (activeProbes.some((p) => p.wwwAuthenticateClass === "OTHER_BOUNDED")) {
+    wwwAuthenticateClass = "OTHER_BOUNDED";
+  }
+
+  let graphErrorClass: MicrosoftGraphErrorClass | undefined;
+  for (const p of activeProbes) {
+    if (!p.errorClass) continue;
+    if (!graphErrorClass) {
+      graphErrorClass = p.errorClass;
+    } else {
+      const currentRank = ERROR_CLASS_PRECEDENCE[graphErrorClass] ?? 99;
+      const newRank = ERROR_CLASS_PRECEDENCE[p.errorClass] ?? 99;
+      if (newRank < currentRank) {
+        graphErrorClass = p.errorClass;
+      }
+    }
+  }
+
+  return {
+    requestIdPresent,
+    clientRequestIdPresent,
+    claimsChallengePresent,
+    wwwAuthenticateClass,
+    graphErrorClass,
+  };
 }
