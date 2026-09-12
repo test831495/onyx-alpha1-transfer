@@ -370,8 +370,8 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
   it("uses a refreshed token once after an initial 401 and succeeds on retry", async () => {
     const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
     const acquireTokenSilent = vi.fn()
-      .mockResolvedValueOnce({ accessToken: "initial-token" })
-      .mockResolvedValueOnce({ accessToken: "refreshed-token" });
+      .mockResolvedValueOnce({ accessToken: "initial-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } })
+      .mockResolvedValueOnce({ accessToken: "refreshed-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } });
     const fetch = vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
       .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers({ "content-type": "application/json" }), json: async () => ({ value: [] }) });
@@ -394,8 +394,8 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
     const acquireTokenRedirect = vi.fn();
     const acquireTokenPopup = vi.fn();
     const acquireTokenSilent = vi.fn()
-      .mockResolvedValueOnce({ accessToken: "initial-token" })
-      .mockResolvedValueOnce({ accessToken: "refreshed-token" });
+      .mockResolvedValueOnce({ accessToken: "initial-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } })
+      .mockResolvedValueOnce({ accessToken: "refreshed-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } });
     const fetch = vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
       .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
@@ -427,7 +427,7 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
     const acquireTokenRedirect = vi.fn();
     const acquireTokenPopup = vi.fn();
     const acquireTokenSilent = vi.fn()
-      .mockResolvedValueOnce({ accessToken: "initial-token" })
+      .mockResolvedValueOnce({ accessToken: "initial-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } })
       .mockRejectedValueOnce(Object.assign(new Error("interaction required"), { errorCode: "interaction_required" }));
     const fetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() });
     vi.stubGlobal("fetch", fetch);
@@ -445,7 +445,7 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
     const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
     const acquireTokenRedirect = vi.fn();
     const acquireTokenSilent = vi.fn()
-      .mockResolvedValueOnce({ accessToken: "initial-token" })
+      .mockResolvedValueOnce({ accessToken: "initial-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } })
       .mockRejectedValueOnce(new Error("temporary network failure"));
     const fetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() });
     vi.stubGlobal("fetch", fetch);
@@ -460,7 +460,7 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
 
   it("preserves proven credential and header facts when the initial Graph request fails on the network", async () => {
     const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
-    const acquireTokenSilent = vi.fn().mockResolvedValue({ accessToken: "initial-token" });
+    const acquireTokenSilent = vi.fn().mockResolvedValue({ accessToken: "initial-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } });
     const fetch = vi.fn().mockRejectedValue(new Error("network unreachable"));
     vi.stubGlobal("fetch", fetch);
     Object.assign(connector, { application: { acquireTokenSilent }, account: { homeAccountId: "acct", tenantId: "tenant" } });
@@ -481,8 +481,8 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
   it("preserves refresh and header facts when the retry Graph request fails on the network", async () => {
     const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
     const acquireTokenSilent = vi.fn()
-      .mockResolvedValueOnce({ accessToken: "initial-token" })
-      .mockResolvedValueOnce({ accessToken: "refreshed-token" });
+      .mockResolvedValueOnce({ accessToken: "initial-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } })
+      .mockResolvedValueOnce({ accessToken: "refreshed-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } });
     const fetch = vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
       .mockRejectedValueOnce(new Error("network unreachable"));
@@ -505,7 +505,7 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
 
   it("preserves proven credential and header facts when the initial Graph response is a non-401 failure", async () => {
     const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
-    const acquireTokenSilent = vi.fn().mockResolvedValue({ accessToken: "initial-token" });
+    const acquireTokenSilent = vi.fn().mockResolvedValue({ accessToken: "initial-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 403, headers: new Headers() }));
     Object.assign(connector, { application: { acquireTokenSilent }, account: { homeAccountId: "acct", tenantId: "tenant" } });
 
@@ -518,7 +518,7 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
     const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
     const fetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() });
     vi.stubGlobal("fetch", fetch);
-    Object.assign(connector, { application: { acquireTokenSilent: vi.fn().mockResolvedValueOnce({ accessToken: "initial-token" }).mockResolvedValueOnce({ accessToken: "" }) }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+    Object.assign(connector, { application: { acquireTokenSilent: vi.fn().mockResolvedValueOnce({ accessToken: "initial-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } }).mockResolvedValueOnce({ accessToken: "", account: { homeAccountId: "acct", tenantId: "tenant" } }) }, account: { homeAccountId: "acct", tenantId: "tenant" } });
 
     const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
 
@@ -535,8 +535,8 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
   ])("isolates persistent 401 at the %s boundary", async (_label, meStatus, calendarStatus, reasonCode) => {
     const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
     const acquireTokenSilent = vi.fn()
-      .mockResolvedValueOnce({ accessToken: "initial-token" })
-      .mockResolvedValueOnce({ accessToken: "refreshed-token" });
+      .mockResolvedValueOnce({ accessToken: "initial-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } })
+      .mockResolvedValueOnce({ accessToken: "refreshed-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } });
     const fetch = vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
       .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() });
@@ -557,13 +557,42 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
     expect(JSON.stringify(result.diagnostic)).not.toMatch(/redacted|initial-token|refreshed-token|acct|tenant|Authorization|Bearer|InvalidAuthenticationToken|ErrorAccessDenied/);
   });
 
+  it("uses one canonical account and refreshed Graph token for /me and Calendar root probes", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const canonicalAccount = { homeAccountId: "synthetic-account", tenantId: "synthetic-tenant" };
+    const acquireTokenSilent = vi.fn()
+      .mockResolvedValueOnce({ accessToken: "initial-token", scopes: ["User.Read", "Calendars.Read"], account: canonicalAccount })
+      .mockResolvedValueOnce({ accessToken: "refreshed-token", scopes: ["User.Read", "Calendars.Read"], account: canonicalAccount });
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), json: async () => ({ id: "discarded" }) })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers(), json: async () => ({ error: { code: "InvalidAuthenticationToken" } }) });
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { application: { acquireTokenSilent }, account: canonicalAccount });
+
+    await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(acquireTokenSilent).toHaveBeenNthCalledWith(1, { account: canonicalAccount, scopes: ["User.Read", "Calendars.Read"] });
+    expect(acquireTokenSilent).toHaveBeenNthCalledWith(2, { account: canonicalAccount, scopes: ["User.Read", "Calendars.Read"], forceRefresh: true });
+    const calendarRetryRequest = fetch.mock.calls[1]!;
+    const meProbeRequest = fetch.mock.calls[2]!;
+    const calendarRootProbeRequest = fetch.mock.calls[3]!;
+    expect(meProbeRequest[0]).toBe("https://graph.microsoft.com/v1.0/me?$select=id");
+    expect(calendarRootProbeRequest[0]).toBe("https://graph.microsoft.com/v1.0/me/calendar?$select=id");
+    expect(meProbeRequest[1]).toMatchObject({ method: "GET" });
+    expect(calendarRootProbeRequest[1]).toMatchObject({ method: "GET" });
+    expect(meProbeRequest[1].headers.Authorization).toBe(calendarRetryRequest[1].headers.Authorization);
+    expect(calendarRootProbeRequest[1].headers.Authorization).toBe(calendarRetryRequest[1].headers.Authorization);
+  });
+
   it.each([
     ["missing id", { value: {} }],
     ["empty id", { value: { id: "" } }],
     ["non-string id", { value: { id: 123 } }],
   ])("stops after an invalid /me envelope: %s", async (_label, meBody) => {
     const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
-    const acquireTokenSilent = vi.fn().mockResolvedValueOnce({ accessToken: "initial-token" }).mockResolvedValueOnce({ accessToken: "refreshed-token" });
+    const acquireTokenSilent = vi.fn().mockResolvedValueOnce({ accessToken: "initial-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } }).mockResolvedValueOnce({ accessToken: "refreshed-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } });
     const fetch = vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
       .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
@@ -582,7 +611,7 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
 
   it("stops after an invalid Calendar root envelope", async () => {
     const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
-    const acquireTokenSilent = vi.fn().mockResolvedValueOnce({ accessToken: "initial-token" }).mockResolvedValueOnce({ accessToken: "refreshed-token" });
+    const acquireTokenSilent = vi.fn().mockResolvedValueOnce({ accessToken: "initial-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } }).mockResolvedValueOnce({ accessToken: "refreshed-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } });
     const fetch = vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
       .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
@@ -612,7 +641,7 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
     ["AccessDenied", "ACCESS_DENIED"],
   ])("normalizes Graph error code %s to %s without retaining the raw code", async (rawCode, expectedClass) => {
     const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
-    const acquireTokenSilent = vi.fn().mockResolvedValueOnce({ accessToken: "initial-token" }).mockResolvedValueOnce({ accessToken: "refreshed-token" });
+    const acquireTokenSilent = vi.fn().mockResolvedValueOnce({ accessToken: "initial-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } }).mockResolvedValueOnce({ accessToken: "refreshed-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } });
     const fetch = vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
       .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
@@ -628,7 +657,7 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
 
   it("fails closed for unknown Graph error codes", async () => {
     const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
-    const acquireTokenSilent = vi.fn().mockResolvedValueOnce({ accessToken: "initial-token" }).mockResolvedValueOnce({ accessToken: "refreshed-token" });
+    const acquireTokenSilent = vi.fn().mockResolvedValueOnce({ accessToken: "initial-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } }).mockResolvedValueOnce({ accessToken: "refreshed-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } });
     const fetch = vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
       .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
