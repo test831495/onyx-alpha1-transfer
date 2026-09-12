@@ -32,4 +32,10 @@ describe("conversation contract", () => {
   it("fails closed for overlong input", () => {
     expect(() => createConversationRequest({ source: "TYPED", rawText: "x".repeat(2001), activeCharacter: "NOVA" })).toThrow("bounded");
   });
+
+  it("bounds identifiers and validates voice metadata", () => {
+    expect(() => createConversationRequest({ source: "TYPED", rawText: "hello", activeCharacter: "NOVA", sessionReference: "x".repeat(129) })).toThrow("bounded");
+    expect(() => createConversationRequest({ source: "VOICE", rawText: "hello", activeCharacter: "NOVA", voice: { confidence: 2 } })).toThrow("confidence");
+    expect(() => createConversationRequest({ source: "VOICE", rawText: "hello", activeCharacter: "NOVA", voice: { generation: Number.NaN } })).toThrow("generation");
+  });
 });

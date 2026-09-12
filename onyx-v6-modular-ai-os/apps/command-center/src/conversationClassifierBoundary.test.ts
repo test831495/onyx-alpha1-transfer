@@ -17,5 +17,6 @@ describe("conversation classifier boundary", () => {
     expect(classifyConversationRequest(request("what is on my calendar tomorrow")).truthSourceClass).toBe("CONNECTOR");
     expect(classifyConversationRequest(request("how are you")).kind).toBe("GENERAL_CONVERSATION");
     expect(classifyConversationRequest(request("close the app")).ambiguity).toBe("CLARIFICATION_REQUIRED");
+    expect(classifyConversationRequest(request("what about someday")).kind).toBe("CLARIFICATION");
   });
 });

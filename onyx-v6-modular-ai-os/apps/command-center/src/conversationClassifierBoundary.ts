@@ -27,7 +27,10 @@ export function classifyConversationRequest(request: ConversationRequest): Conve
   if (envelope.kind === "CANCEL") return result("CANCEL", "CONVERSATIONAL_GRAMMAR", "CANCEL_SESSION", "UNKNOWN", envelope);
   if (envelope.intentFamily === "SESSION_CLOSE_INTENT") return result("SESSION_CLOSE", "CONVERSATIONAL_GRAMMAR", "CANCEL_SESSION", "UNKNOWN", envelope);
   if (envelope.clarificationRequired) return result("CLARIFICATION", "CONVERSATIONAL_GRAMMAR", "CLARIFICATION", "UNKNOWN", envelope);
-  if (envelope.kind === "FOLLOW_UP_DATE_QUESTION") return result("FOLLOW_UP", "CONVERSATIONAL_GRAMMAR", "DETERMINISTIC_RESPONSE", "DETERMINISTIC_LOCAL", envelope, undefined, "MISSING_CONTEXT");
+  if (envelope.kind === "FOLLOW_UP_DATE_QUESTION") {
+    if (envelope.unsupportedReason || !envelope.weekday) return result("CLARIFICATION", "CONVERSATIONAL_GRAMMAR", "CLARIFICATION", "UNKNOWN", envelope, "FOLLOW_UP_UNSUPPORTED");
+    return result("FOLLOW_UP", "CONVERSATIONAL_GRAMMAR", "DETERMINISTIC_RESPONSE", "DETERMINISTIC_LOCAL", envelope, undefined, "MISSING_CONTEXT");
+  }
   if (envelope.kind === "DATE_QUESTION" || envelope.kind === "TIME_QUERY" || envelope.kind === "UI_VISIBLE_QUESTION" || envelope.kind === "CALENDAR_LOCAL_FACT") return result("DETERMINISTIC", "CONVERSATIONAL_GRAMMAR", "DETERMINISTIC_RESPONSE", "DETERMINISTIC_LOCAL", envelope);
   if (envelope.kind === "CALENDAR_PROVIDER_LIMITATION") return result("CONNECTOR_REQUEST", "CONNECTOR_PROJECTION", "CONNECTOR_REQUEST", "CONNECTOR", envelope, "CONNECTOR_UNAVAILABLE");
   if (envelope.kind === "NAVIGATION" || envelope.kind === "COMPOSITE_NAVIGATE_AND_FACT") return result("NAVIGATION", "CONVERSATIONAL_GRAMMAR", "NAVIGATION", "DETERMINISTIC_LOCAL", envelope);

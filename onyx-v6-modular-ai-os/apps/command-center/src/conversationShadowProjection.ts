@@ -21,7 +21,7 @@ export function projectConversationShadow(
   const classificationDiffers = legacy.kind !== v1.kind;
   const sideEffectDiffers = legacy.sideEffect !== v1.sideEffect;
   return Object.freeze({
-    diverged: classificationDiffers || sideEffectDiffers || contextOutcome !== "RESOLVED",
+    diverged: classificationDiffers || sideEffectDiffers || (contextOutcome !== "NOT_APPLICABLE" && contextOutcome !== "RESOLVED"),
     divergenceCategory: classificationDiffers ? "CLASSIFICATION" : sideEffectDiffers ? "SIDE_EFFECT" : contextOutcome !== "RESOLVED" ? "CONTEXT" : "NONE",
     legacyKind: legacy.kind,
     v1Kind: v1.kind,

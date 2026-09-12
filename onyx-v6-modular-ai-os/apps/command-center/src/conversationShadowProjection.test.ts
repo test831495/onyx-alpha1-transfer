@@ -12,4 +12,13 @@ describe("conversation shadow projection", () => {
     expect(projection.sideEffectsExecuted).toBe(false);
     expect(projection.divergenceCategory).toBe("CLASSIFICATION");
   });
+
+  it("does not treat a non-applicable context as a mismatch", () => {
+    const projection = projectConversationShadow(
+      { kind: "DATE_QUESTION", sideEffect: "DETERMINISTIC_RESPONSE" },
+      { kind: "DATE_QUESTION", sideEffect: "DETERMINISTIC_RESPONSE" },
+      "NOT_APPLICABLE",
+    );
+    expect(projection.diverged).toBe(false);
+  });
 });
