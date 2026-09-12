@@ -31,6 +31,18 @@ describe("Outlook Mail panel", () => {
     expect(renderToStaticMarkup(<MailPanel connected busy={false} messages={[]} reasonCode="MAIL_EMPTY" onConnect={connect} onRefresh={refresh} />)).toContain("No recent mail available.");
   });
 
+  it("MAIL_UI_005 surfaces a recoverable connection failure instead of masking it as disconnected", () => {
+    const html = renderToStaticMarkup(<MailPanel connected={false} busy={false} messages={[]} reasonCode="MAIL_TRANSPORT_FAILURE" onConnect={() => undefined} onRefresh={() => undefined} />);
+    expect(html).toContain("Outlook Mail is temporarily unavailable.");
+    expect(html).toContain("Reconnect Outlook Mail");
+  });
+
+  it("MAIL_UI_007 treats a successful refreshed empty mailbox as empty", () => {
+    const html = renderToStaticMarkup(<MailPanel connected busy={false} messages={[]} reasonCode="MAIL_RETRY_SUCCEEDED" onConnect={() => undefined} onRefresh={() => undefined} />);
+    expect(html).toContain("No recent mail available.");
+    expect(html).not.toContain("temporarily unavailable");
+  });
+
   it("MAIL_UI_008 through 014 renders at most ten safe metadata records", () => {
     const html = renderToStaticMarkup(<MailPanel connected busy={false} messages={messages} onConnect={() => undefined} onRefresh={() => undefined} />);
     expect(html).toContain("Subject 1");
