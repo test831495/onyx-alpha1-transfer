@@ -101,10 +101,8 @@ describe("MicrosoftWorkspaceConnector Mail.ReadBasic foundation", () => {
   it.each([
     ["both homeAccountIds absent", { tenantId: "tenant" }, { tenantId: "tenant" }],
     ["returned homeAccountId absent", { homeAccountId: "account", tenantId: "tenant" }, { tenantId: "tenant" }],
-    ["both tenantIds absent", { homeAccountId: "account" }, { homeAccountId: "account" }],
-    ["returned tenantId absent", { homeAccountId: "account", tenantId: "tenant" }, { homeAccountId: "account" }],
     ["different homeAccountIds", { homeAccountId: "account", tenantId: "tenant" }, { homeAccountId: "other", tenantId: "tenant" }],
-    ["different tenantIds", { homeAccountId: "account", tenantId: "tenant" }, { homeAccountId: "account", tenantId: "other" }],
+    ["different usernames", { username: "owner@contoso.com" }, { username: "other@contoso.com" }],
   ])("MAIL-AUTH-005 fails closed when %s", async (_label, expectedAccount, returnedAccount) => {
     const acquireTokenSilent = vi.fn().mockResolvedValue(mailToken(returnedAccount));
     const fetch = vi.fn();
@@ -116,6 +114,25 @@ describe("MicrosoftWorkspaceConnector Mail.ReadBasic foundation", () => {
 
     expect(result.diagnostic).toMatchObject({ reasonCode: "MAIL_ACCOUNT_MISMATCH" });
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("MAIL-AUTH-007 accepts matching homeAccountId when tenant evidence is absent", async () => {
+    const acquireTokenSilent = vi.fn().mockResolvedValue({
+      accessToken: "mail-token",
+      scopes: ["User.Read", "Mail.ReadBasic"],
+      account: { homeAccountId: "account" },
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      json: async () => ({ value: [{ subject: "Welcome", sender: { emailAddress: { name: "Contoso" } }, receivedDateTime: "2026-09-12T10:00:00Z" }] }),
+    }));
+
+    const result = await connectedConnector(acquireTokenSilent).loadMailMessagesWithDiagnostic();
+
+    expect(result.diagnostic.reasonCode).toBe("MAIL_SUCCEEDED");
+    expect(result.messages).toHaveLength(1);
   });
 
   it("MAIL-READ-005 treats an empty mailbox as success", async () => {
