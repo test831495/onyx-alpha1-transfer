@@ -17,11 +17,21 @@ const browserOrigin =
     ? window.location.origin
     : "http://localhost:5200";
 
+const PREVIEW_ORIGIN_PATTERN = /^https:\/\/deploy-preview-\d+--onyx-alpha0\.netlify\.app$/i;
+
+export function resolveMicrosoftRedirectUri(currentOrigin: string, configuredRedirectUri: string): string {
+  const normalizedOrigin = currentOrigin.replace(/\/$/, "");
+  if (/^https?:\/\/localhost(?::\d+)?$/i.test(normalizedOrigin) || PREVIEW_ORIGIN_PATTERN.test(normalizedOrigin)) {
+    return normalizedOrigin;
+  }
+  return configuredRedirectUri.trim() || normalizedOrigin;
+}
+
 const microsoftRuntimeEnv = readMicrosoftRuntimeEnv();
 const runtimeMicrosoftConfig = resolveRuntimeMicrosoftConfig({
   ONYX_MS_CLIENT_ID: microsoftRuntimeEnv.ONYX_MS_CLIENT_ID,
   ONYX_MS_TENANT_ID: microsoftRuntimeEnv.ONYX_MS_TENANT_ID,
-  ONYX_MS_REDIRECT_URI: microsoftRuntimeEnv.ONYX_MS_REDIRECT_URI || browserOrigin,
+  ONYX_MS_REDIRECT_URI: resolveMicrosoftRedirectUri(browserOrigin, microsoftRuntimeEnv.ONYX_MS_REDIRECT_URI),
   ONYX_MS_AUTHORITY: microsoftRuntimeEnv.ONYX_MS_AUTHORITY,
 });
 
@@ -31,8 +41,7 @@ const microsoft = new MicrosoftWorkspaceConnector({
   authority:
     runtimeMicrosoftConfig.VITE_MS_AUTHORITY ||
     "https://login.microsoftonline.com/common",
-  redirectUri:
-    runtimeMicrosoftConfig.VITE_MS_REDIRECT_URI || browserOrigin,
+  redirectUri: runtimeMicrosoftConfig.VITE_MS_REDIRECT_URI || browserOrigin,
 });
 export async function loadWorkspaceSnapshot(): Promise<WorkspaceSnapshot> { let state = await microsoft.initialize(); if (state.state === "connected") { try { const profile=await microsoft.loadProfile(); state=microsoft.snapshot("connected",profile); } catch(error){ state={...microsoft.snapshot("error"),diagnostic:error instanceof Error?error.message:"Microsoft profile could not be loaded."}; } } return {providers:[state,...plannedProviderSnapshots()],activeProvider:state.state==="connected"?"microsoft":undefined,updatedAt:Date.now()}; }
 export const getMicrosoftAccessToken=(scopes:string[])=>microsoft.getAccessToken(scopes);

@@ -1,4 +1,4 @@
-import{describe,expect,it}from"vitest";import{connectMicrosoftMail,disconnectedWorkspaceSnapshot,loadMicrosoftMailMessagesWithDiagnostic}from"./workspaceController";
+import{describe,expect,it}from"vitest";import{connectMicrosoftMail,disconnectedWorkspaceSnapshot,loadMicrosoftMailMessagesWithDiagnostic,resolveMicrosoftRedirectUri}from"./workspaceController";
 import { MicrosoftWorkspaceConnector, resolveRuntimeMicrosoftConfig } from "@onyx/workspace-connectors";
 import { readMicrosoftRuntimeEnv } from "../viteMicrosoftEnvBridge";
 import { readFileSync } from "node:fs";
@@ -7,6 +7,20 @@ describe("workspace foundation",()=>{it("declares all providers",()=>expect(disc
 it("exports the non-UI Microsoft Mail foundation projection", () => {
   expect(typeof connectMicrosoftMail).toBe("function");
   expect(typeof loadMicrosoftMailMessagesWithDiagnostic).toBe("function");
+});
+
+describe("Microsoft redirect ownership", () => {
+  it("keeps preview authentication on the current preview origin", () => {
+    expect(resolveMicrosoftRedirectUri("https://deploy-preview-102--onyx-alpha0.netlify.app", "https://onyx-alpha0.netlify.app")).toBe("https://deploy-preview-102--onyx-alpha0.netlify.app");
+  });
+
+  it("preserves the approved configured production redirect on production", () => {
+    expect(resolveMicrosoftRedirectUri("https://onyx-alpha0.netlify.app", "https://onyx-alpha0.netlify.app")).toBe("https://onyx-alpha0.netlify.app");
+  });
+
+  it("falls back to the current origin when no redirect is configured", () => {
+    expect(resolveMicrosoftRedirectUri("http://localhost:5173", "")).toBe("http://localhost:5173");
+  });
 });
 
 it("clears Mail trace before disconnect can reject", () => {
