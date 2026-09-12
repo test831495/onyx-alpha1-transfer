@@ -669,25 +669,29 @@ export class MicrosoftWorkspaceConnector {
       $select: "id,subject,start,end,isAllDay,isCancelled,showAs,location,isOnlineMeeting",
     }).toString();
   }
-  private async executeCalendarEndpointMatrix(token: string, range: MicrosoftCalendarRange): Promise<{ defaultCalendarStatus?: number; calendarsCollectionStatus?: number; defaultCalendarViewStatus?: number; directCalendarViewStatus?: number; eventsCollectionStatus?: number; claimsChallengePresent: boolean; graphErrorClass?: MicrosoftGraphErrorClass; wwwAuthenticateClass: MicrosoftGraphWwwAuthenticateClass }> {
+  private async executeCalendarEndpointMatrix(token: string, range: MicrosoftCalendarRange): Promise<{ defaultCalendarStatus?: number; calendarsCollectionStatus?: number; defaultCalendarViewStatus?: number; directCalendarViewStatus?: number; eventsCollectionStatus?: number; requestIdPresent: boolean; clientRequestIdPresent: boolean; claimsChallengePresent: boolean; graphErrorClass?: MicrosoftGraphErrorClass; wwwAuthenticateClass: MicrosoftGraphWwwAuthenticateClass }> {
     const rangeParams = this.buildCalendarRangeParams(range);
     const defaultCalendar = await this.probeGraphEndpoint(token, "me/calendar?$select=id");
     const calendarsCollection = await this.probeGraphEndpoint(token, "me/calendars?$select=id");
-    const defaultCalendarView = rangeParams ? await this.probeGraphEndpoint(token, `me/calendar/calendarView?${rangeParams}`) : { status: undefined, envelopeValid: false, requestIdPresent: false, clientRequestIdPresent: false, claimsChallengePresent: false, wwwAuthenticateClass: "ABSENT" as const };
-    const directCalendarView = rangeParams ? await this.probeGraphEndpoint(token, `me/calendarView?${rangeParams}`) : { status: undefined, envelopeValid: false, requestIdPresent: false, clientRequestIdPresent: false, claimsChallengePresent: false, wwwAuthenticateClass: "ABSENT" as const };
-    const eventsCollection = rangeParams ? await this.probeGraphEndpoint(token, `me/events?$select=id&$top=1`) : { status: undefined, envelopeValid: false, requestIdPresent: false, clientRequestIdPresent: false, claimsChallengePresent: false, wwwAuthenticateClass: "ABSENT" as const };
-    const claimsChallengePresent = defaultCalendar.claimsChallengePresent || calendarsCollection.claimsChallengePresent || defaultCalendarView.claimsChallengePresent || directCalendarView.claimsChallengePresent || eventsCollection.claimsChallengePresent;
-    const graphErrorClass = defaultCalendar.errorClass ?? calendarsCollection.errorClass ?? defaultCalendarView.errorClass ?? directCalendarView.errorClass ?? eventsCollection.errorClass;
-    const wwwAuthenticateClass = [defaultCalendar.wwwAuthenticateClass, calendarsCollection.wwwAuthenticateClass, defaultCalendarView.wwwAuthenticateClass, directCalendarView.wwwAuthenticateClass, eventsCollection.wwwAuthenticateClass].find((value) => value !== "ABSENT") ?? "ABSENT";
+    const defaultCalendarView = rangeParams ? await this.probeGraphEndpoint(token, `me/calendar/calendarView?${rangeParams}`) : undefined;
+    const directCalendarView = rangeParams ? await this.probeGraphEndpoint(token, `me/calendarView?${rangeParams}`) : undefined;
+    const eventsCollection = rangeParams ? await this.probeGraphEndpoint(token, `me/events?$select=id&$top=1`) : undefined;
+
+    const aggregated = aggregateMatrixProbes([
+      defaultCalendar,
+      calendarsCollection,
+      defaultCalendarView,
+      directCalendarView,
+      eventsCollection,
+    ]);
+
     return {
       defaultCalendarStatus: defaultCalendar.status,
       calendarsCollectionStatus: calendarsCollection.status,
-      defaultCalendarViewStatus: defaultCalendarView.status,
-      directCalendarViewStatus: directCalendarView.status,
-      eventsCollectionStatus: eventsCollection.status,
-      claimsChallengePresent,
-      graphErrorClass,
-      wwwAuthenticateClass,
+      defaultCalendarViewStatus: defaultCalendarView?.status,
+      directCalendarViewStatus: directCalendarView?.status,
+      eventsCollectionStatus: eventsCollection?.status,
+      ...aggregated,
     };
   }
   private async diagnosePersistent401(token: string, base: MicrosoftCalendarReadDiagnostic, range: MicrosoftCalendarRange): Promise<MicrosoftCalendarReadDiagnostic> {
@@ -715,6 +719,20 @@ export class MicrosoftWorkspaceConnector {
 
     if (calendar.status === 401) {
       const matrix = await this.executeCalendarEndpointMatrix(token, range);
+      const aggregated = aggregateMatrixProbes([
+        me,
+        calendar,
+        {
+          status: undefined,
+          envelopeValid: false,
+          errorClass: matrix.graphErrorClass,
+          requestIdPresent: matrix.requestIdPresent,
+          clientRequestIdPresent: matrix.clientRequestIdPresent,
+          claimsChallengePresent: matrix.claimsChallengePresent,
+          wwwAuthenticateClass: matrix.wwwAuthenticateClass,
+        },
+      ]);
+
       const calendarDiagnostic = {
         ...diagnostic,
         defaultCalendarStatus: matrix.defaultCalendarStatus,
@@ -722,13 +740,16 @@ export class MicrosoftWorkspaceConnector {
         defaultCalendarViewStatus: matrix.defaultCalendarViewStatus,
         directCalendarViewStatus: matrix.directCalendarViewStatus,
         eventsCollectionStatus: matrix.eventsCollectionStatus,
-        claimsChallengePresent: me.claimsChallengePresent || calendar.claimsChallengePresent || matrix.claimsChallengePresent,
-        graphErrorClass: calendar.errorClass ?? matrix.graphErrorClass ?? me.errorClass,
-        wwwAuthenticateClass: matrix.wwwAuthenticateClass !== "ABSENT" ? matrix.wwwAuthenticateClass : calendar.wwwAuthenticateClass !== "ABSENT" ? calendar.wwwAuthenticateClass : me.wwwAuthenticateClass,
+        graphRequestIdPresent: aggregated.requestIdPresent,
+        graphClientRequestIdPresent: aggregated.clientRequestIdPresent,
+        claimsChallengePresent: aggregated.claimsChallengePresent,
+        wwwAuthenticateClass: aggregated.wwwAuthenticateClass,
+        graphErrorClass: aggregated.graphErrorClass,
       };
+
       const allCalendarEndpointsRejected = [matrix.defaultCalendarStatus, matrix.calendarsCollectionStatus, matrix.defaultCalendarViewStatus, matrix.directCalendarViewStatus, matrix.eventsCollectionStatus].every((status) => status === 401 || typeof status === "undefined");
-      if (calendar.claimsChallengePresent || matrix.claimsChallengePresent) return { ...calendarDiagnostic, reasonCode: "MICROSOFT_GRAPH_CALENDAR_CLAIMS_CHALLENGE", finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_CLAIMS_CHALLENGE" };
-      if (calendar.errorClass === "NO_PERMISSIONS_IN_ACCESS_TOKEN" || matrix.graphErrorClass === "NO_PERMISSIONS_IN_ACCESS_TOKEN") return { ...calendarDiagnostic, reasonCode: "MICROSOFT_GRAPH_CALENDAR_PERMISSION_NOT_ACCEPTED", finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_PERMISSION_NOT_ACCEPTED" };
+      if (calendarDiagnostic.claimsChallengePresent) return { ...calendarDiagnostic, reasonCode: "MICROSOFT_GRAPH_CALENDAR_CLAIMS_CHALLENGE", finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_CLAIMS_CHALLENGE" };
+      if (calendarDiagnostic.graphErrorClass === "NO_PERMISSIONS_IN_ACCESS_TOKEN") return { ...calendarDiagnostic, reasonCode: "MICROSOFT_GRAPH_CALENDAR_PERMISSION_NOT_ACCEPTED", finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_PERMISSION_NOT_ACCEPTED" };
       const additionalEndpointEvidence = [matrix.calendarsCollectionStatus, matrix.defaultCalendarViewStatus, matrix.directCalendarViewStatus, matrix.eventsCollectionStatus].filter((status) => typeof status === "number").length > 0;
       if (allCalendarEndpointsRejected && additionalEndpointEvidence) return { ...calendarDiagnostic, reasonCode: "MICROSOFT_GRAPH_CALENDAR_RESOURCE_EXTERNAL_401", finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_RESOURCE_EXTERNAL_401" };
       return { ...calendarDiagnostic, reasonCode: "MICROSOFT_GRAPH_CALENDAR_ROOT_REJECTED", finalReasonCode: "MICROSOFT_GRAPH_CALENDAR_ROOT_REJECTED" };
@@ -819,4 +840,70 @@ function classifyWwwAuthenticateHeader(headerValue: string): MicrosoftGraphWwwAu
   if (upper.includes("CLAIMS")) return "CLAIMS_CHALLENGE";
   if (upper.startsWith("BEARER")) return "BEARER_CHALLENGE";
   return "OTHER_BOUNDED";
+}
+
+interface GraphProbePartial {
+  status?: number;
+  envelopeValid?: boolean;
+  errorClass?: MicrosoftGraphErrorClass;
+  requestIdPresent?: boolean;
+  clientRequestIdPresent?: boolean;
+  claimsChallengePresent?: boolean;
+  wwwAuthenticateClass?: MicrosoftGraphWwwAuthenticateClass;
+}
+
+const ERROR_CLASS_PRECEDENCE: Record<MicrosoftGraphErrorClass, number> = {
+  NO_PERMISSIONS_IN_ACCESS_TOKEN: 1,
+  INVALID_AUDIENCE: 2,
+  ACCESS_DENIED: 3,
+  ERROR_ACCESS_DENIED: 4,
+  INVALID_AUTHENTICATION_TOKEN: 5,
+  TOKEN_EXPIRED: 6,
+  TOKEN_NOT_YET_VALID: 7,
+  UNKNOWN_BOUNDED_GRAPH_ERROR: 8,
+};
+
+function aggregateMatrixProbes(probes: Array<GraphProbePartial | undefined>): {
+  requestIdPresent: boolean;
+  clientRequestIdPresent: boolean;
+  claimsChallengePresent: boolean;
+  wwwAuthenticateClass: MicrosoftGraphWwwAuthenticateClass;
+  graphErrorClass?: MicrosoftGraphErrorClass;
+} {
+  const activeProbes = probes.filter((p): p is GraphProbePartial => Boolean(p));
+
+  const requestIdPresent = activeProbes.some((p) => Boolean(p.requestIdPresent));
+  const clientRequestIdPresent = activeProbes.some((p) => Boolean(p.clientRequestIdPresent));
+  const claimsChallengePresent = activeProbes.some((p) => Boolean(p.claimsChallengePresent));
+
+  let wwwAuthenticateClass: MicrosoftGraphWwwAuthenticateClass = "ABSENT";
+  if (activeProbes.some((p) => p.wwwAuthenticateClass === "CLAIMS_CHALLENGE" || p.claimsChallengePresent)) {
+    wwwAuthenticateClass = "CLAIMS_CHALLENGE";
+  } else if (activeProbes.some((p) => p.wwwAuthenticateClass === "BEARER_CHALLENGE")) {
+    wwwAuthenticateClass = "BEARER_CHALLENGE";
+  } else if (activeProbes.some((p) => p.wwwAuthenticateClass === "OTHER_BOUNDED")) {
+    wwwAuthenticateClass = "OTHER_BOUNDED";
+  }
+
+  let graphErrorClass: MicrosoftGraphErrorClass | undefined;
+  for (const p of activeProbes) {
+    if (!p.errorClass) continue;
+    if (!graphErrorClass) {
+      graphErrorClass = p.errorClass;
+    } else {
+      const currentRank = ERROR_CLASS_PRECEDENCE[graphErrorClass] ?? 99;
+      const newRank = ERROR_CLASS_PRECEDENCE[p.errorClass] ?? 99;
+      if (newRank < currentRank) {
+        graphErrorClass = p.errorClass;
+      }
+    }
+  }
+
+  return {
+    requestIdPresent,
+    clientRequestIdPresent,
+    claimsChallengePresent,
+    wwwAuthenticateClass,
+    graphErrorClass,
+  };
 }

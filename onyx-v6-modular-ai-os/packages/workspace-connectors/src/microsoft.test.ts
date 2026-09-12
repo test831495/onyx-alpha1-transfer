@@ -602,6 +602,57 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
     expect(result.diagnostic.graphErrorClass).toBe("NO_PERMISSIONS_IN_ACCESS_TOKEN");
   });
 
+  it("gives NO_PERMISSIONS_IN_ACCESS_TOKEN precedence over earlier endpoint errors and aggregates request headers", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const acquireTokenSilent = vi.fn()
+      .mockResolvedValueOnce({ accessToken: "initial-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } })
+      .mockResolvedValueOnce({ accessToken: "refreshed-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } });
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), json: async () => ({ id: "me" }) })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers({ "www-authenticate": "Bearer realm=\"\"" }), json: async () => ({ error: { code: "InvalidAuthenticationToken" } }) })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers({ "x-ms-request-id": "req-1" }), json: async () => ({ error: { code: "InvalidAuthenticationToken" } }) })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers({ "client-request-id": "cli-1" }), json: async () => ({ error: { code: "NoPermissionsInAccessToken" } }) })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers(), json: async () => ({ error: { code: "InvalidAuthenticationToken" } }) })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers(), json: async () => ({ error: { code: "InvalidAuthenticationToken" } }) })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers(), json: async () => ({ error: { code: "InvalidAuthenticationToken" } }) });
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { application: { acquireTokenSilent }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(result.diagnostic.reasonCode).toBe("MICROSOFT_GRAPH_CALENDAR_PERMISSION_NOT_ACCEPTED");
+    expect(result.diagnostic.graphErrorClass).toBe("NO_PERMISSIONS_IN_ACCESS_TOKEN");
+    expect(result.diagnostic.graphRequestIdPresent).toBe(true);
+    expect(result.diagnostic.graphClientRequestIdPresent).toBe(true);
+  });
+
+  it("gives CLAIMS_CHALLENGE precedence over an earlier BEARER_CHALLENGE in the matrix", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const acquireTokenSilent = vi.fn()
+      .mockResolvedValueOnce({ accessToken: "initial-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } })
+      .mockResolvedValueOnce({ accessToken: "refreshed-token", scopes: ["User.Read", "Calendars.Read"], account: { homeAccountId: "acct", tenantId: "tenant" } });
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), json: async () => ({ id: "me" }) })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers({ "www-authenticate": "Bearer realm=\"\"" }), json: async () => ({ error: { code: "InvalidAuthenticationToken" } }) })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers({ "www-authenticate": "Bearer realm=\"\"" }), json: async () => ({ error: { code: "InvalidAuthenticationToken" } }) })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers({ "www-authenticate": 'Bearer realm="", claims="{\"access_token\":{\"acrs\":\"c1\"}}"' }), json: async () => ({ error: { code: "InvalidAuthenticationToken" } }) })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers(), json: async () => ({ error: { code: "InvalidAuthenticationToken" } }) })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers(), json: async () => ({ error: { code: "InvalidAuthenticationToken" } }) })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers(), json: async () => ({ error: { code: "InvalidAuthenticationToken" } }) });
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { application: { acquireTokenSilent }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+    const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(result.diagnostic.reasonCode).toBe("MICROSOFT_GRAPH_CALENDAR_CLAIMS_CHALLENGE");
+    expect(result.diagnostic.wwwAuthenticateClass).toBe("CLAIMS_CHALLENGE");
+    expect(result.diagnostic.claimsChallengePresent).toBe(true);
+  });
+
   it.each([
     ["global token rejection", 401, undefined, "MICROSOFT_GRAPH_TOKEN_REJECTED_GLOBALLY"],
     ["calendar root rejection", 200, 401, "MICROSOFT_GRAPH_CALENDAR_ROOT_REJECTED"],
