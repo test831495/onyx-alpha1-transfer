@@ -323,7 +323,7 @@ const calendarScopes = ["Calendars.Read"];
 const mailScopes = ["Mail.ReadBasic"];
 const capabilities = [
   { id: "profile" as const, label: "Microsoft profile", enabled: true },
-  { id: "mail" as const, label: "Outlook mail", enabled: false, plannedRelease: "Alpha 3.1.2" },
+  { id: "mail" as const, label: "Outlook mail", enabled: true },
   { id: "calendar" as const, label: "Microsoft calendar", enabled: true },
   { id: "files" as const, label: "OneDrive", enabled: false, plannedRelease: "Alpha 3.1.3" },
   { id: "sharepoint" as const, label: "SharePoint", enabled: false, plannedRelease: "Alpha 3.1.3" },

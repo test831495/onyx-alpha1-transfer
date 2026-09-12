@@ -16,14 +16,16 @@ import { CalendarIntelligencePanel } from "./components/CalendarIntelligencePane
 import { NewsPanel } from "./components/NewsPanel";
 import { VoiceSettingsPanel } from "./components/VoiceSettingsPanel";
 import type { WorkspaceSnapshot } from "@onyx/workspace-contracts";
-import { isFailedMicrosoftCalendarDiagnostic, isSuccessfulMicrosoftCalendarDiagnostic } from "@onyx/workspace-connectors";
+import { isFailedMicrosoftCalendarDiagnostic, isSuccessfulMicrosoftCalendarDiagnostic, type MicrosoftMailMessage, type MicrosoftMailDiagnosticReasonCode } from "@onyx/workspace-connectors";
 import { WorkspacePanel } from "./components/WorkspacePanel";
 import {
   connectMicrosoft,
+  connectMicrosoftMail,
   reconnectMicrosoft,
   disconnectMicrosoft,
   disconnectedWorkspaceSnapshot,
   loadWorkspaceSnapshot,
+  loadMicrosoftMailMessagesWithDiagnostic,
   runGoogleWorkspaceAction,
 } from "./workspaceController";
 import { NovaDashboard } from "./components/NovaDashboard";
@@ -139,6 +141,7 @@ const SHELL_APP_LABELS: Record<ShellAppId, string> = {
   tasks: "Tasks",
   news: "News",
   workspace: "Workspace",
+  mail: "Mail",
   calendar: "Calendar",
   automation: "Automation",
   settings: "Settings",
@@ -367,6 +370,9 @@ export function App() {
     disconnectedWorkspaceSnapshot(),
   );
   const [workspaceBusy, setWorkspaceBusy] = useState(false);
+  const [mailMessages, setMailMessages] = useState<readonly MicrosoftMailMessage[]>([]);
+  const [mailReasonCode, setMailReasonCode] = useState<MicrosoftMailDiagnosticReasonCode>();
+  const [mailBusy, setMailBusy] = useState(false);
   const modeRef = useRef(mode);
   const timers = useRef<number[]>([]);
   const commandSequence = useRef(0);
@@ -1265,6 +1271,13 @@ export function App() {
             )}
           </>
         );
+      case "mail":
+        return (
+          <>
+            <div className="app-card-summary"><strong>Outlook Mail</strong><span>{mailBusy ? "Loading recent mail…" : mailReasonCode === "MAIL_EMPTY" ? "No recent mail available." : "Metadata-only mail access."}</span></div>
+            {canOpenDetails && <button type="button" className="app-card-action" onClick={() => dispatchShell({ type: "OPEN_DETAILS", appId: "mail" })}>Open Details</button>}
+          </>
+        );
       case "settings":
         return (
           <>
@@ -1473,7 +1486,7 @@ export function App() {
                       y={presentation.y}
                       zIndex={presentation.zIndex}
                       hasManualPosition={presentation.hasManualPosition}
-                      icon={appId === "workspace" ? "▣" : appId === "automation" ? "◎" : appId === "settings" ? "⚙" : appId === "health" ? "♥" : appId === "messages" ? "✉" : appId === "calendar" ? "◫" : appId === "news" ? "◍" : appId === "tasks" ? "✓" : "◈"}
+                      icon={appId === "workspace" ? "▣" : appId === "automation" ? "◎" : appId === "settings" ? "⚙" : appId === "health" ? "♥" : appId === "messages" || appId === "mail" ? "✉" : appId === "calendar" ? "◫" : appId === "news" ? "◍" : appId === "tasks" ? "✓" : "◈"}
                       onSelect={() => dispatchShell({ type: "FOCUS_APP", appId })}
                       onMove={(x, y) => dispatchShell({ type: "SET_CARD_POSITION_PREVIEW", appId, x, y })}
                       onMoveEnd={(x, y) => dispatchShell({ type: "SET_CARD_POSITION", appId, x, y })}
@@ -1526,6 +1539,33 @@ export function App() {
                       setWorkspace(disconnectedWorkspaceSnapshot());
                     },
                     onWorkspaceRefresh: refreshWorkspace,
+                    mailConnected: workspace.providers.some((provider) => provider.provider === "microsoft" && provider.state === "connected"),
+                    mailBusy,
+                    mailMessages,
+                    mailReasonCode,
+                    onMailConnect: async () => {
+                      setMailBusy(true);
+                      try {
+                        await connectMicrosoftMail();
+                      } catch {
+                        setMailReasonCode("MAIL_TRANSPORT_FAILURE");
+                      } finally {
+                        setMailBusy(false);
+                      }
+                    },
+                    onMailRefresh: async () => {
+                      setMailBusy(true);
+                      try {
+                        const result = await loadMicrosoftMailMessagesWithDiagnostic();
+                        setMailMessages(result.messages);
+                        setMailReasonCode(result.diagnostic.reasonCode);
+                      } catch {
+                        setMailMessages([]);
+                        setMailReasonCode("MAIL_TRANSPORT_FAILURE");
+                      } finally {
+                        setMailBusy(false);
+                      }
+                    },
                     onWorkspaceProviderAction: async (_provider, action) => {
                       setWorkspaceBusy(true);
                       try {
@@ -1656,6 +1696,7 @@ export function App() {
             <button onClick={() => openShellApp("tasks")}>Tasks</button>
             <button onClick={() => openShellApp("news")}>News</button>
             <button onClick={() => openShellApp("workspace")}>Workspace</button>
+            <button onClick={() => openShellApp("mail")}>Mail</button>
             <button onClick={() => openShellApp("calendar")}>Calendar</button>
             <button onClick={() => openShellApp("automation")}>Automation</button>
             <button onClick={() => openShellApp("settings")}>Settings</button>
