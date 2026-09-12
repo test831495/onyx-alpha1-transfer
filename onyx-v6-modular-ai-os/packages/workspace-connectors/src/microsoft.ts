@@ -464,11 +464,8 @@ export class MicrosoftWorkspaceConnector {
         scopes: [...profileScopes, ...mailScopes],
         ...(forceRefresh ? { forceRefresh: true } : {}),
       });
-      const returnedAccount = result?.account as AccountInfo | undefined;
-      const accountBinding = returnedAccount?.homeAccountId && account.homeAccountId
-        ? returnedAccount.homeAccountId === account.homeAccountId ? "MATCHED" : "MISMATCHED"
-        : "UNKNOWN";
-      const tenantMatched = !account.tenantId || !returnedAccount?.tenantId || account.tenantId === returnedAccount.tenantId;
+      const returnedAccount = result?.account;
+      const accountBinding = classifyMailAccountBinding(account, returnedAccount);
       const returnedScopes = Array.isArray(result?.scopes) ? result.scopes : undefined;
       const mailScope: MicrosoftMailScopeReport = !returnedScopes
         ? "NOT_REPORTED"
@@ -476,7 +473,7 @@ export class MicrosoftWorkspaceConnector {
           ? "REPORTED_PRESENT"
           : "REPORTED_ABSENT";
       if (!result?.accessToken) return { mailScope, accountBinding, reasonCode: "MAIL_ACCESS_TOKEN_ABSENT" };
-      if (accountBinding !== "MATCHED" || !tenantMatched) return { mailScope, accountBinding, reasonCode: "MAIL_ACCOUNT_MISMATCH" };
+      if (accountBinding !== "MATCHED") return { mailScope, accountBinding, reasonCode: "MAIL_ACCOUNT_MISMATCH" };
       if (mailScope === "REPORTED_ABSENT") return { mailScope, accountBinding, reasonCode: "MAIL_SCOPE_MISSING" };
       if (mailScope === "NOT_REPORTED") return { mailScope, accountBinding, reasonCode: "MAIL_SCOPE_NOT_INSPECTABLE" };
       return { accessToken: result.accessToken, mailScope, accountBinding };
@@ -536,9 +533,9 @@ export class MicrosoftWorkspaceConnector {
   private async parseMailResponse(response: Response, token: { mailScope: MicrosoftMailScopeReport; accountBinding: MicrosoftAccountBindingClass }, retried: boolean): Promise<MicrosoftMailReadResult> {
     const contentTypeJson = Boolean(response.headers?.get?.("content-type")?.toLowerCase().includes("json"));
     if (!contentTypeJson) return { messages: [], diagnostic: { ...this.mailHttpFailure(response, token, retried), reasonCode: "MAIL_MALFORMED_RESPONSE", finalReasonCode: "MAIL_MALFORMED_RESPONSE", contentTypeJson } };
-    let body: { value?: unknown };
-    try { body = await response.json() as { value?: unknown }; } catch { return { messages: [], diagnostic: { ...this.mailHttpFailure(response, token, retried), reasonCode: "MAIL_MALFORMED_RESPONSE", finalReasonCode: "MAIL_MALFORMED_RESPONSE", contentTypeJson } }; }
-    if (!Array.isArray(body.value)) return { messages: [], diagnostic: { ...this.mailHttpFailure(response, token, retried), reasonCode: "MAIL_MALFORMED_RESPONSE", finalReasonCode: "MAIL_MALFORMED_RESPONSE", contentTypeJson } };
+    let body: unknown;
+    try { body = await response.json(); } catch { return { messages: [], diagnostic: { ...this.mailHttpFailure(response, token, retried), reasonCode: "MAIL_MALFORMED_RESPONSE", finalReasonCode: "MAIL_MALFORMED_RESPONSE", contentTypeJson } }; }
+    if (!isUnknownRecord(body) || !Array.isArray(body.value)) return { messages: [], diagnostic: { ...this.mailHttpFailure(response, token, retried), reasonCode: "MAIL_MALFORMED_RESPONSE", finalReasonCode: "MAIL_MALFORMED_RESPONSE", contentTypeJson } };
     const messages: MicrosoftMailMessage[] = [];
     for (const value of body.value) {
       const message = normalizeMailMessage(value);
@@ -929,20 +926,39 @@ export function selectMicrosoftAccount(
 }
 
 function normalizeMailMessage(value: unknown): MicrosoftMailMessage | undefined {
-  const message = value as Record<string, unknown>;
-  const receivedAt = readGraphString(message.receivedDateTime);
-  const parsedReceivedAt = new Date(receivedAt);
-  if (!receivedAt || Number.isNaN(parsedReceivedAt.getTime())) return undefined;
-  const sender = message.sender as Record<string, unknown> | undefined;
-  const emailAddress = sender?.emailAddress as Record<string, unknown> | undefined;
-  return Object.freeze({
-    provider: "microsoft",
-    subject: boundedGraphString(message.subject, 160),
-    senderDisplayName: boundedGraphString(emailAddress?.name, 120),
-    receivedAt: parsedReceivedAt.toISOString(),
-    isRead: message.isRead === true,
-    hasAttachments: message.hasAttachments === true,
-  });
+  try {
+    if (!isUnknownRecord(value)) return undefined;
+    const receivedAt = readGraphString(value.receivedDateTime);
+    const parsedReceivedAt = new Date(receivedAt);
+    const sender = value.sender;
+    if (!receivedAt || Number.isNaN(parsedReceivedAt.getTime()) || !isUnknownRecord(sender) || !isUnknownRecord(sender.emailAddress)) return undefined;
+    const senderDisplayName = boundedGraphString(sender.emailAddress.name, 120);
+    if (!senderDisplayName) return undefined;
+    return Object.freeze({
+      provider: "microsoft",
+      subject: boundedGraphString(value.subject, 160),
+      senderDisplayName,
+      receivedAt: parsedReceivedAt.toISOString(),
+      isRead: value.isRead === true,
+      hasAttachments: value.hasAttachments === true,
+    });
+  } catch {
+    return undefined;
+  }
+}
+
+function isUnknownRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function classifyMailAccountBinding(expectedAccount: AccountInfo | undefined, returnedAccount: unknown): MicrosoftAccountBindingClass {
+  if (!expectedAccount || !isUnknownRecord(returnedAccount)) return "UNKNOWN";
+  const expectedHomeAccountId = readGraphString(expectedAccount.homeAccountId);
+  const returnedHomeAccountId = readGraphString(returnedAccount.homeAccountId);
+  const expectedTenantId = readGraphString(expectedAccount.tenantId);
+  const returnedTenantId = readGraphString(returnedAccount.tenantId);
+  if (!expectedHomeAccountId || !returnedHomeAccountId || !expectedTenantId || !returnedTenantId) return "UNKNOWN";
+  return expectedHomeAccountId === returnedHomeAccountId && expectedTenantId === returnedTenantId ? "MATCHED" : "MISMATCHED";
 }
 
 function boundedGraphString(value: unknown, maximumLength: number): string {

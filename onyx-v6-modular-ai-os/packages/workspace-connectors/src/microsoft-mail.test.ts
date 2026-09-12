@@ -15,6 +15,14 @@ function connectedConnector(acquireTokenSilent: ReturnType<typeof vi.fn>) {
   return connector;
 }
 
+function mailToken(account: unknown, scopes = ["User.Read", "Mail.ReadBasic"]) {
+  return { accessToken: "mail-token", scopes, account };
+}
+
+function emptyMailboxResponse(body: unknown) {
+  return { ok: true, status: 200, headers: new Headers({ "content-type": "application/json" }), json: async () => body };
+}
+
 describe("MicrosoftWorkspaceConnector Mail.ReadBasic foundation", () => {
   it("MAIL-SCOPE-001 through 005 keeps profile, calendar, and mail scopes capability-specific", async () => {
     const loginRedirect = vi.fn().mockResolvedValue(undefined);
@@ -90,6 +98,26 @@ describe("MicrosoftWorkspaceConnector Mail.ReadBasic foundation", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["both homeAccountIds absent", { tenantId: "tenant" }, { tenantId: "tenant" }],
+    ["returned homeAccountId absent", { homeAccountId: "account", tenantId: "tenant" }, { tenantId: "tenant" }],
+    ["both tenantIds absent", { homeAccountId: "account" }, { homeAccountId: "account" }],
+    ["returned tenantId absent", { homeAccountId: "account", tenantId: "tenant" }, { homeAccountId: "account" }],
+    ["different homeAccountIds", { homeAccountId: "account", tenantId: "tenant" }, { homeAccountId: "other", tenantId: "tenant" }],
+    ["different tenantIds", { homeAccountId: "account", tenantId: "tenant" }, { homeAccountId: "account", tenantId: "other" }],
+  ])("MAIL-AUTH-005 fails closed when %s", async (_label, expectedAccount, returnedAccount) => {
+    const acquireTokenSilent = vi.fn().mockResolvedValue(mailToken(returnedAccount));
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    Object.assign(connector, { application: { acquireTokenSilent }, account: expectedAccount });
+
+    const result = await connector.loadMailMessagesWithDiagnostic();
+
+    expect(result.diagnostic).toMatchObject({ reasonCode: "MAIL_ACCOUNT_MISMATCH" });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it("MAIL-READ-005 treats an empty mailbox as success", async () => {
     const acquireTokenSilent = vi.fn().mockResolvedValue({ accessToken: "mail-token", scopes: ["User.Read", "Mail.ReadBasic"], account: { homeAccountId: "account", tenantId: "tenant" } });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, headers: new Headers({ "content-type": "application/json" }), json: async () => ({ value: [] }) }));
@@ -126,6 +154,55 @@ describe("MicrosoftWorkspaceConnector Mail.ReadBasic foundation", () => {
     const result = await connectedConnector(acquireTokenSilent).loadMailMessagesWithDiagnostic();
 
     expect(result.diagnostic).toMatchObject({ reasonCode: "MAIL_SCOPE_MISSING", refreshAttempted: true, retryAttempted: false });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([null, undefined, "not an envelope", 7, false, []])("MAIL-READ-006 bounds non-object JSON body %# without throwing", async (body) => {
+    const acquireTokenSilent = vi.fn().mockResolvedValue(mailToken({ homeAccountId: "account", tenantId: "tenant" }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(emptyMailboxResponse(body)));
+
+    await expect(connectedConnector(acquireTokenSilent).loadMailMessagesWithDiagnostic()).resolves.toMatchObject({
+      messages: [],
+      diagnostic: { reasonCode: "MAIL_MALFORMED_RESPONSE" },
+    });
+  });
+
+  it("MAIL-READ-006 bounds missing/non-array values and thrown JSON parsing", async () => {
+    const bodies = [{}, { value: "not an array" }];
+    for (const body of bodies) {
+      const acquireTokenSilent = vi.fn().mockResolvedValue(mailToken({ homeAccountId: "account", tenantId: "tenant" }));
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(emptyMailboxResponse(body)));
+      await expect(connectedConnector(acquireTokenSilent).loadMailMessagesWithDiagnostic()).resolves.toMatchObject({ diagnostic: { reasonCode: "MAIL_MALFORMED_RESPONSE" } });
+    }
+    const acquireTokenSilent = vi.fn().mockResolvedValue(mailToken({ homeAccountId: "account", tenantId: "tenant" }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ...emptyMailboxResponse({}), json: async () => { throw new Error("private parser failure"); } }));
+    await expect(connectedConnector(acquireTokenSilent).loadMailMessagesWithDiagnostic()).resolves.toMatchObject({ diagnostic: { reasonCode: "MAIL_MALFORMED_RESPONSE" } });
+  });
+
+  it("MAIL-READ-006 rejects hostile items while retaining deterministic counts", async () => {
+    const acquireTokenSilent = vi.fn().mockResolvedValue(mailToken({ homeAccountId: "account", tenantId: "tenant" }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(emptyMailboxResponse({ value: [
+      null, undefined, "message", 4, [], {}, { sender: null, receivedDateTime: "2026-09-12T10:00:00Z" }, { receivedDateTime: "invalid" },
+      { subject: "valid", sender: { emailAddress: { name: "sender" } }, receivedDateTime: "2026-09-12T10:00:00Z", isRead: true, hasAttachments: false },
+    ] })));
+
+    const result = await connectedConnector(acquireTokenSilent).loadMailMessagesWithDiagnostic();
+
+    expect(result.messages).toHaveLength(1);
+    expect(result.diagnostic).toMatchObject({ returnedMessageCount: 9, normalizedMessageCount: 1, rejectedMessageCount: 8 });
+    expect(JSON.stringify(result.diagnostic)).not.toContain("valid");
+  });
+
+  it("MAIL-AUTH-006 rejects refreshed missing identity evidence without a retry", async () => {
+    const acquireTokenSilent = vi.fn()
+      .mockResolvedValueOnce(mailToken({ homeAccountId: "account", tenantId: "tenant" }))
+      .mockResolvedValueOnce(mailToken({ homeAccountId: "account" }));
+    const fetch = vi.fn().mockResolvedValue({ ok: false, status: 401, headers: new Headers() });
+    vi.stubGlobal("fetch", fetch);
+
+    const result = await connectedConnector(acquireTokenSilent).loadMailMessagesWithDiagnostic();
+
+    expect(result.diagnostic).toMatchObject({ reasonCode: "MAIL_ACCOUNT_MISMATCH", refreshAttempted: true, retryAttempted: false });
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
