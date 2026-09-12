@@ -213,7 +213,7 @@ describe("MicrosoftWorkspaceConnector Mail.ReadBasic foundation", () => {
   it("MAIL-AUTH-006 rejects refreshed missing identity evidence without a retry", async () => {
     const acquireTokenSilent = vi.fn()
       .mockResolvedValueOnce(mailToken({ homeAccountId: "account", tenantId: "tenant" }))
-      .mockResolvedValueOnce(mailToken({ homeAccountId: "account" }));
+      .mockResolvedValueOnce(mailToken({ tenantId: "tenant" }));
     const fetch = vi.fn().mockResolvedValue({ ok: false, status: 401, headers: new Headers() });
     vi.stubGlobal("fetch", fetch);
 

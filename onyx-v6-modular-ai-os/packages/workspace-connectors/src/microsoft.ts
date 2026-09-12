@@ -962,9 +962,6 @@ function classifyMailAccountBinding(expectedAccount: AccountInfo | undefined, re
     if (expectedTenantId && returnedTenantId && expectedTenantId !== returnedTenantId) return "MISMATCHED";
     return "MATCHED";
   }
-  const expectedUsername = readGraphString(expectedAccount.username);
-  const returnedUsername = readGraphString(returnedAccount.username);
-  if (expectedUsername && returnedUsername) return expectedUsername === returnedUsername ? "MATCHED" : "MISMATCHED";
   return "UNKNOWN";
 }
 
