@@ -38,14 +38,19 @@ export function compareApplicationParity(
       issues.push({ code: "MISSING_RECORD", drift: "BLOCKING_DRIFT", id, message: "Current application source has no canonical metadata record." });
       continue;
     }
-    if (source.label !== undefined && record.displayKey !== source.label) issues.push(mismatch("LABEL_MISMATCH", id, "Application display metadata differs from the current source."));
+    // Compare using displayKey precedence: displayKey ?? label ?? id
+    const expectedDisplayKey = source.displayKey ?? source.label ?? source.id;
+    if ((source.displayKey !== undefined || source.label !== undefined) && record.displayKey !== expectedDisplayKey) {
+      issues.push(mismatch("LABEL_MISMATCH", id, "Application display metadata differs from the current source."));
+    }
     if (source.icon !== undefined && record.iconKey !== source.icon) issues.push(mismatch("ICON_MISMATCH", id, "Application icon metadata differs from the current source."));
     if (source.visible !== undefined && record.visible !== source.visible) issues.push(mismatch("VISIBILITY_MISMATCH", id, "Application visibility metadata differs from the current source."));
     if (source.launcherOrder !== undefined && record.launcherOrder !== source.launcherOrder) issues.push(mismatch("LAUNCHER_ORDER_MISMATCH", id, "Application launcher order differs from the current source."));
-    if (source.navigationTarget !== undefined && record.id !== `onyx.app.${source.navigationTarget}`) issues.push(mismatch("NAVIGATION_MISMATCH", id, "Application navigation target differs from the current source."));
     if (source.aliases !== undefined && JSON.stringify(record.aliases) !== JSON.stringify(source.aliases)) issues.push(mismatch("ALIAS_MISMATCH", id, "Application aliases differ from the current source."));
   }
-  return Object.freeze({ passed: issues.length === 0, issues: Object.freeze(issues) });
+  // Freeze each issue object to prevent mutation
+  const frozenIssues = issues.map((issue) => Object.freeze(issue));
+  return Object.freeze({ passed: frozenIssues.length === 0, issues: Object.freeze(frozenIssues) });
 }
 
 function mismatch(code: RegistryParityIssue["code"], id: string, message: string): RegistryParityIssue {

@@ -166,7 +166,10 @@ export type RegistrySourceRecord = Readonly<{
 export function createApplicationMetadata(
   input: Omit<ApplicationMetadata, "recordKind">,
 ): ApplicationMetadata {
-  return { ...input, recordKind: "APPLICATION" };
+  const record: ApplicationMetadata = { ...input, recordKind: "APPLICATION" };
+  // Freeze the record and nested arrays
+  const frozen = Object.freeze({ ...record, aliases: Object.freeze([...record.aliases]) }) as ApplicationMetadata;
+  return frozen;
 }
 
 export function projectApplicationSource(
@@ -174,13 +177,15 @@ export function projectApplicationSource(
   overrides: Omit<ApplicationMetadata, "id" | "displayKey" | "aliases" | "recordKind" | "iconKey" | "visible" | "launcherOrder"> &
     Partial<Pick<ApplicationMetadata, "iconKey" | "visible" | "launcherOrder">>,
 ): ApplicationMetadata {
-  return createApplicationMetadata({
+  const metadata: ApplicationMetadata = {
     ...overrides,
     id: `onyx.app.${source.id}` as RegistryId,
     displayKey: source.displayKey ?? source.label ?? source.id,
     aliases: Object.freeze([...(source.aliases ?? [])]),
+    recordKind: "APPLICATION",
     ...(source.icon === undefined ? {} : { iconKey: source.icon }),
     ...(source.visible === undefined ? {} : { visible: source.visible }),
     ...(source.launcherOrder === undefined ? {} : { launcherOrder: source.launcherOrder }),
-  });
+  };
+  return Object.freeze(metadata);
 }

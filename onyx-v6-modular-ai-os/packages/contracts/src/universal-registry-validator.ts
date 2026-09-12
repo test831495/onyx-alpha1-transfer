@@ -56,8 +56,27 @@ export function validateUniversalRegistry(
     if (!REGISTRY_OWNERS.includes(record.owner) || !REGISTRY_AVAILABILITY.includes(record.availability) || !REGISTRY_FEATURE_STATES.includes(record.featureState) || !isRecordKind(record.recordKind) || !isPrivacyClass(record.privacyClass) || !isAccessibilityClass(record.accessibilityClass)) {
       issues.push({ code: "INVALID_ENUM", recordId: record.id, field: "metadata", message: "Unknown registry enum value." });
     }
+    // Validate discriminant-specific enum fields based on recordKind
+    if (record.recordKind === "SURFACE" && !isSurfaceKind((record as any).surfaceKind ?? "")) {
+      issues.push({ code: "INVALID_ENUM", recordId: record.id, field: "surfaceKind", message: "Invalid or missing surfaceKind for SURFACE record." });
+    }
+    if (record.recordKind === "NAVIGATION" && !isNavigationKind((record as any).navigationKind ?? "")) {
+      issues.push({ code: "INVALID_ENUM", recordId: record.id, field: "navigationKind", message: "Invalid or missing navigationKind for NAVIGATION record." });
+    }
     if (record.recordKind === "NAVIGATION" && record.executable !== false) {
       issues.push({ code: "AUTHORITY_METADATA", recordId: record.id, field: "executable", message: "Navigation metadata must never be executable." });
+    }
+    if (record.recordKind === "SETTING" && !isValueKind((record as any).valueKind ?? "")) {
+      issues.push({ code: "INVALID_ENUM", recordId: record.id, field: "valueKind", message: "Invalid or missing valueKind for SETTING record." });
+    }
+    if (record.recordKind === "TRUTH_SOURCE" && !isTruthClass((record as any).truthClass ?? "")) {
+      issues.push({ code: "INVALID_ENUM", recordId: record.id, field: "truthClass", message: "Invalid or missing truthClass for TRUTH_SOURCE record." });
+    }
+    if (record.recordKind === "TRUTH_SOURCE" && !isFreshness((record as any).freshness ?? "")) {
+      issues.push({ code: "INVALID_ENUM", recordId: record.id, field: "freshness", message: "Invalid or missing freshness for TRUTH_SOURCE record." });
+    }
+    if (record.recordKind === "PRIVACY" && !isPrivacyClass((record as any).classification ?? "")) {
+      issues.push({ code: "INVALID_ENUM", recordId: record.id, field: "classification", message: "Invalid or missing classification for PRIVACY record." });
     }
     if (record.recordKind === "WAKE_WORD" && record.activatesListener !== false) {
       issues.push({ code: "AUTHORITY_METADATA", recordId: record.id, field: "activatesListener", message: "Wake-word metadata must never activate a listener." });
@@ -81,6 +100,39 @@ function isPrivacyClass(value: string): value is RegistryPrivacyClass {
 
 function isAccessibilityClass(value: string): value is RegistryAccessibilityClass {
   return ["STANDARD", "LARGE_TEXT", "HIGH_CONTRAST"].includes(value);
+}
+
+function isSurfaceKind(value: string): boolean {
+  return ["PANEL", "MODAL", "DRAWER", "TOAST", "DROPDOWN", "POPOVER", "BANNER"].includes(value);
+}
+
+function isNavigationKind(value: string): boolean {
+  return ["FORWARD", "BACKWARD", "REPLACE", "EXTERNAL", "INTERNAL"].includes(value);
+}
+
+function isValueKind(value: string): boolean {
+  return ["BOOLEAN", "NUMBER", "STRING", "ENUM"].includes(value);
+}
+
+function isFreshness(value: string): boolean {
+  return ["STATIC", "SESSION", "LIVE", "UNKNOWN"].includes(value);
+}
+
+function isTruthClass(value: string): boolean {
+  return [
+    "DETERMINISTIC_LOCAL",
+    "VISIBLE_PORTAL_STATE",
+    "LOCAL_APPLICATION",
+    "LOCAL_FILE",
+    "SESSION_CONTEXT",
+    "GOVERNED_MEMORY",
+    "CONNECTOR_GROUNDED",
+    "GOVERNANCE_PROJECTION",
+    "USER_SUPPLIED",
+    "GENERAL_MODEL_KNOWLEDGE",
+    "UNAVAILABLE",
+    "UNKNOWN",
+  ].includes(value);
 }
 
 function freezeRecord(record: UniversalRegistryRecord): UniversalRegistryRecord {
