@@ -38,6 +38,7 @@ export type MicrosoftCalendarDiagnosticReasonCode =
   | "MICROSOFT_ACCOUNT_NOT_AVAILABLE"
   | "MICROSOFT_ACTIVE_ACCOUNT_MISMATCH"
   | "MICROSOFT_GRAPH_SCOPES_MISSING"
+  | "MICROSOFT_CALENDAR_SCOPE_ABSENT"
   | "MICROSOFT_SILENT_TOKEN_SUCCEEDED"
   | "MICROSOFT_SILENT_TOKEN_FAILED"
   | "MICROSOFT_ACCESS_TOKEN_ABSENT"
@@ -129,36 +130,135 @@ function isInteractionRequiredTokenError(error: unknown): boolean {
 }
 
 /**
- * Bounded, safe representation of MSAL AuthenticationResult metadata.
+ * Bounded, safe representation of MSAL AuthenticationResult metadata and adjudication.
  * Never includes raw tokens, refresh tokens, ID tokens, or raw claims.
  * Used internally to trace token ownership and populate diagnostics.
  * @internal
  */
-interface BoundedMsalTokenResult {
+export interface BDynamicTokenAdjudication {
   accessToken: string;
   requestedScopes: readonly string[];
-  returnedScopes: readonly string[] | undefined;
-  accountHomeAccountId: string | undefined;
-  accountTenantId: string | undefined;
-  authority: string | undefined;
-  audience: string | undefined;
+  returnedScopes?: readonly string[];
+  accountBinding: MicrosoftAccountBindingClass;
+  authorityBinding: "EXPECTED" | "UNEXPECTED" | "NOT_REPORTED";
+  tenantBinding: "MATCHED" | "MISMATCHED" | "UNKNOWN";
+  tokenAudience: MicrosoftTokenAudienceClass;
+  calendarScope: MicrosoftCalendarScopeReport;
+  tokenSource: "CACHE" | "REFRESH" | "NETWORK" | "NOT_REPORTED";
+  accountHomeAccountId?: string;
+  accountTenantId?: string;
+  failureReason?: MicrosoftCalendarDiagnosticReasonCode;
+  valid: boolean;
 }
 
-function extractBoundedTokenResult(
+export function adjudicateTokenResult(
+  activeAccount: AccountInfo | undefined,
   result: any,
   requestedScopes: readonly string[],
-  authority: string | undefined,
-  account: AccountInfo | undefined,
-): BoundedMsalTokenResult {
-  const audience = typeof result?.aud === "string" ? result.aud : undefined;
+  expectedAuthority: string | undefined,
+  mode: "INITIAL" | "FORCE_REFRESH",
+): BDynamicTokenAdjudication {
+  const accessToken = typeof result?.accessToken === "string" ? result.accessToken : "";
+  const returnedScopes = Array.isArray(result?.scopes) ? Object.freeze([...result.scopes]) : undefined;
+
+  // Account identity sourced ONLY from result.account
+  const returnedAccount = result?.account && typeof result.account === "object" ? (result.account as AccountInfo) : undefined;
+  const accountHomeAccountId = typeof returnedAccount?.homeAccountId === "string" && returnedAccount.homeAccountId.trim().length > 0
+    ? returnedAccount.homeAccountId
+    : undefined;
+  const accountTenantId = typeof returnedAccount?.tenantId === "string" && returnedAccount.tenantId.trim().length > 0
+    ? returnedAccount.tenantId
+    : typeof result?.tenantId === "string" && result.tenantId.trim().length > 0
+      ? result.tenantId
+      : undefined;
+
+  // Compute accountBinding by comparing activeAccount vs returnedAccount
+  let accountBinding: MicrosoftAccountBindingClass = "UNKNOWN";
+  if (activeAccount && returnedAccount) {
+    if (activeAccount.homeAccountId && returnedAccount.homeAccountId) {
+      accountBinding = activeAccount.homeAccountId === returnedAccount.homeAccountId ? "MATCHED" : "MISMATCHED";
+    } else if (activeAccount.username && returnedAccount.username) {
+      accountBinding = activeAccount.username === returnedAccount.username ? "MATCHED" : "MISMATCHED";
+    }
+  } else if (!returnedAccount) {
+    accountBinding = "UNKNOWN";
+  }
+
+  // Compute tenantBinding
+  let tenantBinding: "MATCHED" | "MISMATCHED" | "UNKNOWN" = "UNKNOWN";
+  if (activeAccount?.tenantId && accountTenantId) {
+    tenantBinding = activeAccount.tenantId === accountTenantId ? "MATCHED" : "MISMATCHED";
+  }
+
+  // Compute authorityBinding
+  let authorityBinding: "EXPECTED" | "UNEXPECTED" | "NOT_REPORTED" = "NOT_REPORTED";
+  if (typeof result?.authority === "string" && expectedAuthority) {
+    try {
+      const returnedHost = new URL(result.authority).hostname.toLowerCase();
+      const expectedHost = new URL(expectedAuthority).hostname.toLowerCase();
+      authorityBinding = returnedHost === expectedHost ? "EXPECTED" : "UNEXPECTED";
+    } catch {
+      authorityBinding = "UNEXPECTED";
+    }
+  }
+
+  // Token audience: NOT_INSPECTABLE unless directly and safely evidenced
+  let tokenAudience: MicrosoftTokenAudienceClass = "NOT_INSPECTABLE";
+  if (typeof result?.aud === "string" && result.aud.trim().length > 0) {
+    const rawAud = result.aud.toLowerCase();
+    tokenAudience = (rawAud.includes("graph.microsoft.com") || rawAud.includes("graph.windows.net"))
+      ? "MICROSOFT_GRAPH_EXPECTED"
+      : "UNEXPECTED_RESOURCE";
+  }
+
+  // Calendar scope report
+  let calendarScope: MicrosoftCalendarScopeReport = "NOT_REPORTED";
+  if (returnedScopes) {
+    const hasCalRead = returnedScopes.some((s: string) => typeof s === "string" && s.toLowerCase() === "calendars.read");
+    calendarScope = hasCalRead ? "REPORTED_PRESENT" : "REPORTED_ABSENT";
+  }
+
+  // Token source
+  let tokenSource: "CACHE" | "REFRESH" | "NETWORK" | "NOT_REPORTED" = "NOT_REPORTED";
+  if (typeof result?.fromCache === "boolean") {
+    tokenSource = result.fromCache ? "CACHE" : mode === "FORCE_REFRESH" ? "REFRESH" : "NETWORK";
+  }
+
+  // Determine fail-closed status
+  let failureReason: MicrosoftCalendarDiagnosticReasonCode | undefined;
+  let valid = true;
+
+  if (!accessToken) {
+    valid = false;
+    failureReason = "MICROSOFT_ACCESS_TOKEN_ABSENT";
+  } else if (accountBinding === "MISMATCHED") {
+    valid = false;
+    failureReason = "MICROSOFT_ACTIVE_ACCOUNT_MISMATCH";
+  } else if (accountBinding === "UNKNOWN") {
+    valid = false;
+    failureReason = "MICROSOFT_ACTIVE_ACCOUNT_MISMATCH";
+  } else if (tenantBinding === "MISMATCHED") {
+    valid = false;
+    failureReason = "MICROSOFT_ACTIVE_ACCOUNT_MISMATCH";
+  } else if (calendarScope === "REPORTED_ABSENT") {
+    valid = false;
+    failureReason = "MICROSOFT_GRAPH_SCOPES_MISSING";
+  }
+
   return {
-    accessToken: result?.accessToken ?? "",
-    requestedScopes: Array.from(requestedScopes),
-    returnedScopes: Array.isArray(result?.scopes) ? Object.freeze([...result.scopes]) : undefined,
-    accountHomeAccountId: account?.homeAccountId,
-    accountTenantId: account?.tenantId,
-    authority,
-    audience,
+    accessToken,
+    requestedScopes: Object.freeze(Array.from(requestedScopes)),
+    returnedScopes,
+    accountBinding,
+    authorityBinding,
+    tenantBinding,
+    tokenAudience,
+    calendarScope,
+    tokenSource,
+    accountHomeAccountId,
+    accountTenantId,
+    failureReason,
+    valid,
   };
 }
 const profileScopes = ["User.Read"];
@@ -302,7 +402,7 @@ export class MicrosoftWorkspaceConnector {
   private hasMsalSilentRuntime(): boolean {
     return Boolean(this.application && this.account && typeof this.application.acquireTokenSilent === "function");
   }
-  private async acquireCalendarAccessTokenWithMetadata(forceRefresh = false): Promise<BoundedMsalTokenResult | undefined> {
+  private async acquireCalendarAccessTokenWithMetadata(forceRefresh = false): Promise<BDynamicTokenAdjudication | undefined> {
     const application = this.application;
     const account = this.account;
     if (!application || !account || typeof application.acquireTokenSilent !== "function") return undefined;
@@ -312,11 +412,17 @@ export class MicrosoftWorkspaceConnector {
       scopes: requestedScopes,
       ...(forceRefresh ? { forceRefresh: true } : {}),
     });
-    return extractBoundedTokenResult(result, requestedScopes, this.authority, account);
+    return adjudicateTokenResult(
+      account,
+      result,
+      requestedScopes,
+      this.authority,
+      forceRefresh ? "FORCE_REFRESH" : "INITIAL",
+    );
   }
   private async acquireCalendarAccessToken(forceRefresh = false): Promise<string | undefined> {
     const result = await this.acquireCalendarAccessTokenWithMetadata(forceRefresh);
-    return result?.accessToken;
+    return result?.valid ? result.accessToken : undefined;
   }
   async loadCalendarEventsWithDiagnostic(range: MicrosoftCalendarRange): Promise<MicrosoftCalendarReadResult> {
     const start = new Date(range.start);
@@ -344,14 +450,14 @@ export class MicrosoftWorkspaceConnector {
     };
 
     let token: string | undefined;
-    let tokenMetadata: BoundedMsalTokenResult | undefined;
+    let tokenMetadata: BDynamicTokenAdjudication | undefined;
     try {
       if (this.hasMsalSilentRuntime()) {
         tokenMetadata = await this.acquireCalendarAccessTokenWithMetadata(false);
-        token = tokenMetadata?.accessToken;
-        if (!token || !tokenMetadata) {
+        if (!tokenMetadata || !tokenMetadata.accessToken) {
           return { events: [], diagnostic: { ...baseDiagnostic, reasonCode: "MICROSOFT_ACCESS_TOKEN_ABSENT", finalReasonCode: "MICROSOFT_ACCESS_TOKEN_ABSENT", silentAttempted: true, silentOutcome: "ABSENT", credentialPresent: false } };
         }
+        token = tokenMetadata.accessToken;
         baseDiagnostic.silentAttempted = true;
         baseDiagnostic.silentOutcome = "SUCCEEDED";
         baseDiagnostic.credentialPresent = true;
@@ -360,18 +466,23 @@ export class MicrosoftWorkspaceConnector {
         // Populate token metadata diagnostics
         baseDiagnostic.calendarRequestedScopes = tokenMetadata.requestedScopes;
         baseDiagnostic.calendarReturnedScopes = tokenMetadata.returnedScopes;
-        if (typeof tokenMetadata.audience === "string") {
-          baseDiagnostic.tokenAudience = tokenMetadata.audience.includes("graph.microsoft.com") || tokenMetadata.audience.includes("graph.windows.net") ? "MICROSOFT_GRAPH_EXPECTED" : "UNEXPECTED_RESOURCE";
-        } else {
-          baseDiagnostic.tokenAudience = "NOT_INSPECTABLE";
-        }
-        if (tokenMetadata.returnedScopes) {
-          baseDiagnostic.calendarScope = tokenMetadata.returnedScopes.includes("Calendars.Read") ? "REPORTED_PRESENT" : "REPORTED_ABSENT";
-        } else {
-          baseDiagnostic.calendarScope = "NOT_REPORTED";
-        }
-        if (this.account && tokenMetadata.accountHomeAccountId) {
-          baseDiagnostic.accountBinding = this.account.homeAccountId === tokenMetadata.accountHomeAccountId ? "MATCHED" : "MISMATCHED";
+        baseDiagnostic.tokenAudience = tokenMetadata.tokenAudience;
+        baseDiagnostic.calendarScope = tokenMetadata.calendarScope;
+        baseDiagnostic.accountBinding = tokenMetadata.accountBinding;
+
+        // FINDING 1 FAIL CLOSED: Fail closed if initial token adjudication is invalid
+        if (!tokenMetadata.valid) {
+          const failureReason = tokenMetadata.failureReason ?? "MICROSOFT_ACTIVE_ACCOUNT_MISMATCH";
+          return {
+            events: [],
+            diagnostic: {
+              ...baseDiagnostic,
+              outcome: "FAILED",
+              reasonCode: failureReason,
+              finalReasonCode: failureReason,
+              headerAttached: false, // FAIL CLOSED: Never attach header or perform Graph request
+            },
+          };
         }
       } else {
         token = await this.getAccessToken(calendarScopes);
@@ -383,7 +494,7 @@ export class MicrosoftWorkspaceConnector {
       return { events: [], diagnostic: { ...baseDiagnostic, reasonCode: this.hasMsalSilentRuntime() ? "MICROSOFT_SILENT_TOKEN_FAILED" : "CALENDAR_TOKEN_ACQUISITION_FAILED", finalReasonCode: this.hasMsalSilentRuntime() ? "MICROSOFT_SILENT_TOKEN_FAILED" : "CALENDAR_TOKEN_ACQUISITION_FAILED", silentAttempted: true, silentOutcome: "FAILED", credentialPresent: false } };
     }
 
-    // A token was acquired, so the Authorization header is now proven attached regardless of what happens next.
+    // Token passed adjudication and is attached to header
     baseDiagnostic.headerAttached = true;
     const parameters = new URLSearchParams({
       startDateTime: start.toISOString(),
@@ -407,28 +518,43 @@ export class MicrosoftWorkspaceConnector {
     if (!response.ok) {
       if (response.status === 401 && this.hasMsalSilentRuntime()) {
         const refreshBase = { ...baseDiagnostic, stage: "GRAPH_RESPONSE" as const, outcome: "FAILED" as const, reasonCode: "MICROSOFT_GRAPH_HTTP_401_INITIAL" as const, httpStatus: response.status, initialGraphStatus: response.status, finalReasonCode: "MICROSOFT_GRAPH_HTTP_401_INITIAL" as const, retryable: true, requestRangeValid: true, headerAttached: true, refreshAttempted: true, forceRefreshAttempted: true };
-        let refreshedToken: string | undefined;
-        let refreshedMetadata: BoundedMsalTokenResult | undefined;
+        let refreshedMetadata: BDynamicTokenAdjudication | undefined;
         try {
           refreshedMetadata = await this.acquireCalendarAccessTokenWithMetadata(true);
-          refreshedToken = refreshedMetadata?.accessToken;
         } catch (error) {
           if (isInteractionRequiredTokenError(error)) {
             return { events: [], diagnostic: { ...refreshBase, refreshOutcome: "INTERACTION_REQUIRED", interactionRequired: true, reasonCode: "MICROSOFT_INTERACTION_REQUIRED", finalReasonCode: "MICROSOFT_INTERACTION_REQUIRED" } };
           }
           return { events: [], diagnostic: { ...refreshBase, refreshOutcome: "FAILED", reasonCode: "MICROSOFT_TOKEN_FORCE_REFRESH_FAILED", finalReasonCode: "MICROSOFT_TOKEN_FORCE_REFRESH_FAILED", interactionRequired: false } };
         }
-        if (!refreshedToken) {
+        if (!refreshedMetadata || !refreshedMetadata.accessToken) {
           return { events: [], diagnostic: { ...refreshBase, refreshOutcome: "ABSENT", reasonCode: "MICROSOFT_ACCESS_TOKEN_ABSENT", finalReasonCode: "MICROSOFT_ACCESS_TOKEN_ABSENT", credentialPresent: false, interactionRequired: false } };
         }
-        // Verify refresh succeeded with expected scopes
-        if (refreshedMetadata) {
-          refreshBase.calendarReturnedScopes = refreshedMetadata.returnedScopes;
-          if (refreshedMetadata.returnedScopes) {
-            refreshBase.calendarScope = refreshedMetadata.returnedScopes.includes("Calendars.Read") ? "REPORTED_PRESENT" : "REPORTED_ABSENT";
-          }
+
+        // Independently update refreshed token metadata
+        refreshBase.calendarReturnedScopes = refreshedMetadata.returnedScopes;
+        refreshBase.calendarScope = refreshedMetadata.calendarScope;
+        refreshBase.accountBinding = refreshedMetadata.accountBinding;
+        refreshBase.tokenAudience = refreshedMetadata.tokenAudience;
+
+        // FINDING 2 FAIL CLOSED: Validate refreshed token adjudication independently
+        if (!refreshedMetadata.valid) {
+          const failureReason = refreshedMetadata.failureReason ?? "MICROSOFT_ACTIVE_ACCOUNT_MISMATCH";
+          return {
+            events: [],
+            diagnostic: {
+              ...refreshBase,
+              refreshOutcome: "FAILED",
+              reasonCode: failureReason,
+              finalReasonCode: failureReason,
+              retryAttempted: false, // FAIL CLOSED: Zero retry fetch calls made
+              interactionRequired: false,
+            },
+          };
         }
+
         refreshBase.refreshOutcome = "SUCCEEDED";
+        const refreshedToken = refreshedMetadata.accessToken;
         try {
           const retryResponse = await fetch(endpoint, { method: "GET", headers: { Authorization: `Bearer ${refreshedToken}`, Prefer: 'outlook.timezone="UTC"' } });
           if (retryResponse.ok) {
