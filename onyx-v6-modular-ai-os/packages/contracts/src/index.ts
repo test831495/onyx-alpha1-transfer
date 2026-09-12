@@ -19,3 +19,8 @@ export * from "./input";
 export * from "./module";
 export * from "./intent";
 export * from "./action";
+export * from "./universal-registry";
+export * from "./universal-registry-validator";
+export * from "./universal-registry-ordering";
+export * from "./universal-registry-parity";
+export * from "./universal-registry-acceptance";
