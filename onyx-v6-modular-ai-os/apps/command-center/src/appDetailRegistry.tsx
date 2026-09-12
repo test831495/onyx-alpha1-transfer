@@ -32,9 +32,12 @@ export const DetailDataContext = React.createContext<{
   mailBusy?: boolean;
   mailMessages?: readonly import("@onyx/workspace-connectors").MicrosoftMailMessage[];
   mailReasonCode?: import("@onyx/workspace-connectors").MicrosoftMailDiagnosticReasonCode;
+  mailRuntimeTrace?: import("@onyx/workspace-connectors").MicrosoftMailRuntimeTrace;
+  mailDiagnosticsEnabled?: boolean;
   mailConnected?: boolean;
   onMailConnect?: () => void;
   onMailRefresh?: () => void;
+  onMailTraceClear?: () => void;
   calendarSummary?: any;
   calendarBusy?: boolean;
   onCalendarRefresh?: () => void;
@@ -87,7 +90,7 @@ const WorkspaceDetail: React.FC<{ appId: ShellAppId }> = ({ appId }) => {
 
 const MailDetail: React.FC<{ appId: ShellAppId }> = () => {
   const data = useContext(DetailDataContext);
-  return <MailPanel connected={data.mailConnected ?? false} busy={data.mailBusy ?? false} messages={data.mailMessages ?? []} reasonCode={data.mailReasonCode} onConnect={data.onMailConnect ?? (() => {})} onRefresh={data.onMailRefresh ?? (() => {})} />;
+  return <MailPanel connected={data.mailConnected ?? false} busy={data.mailBusy ?? false} messages={data.mailMessages ?? []} reasonCode={data.mailReasonCode} runtimeTrace={data.mailRuntimeTrace} diagnosticsEnabled={data.mailDiagnosticsEnabled ?? false} onConnect={data.onMailConnect ?? (() => {})} onRefresh={data.onMailRefresh ?? (() => {})} onTraceClear={data.onMailTraceClear ?? (() => {})} />;
 };
 
 const AutomationDetail: React.FC<{ appId: ShellAppId }> = ({ appId }) => {

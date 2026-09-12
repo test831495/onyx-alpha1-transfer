@@ -1,11 +1,22 @@
 import{describe,expect,it}from"vitest";import{connectMicrosoftMail,disconnectedWorkspaceSnapshot,loadMicrosoftMailMessagesWithDiagnostic}from"./workspaceController";
 import { MicrosoftWorkspaceConnector, resolveRuntimeMicrosoftConfig } from "@onyx/workspace-connectors";
 import { readMicrosoftRuntimeEnv } from "../viteMicrosoftEnvBridge";
+import { readFileSync } from "node:fs";
 describe("workspace foundation",()=>{it("declares all providers",()=>expect(disconnectedWorkspaceSnapshot().providers.map(v=>v.provider)).toEqual(["microsoft","google","yahoo"]));it("keeps planned provider capabilities disabled while presenting friendly statuses",()=>{const snapshot=disconnectedWorkspaceSnapshot();expect(snapshot.providers.filter(v=>v.provider!=="microsoft").flatMap(v=>v.capabilities).every(v=>!v.enabled)).toBe(true);expect(snapshot.providers.find(v=>v.provider==="microsoft")?.state).toBe("unconfigured");expect(snapshot.providers.map(v=>v.label)).toContain("Microsoft 365");expect(snapshot.providers.map(v=>v.label)).toContain("Google");expect(snapshot.providers.map(v=>v.label)).toContain("Yahoo");});});
 
 it("exports the non-UI Microsoft Mail foundation projection", () => {
   expect(typeof connectMicrosoftMail).toBe("function");
   expect(typeof loadMicrosoftMailMessagesWithDiagnostic).toBe("function");
+});
+
+it("clears Mail trace before disconnect can reject", () => {
+  const source = readFileSync(new URL("./App.tsx", import.meta.url), "utf8");
+  const handlerStart = source.indexOf("onWorkspaceDisconnect:");
+  const clearIndex = source.indexOf("setMailRuntimeTrace(undefined)", handlerStart);
+  const disconnectIndex = source.indexOf("await disconnectMicrosoft()", handlerStart);
+  expect(handlerStart).toBeGreaterThanOrEqual(0);
+  expect(clearIndex).toBeGreaterThan(handlerStart);
+  expect(clearIndex).toBeLessThan(disconnectIndex);
 });
 
 describe("Microsoft runtime config factory (production consumer path)", () => {
