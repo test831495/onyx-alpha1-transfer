@@ -100,6 +100,9 @@ describe("Microsoft runtime config visibility bridge", () => {
       "ONYX_MS_TENANT_ID",
       "ONYX_MS_REDIRECT_URI",
       "ONYX_MS_AUTHORITY",
+      "ONYX_AUTH_CLIENT_ID",
+      "ONYX_AUTH_SCOPE",
+      "ONYX_AUTH_AUTHORITY",
     ]);
   });
 });
