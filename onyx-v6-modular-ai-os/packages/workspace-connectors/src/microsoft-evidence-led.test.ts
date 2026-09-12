@@ -18,6 +18,7 @@ describe("PHASE 2: Safe Authentication-Result Diagnostics", () => {
     const acquireTokenSilent = vi.fn().mockResolvedValue({
       accessToken: "token-with-calendar-scope",
       scopes: ["User.Read", "Calendars.Read"],
+      aud: "https://graph.microsoft.com",
     });
     const fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -102,6 +103,7 @@ describe("PHASE 2: Safe Authentication-Result Diagnostics", () => {
     const acquireTokenSilent = vi.fn().mockResolvedValue({
       accessToken: "token-with-matching-account",
       scopes: ["User.Read", "Calendars.Read"],
+      aud: "https://graph.microsoft.com",
     });
     const fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -162,6 +164,7 @@ describe("PHASE 2: Safe Authentication-Result Diagnostics", () => {
     const acquireTokenSilent = vi.fn().mockResolvedValue({
       accessToken: "graph-scoped-token",
       scopes: ["User.Read", "Calendars.Read"],
+      aud: "https://graph.microsoft.com",
     });
     const fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -289,6 +292,7 @@ describe("PHASE 2: Safe Authentication-Result Diagnostics", () => {
     const connector1 = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
     const acquireTokenSilent = vi.fn().mockResolvedValue({
       accessToken: "token-without-scopes",
+      aud: "https://graph.microsoft.com",
     });
     const fetch = vi.fn().mockResolvedValue({
       ok: true,
