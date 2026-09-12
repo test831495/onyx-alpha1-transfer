@@ -1,0 +1,833 @@
+TITLE:
+B4_UNIVERSAL_PORTAL_VOICE_SETTINGS_WAKE_WORD_CAPABILITY_CENSUS_DEEP_RESEARCH_ARCHITECTURE_AND_SCOPE_FREEZE
+
+EXECUTION MODE:
+STRICT_READ_ONLY
+DRY_RUN_FIRST_REQUIRED
+EVIDENCE_VERBOSITY=DETAILED
+NO_REPOSITORY_MUTATION
+NO_BRANCH_CREATION
+NO_FILE_CREATION
+NO_COMMIT
+NO_PUSH
+NO_PULL_REQUEST
+NO_DEPLOYMENT
+NO_PROVIDER_ACTIVATION
+NO_SECRET_ACCESS
+NO_AUDIO_CAPTURE
+NO_BACKGROUND_LISTENER_ACTIVATION
+
+TARGET REPOSITORY:
+test831495/onyx-alpha1-transfer
+
+WORKSTREAM:
+TRACK_B_B4_UNIVERSAL_PORTAL_CONVERSATIONAL_INTELLIGENCE
+
+PURPOSE:
+Produce the complete, implementation-ready B4 architecture and scope freeze for portal-wide typed and voice conversational intelligence across every current ONYX/NOVA application, information surface, navigation target, supported setting, connected capability, voice profile, activation phrase, and safe action.
+
+This is a READ-ONLY census and architecture task. Do not implement anything.
+
+CORE PRODUCT OUTCOME:
+
+B4 must evolve ONYX/NOVA from command-oriented app launching into a mature, natural, portal-wide conversational operating layer.
+
+The final B4 design must support:
+
+- every registered current application;
+- every current panel, tab, card, list, table, chart, status, and detail surface;
+- inside-application information reading and explanation;
+- conversational navigation among and within applications;
+- safe refresh/search/filter/select/compare/summarize/explain operations;
+- connected Track A truth sources;
+- Track C governance projections;
+- typed and voice parity;
+- ONYX/NOVA activation phrases;
+- pronunciation drift without unsafe false activation;
+- conversational control of voice, privacy, accessibility, quality, listening, and provider settings;
+- provider neutrality for both ONYX and NOVA;
+- local-first continuity;
+- no authorization or approval escalation.
+
+NON-NEGOTIABLE CHARACTER/PROVIDER RULE:
+
+Do not encode:
+
+- NOVA = local-only;
+- ONYX = premium-only;
+- different communication capability based on character identity.
+
+Both ONYX and NOVA may use any registered local or premium provider if available and allowed by authenticated owner settings, privacy policy, regional availability, cost controls, and provider health.
+
+Supported architecture:
+
+Character identity
+→ character-specific presentation/voice profile
+→ owner-selected provider configuration
+→ provider registry and availability
+→ fallback policy
+
+Both characters may use the same provider or different providers. Character switching never changes authorization, approval, memory ownership, connector access, or session ownership.
+
+STRICT TRACK BOUNDARIES:
+
+Track A owns connectors and operational truth:
+- Microsoft/Google Workspace;
+- Mail;
+- Calendar;
+- OneDrive;
+- SharePoint;
+- Gmail;
+- Google Drive;
+- provider authentication and connector health.
+
+Track C owns governance/operations projections:
+- Automation Center;
+- Owner Decision Center;
+- approvals;
+- project health;
+- validation/evidence/history;
+- merge/deployment readiness projections.
+
+Track B owns:
+- conversational capability discovery;
+- portal/surface/settings registries;
+- intent/discourse resolution;
+- reference resolution;
+- TruthSourceResolver integration contracts;
+- grounded response composition;
+- conversational navigation planning;
+- voice/wake-word/turn-taking architecture;
+- typed/voice parity;
+- B4 evaluation and activation planning.
+
+Do not move connector logic into Track B.
+Do not move governance authority into Track B.
+Do not make visual state operational authority.
+
+PHASE 0: REPOSITORY AND MAIN-BRANCH LOCK
+
+Read-only verify and report:
+
+1. Repository root.
+2. Current branch and HEAD.
+3. origin/main HEAD after fetch.
+4. Clean/dirty worktree and index.
+5. PR #95 merge commit reachable from origin/main.
+6. B1-B3 files and contracts reachable from main.
+7. Current open Track A/Track C branches and potential overlap.
+8. Package manager, workspace root, scripts, and dependency boundaries.
+9. No mutation occurred.
+
+If local state is dirty, do not modify or clean it. Continue only if read-only inspection remains trustworthy; otherwise stop with exact blocker.
+
+PHASE 1: COMPLETE PORTAL CAPABILITY CENSUS
+
+Inventory every current application and all subordinate surfaces.
+
+At minimum inspect and reconcile:
+
+- applicationRegistry.tsx;
+- appDetailRegistry.tsx;
+- shellState.ts;
+- App.tsx;
+- minimized tray;
+- detail context;
+- Home;
+- Messages;
+- Mail;
+- Tasks;
+- News;
+- Workspace;
+- Calendar;
+- Files;
+- Search;
+- Automation;
+- Settings;
+- Health;
+- Provider Health;
+- every tab/panel/card/list/table/chart/status/detail surface;
+- hidden but implemented capabilities;
+- feature-flagged capabilities;
+- future placeholders that currently intercept commands;
+- controller APIs;
+- application-specific contracts;
+- current intent/command/navigation implementation;
+- accessibility and reduced-motion behavior.
+
+For each application/surface record:
+
+- applicationId;
+- surfaceId;
+- display name;
+- aliases;
+- purpose;
+- current visible state;
+- navigation targets;
+- tabs/subviews;
+- readable information;
+- searchable/filterable information;
+- refresh behavior;
+- safe selectable items;
+- current controller/service;
+- truth-source class;
+- freshness evidence;
+- privacy class;
+- permission requirement;
+- unavailable/error states;
+- conversational coverage today;
+- typed coverage today;
+- voice coverage today;
+- missing projection contract;
+- exact files/packages;
+- Track ownership;
+- cross-track collision risk.
+
+Classify each capability:
+
+- FULLY_CONVERSATIONAL;
+- PARTIALLY_CONVERSATIONAL;
+- COMMAND_ONLY;
+- NOT_CONVERSATIONAL;
+- INTENTIONALLY_EXCLUDED;
+- NOT_IMPLEMENTED;
+- EXTERNAL_DEPENDENCY_BLOCKED.
+
+PHASE 2: COMPLETE SETTINGS CENSUS
+
+Inventory every setting visible or implemented across ONYX/NOVA, not only voice settings.
+
+For each setting record:
+
+- settingId;
+- category;
+- target scope: account | device | session | character | application | provider;
+- current type;
+- accepted values/range;
+- default;
+- active value source;
+- persistence layer;
+- privacy impact;
+- cost impact;
+- accessibility impact;
+- provider dependency;
+- confirmation requirement;
+- owner-only requirement;
+- rollback/reset behavior;
+- current UI control;
+- current command/voice coverage;
+- exact files.
+
+Explicitly include current visible voice/privacy/accessibility controls for both ONYX and NOVA:
+
+VOICE PROFILE:
+- active character;
+- persona: Female | Male | Neutral;
+- engine: System/Local Voice | Azure AI Speech | ElevenLabs | future registered provider;
+- system voice selection;
+- language/locale;
+- rate;
+- pitch;
+- volume;
+- detail: Brief | Standard | Detailed;
+- Test ONYX voice;
+- Test NOVA voice.
+
+LISTENING/PRIVACY/ACCESSIBILITY:
+- Push to talk;
+- Auto listen;
+- Wake words;
+- Process locally when available;
+- Clear temporary audio after response;
+- Live transcript;
+- Larger captions;
+- High-contrast voice indicators;
+- Quality profile such as Balanced, if repository evidence confirms it is configurable.
+
+Classify each setting operation:
+
+- READABLE_BY_CONVERSATION;
+- DIRECT_LOW_RISK_CHANGE;
+- CONFIRMATION_REQUIRED;
+- OWNER_ONLY;
+- DEVICE_ONLY;
+- NOT_SUPPORTED;
+- INTENTIONALLY_EXCLUDED.
+
+PHASE 3: WAKE WORD AND ACTIVATION PHRASE CENSUS
+
+Canonical character activation phrases:
+
+ONYX:
+- ONYX
+- Hey ONYX
+
+NOVA:
+- NOVA
+- Hey NOVA
+
+Recognition must be case-insensitive. Textual capitalization variants do not represent distinct wake words.
+
+Required ONYX examples:
+
+- Onyx
+- ONYX
+- onyx
+- Hey Onyx
+- HEY ONYX
+- hey Onyx
+- hey onyx
+- Onyx, open Mail
+- Hey Onyx, what requires my attention?
+- Onyx, stop speaking
+- Onyx, switch your voice to Azure AI Speech
+
+Required NOVA examples:
+
+- Nova
+- NOVA
+- nova
+- Hey Nova
+- HEY NOVA
+- hey Nova
+- hey nova
+- Nova, open Workspace
+- Hey Nova, summarize visible Mail metadata
+- Nova, stop speaking
+- Nova, use the current premium voice provider
+
+PHASE 4: PRONUNCIATION-DRIFT ARCHITECTURE
+
+Design recognition for accents, code-switching, microphone variance, and common ASR substitutions without using unbounded string fuzziness.
+
+The census must inspect actual current parser/voice code and propose a bounded, configurable alias model containing:
+
+- canonical phrase;
+- character target;
+- normalized textual aliases;
+- phonetic/acoustic aliases where provider supports them;
+- locale-specific aliases;
+- owner-approved custom aliases;
+- confidence threshold class;
+- ambiguity class;
+- negative/confusable examples;
+- source/provenance;
+- expiration/review policy;
+- false-acceptance evidence.
+
+Required evaluation candidates include, without blindly hardcoding every candidate as always accepted:
+
+ONYX candidate drift:
+- onyx;
+- oniks;
+- onix;
+- honest-like or other observed ASR substitutions only when repository/test evidence shows a real pattern;
+- owner-defined pronunciation aliases.
+
+NOVA candidate drift:
+- nova;
+- noba;
+- no va;
+- nova-like locale/accent substitutions supported by evidence;
+- owner-defined pronunciation aliases.
+
+Important:
+
+- `noba` should be evaluated as an expected NOVA drift candidate.
+- Similar-sounding aliases must be bounded and tested against negative corpora.
+- Do not accept arbitrary edit-distance matches.
+- Do not accept a phrase solely because it looks textually similar.
+- Do not broaden recognition silently from observed transcripts.
+- Owner-configured aliases must be explicit, visible, revocable, and account-bound.
+- Wake-word tolerance must not grant authority or bypass authentication.
+
+Where supported, use speech-recognition phrase biasing/hints for canonical phrases and approved aliases. Treat phrase biasing as optional because browser/provider support varies.
+
+PHASE 5: WAKE WORD VERSUS NORMAL-CONVERSATION DISAMBIGUATION
+
+Design separate states for passive wake detection and active conversational interpretation.
+
+Required lifecycle:
+
+- WAKE_WORD_DISABLED;
+- WAKE_WORD_CONFIGURED;
+- WAKE_WORD_READY;
+- WAKE_WORD_LISTENING;
+- WAKE_WORD_CANDIDATE;
+- WAKE_WORD_DETECTED;
+- COMMAND_LISTENING;
+- REQUEST_FINALIZING;
+- PROCESSING;
+- SPEAKING;
+- FOLLOW_UP_LISTENING;
+- SUSPENDED;
+- PRIVACY_BLOCKED;
+- UNAVAILABLE.
+
+Passive mode rules:
+
+- Only a canonical or approved bounded wake candidate may activate.
+- The wake phrase itself is not executed as a portal command.
+- Text after the wake phrase in the same utterance becomes the request.
+- A bare wake word opens one bounded command-listening turn.
+- No connector/tool/model request begins before activation is adjudicated.
+- Low-confidence or ambiguous candidates do not activate.
+- Repeated low-confidence candidates do not automatically weaken thresholds.
+
+Active-session rules:
+
+- During a valid foreground conversational session or bounded follow-up window, natural references to ONYX/NOVA do not require a new wake word.
+- Direct vocative address at utterance start may switch the response character only when clearly addressed and allowed by policy.
+- Mentioning ONYX/NOVA in discussion must not switch character or activate commands.
+
+Examples that should activate when passive and confidence/policy gates pass:
+
+- “Hey Onyx, open Mail.”
+- “Onyx.” followed by a command inside the bounded listening window.
+- “Noba, show my tasks.” when `noba` is an approved NOVA pronunciation drift and not ambiguous.
+- “Hey Nova, continue.”
+
+Examples that should not automatically activate or switch character:
+
+- “The ONYX architecture uses provider-neutral adapters.”
+- “I was discussing NOVA yesterday.”
+- “Compare ONYX and NOVA voice settings.”
+- Audio containing the word in background media without sufficient confidence/foreground evidence.
+- Similar ordinary words from the negative/confusable corpus.
+
+Examples requiring clarification or no activation:
+
+- A candidate acoustically compatible with both characters.
+- A drift alias with low confidence.
+- An utterance containing only an ambiguous similar word.
+- A command directed at no character while wake-word-only mode is configured.
+
+The architecture must separate:
+
+WAKE_DETECTION
+≠ CHARACTER_SELECTION
+≠ INTENT_RESOLUTION
+≠ AUTHENTICATION
+≠ AUTHORIZATION
+≠ APPROVAL
+≠ EXECUTION
+
+PHASE 6: SAMPLE ACTIVATION COMMAND CATALOG
+
+Produce a machine-readable and human-readable catalog covering both characters.
+
+BASIC ACTIVATION:
+
+- “Onyx”
+- “Hey Onyx”
+- “Nova”
+- “Hey Nova”
+
+ACTIVATION PLUS NAVIGATION:
+
+- “Hey Onyx, open Mail.”
+- “Onyx, go to Workspace.”
+- “Hey Nova, open Automation.”
+- “Nova, take me to Settings.”
+- “Onyx, go back.”
+- “Nova, restore Mail.”
+
+ACTIVATION PLUS INFORMATION:
+
+- “Hey Onyx, what is visible on this screen?”
+- “Onyx, explain the current application.”
+- “Hey Nova, summarize the visible Mail metadata.”
+- “Nova, what requires my attention?”
+- “Onyx, compare Mail and Tasks.”
+- “Nova, explain why this connector is unavailable.”
+
+ACTIVATION PLUS DEEP APP INTERACTION:
+
+- “Hey Onyx, open Automation and show Validation.”
+- “Nova, read the failed validation items.”
+- “Onyx, switch to Evidence and summarize the package.”
+- “Hey Nova, refresh the current Mail list.”
+- “Onyx, filter this view to unread items,” only if the application capability supports that filter.
+
+VOICE PROFILE CONTROL:
+
+- “Onyx, use Azure AI Speech.”
+- “Nova, switch to ElevenLabs.”
+- “Hey Onyx, use the system voice.”
+- “Set both ONYX and NOVA to Azure AI Speech.”
+- “Nova, use a neutral persona.”
+- “Onyx, use Microsoft Ravi.”
+- “Nova, make the voice slightly slower.”
+- “Onyx, set rate to zero point nine eight.”
+- “Nova, set volume to ninety percent.”
+- “Onyx, lower pitch slightly.”
+- “Nova, use detailed responses.”
+- “Onyx, keep responses brief.”
+- “Nova, change language to English India.”
+- “Onyx, test the current voice.”
+- “Compare ONYX and NOVA voice profiles.”
+- “Restore NOVA’s previous voice settings.”
+
+LISTENING/PRIVACY/ACCESSIBILITY:
+
+- “Onyx, enable push to talk.”
+- “Nova, disable auto listen.”
+- “Hey Onyx, enable live transcript.”
+- “Nova, turn on larger captions.”
+- “Onyx, enable high-contrast voice indicators.”
+- “Nova, process speech locally when available.”
+- “Onyx, clear temporary audio after every response.”
+- “Nova, tell me which wake words are configured.”
+- “Onyx, enable wake-word readiness.”
+- “Nova, start wake-word listening,” subject to explicit privacy confirmation.
+- “Onyx, stop background listening.”
+- “Nova, keep push-to-talk only.”
+
+CONVERSATION CONTROL:
+
+- “Onyx, stop speaking.”
+- “Nova, pause.”
+- “Onyx, resume.”
+- “Nova, cancel that.”
+- “Hey Onyx, let me finish.”
+- “Nova, continue from the previous answer.”
+- “Onyx, I meant last week.”
+- “Nova, switch topics.”
+
+CHARACTER HANDOFF:
+
+- “Switch to NOVA.”
+- “Let ONYX continue.”
+- “NOVA, take over this conversation.”
+- “Use ONYX for this response.”
+
+For every command classify:
+
+- passive wake required or not;
+- character target;
+- intent/discourse act;
+- setting/action capability;
+- confirmation requirement;
+- permitted authority level;
+- expected response;
+- rollback behavior;
+- negative/confusable test cases.
+
+PHASE 7: VOICE PIPELINE CENSUS
+
+Inspect all current voice-related files/packages and map:
+
+- microphone entry;
+- push-to-talk;
+- auto listen;
+- wake-word readiness;
+- actual background listener state;
+- SpeechRecognition/browser path;
+- local processing preference;
+- final/interim result handling;
+- confidence;
+- language;
+- recognition generation;
+- stale-generation rejection;
+- TTS engine/profile selection;
+- system voices;
+- Azure AI Speech;
+- ElevenLabs;
+- rate/pitch/volume;
+- detail/spoken adaptation;
+- TTS/STT handoff;
+- cancellation;
+- interruption/barge-in;
+- follow-up listening;
+- captions/live transcript;
+- temporary audio clearing;
+- device errors;
+- provider fallback;
+- typed/voice dispatch parity.
+
+Identify exact current support versus UI-only placeholders.
+
+PHASE 8: REQUIRED B4 REGISTRIES AND CONTRACTS
+
+Propose exact provider-neutral contracts for:
+
+- ApplicationCapabilityRegistry;
+- SurfaceRegistry;
+- NavigationRegistry;
+- ConversationActionRegistry;
+- SettingsRegistry;
+- VoiceProfileRegistry;
+- VoiceProviderRegistry;
+- SpeechRecognitionProviderRegistry;
+- WakeWordRegistry;
+- PronunciationAliasRegistry;
+- AccessibilitySettingsRegistry;
+- PrivacySettingsRegistry;
+- TruthSourceRegistry;
+- ConversationModelRegistry;
+- Tool/Capability Registry;
+- ResponseEnvelope;
+- VoiceRequestEnvelope;
+- VoicePlayback/Interruption state;
+- ActivationEvidence;
+- WakeWordDecision;
+- SettingsChangeProposal;
+- SettingsChangeReceipt;
+- Rollback receipt.
+
+For each contract define:
+
+- package owner;
+- stable ID;
+- closed enums;
+- bounds;
+- provenance;
+- account/session/character binding;
+- privacy class;
+- authority effect (must be NONE unless governed elsewhere);
+- persistence policy;
+- failure behavior;
+- test IDs;
+- future provider adapter compatibility.
+
+PHASE 9: COMPLETE TRUTH-SOURCE AND TOOL CENSUS
+
+Inventory all current deterministic, visible-state, local-file, memory, connector, governance, and model knowledge sources.
+
+Required truth classes:
+
+- DETERMINISTIC_LOCAL;
+- VISIBLE_PORTAL_STATE;
+- LOCAL_APPLICATION;
+- LOCAL_FILE;
+- SESSION_CONTEXT;
+- GOVERNED_MEMORY;
+- CONNECTOR_GROUNDED;
+- GOVERNANCE_PROJECTION;
+- USER_SUPPLIED;
+- GENERAL_MODEL_KNOWLEDGE;
+- UNAVAILABLE;
+- UNKNOWN.
+
+Define routing precedence and evidence requirements.
+
+The model must not override connector truth, deterministic truth, visible state, authorization, approval, execution, or recovery truth.
+
+Inventory every current safe operation and classify:
+
+- READ;
+- NAVIGATE;
+- REFRESH;
+- SEARCH;
+- FILTER;
+- SELECT;
+- SUMMARIZE;
+- EXPLAIN;
+- COMPARE;
+- SETTINGS_READ;
+- SETTINGS_CHANGE_LOW_RISK;
+- SETTINGS_CHANGE_CONFIRMATION_REQUIRED;
+- PROPOSE_WRITE;
+- EXECUTE_WRITE.
+
+B4 must not directly authorize EXECUTE_WRITE.
+
+PHASE 10: B4 EXECUTION PHASE PLAN
+
+Generate a complete implementation sequence using these corrected phases:
+
+B4.0
+Portal + voice + settings + wake-word + pronunciation-drift census and scope freeze.
+
+B4.1
+Universal application, surface, navigation, action, settings, voice-provider, and wake-word registries.
+
+B4.2
+Universal conversational settings controller with read, compare, set, increase, decrease, enable, disable, test, restore, and reset operations.
+
+B4.3
+Universal portal query layer and TruthSourceResolver.
+
+B4.4
+General conversation and grounded response engine.
+
+B4.5
+Deep conversational navigation and inside-app interaction.
+
+B4.6
+Cross-application grounded synthesis.
+
+B4.7
+Complete voice, wake-word, pronunciation-drift, character, interruption, listening, caption, accessibility, and settings runtime.
+
+B4.8
+Governed memory retrieval, read-only.
+
+B4.9
+Golden Portal and Voice Evaluation.
+
+B4.10
+Controlled activation ladder.
+
+For each phase define:
+
+- exact outcome;
+- package/file candidates;
+- acceptance registry;
+- tests;
+- dependencies;
+- parallelizable lanes;
+- integration owner;
+- rollback;
+- activation state;
+- provider/configuration prerequisites;
+- physical validation;
+- owner decisions;
+- stop conditions;
+- cross-track conflict checks.
+
+PHASE 11: GOLDEN WAKE-WORD AND VOICE EVALUATION PLAN
+
+Create an evaluation matrix covering:
+
+- canonical wake words;
+- all capitalization/text normalization variants;
+- approved pronunciation aliases;
+- accents and locale variation;
+- English, Hindi, and Hinglish/code-switching;
+- quiet/noisy audio;
+- near/far microphone;
+- repeated words;
+- hesitation;
+- activation plus command;
+- bare wake then command;
+- interruption;
+- background media;
+- ordinary sentences mentioning ONYX/NOVA;
+- confusing similar words;
+- cross-character ambiguity;
+- false acceptances;
+- false rejections;
+- stale transcripts;
+- duplicate execution;
+- no startup microphone prompt;
+- privacy mode;
+- offline/local fallback;
+- provider unavailable;
+- device unavailable;
+- character switching without authority changes.
+
+Required metrics/evidence classes:
+
+- wake candidate decision;
+- confidence evidence;
+- accepted alias;
+- false acceptance;
+- false rejection;
+- character-routing correctness;
+- command-boundary correctness;
+- duplicate execution count;
+- time to listening state;
+- time to first transcript;
+- interruption completion;
+- privacy-state correctness;
+- provider fallback correctness.
+
+Do not invent release thresholds in this audit. Recommend which thresholds require measured baseline evidence and Owner approval.
+
+PHASE 12: SECURITY, PRIVACY, AND AUTHORITY REVIEW
+
+Threat-model:
+
+- accidental activation;
+- deliberate audio injection;
+- replayed wake phrases;
+- background media activation;
+- cross-character confusion;
+- voice spoofing;
+- prompt injection through transcripts;
+- tool injection through portal content;
+- cross-account/session leakage;
+- silent cloud-provider activation;
+- paid-provider cost escalation;
+- privacy setting changes by voice;
+- enabling auto listen/background listening without confirmation;
+- retention misconfiguration;
+- diagnostic transcript leakage;
+- accessibility regressions;
+- offline behavior;
+- denial-of-service through repeated activation.
+
+Permanent invariants:
+
+- Wake word ≠ identity.
+- Voice recognition ≠ authentication.
+- Character selection ≠ authorization.
+- Conversation intent ≠ approval.
+- Model tool choice ≠ execution authority.
+- Settings request ≠ permission to change high-impact privacy/cost settings.
+- Background listener activation requires explicit, visible, reversible policy-compliant action.
+
+PHASE 13: REQUIRED OUTPUT
+
+Return one report only:
+
+# B4_UNIVERSAL_PORTAL_VOICE_SETTINGS_WAKE_WORD_CAPABILITY_CENSUS_DEEP_RESEARCH_ARCHITECTURE_AND_SCOPE_FREEZE
+
+Sections:
+
+1. Repository and baseline lock
+2. Complete application inventory
+3. Complete surface/tab/card inventory
+4. Current conversational coverage matrix
+5. Current voice pipeline map
+6. Current settings inventory
+7. ONYX/NOVA provider-neutral profile analysis
+8. Wake-word lifecycle map
+9. Canonical activation phrases
+10. Pronunciation-drift candidate matrix
+11. Wake-versus-normal-conversation decision architecture
+12. Sample activation command catalog
+13. Current gaps and severity
+14. Universal registries/contracts
+15. TruthSourceResolver map
+16. Tool/capability map
+17. Track A/B/C ownership and conflict map
+18. B4.0-B4.10 execution plan
+19. Acceptance registry
+20. Golden Portal Conversation Suite
+21. Golden Voice/Wake-Word Suite
+22. Security/privacy/authority threat model
+23. Provider/configuration prerequisites
+24. Physical validation plan
+25. Prompt count and minimal safe execution packaging
+26. Owner decisions and exceptions
+27. Exact implementation-ready file/package plan
+28. Final recommendation
+
+MANDATORY FINAL QUESTIONS:
+
+Answer explicitly:
+
+- Is every current portal application inventoried?
+- Is every current inside-app information surface inventoried?
+- Is every current navigation target inventoried?
+- Is every current visible voice/privacy/accessibility setting inventoried?
+- Can both ONYX and NOVA use local or premium providers by owner setting?
+- Are ONYX, Hey ONYX, NOVA, and Hey NOVA modeled?
+- Are capitalization variants normalized?
+- Is bounded pronunciation drift modeled?
+- Is `noba` evaluated as a NOVA candidate?
+- Are owner-defined aliases supported?
+- Can the system distinguish wake calls from ordinary discussion?
+- Is activation-plus-command modeled?
+- Does character switching preserve authority/session invariants?
+- Are typed and voice parity covered?
+- Are offline/local fallback and provider failure covered?
+- Are all exclusions and missing repository evidence explicit?
+
+SUCCESS MARKER:
+
+Emit only if the census is complete enough to create an implementation-ready B4 scope without inventing repository facts, no mutation occurred, all current applications/settings/voice paths are classified, pronunciation drift and wake disambiguation are included, and cross-track boundaries are explicit:
+
+B4_UNIVERSAL_PORTAL_VOICE_SETTINGS_WAKE_WORD_CAPABILITY_CENSUS_AND_SCOPE_FREEZE_ACCEPTED_IMPLEMENTATION_AUTHORIZATION_REQUIRED
