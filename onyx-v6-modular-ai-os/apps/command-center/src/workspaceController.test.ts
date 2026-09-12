@@ -11,15 +11,19 @@ it("exports the non-UI Microsoft Mail foundation projection", () => {
 
 describe("Microsoft redirect ownership", () => {
   it("keeps preview authentication on the current preview origin", () => {
-    expect(resolveMicrosoftRedirectUri("https://deploy-preview-102--onyx-alpha0.netlify.app", "https://onyx-alpha0.netlify.app")).toBe("https://deploy-preview-102--onyx-alpha0.netlify.app");
+    expect(resolveMicrosoftRedirectUri("https://deploy-preview-103--onyx-alpha0.netlify.app", "https://onyx-alpha0.netlify.app/microsoft-callback")).toBe("https://deploy-preview-103--onyx-alpha0.netlify.app");
   });
 
   it("preserves the approved configured production redirect on production", () => {
-    expect(resolveMicrosoftRedirectUri("https://onyx-alpha0.netlify.app", "https://onyx-alpha0.netlify.app")).toBe("https://onyx-alpha0.netlify.app");
+    expect(resolveMicrosoftRedirectUri("https://onyx-alpha0.netlify.app", "https://onyx-alpha0.netlify.app/microsoft-callback")).toBe("https://onyx-alpha0.netlify.app/microsoft-callback");
   });
 
   it("falls back to the current origin when no redirect is configured", () => {
-    expect(resolveMicrosoftRedirectUri("http://localhost:5173", "")).toBe("http://localhost:5173");
+    expect(resolveMicrosoftRedirectUri("http://localhost:5173", "https://onyx-alpha0.netlify.app/microsoft-callback")).toBe("http://localhost:5173");
+  });
+
+  it("does not treat a non-approved preview hostname as a preview origin", () => {
+    expect(resolveMicrosoftRedirectUri("https://deploy-preview-103--other-site.netlify.app", "https://onyx-alpha0.netlify.app/microsoft-callback")).toBe("https://onyx-alpha0.netlify.app/microsoft-callback");
   });
 });
 
