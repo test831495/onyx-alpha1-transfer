@@ -13,6 +13,55 @@ export interface MicrosoftCalendarEvent {
   location?: string;
   isOnlineMeeting: boolean;
 }
+export interface MicrosoftMailMessage {
+  provider: "microsoft";
+  subject: string;
+  senderDisplayName: string;
+  receivedAt: string;
+  isRead: boolean;
+  hasAttachments: boolean;
+}
+export type MicrosoftMailDiagnosticOutcome = "NOT_REQUESTED" | "REQUESTED" | "SUCCEEDED" | "EMPTY" | "FAILED";
+export type MicrosoftMailDiagnosticReasonCode =
+  | "MAIL_NOT_REQUESTED"
+  | "MAIL_SUCCEEDED"
+  | "MAIL_EMPTY"
+  | "MAIL_PERMISSION_REQUIRED"
+  | "MAIL_ACCOUNT_MISMATCH"
+  | "MAIL_SCOPE_MISSING"
+  | "MAIL_SCOPE_NOT_INSPECTABLE"
+  | "MAIL_AUTHENTICATION_REQUIRED"
+  | "MAIL_ACCESS_TOKEN_ABSENT"
+  | "MAIL_HTTP_401"
+  | "MAIL_HTTP_403"
+  | "MAIL_HTTP_429"
+  | "MAIL_PROVIDER_5XX"
+  | "MAIL_TRANSPORT_FAILURE"
+  | "MAIL_ABORTED"
+  | "MAIL_MALFORMED_RESPONSE"
+  | "MAIL_RETRY_SUCCEEDED";
+export type MicrosoftMailScopeReport = "REPORTED_PRESENT" | "REPORTED_ABSENT" | "NOT_REPORTED";
+export interface MicrosoftMailReadDiagnostic {
+  outcome: MicrosoftMailDiagnosticOutcome;
+  reasonCode: MicrosoftMailDiagnosticReasonCode;
+  finalReasonCode: MicrosoftMailDiagnosticReasonCode;
+  httpStatus?: number;
+  mailScope: MicrosoftMailScopeReport;
+  accountBinding: MicrosoftAccountBindingClass;
+  refreshAttempted: boolean;
+  retryAttempted: boolean;
+  requestIdPresent?: boolean;
+  clientRequestIdPresent?: boolean;
+  retryAfterPresent?: boolean;
+  contentTypeJson?: boolean;
+  returnedMessageCount?: number;
+  normalizedMessageCount?: number;
+  rejectedMessageCount?: number;
+}
+export interface MicrosoftMailReadResult {
+  messages: readonly MicrosoftMailMessage[];
+  diagnostic: MicrosoftMailReadDiagnostic;
+}
 export type MicrosoftCalendarDiagnosticStage = "ADAPTER_SELECTION" | "RANGE_CONSTRUCTION" | "TOKEN_ACQUISITION" | "GRAPH_REQUEST" | "GRAPH_RESPONSE" | "RESPONSE_VALIDATION" | "NORMALIZATION";
 export type MicrosoftCalendarDiagnosticOutcome = "NOT_STARTED" | "STARTED" | "SUCCEEDED" | "SUCCEEDED_EMPTY" | "FAILED" | "REJECTED";
 export type MicrosoftCalendarDiagnosticReasonCode =
@@ -271,7 +320,7 @@ export function adjudicateTokenResult(
 }
 const profileScopes = ["User.Read"];
 const calendarScopes = ["Calendars.Read"];
-const workspaceScopes = [...profileScopes, ...calendarScopes];
+const mailScopes = ["Mail.ReadBasic"];
 const capabilities = [
   { id: "profile" as const, label: "Microsoft profile", enabled: true },
   { id: "mail" as const, label: "Outlook mail", enabled: false, plannedRelease: "Alpha 3.1.2" },
@@ -323,7 +372,13 @@ export class MicrosoftWorkspaceConnector {
     if (!this.application) { await this.initialize(); }
     if (!this.application || !this.configured) throw new Error("Microsoft workspace configuration is incomplete.");
     this.diagnostic = "Redirecting to Microsoft sign-in.";
-    await this.application.loginRedirect({ scopes: workspaceScopes, prompt: "select_account" });
+    await this.application.loginRedirect({ scopes: [...profileScopes, ...calendarScopes], prompt: "select_account" });
+  }
+  async connectMail(): Promise<void> {
+    if (!this.application) await this.initialize();
+    if (!this.application || !this.configured) throw new Error("Microsoft workspace configuration is incomplete.");
+    this.diagnostic = "Redirecting to Microsoft Mail consent.";
+    await this.application.loginRedirect({ scopes: [...profileScopes, ...mailScopes], prompt: "select_account" });
   }
   async reconnect(): Promise<void> {
     if (!this.application) await this.initialize();
@@ -334,7 +389,7 @@ export class MicrosoftWorkspaceConnector {
       const underlyingCause = error instanceof Error ? error.cause : undefined;
       if (isInteractionRequiredTokenError(underlyingCause) || isInteractionRequiredTokenError(error)) {
         this.diagnostic = "Redirecting to Microsoft sign-in.";
-        await this.application.loginRedirect({ scopes: workspaceScopes, prompt: "select_account" });
+        await this.application.loginRedirect({ scopes: [...profileScopes, ...calendarScopes], prompt: "select_account" });
         return;
       }
       throw error;
@@ -396,6 +451,104 @@ export class MicrosoftWorkspaceConnector {
     if (!response.ok) throw new Error(`Microsoft Graph profile request failed (${response.status}).`);
     const value = await response.json() as { displayName: string; mail?: string; userPrincipalName?: string; id?: string };
     return { displayName: value.displayName, email: value.mail ?? value.userPrincipalName, tenantId: this.account.tenantId, accountId: value.id ?? this.account.homeAccountId };
+  }
+  private async acquireMailAccessToken(forceRefresh = false): Promise<{ accessToken?: string; mailScope: MicrosoftMailScopeReport; accountBinding: MicrosoftAccountBindingClass; reasonCode?: MicrosoftMailDiagnosticReasonCode }> {
+    const application = this.application;
+    const account = this.account;
+    if (!application || !account || typeof application.acquireTokenSilent !== "function") {
+      return { mailScope: "NOT_REPORTED", accountBinding: "UNKNOWN", reasonCode: "MAIL_PERMISSION_REQUIRED" };
+    }
+    try {
+      const result = await application.acquireTokenSilent({
+        account,
+        scopes: [...profileScopes, ...mailScopes],
+        ...(forceRefresh ? { forceRefresh: true } : {}),
+      });
+      const returnedAccount = result?.account as AccountInfo | undefined;
+      const accountBinding = returnedAccount?.homeAccountId && account.homeAccountId
+        ? returnedAccount.homeAccountId === account.homeAccountId ? "MATCHED" : "MISMATCHED"
+        : "UNKNOWN";
+      const tenantMatched = !account.tenantId || !returnedAccount?.tenantId || account.tenantId === returnedAccount.tenantId;
+      const returnedScopes = Array.isArray(result?.scopes) ? result.scopes : undefined;
+      const mailScope: MicrosoftMailScopeReport = !returnedScopes
+        ? "NOT_REPORTED"
+        : returnedScopes.some((scope: unknown) => typeof scope === "string" && scope.toLowerCase() === "mail.readbasic")
+          ? "REPORTED_PRESENT"
+          : "REPORTED_ABSENT";
+      if (!result?.accessToken) return { mailScope, accountBinding, reasonCode: "MAIL_ACCESS_TOKEN_ABSENT" };
+      if (accountBinding !== "MATCHED" || !tenantMatched) return { mailScope, accountBinding, reasonCode: "MAIL_ACCOUNT_MISMATCH" };
+      if (mailScope === "REPORTED_ABSENT") return { mailScope, accountBinding, reasonCode: "MAIL_SCOPE_MISSING" };
+      if (mailScope === "NOT_REPORTED") return { mailScope, accountBinding, reasonCode: "MAIL_SCOPE_NOT_INSPECTABLE" };
+      return { accessToken: result.accessToken, mailScope, accountBinding };
+    } catch (error) {
+      return {
+        mailScope: "NOT_REPORTED",
+        accountBinding: "UNKNOWN",
+        reasonCode: isInteractionRequiredTokenError(error) ? "MAIL_AUTHENTICATION_REQUIRED" : "MAIL_TRANSPORT_FAILURE",
+      };
+    }
+  }
+  async loadMailMessagesWithDiagnostic(): Promise<MicrosoftMailReadResult> {
+    const initial = await this.acquireMailAccessToken();
+    const base = (reasonCode: MicrosoftMailDiagnosticReasonCode): MicrosoftMailReadDiagnostic => ({
+      outcome: reasonCode === "MAIL_NOT_REQUESTED" ? "NOT_REQUESTED" : "FAILED",
+      reasonCode,
+      finalReasonCode: reasonCode,
+      mailScope: initial.mailScope,
+      accountBinding: initial.accountBinding,
+      refreshAttempted: false,
+      retryAttempted: false,
+    });
+    if (!initial.accessToken) return { messages: [], diagnostic: base(initial.reasonCode ?? "MAIL_PERMISSION_REQUIRED") };
+
+    const request = async (accessToken: string) => fetch(`https://graph.microsoft.com/v1.0/me/messages?${new URLSearchParams({ $top: "10", $select: "subject,sender,receivedDateTime,isRead,hasAttachments" })}`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    let response: Response;
+    try {
+      response = await request(initial.accessToken);
+    } catch (error) {
+      const reasonCode = error instanceof Error && error.name === "AbortError" ? "MAIL_ABORTED" : "MAIL_TRANSPORT_FAILURE";
+      return { messages: [], diagnostic: base(reasonCode) };
+    }
+    if (response.status === 401) {
+      const refreshed = await this.acquireMailAccessToken(true);
+      if (!refreshed.accessToken) {
+        return { messages: [], diagnostic: { ...base(refreshed.reasonCode ?? "MAIL_HTTP_401"), mailScope: refreshed.mailScope, accountBinding: refreshed.accountBinding, refreshAttempted: true } };
+      }
+      try {
+        response = await request(refreshed.accessToken);
+      } catch (error) {
+        const reasonCode = error instanceof Error && error.name === "AbortError" ? "MAIL_ABORTED" : "MAIL_TRANSPORT_FAILURE";
+        return { messages: [], diagnostic: { ...base(reasonCode), mailScope: refreshed.mailScope, accountBinding: refreshed.accountBinding, refreshAttempted: true, retryAttempted: true } };
+      }
+      if (response.ok) return this.parseMailResponse(response, refreshed, true);
+      return { messages: [], diagnostic: this.mailHttpFailure(response, refreshed, true) };
+    }
+    if (!response.ok) return { messages: [], diagnostic: this.mailHttpFailure(response, initial, false) };
+    return this.parseMailResponse(response, initial, false);
+  }
+  private mailHttpFailure(response: Response, token: { mailScope: MicrosoftMailScopeReport; accountBinding: MicrosoftAccountBindingClass }, retried: boolean): MicrosoftMailReadDiagnostic {
+    const reasonCode: MicrosoftMailDiagnosticReasonCode = response.status === 401 ? "MAIL_HTTP_401" : response.status === 403 ? "MAIL_HTTP_403" : response.status === 429 ? "MAIL_HTTP_429" : response.status >= 500 ? "MAIL_PROVIDER_5XX" : "MAIL_MALFORMED_RESPONSE";
+    return { outcome: "FAILED", reasonCode, finalReasonCode: reasonCode, httpStatus: response.status, mailScope: token.mailScope, accountBinding: token.accountBinding, refreshAttempted: retried, retryAttempted: retried, requestIdPresent: Boolean(response.headers?.get?.("x-ms-request-id")), clientRequestIdPresent: Boolean(response.headers?.get?.("client-request-id")), retryAfterPresent: Boolean(response.headers?.get?.("retry-after")) };
+  }
+  private async parseMailResponse(response: Response, token: { mailScope: MicrosoftMailScopeReport; accountBinding: MicrosoftAccountBindingClass }, retried: boolean): Promise<MicrosoftMailReadResult> {
+    const contentTypeJson = Boolean(response.headers?.get?.("content-type")?.toLowerCase().includes("json"));
+    if (!contentTypeJson) return { messages: [], diagnostic: { ...this.mailHttpFailure(response, token, retried), reasonCode: "MAIL_MALFORMED_RESPONSE", finalReasonCode: "MAIL_MALFORMED_RESPONSE", contentTypeJson } };
+    let body: { value?: unknown };
+    try { body = await response.json() as { value?: unknown }; } catch { return { messages: [], diagnostic: { ...this.mailHttpFailure(response, token, retried), reasonCode: "MAIL_MALFORMED_RESPONSE", finalReasonCode: "MAIL_MALFORMED_RESPONSE", contentTypeJson } }; }
+    if (!Array.isArray(body.value)) return { messages: [], diagnostic: { ...this.mailHttpFailure(response, token, retried), reasonCode: "MAIL_MALFORMED_RESPONSE", finalReasonCode: "MAIL_MALFORMED_RESPONSE", contentTypeJson } };
+    const messages: MicrosoftMailMessage[] = [];
+    for (const value of body.value) {
+      const message = normalizeMailMessage(value);
+      if (message) messages.push(message);
+    }
+    const returnedMessageCount = body.value.length;
+    const normalizedMessageCount = messages.length;
+    const rejectedMessageCount = returnedMessageCount - normalizedMessageCount;
+    const reasonCode: MicrosoftMailDiagnosticReasonCode = normalizedMessageCount === 0 && returnedMessageCount > 0 ? "MAIL_MALFORMED_RESPONSE" : retried ? "MAIL_RETRY_SUCCEEDED" : returnedMessageCount === 0 ? "MAIL_EMPTY" : "MAIL_SUCCEEDED";
+    return { messages: Object.freeze(messages), diagnostic: { outcome: returnedMessageCount === 0 ? "EMPTY" : normalizedMessageCount === 0 ? "FAILED" : "SUCCEEDED", reasonCode, finalReasonCode: reasonCode, httpStatus: response.status, mailScope: token.mailScope, accountBinding: token.accountBinding, refreshAttempted: retried, retryAttempted: retried, contentTypeJson, returnedMessageCount, normalizedMessageCount, rejectedMessageCount } };
   }
   async loadCalendarEvents(range: MicrosoftCalendarRange): Promise<readonly MicrosoftCalendarEvent[]> {
     const result = await this.loadCalendarEventsWithDiagnostic(range);
@@ -773,6 +926,27 @@ export function selectMicrosoftAccount(
     throw new Error("Multiple Microsoft accounts are cached; select an account before continuing.");
   }
   return cachedAccounts[0];
+}
+
+function normalizeMailMessage(value: unknown): MicrosoftMailMessage | undefined {
+  const message = value as Record<string, unknown>;
+  const receivedAt = readGraphString(message.receivedDateTime);
+  const parsedReceivedAt = new Date(receivedAt);
+  if (!receivedAt || Number.isNaN(parsedReceivedAt.getTime())) return undefined;
+  const sender = message.sender as Record<string, unknown> | undefined;
+  const emailAddress = sender?.emailAddress as Record<string, unknown> | undefined;
+  return Object.freeze({
+    provider: "microsoft",
+    subject: boundedGraphString(message.subject, 160),
+    senderDisplayName: boundedGraphString(emailAddress?.name, 120),
+    receivedAt: parsedReceivedAt.toISOString(),
+    isRead: message.isRead === true,
+    hasAttachments: message.hasAttachments === true,
+  });
+}
+
+function boundedGraphString(value: unknown, maximumLength: number): string {
+  return readGraphString(value).replace(/[\r\n\t]+/g, " ").slice(0, maximumLength);
 }
 
 function normalizeCalendarEvent(value: unknown): MicrosoftCalendarEvent {

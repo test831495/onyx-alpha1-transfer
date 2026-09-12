@@ -1,7 +1,12 @@
-import{describe,expect,it}from"vitest";import{disconnectedWorkspaceSnapshot}from"./workspaceController";
+import{describe,expect,it}from"vitest";import{connectMicrosoftMail,disconnectedWorkspaceSnapshot,loadMicrosoftMailMessagesWithDiagnostic}from"./workspaceController";
 import { MicrosoftWorkspaceConnector, resolveRuntimeMicrosoftConfig } from "@onyx/workspace-connectors";
 import { readMicrosoftRuntimeEnv } from "../viteMicrosoftEnvBridge";
 describe("workspace foundation",()=>{it("declares all providers",()=>expect(disconnectedWorkspaceSnapshot().providers.map(v=>v.provider)).toEqual(["microsoft","google","yahoo"]));it("keeps planned provider capabilities disabled while presenting friendly statuses",()=>{const snapshot=disconnectedWorkspaceSnapshot();expect(snapshot.providers.filter(v=>v.provider!=="microsoft").flatMap(v=>v.capabilities).every(v=>!v.enabled)).toBe(true);expect(snapshot.providers.find(v=>v.provider==="microsoft")?.state).toBe("unconfigured");expect(snapshot.providers.map(v=>v.label)).toContain("Microsoft 365");expect(snapshot.providers.map(v=>v.label)).toContain("Google");expect(snapshot.providers.map(v=>v.label)).toContain("Yahoo");});});
+
+it("exports the non-UI Microsoft Mail foundation projection", () => {
+  expect(typeof connectMicrosoftMail).toBe("function");
+  expect(typeof loadMicrosoftMailMessagesWithDiagnostic).toBe("function");
+});
 
 describe("Microsoft runtime config factory (production consumer path)", () => {
   const browserOrigin = "http://localhost:5200";

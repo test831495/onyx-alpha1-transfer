@@ -5,6 +5,7 @@ import {
   resolveRuntimeMicrosoftConfig,
   type MicrosoftCalendarRange,
   type MicrosoftCalendarReadResult,
+  type MicrosoftMailReadResult,
 } from "@onyx/workspace-connectors";
 import { readMicrosoftRuntimeEnv } from "../viteMicrosoftEnvBridge";
 
@@ -34,6 +35,8 @@ export async function loadWorkspaceSnapshot(): Promise<WorkspaceSnapshot> { let 
 export const getMicrosoftAccessToken=(scopes:string[])=>microsoft.getAccessToken(scopes);
 export const loadMicrosoftCalendarEvents=(range:{start:string;end:string;timeZone:string})=>microsoft.loadCalendarEvents(range);
 export const loadMicrosoftCalendarEventsWithDiagnostic=(range:MicrosoftCalendarRange):Promise<MicrosoftCalendarReadResult>=>microsoft.loadCalendarEventsWithDiagnostic(range);
+export const loadMicrosoftMailMessagesWithDiagnostic=():Promise<MicrosoftMailReadResult>=>microsoft.loadMailMessagesWithDiagnostic();
+export const connectMicrosoftMail=()=>microsoft.connectMail();
 export const connectMicrosoft=()=>microsoft.connect();
 export const reconnectMicrosoft=()=>microsoft.reconnect();
 export const disconnectMicrosoft=()=>microsoft.disconnect();
