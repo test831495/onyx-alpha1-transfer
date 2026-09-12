@@ -957,8 +957,12 @@ function classifyMailAccountBinding(expectedAccount: AccountInfo | undefined, re
   const returnedHomeAccountId = readGraphString(returnedAccount.homeAccountId);
   const expectedTenantId = readGraphString(expectedAccount.tenantId);
   const returnedTenantId = readGraphString(returnedAccount.tenantId);
-  if (!expectedHomeAccountId || !returnedHomeAccountId || !expectedTenantId || !returnedTenantId) return "UNKNOWN";
-  return expectedHomeAccountId === returnedHomeAccountId && expectedTenantId === returnedTenantId ? "MATCHED" : "MISMATCHED";
+  if (expectedHomeAccountId && returnedHomeAccountId) {
+    if (expectedHomeAccountId !== returnedHomeAccountId) return "MISMATCHED";
+    if (expectedTenantId && returnedTenantId && expectedTenantId !== returnedTenantId) return "MISMATCHED";
+    return "MATCHED";
+  }
+  return "UNKNOWN";
 }
 
 function boundedGraphString(value: unknown, maximumLength: number): string {
