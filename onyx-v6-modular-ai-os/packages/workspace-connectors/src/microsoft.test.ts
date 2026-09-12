@@ -557,6 +557,35 @@ describe("MicrosoftWorkspaceConnector calendar reads", () => {
     expect(JSON.stringify(result.diagnostic)).not.toMatch(/redacted|initial-token|refreshed-token|acct|tenant|Authorization|Bearer|InvalidAuthenticationToken|ErrorAccessDenied/);
   });
 
+  it("uses one canonical account and refreshed Graph token for /me and Calendar root probes", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const canonicalAccount = { homeAccountId: "synthetic-account", tenantId: "synthetic-tenant" };
+    const acquireTokenSilent = vi.fn()
+      .mockResolvedValueOnce({ accessToken: "initial-token" })
+      .mockResolvedValueOnce({ accessToken: "refreshed-token" });
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), json: async () => ({ id: "discarded" }) })
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers(), json: async () => ({ error: { code: "InvalidAuthenticationToken" } }) });
+    vi.stubGlobal("fetch", fetch);
+    Object.assign(connector, { application: { acquireTokenSilent }, account: canonicalAccount });
+
+    await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+    expect(acquireTokenSilent).toHaveBeenNthCalledWith(1, { account: canonicalAccount, scopes: ["User.Read", "Calendars.Read"] });
+    expect(acquireTokenSilent).toHaveBeenNthCalledWith(2, { account: canonicalAccount, scopes: ["User.Read", "Calendars.Read"], forceRefresh: true });
+    const calendarRetryRequest = fetch.mock.calls[1]!;
+    const meProbeRequest = fetch.mock.calls[2]!;
+    const calendarRootProbeRequest = fetch.mock.calls[3]!;
+    expect(meProbeRequest[0]).toBe("https://graph.microsoft.com/v1.0/me?$select=id");
+    expect(calendarRootProbeRequest[0]).toBe("https://graph.microsoft.com/v1.0/me/calendar?$select=id");
+    expect(meProbeRequest[1]).toMatchObject({ method: "GET" });
+    expect(calendarRootProbeRequest[1]).toMatchObject({ method: "GET" });
+    expect(meProbeRequest[1].headers.Authorization).toBe(calendarRetryRequest[1].headers.Authorization);
+    expect(calendarRootProbeRequest[1].headers.Authorization).toBe(calendarRetryRequest[1].headers.Authorization);
+  });
+
   it.each([
     ["missing id", { value: {} }],
     ["empty id", { value: { id: "" } }],

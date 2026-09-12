@@ -59,6 +59,9 @@ export type MicrosoftCalendarDiagnosticReasonCode =
   | "MICROSOFT_GRAPH_CALENDAR_VIEW_SPECIFIC_REJECTION"
   | "MICROSOFT_EXTERNAL_TOKEN_ACCEPTANCE_BLOCKER";
 export type MicrosoftGraphErrorClass = "INVALID_AUTHENTICATION_TOKEN" | "TOKEN_EXPIRED" | "TOKEN_NOT_YET_VALID" | "INVALID_AUDIENCE" | "NO_PERMISSIONS_IN_ACCESS_TOKEN" | "ACCESS_DENIED" | "ERROR_ACCESS_DENIED" | "UNKNOWN_BOUNDED_GRAPH_ERROR";
+export type MicrosoftTokenAudienceClass = "MICROSOFT_GRAPH_EXPECTED" | "UNEXPECTED_RESOURCE" | "NOT_INSPECTABLE";
+export type MicrosoftCalendarScopeReport = "REPORTED_PRESENT" | "REPORTED_ABSENT" | "NOT_REPORTED";
+export type MicrosoftAccountBindingClass = "MATCHED" | "MISMATCHED" | "UNKNOWN";
 export interface MicrosoftCalendarReadDiagnostic {
   stage: MicrosoftCalendarDiagnosticStage;
   outcome: MicrosoftCalendarDiagnosticOutcome;
@@ -84,9 +87,16 @@ export interface MicrosoftCalendarReadDiagnostic {
   graphCalendarRootStatus?: number;
   graphCalendarRootEnvelopeValid?: boolean;
   graphErrorClass?: MicrosoftGraphErrorClass;
-  tokenAudience?: "MICROSOFT_GRAPH" | "OTHER" | "UNKNOWN";
-  calendarScope?: "AVAILABLE" | "ABSENT" | "UNKNOWN";
-  accountBinding?: "MATCHED" | "MISMATCHED" | "UNKNOWN";
+  tokenAudience?: MicrosoftTokenAudienceClass;
+  calendarScope?: MicrosoftCalendarScopeReport;
+  calendarRequestedScopes?: readonly string[];
+  calendarReturnedScopes?: readonly string[];
+  accountBinding?: MicrosoftAccountBindingClass;
+  forceRefreshAttempted?: boolean;
+  interactiveRecoveryRequired?: boolean;
+  graphRequestIdPresent?: boolean;
+  graphClientRequestIdPresent?: boolean;
+  claimsChallengePresent?: boolean;
   interactionRequired?: boolean;
   finalReasonCode?: MicrosoftCalendarDiagnosticReasonCode;
   httpStatus?: number;
@@ -115,6 +125,37 @@ function isInteractionRequiredTokenError(error: unknown): boolean {
   }
   return false;
 }
+
+/**
+ * Bounded, safe representation of MSAL AuthenticationResult metadata.
+ * Never includes raw tokens, refresh tokens, ID tokens, or raw claims.
+ * Used internally to trace token ownership and populate diagnostics.
+ * @internal
+ */
+interface BoundedMsalTokenResult {
+  accessToken: string;
+  requestedScopes: readonly string[];
+  returnedScopes: readonly string[] | undefined;
+  accountHomeAccountId: string | undefined;
+  accountTenantId: string | undefined;
+  authority: string | undefined;
+}
+
+function extractBoundedTokenResult(
+  result: any,
+  requestedScopes: readonly string[],
+  authority: string | undefined,
+  account: AccountInfo | undefined,
+): BoundedMsalTokenResult {
+  return {
+    accessToken: result?.accessToken ?? "",
+    requestedScopes: Array.from(requestedScopes),
+    returnedScopes: Array.isArray(result?.scopes) ? Object.freeze([...result.scopes]) : undefined,
+    accountHomeAccountId: account?.homeAccountId,
+    accountTenantId: account?.tenantId,
+    authority,
+  };
+}
 const profileScopes = ["User.Read"];
 const calendarScopes = ["Calendars.Read"];
 const workspaceScopes = [...profileScopes, ...calendarScopes];
@@ -130,6 +171,7 @@ export class MicrosoftWorkspaceConnector {
   private account?: AccountInfo;
   private diagnostic = "Microsoft workspace is not configured.";
   private initialization?: Promise<WorkspaceProviderSnapshot>;
+  private authority: string | undefined;
   constructor(private readonly config: MicrosoftWorkspaceConfig) {}
   get configured() { return Boolean(this.config.clientId && this.config.tenantId); }
   async initialize(): Promise<WorkspaceProviderSnapshot> {
@@ -148,6 +190,7 @@ export class MicrosoftWorkspaceConnector {
   private async initializeOnce(): Promise<WorkspaceProviderSnapshot> {
     if (!this.configured) return this.snapshot("unconfigured");
     const authority = this.config.authority ?? "https://login.microsoftonline.com/common";
+    this.authority = authority;
     const configuration: Configuration = { auth: { clientId: this.config.clientId!, authority, redirectUri: this.config.redirectUri ?? window.location.origin }, cache: { cacheLocation: BrowserCacheLocation.SessionStorage } };
     this.application = new PublicClientApplication(configuration);
     await this.application.initialize();
@@ -254,17 +297,21 @@ export class MicrosoftWorkspaceConnector {
   private hasMsalSilentRuntime(): boolean {
     return Boolean(this.application && this.account && typeof this.application.acquireTokenSilent === "function");
   }
-  private async acquireCalendarAccessToken(forceRefresh = false): Promise<string | undefined> {
+  private async acquireCalendarAccessTokenWithMetadata(forceRefresh = false): Promise<BoundedMsalTokenResult | undefined> {
     const application = this.application;
     const account = this.account;
     if (!application || !account || typeof application.acquireTokenSilent !== "function") return undefined;
     const requestedScopes = Array.from(new Set([...profileScopes, ...calendarScopes]));
-    const token = await application.acquireTokenSilent({
+    const result = await application.acquireTokenSilent({
       account,
       scopes: requestedScopes,
       ...(forceRefresh ? { forceRefresh: true } : {}),
     });
-    return token?.accessToken || undefined;
+    return extractBoundedTokenResult(result, requestedScopes, this.authority, account);
+  }
+  private async acquireCalendarAccessToken(forceRefresh = false): Promise<string | undefined> {
+    const result = await this.acquireCalendarAccessTokenWithMetadata(forceRefresh);
+    return result?.accessToken;
   }
   async loadCalendarEventsWithDiagnostic(range: MicrosoftCalendarRange): Promise<MicrosoftCalendarReadResult> {
     const start = new Date(range.start);
@@ -286,13 +333,18 @@ export class MicrosoftWorkspaceConnector {
       graphResourceCompatible: true,
       headerAttached: false,
       requestRangeValid: true,
+      tokenAudience: "NOT_INSPECTABLE" as const,
+      calendarScope: "NOT_REPORTED" as const,
+      accountBinding: "UNKNOWN" as const,
     };
 
     let token: string | undefined;
+    let tokenMetadata: BoundedMsalTokenResult | undefined;
     try {
       if (this.hasMsalSilentRuntime()) {
-        token = await this.acquireCalendarAccessToken(false);
-        if (!token) {
+        tokenMetadata = await this.acquireCalendarAccessTokenWithMetadata(false);
+        token = tokenMetadata?.accessToken;
+        if (!token || !tokenMetadata) {
           return { events: [], diagnostic: { ...baseDiagnostic, reasonCode: "MICROSOFT_ACCESS_TOKEN_ABSENT", finalReasonCode: "MICROSOFT_ACCESS_TOKEN_ABSENT", silentAttempted: true, silentOutcome: "ABSENT", credentialPresent: false } };
         }
         baseDiagnostic.silentAttempted = true;
@@ -300,6 +352,18 @@ export class MicrosoftWorkspaceConnector {
         baseDiagnostic.credentialPresent = true;
         baseDiagnostic.reasonCode = "MICROSOFT_SILENT_TOKEN_SUCCEEDED";
         baseDiagnostic.finalReasonCode = "MICROSOFT_SILENT_TOKEN_SUCCEEDED";
+        // Populate token metadata diagnostics
+        baseDiagnostic.calendarRequestedScopes = tokenMetadata.requestedScopes;
+        baseDiagnostic.calendarReturnedScopes = tokenMetadata.returnedScopes;
+        baseDiagnostic.tokenAudience = "MICROSOFT_GRAPH_EXPECTED";
+        if (tokenMetadata.returnedScopes) {
+          baseDiagnostic.calendarScope = tokenMetadata.returnedScopes.includes("Calendars.Read") ? "REPORTED_PRESENT" : "REPORTED_ABSENT";
+        } else {
+          baseDiagnostic.calendarScope = "NOT_REPORTED";
+        }
+        if (this.account && tokenMetadata.accountHomeAccountId) {
+          baseDiagnostic.accountBinding = this.account.homeAccountId === tokenMetadata.accountHomeAccountId ? "MATCHED" : "MISMATCHED";
+        }
       } else {
         token = await this.getAccessToken(calendarScopes);
       }
@@ -333,10 +397,12 @@ export class MicrosoftWorkspaceConnector {
     }
     if (!response.ok) {
       if (response.status === 401 && this.hasMsalSilentRuntime()) {
-        const refreshBase = { ...baseDiagnostic, stage: "GRAPH_RESPONSE" as const, outcome: "FAILED" as const, reasonCode: "MICROSOFT_GRAPH_HTTP_401_INITIAL" as const, httpStatus: response.status, initialGraphStatus: response.status, finalReasonCode: "MICROSOFT_GRAPH_HTTP_401_INITIAL" as const, retryable: true, requestRangeValid: true, headerAttached: true, refreshAttempted: true };
+        const refreshBase = { ...baseDiagnostic, stage: "GRAPH_RESPONSE" as const, outcome: "FAILED" as const, reasonCode: "MICROSOFT_GRAPH_HTTP_401_INITIAL" as const, httpStatus: response.status, initialGraphStatus: response.status, finalReasonCode: "MICROSOFT_GRAPH_HTTP_401_INITIAL" as const, retryable: true, requestRangeValid: true, headerAttached: true, refreshAttempted: true, forceRefreshAttempted: true };
         let refreshedToken: string | undefined;
+        let refreshedMetadata: BoundedMsalTokenResult | undefined;
         try {
-          refreshedToken = await this.acquireCalendarAccessToken(true);
+          refreshedMetadata = await this.acquireCalendarAccessTokenWithMetadata(true);
+          refreshedToken = refreshedMetadata?.accessToken;
         } catch (error) {
           if (isInteractionRequiredTokenError(error)) {
             return { events: [], diagnostic: { ...refreshBase, refreshOutcome: "INTERACTION_REQUIRED", interactionRequired: true, reasonCode: "MICROSOFT_INTERACTION_REQUIRED", finalReasonCode: "MICROSOFT_INTERACTION_REQUIRED" } };
@@ -346,23 +412,31 @@ export class MicrosoftWorkspaceConnector {
         if (!refreshedToken) {
           return { events: [], diagnostic: { ...refreshBase, refreshOutcome: "ABSENT", reasonCode: "MICROSOFT_ACCESS_TOKEN_ABSENT", finalReasonCode: "MICROSOFT_ACCESS_TOKEN_ABSENT", credentialPresent: false, interactionRequired: false } };
         }
+        // Verify refresh succeeded with expected scopes
+        if (refreshedMetadata) {
+          refreshBase.calendarReturnedScopes = refreshedMetadata.returnedScopes;
+          if (refreshedMetadata.returnedScopes) {
+            refreshBase.calendarScope = refreshedMetadata.returnedScopes.includes("Calendars.Read") ? "REPORTED_PRESENT" : "REPORTED_ABSENT";
+          }
+        }
+        refreshBase.refreshOutcome = "SUCCEEDED";
         try {
           const retryResponse = await fetch(endpoint, { method: "GET", headers: { Authorization: `Bearer ${refreshedToken}`, Prefer: 'outlook.timezone="UTC"' } });
           if (retryResponse.ok) {
             const parsed = await this.parseCalendarGraphResponse(retryResponse);
             if (parsed.ok) {
-              return { events: parsed.events, diagnostic: { ...parsed.diagnostic, stage: "GRAPH_RESPONSE", outcome: "SUCCEEDED", reasonCode: "MICROSOFT_GRAPH_RETRY_SUCCEEDED", finalReasonCode: "MICROSOFT_GRAPH_RETRY_SUCCEEDED", refreshAttempted: true, refreshOutcome: "SUCCEEDED", retryAttempted: true, retryGraphStatus: retryResponse.status, headerAttached: true, interactionRequired: false, httpStatus: retryResponse.status } };
+              return { events: parsed.events, diagnostic: { ...refreshBase, ...parsed.diagnostic, stage: "GRAPH_RESPONSE", outcome: "SUCCEEDED", reasonCode: "MICROSOFT_GRAPH_RETRY_SUCCEEDED", finalReasonCode: "MICROSOFT_GRAPH_RETRY_SUCCEEDED", refreshAttempted: true, refreshOutcome: "SUCCEEDED", retryAttempted: true, retryGraphStatus: retryResponse.status, headerAttached: true, interactionRequired: false, httpStatus: retryResponse.status, forceRefreshAttempted: true } };
             }
-            return { events: parsed.events, diagnostic: { ...parsed.diagnostic, stage: "GRAPH_RESPONSE", outcome: parsed.diagnostic.outcome, reasonCode: parsed.diagnostic.reasonCode, finalReasonCode: parsed.diagnostic.reasonCode, refreshAttempted: true, refreshOutcome: "SUCCEEDED", retryAttempted: true, retryGraphStatus: retryResponse.status, headerAttached: true, interactionRequired: false, httpStatus: retryResponse.status } };
+            return { events: parsed.events, diagnostic: { ...refreshBase, ...parsed.diagnostic, stage: "GRAPH_RESPONSE", outcome: parsed.diagnostic.outcome, reasonCode: parsed.diagnostic.reasonCode, finalReasonCode: parsed.diagnostic.reasonCode, refreshAttempted: true, refreshOutcome: "SUCCEEDED", retryAttempted: true, retryGraphStatus: retryResponse.status, headerAttached: true, interactionRequired: false, httpStatus: retryResponse.status, forceRefreshAttempted: true } };
           }
           if (retryResponse.status === 401) {
-            const persistent401 = await this.diagnosePersistent401(refreshedToken, { ...refreshBase, refreshOutcome: "SUCCEEDED", retryAttempted: true, retryGraphStatus: retryResponse.status, reasonCode: "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH", finalReasonCode: "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH", interactionRequired: false, headerAttached: true });
+            const persistent401 = await this.diagnosePersistent401(refreshedToken, { ...refreshBase, retryAttempted: true, retryGraphStatus: retryResponse.status, reasonCode: "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH", finalReasonCode: "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH", interactionRequired: false, headerAttached: true });
             return { events: [], diagnostic: persistent401 };
           }
           const retryReasonCode = retryResponse.status === 400 ? "CALENDAR_GRAPH_HTTP_400" : retryResponse.status === 403 ? "CALENDAR_GRAPH_HTTP_403" : retryResponse.status === 404 ? "CALENDAR_GRAPH_HTTP_404" : retryResponse.status === 429 ? "CALENDAR_GRAPH_HTTP_429" : retryResponse.status >= 500 ? "CALENDAR_GRAPH_HTTP_5XX" : "CALENDAR_UNKNOWN_BOUNDED_FAILURE";
-          return { events: [], diagnostic: { ...refreshBase, refreshOutcome: "SUCCEEDED", retryAttempted: true, retryGraphStatus: retryResponse.status, reasonCode: retryReasonCode, finalReasonCode: retryReasonCode, interactionRequired: false, headerAttached: true } };
+          return { events: [], diagnostic: { ...refreshBase, retryAttempted: true, retryGraphStatus: retryResponse.status, reasonCode: retryReasonCode, finalReasonCode: retryReasonCode, interactionRequired: false, headerAttached: true } };
         } catch {
-          return { events: [], diagnostic: { ...refreshBase, refreshOutcome: "SUCCEEDED", retryAttempted: true, retryGraphStatus: 0, reasonCode: "CALENDAR_GRAPH_NETWORK_FAILURE", finalReasonCode: "CALENDAR_GRAPH_NETWORK_FAILURE", interactionRequired: false } };
+          return { events: [], diagnostic: { ...refreshBase, retryAttempted: true, retryGraphStatus: 0, reasonCode: "CALENDAR_GRAPH_NETWORK_FAILURE", finalReasonCode: "CALENDAR_GRAPH_NETWORK_FAILURE", interactionRequired: false } };
         }
       }
       const reasonCode = response.status === 400 ? "CALENDAR_GRAPH_HTTP_400" : response.status === 401 ? "CALENDAR_GRAPH_HTTP_401" : response.status === 403 ? "CALENDAR_GRAPH_HTTP_403" : response.status === 404 ? "CALENDAR_GRAPH_HTTP_404" : response.status === 429 ? "CALENDAR_GRAPH_HTTP_429" : response.status >= 500 ? "CALENDAR_GRAPH_HTTP_5XX" : "CALENDAR_UNKNOWN_BOUNDED_FAILURE";
@@ -374,7 +448,7 @@ export class MicrosoftWorkspaceConnector {
       return { events: [], diagnostic: { ...baseDiagnostic, ...parsed.diagnostic, finalReasonCode: parsed.diagnostic.reasonCode } };
     }
 
-    return { events: parsed.events, diagnostic: { ...parsed.diagnostic, httpStatus: response.status, headerAttached: true, finalReasonCode: parsed.diagnostic.reasonCode } };
+    return { events: parsed.events, diagnostic: { ...baseDiagnostic, ...parsed.diagnostic, httpStatus: response.status, headerAttached: true, finalReasonCode: parsed.diagnostic.reasonCode } };
   }
   private async parseCalendarGraphResponse(response: Response): Promise<{ ok: boolean; events: readonly MicrosoftCalendarEvent[]; diagnostic: MicrosoftCalendarReadDiagnostic }> {
     if (response.status === 401) {
