@@ -71,6 +71,39 @@ describe("MicrosoftWorkspaceConnector Mail.ReadBasic foundation", () => {
     expect(result.diagnostic.reasonCode).toBe("MAIL_EMPTY");
   });
 
+  it("MAIL-TRACE-004 separates token refresh from the Graph retry", async () => {
+    const acquireTokenSilent = vi.fn()
+      .mockResolvedValueOnce(mailToken({ homeAccountId: "account", tenantId: "tenant" }))
+      .mockResolvedValueOnce(mailToken({ homeAccountId: "account", tenantId: "tenant" }));
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() })
+      .mockResolvedValueOnce(emptyMailboxResponse({ value: [] })));
+    const traces: MicrosoftMailRuntimeTrace[] = [];
+    await connectedConnector(acquireTokenSilent).loadMailMessagesWithDiagnostic({ diagnosticsEnabled: true, buildIdentity: { sha: "e623e5e", context: "local", version: "6.0.0-alpha.3.1.1b" }, onTrace: (trace) => traces.push(trace) });
+    const stages = traces.map((trace) => trace.stage);
+    expect(stages.filter((stage) => stage === "GRAPH_RETRY_STARTED")).toHaveLength(1);
+    expect(stages.filter((stage) => stage === "TOKEN_REQUESTED")).toHaveLength(2);
+  });
+
+  it("MAIL-TRACE-005 keeps published evidence immutable and independently compares binding fields", async () => {
+    const acquireTokenSilent = vi.fn().mockResolvedValue(mailToken({ homeAccountId: "account", tenantId: "other-tenant" }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(emptyMailboxResponse({ value: [] })));
+    const traces: MicrosoftMailRuntimeTrace[] = [];
+    await connectedConnector(acquireTokenSilent).loadMailMessagesWithDiagnostic({ diagnosticsEnabled: true, buildIdentity: { sha: "e623e5e", context: "local", version: "6.0.0-alpha.3.1.1b" }, onTrace: (trace) => traces.push(trace) });
+    const bindingTrace = traces.find((trace) => trace.stage === "ACCOUNT_BINDING_EVALUATED")!;
+    expect(bindingTrace.accountBindingEvidence.homeMatch).toBe("MATCH");
+    expect(bindingTrace.accountBindingEvidence.tenantMatch).toBe("MISMATCH");
+    expect(Object.isFrozen(bindingTrace.accountBindingEvidence)).toBe(true);
+    expect(() => { (bindingTrace.accountBindingEvidence as { bindingDecision: string }).bindingDecision = "MISMATCHED"; }).toThrow();
+    expect(traces.at(-1)?.accountBindingEvidence.bindingDecision).toBe("MISMATCHED");
+  });
+
+  it("MAIL-TRACE-006 isolates diagnostic sink failures from Mail results", async () => {
+    const acquireTokenSilent = vi.fn().mockResolvedValue(mailToken({ homeAccountId: "account", tenantId: "tenant" }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(emptyMailboxResponse({ value: [] })));
+    await expect(connectedConnector(acquireTokenSilent).loadMailMessagesWithDiagnostic({ diagnosticsEnabled: true, buildIdentity: { sha: "e623e5e", context: "local", version: "6.0.0-alpha.3.1.1b" }, onTrace: () => { throw new Error("diagnostic sink failure"); } })).resolves.toMatchObject({ diagnostic: { reasonCode: "MAIL_EMPTY" } });
+  });
+
   it.each([[403, "FORBIDDEN_403"], [429, "RATE_LIMITED_429"], [503, "PROVIDER_5XX"]] as const)("MAIL-TRACE-003 maps synthetic Graph status %s safely", async (status, statusClass) => {
     const acquireTokenSilent = vi.fn().mockResolvedValue(mailToken({ homeAccountId: "account", tenantId: "tenant" }));
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status, headers: new Headers() }));

@@ -38,7 +38,7 @@ export async function loadWorkspaceSnapshot(): Promise<WorkspaceSnapshot> { let 
 export const getMicrosoftAccessToken=(scopes:string[])=>microsoft.getAccessToken(scopes);
 export const loadMicrosoftCalendarEvents=(range:{start:string;end:string;timeZone:string})=>microsoft.loadCalendarEvents(range);
 export const loadMicrosoftCalendarEventsWithDiagnostic=(range:MicrosoftCalendarRange):Promise<MicrosoftCalendarReadResult>=>microsoft.loadCalendarEventsWithDiagnostic(range);
-export const getMailBuildIdentity=():MicrosoftMailTraceBuildIdentity=>({sha:typeof import.meta.env.VITE_GIT_SHA === "string" ? import.meta.env.VITE_GIT_SHA : "UNKNOWN",context:import.meta.env.CONTEXT === "production" || import.meta.env.CONTEXT === "preview" ? import.meta.env.CONTEXT : import.meta.env.DEV ? "local" : "unknown",version:"6.0.0-alpha.3.1.1b"});
+export const getMailBuildIdentity=():MicrosoftMailTraceBuildIdentity=>({sha:typeof import.meta.env.VITE_GIT_SHA === "string" ? import.meta.env.VITE_GIT_SHA : "UNKNOWN",context:import.meta.env.DEV ? "local" : /^deploy-preview-\d+--onyx-alpha0\.netlify\.app$/i.test(browserOrigin.replace(/^https?:\/\//, "").split("/")[0] ?? "") ? "preview" : "unknown",version:"6.0.0-alpha.3.1.1b"});
 export async function loadMicrosoftMailMessagesWithDiagnostic(options?: MicrosoftMailRuntimeTraceOptions): Promise<MicrosoftMailReadResult> {
   if (!options?.diagnosticsEnabled) return microsoft.loadMailMessagesWithDiagnostic();
   let latest: MicrosoftMailRuntimeTrace | undefined;

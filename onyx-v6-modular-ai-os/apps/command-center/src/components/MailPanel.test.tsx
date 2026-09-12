@@ -64,4 +64,9 @@ describe("Outlook Mail panel", () => {
     expect(html).toContain("e623e5e");
     expect(html).not.toMatch(/accessToken|homeAccountId|tenantId|bodyPreview|message-id/i);
   });
+
+  it("MAIL_TRACE_UI_002 projects the terminal reason code", () => {
+    const html = renderToStaticMarkup(<MailPanel connected busy={false} messages={[]} diagnosticsEnabled runtimeTrace={{ schemaVersion: 1, correlationId: "local-trace", buildIdentity: { sha: "e623e5e", context: "local", version: "6.0.0-alpha.3.1.1b" }, stage: "FAILED", reasonCode: "MAIL_HTTP_403", statusClass: "FORBIDDEN_403", retryAttempted: false, tokenStage: "SILENT_SUCCEEDED", accountBindingEvidence: { expectedHomePresent: true, returnedHomePresent: true, homeMatch: "MATCH", expectedTenantPresent: true, returnedTenantPresent: true, tenantMatch: "MATCH", activeAccountCountClass: "ONE", bindingDecision: "MATCHED" }, responseEnvelopeClass: "NOT_RECEIVED", normalizedItemCount: 0, rejectedItemCount: 0, requestCompleted: false }} onConnect={() => undefined} onRefresh={() => undefined} onTraceClear={() => undefined} />);
+    expect(html).toContain("MAIL_HTTP_403");
+  });
 });

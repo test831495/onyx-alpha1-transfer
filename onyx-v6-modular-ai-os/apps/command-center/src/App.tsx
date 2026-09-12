@@ -375,7 +375,8 @@ export function App() {
   const [mailReasonCode, setMailReasonCode] = useState<MicrosoftMailDiagnosticReasonCode>();
   const [mailBusy, setMailBusy] = useState(false);
   const [mailRuntimeTrace, setMailRuntimeTrace] = useState<MicrosoftMailRuntimeTrace>();
-  const mailDiagnosticsEnabled = import.meta.env.DEV && typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mailDiagnostics") === "1";
+  const mailDiagnosticsContext = import.meta.env.DEV || (typeof window !== "undefined" && /^deploy-preview-\d+--onyx-alpha0\.netlify\.app$/i.test(window.location.hostname));
+  const mailDiagnosticsEnabled = mailDiagnosticsContext && typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mailDiagnostics") === "1";
   const modeRef = useRef(mode);
   const timers = useRef<number[]>([]);
   const commandSequence = useRef(0);
@@ -1012,6 +1013,7 @@ export function App() {
 
         if (normalized.startsWith("connect")) {
           setWorkspaceBusy(true);
+            setMailRuntimeTrace(undefined);
           try {
             await connectMicrosoft();
           } catch (error) {
@@ -1027,6 +1029,7 @@ export function App() {
 
         if (normalized.startsWith("disconnect")) {
           setWorkspaceBusy(true);
+            setMailRuntimeTrace(undefined);
           try {
             await disconnectMicrosoft();
           } catch (error) {
@@ -1516,9 +1519,12 @@ export function App() {
                     workspaceSnapshot: workspace,
                     workspaceBusy,
                     onWorkspaceConnect: async () => {
+                      setMailRuntimeTrace(undefined);
                       await connectMicrosoft();
                     },
-                    onWorkspaceReconnect: () => reconcileMicrosoftReconnect({
+                    onWorkspaceReconnect: () => {
+                      setMailRuntimeTrace(undefined);
+                      return reconcileMicrosoftReconnect({
                       reconnect: reconnectMicrosoft,
                       refreshWorkspace,
                       loadCalendarEvents: loadConnectedCalendarEvents,
@@ -1531,10 +1537,11 @@ export function App() {
                       requestCoordinator: calendarRequestCoordinator.current,
                       setBusy: setWorkspaceBusy,
                       showError,
-                    }),
+                      });
+                    },
                     onWorkspaceDisconnect: async () => {
+                      setMailRuntimeTrace(undefined);
                       await disconnectMicrosoft();
-                        setMailRuntimeTrace(undefined);
                       calendarRequestCoordinator.current.invalidate();
                       setCalendarEvents([]);
                       setCalendarUnavailable(false);

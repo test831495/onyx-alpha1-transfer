@@ -511,7 +511,7 @@ export class MicrosoftWorkspaceConnector {
   private async acquireMailAccessToken(forceRefresh = false, trace?: MailTraceContext): Promise<{ accessToken?: string; mailScope: MicrosoftMailScopeReport; accountBinding: MicrosoftAccountBindingClass; reasonCode?: MicrosoftMailDiagnosticReasonCode }> {
     const application = this.application;
     const account = this.account;
-    trace?.emit({ stage: forceRefresh ? "GRAPH_RETRY_STARTED" : "TOKEN_REQUESTED", tokenStage: forceRefresh ? "REFRESH_REQUESTED" : "SILENT_REQUESTED" });
+    trace?.emit({ stage: "TOKEN_REQUESTED", tokenStage: forceRefresh ? "REFRESH_REQUESTED" : "SILENT_REQUESTED" });
     if (!application || !account || typeof application.acquireTokenSilent !== "function") {
       trace?.emit({ stage: "FAILED", tokenStage: "FAILED", reasonCode: "MAIL_PERMISSION_REQUIRED" });
       return { mailScope: "NOT_REPORTED", accountBinding: "UNKNOWN", reasonCode: "MAIL_PERMISSION_REQUIRED" };
@@ -524,7 +524,10 @@ export class MicrosoftWorkspaceConnector {
       });
       const returnedAccount = result?.account;
       const accountBinding = classifyMailAccountBinding(account, returnedAccount);
-      trace?.emit({ stage: "ACCOUNT_BINDING_EVALUATED", accountBindingEvidence: readMailAccountBindingEvidence(account, returnedAccount, accountBinding) });
+      const activeAccountCountClass = typeof application.getAllAccounts === "function"
+        ? application.getAllAccounts().length > 1 ? "MULTIPLE" : application.getAllAccounts().length === 1 ? "ONE" : "ZERO"
+        : account ? "ONE" : "ZERO";
+      trace?.emit({ stage: "ACCOUNT_BINDING_EVALUATED", accountBindingEvidence: readMailAccountBindingEvidence(account, returnedAccount, accountBinding, activeAccountCountClass) });
       const returnedScopes = Array.isArray(result?.scopes) ? result.scopes : undefined;
       const mailScope: MicrosoftMailScopeReport = !returnedScopes
         ? "NOT_REPORTED"
@@ -1044,7 +1047,7 @@ function classifyMailAccountBinding(expectedAccount: AccountInfo | undefined, re
 function createMailTraceContext(options?: MicrosoftMailRuntimeTraceOptions): MailTraceContext | undefined {
   if (!options?.diagnosticsEnabled) return undefined;
   let current: MicrosoftMailRuntimeTrace = Object.freeze({ schemaVersion: 1, correlationId: createMailCorrelationId(), buildIdentity: sanitizeMailBuildIdentity(options.buildIdentity), stage: "IDLE", statusClass: "NONE", retryAttempted: false, tokenStage: "NOT_STARTED", accountBindingEvidence: emptyMailBindingEvidence(), responseEnvelopeClass: "NOT_RECEIVED", normalizedItemCount: 0, rejectedItemCount: 0, requestCompleted: false });
-  return { emit: (patch) => { current = Object.freeze({ ...current, ...patch, normalizedItemCount: Math.max(0, Math.min(10, patch.normalizedItemCount ?? current.normalizedItemCount)), rejectedItemCount: Math.max(0, Math.min(10, patch.rejectedItemCount ?? current.rejectedItemCount)) }); options.onTrace(current); } };
+  return { emit: (patch) => { current = Object.freeze({ ...current, ...patch, normalizedItemCount: Math.max(0, Math.min(10, patch.normalizedItemCount ?? current.normalizedItemCount)), rejectedItemCount: Math.max(0, Math.min(10, patch.rejectedItemCount ?? current.rejectedItemCount)) }); try { options.onTrace(current); } catch {} } };
 }
 
 function createMailCorrelationId(): string {
@@ -1058,15 +1061,19 @@ function sanitizeMailBuildIdentity(identity: MicrosoftMailTraceBuildIdentity): M
 }
 
 function emptyMailBindingEvidence(): MicrosoftMailTraceAccountBindingEvidence {
-  return { expectedHomePresent: false, returnedHomePresent: false, homeMatch: "NOT_COMPARABLE", expectedTenantPresent: false, returnedTenantPresent: false, tenantMatch: "NOT_COMPARABLE", activeAccountCountClass: "UNKNOWN", bindingDecision: "UNKNOWN" };
+  return Object.freeze({ expectedHomePresent: false, returnedHomePresent: false, homeMatch: "NOT_COMPARABLE", expectedTenantPresent: false, returnedTenantPresent: false, tenantMatch: "NOT_COMPARABLE", activeAccountCountClass: "UNKNOWN", bindingDecision: "UNKNOWN" });
 }
 
-function readMailAccountBindingEvidence(expectedAccount: AccountInfo | undefined, returnedAccount: unknown, decision: MicrosoftAccountBindingClass): MicrosoftMailTraceAccountBindingEvidence {
+function readMailAccountBindingEvidence(expectedAccount: AccountInfo | undefined, returnedAccount: unknown, decision: MicrosoftAccountBindingClass, activeAccountCountClass: MicrosoftMailTraceAccountBindingEvidence["activeAccountCountClass"] = "UNKNOWN"): MicrosoftMailTraceAccountBindingEvidence {
   const expectedHomePresent = Boolean(readGraphString(expectedAccount?.homeAccountId));
   const returnedHomePresent = Boolean(isUnknownRecord(returnedAccount) && readGraphString(returnedAccount.homeAccountId));
   const expectedTenantPresent = Boolean(readGraphString(expectedAccount?.tenantId));
   const returnedTenantPresent = Boolean(isUnknownRecord(returnedAccount) && readGraphString(returnedAccount.tenantId));
-  return { expectedHomePresent, returnedHomePresent, homeMatch: expectedHomePresent && returnedHomePresent ? (decision === "MISMATCHED" ? "MISMATCH" : "MATCH") : "NOT_COMPARABLE", expectedTenantPresent, returnedTenantPresent, tenantMatch: expectedTenantPresent && returnedTenantPresent ? (expectedAccount?.tenantId === (returnedAccount as { tenantId?: string }).tenantId ? "MATCH" : "MISMATCH") : "NOT_COMPARABLE", activeAccountCountClass: expectedAccount ? "ONE" : "ZERO", bindingDecision: decision };
+  const expectedHome = readGraphString(expectedAccount?.homeAccountId);
+  const returnedHome = isUnknownRecord(returnedAccount) ? readGraphString(returnedAccount.homeAccountId) : "";
+  const expectedTenant = readGraphString(expectedAccount?.tenantId);
+  const returnedTenant = isUnknownRecord(returnedAccount) ? readGraphString(returnedAccount.tenantId) : "";
+  return Object.freeze({ expectedHomePresent, returnedHomePresent, homeMatch: expectedHome && returnedHome ? (expectedHome === returnedHome ? "MATCH" : "MISMATCH") : "NOT_COMPARABLE", expectedTenantPresent, returnedTenantPresent, tenantMatch: expectedTenant && returnedTenant ? (expectedTenant === returnedTenant ? "MATCH" : "MISMATCH") : "NOT_COMPARABLE", activeAccountCountClass, bindingDecision: decision });
 }
 
 function mailTraceStatusClass(status: number): MicrosoftMailTraceStatusClass {
