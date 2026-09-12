@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { MicrosoftWorkspaceConnector } from "./microsoft";
+import { MicrosoftWorkspaceConnector, type MicrosoftMailRuntimeTrace } from "./microsoft";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -24,6 +24,61 @@ function emptyMailboxResponse(body: unknown) {
 }
 
 describe("MicrosoftWorkspaceConnector Mail.ReadBasic foundation", () => {
+  it("MAIL-TRACE-001 records only bounded runtime stages and data", async () => {
+    const acquireTokenSilent = vi.fn().mockResolvedValue(mailToken({ homeAccountId: "account", tenantId: "tenant" }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(emptyMailboxResponse({ value: [] })));
+    const traces: MicrosoftMailRuntimeTrace[] = [];
+    const connector = connectedConnector(acquireTokenSilent);
+
+    await connector.loadMailMessagesWithDiagnostic({
+      diagnosticsEnabled: true,
+      buildIdentity: { sha: "e623e5e", context: "local", version: "6.0.0-alpha.3.1.1b" },
+      onTrace: (trace) => traces.push(trace),
+    });
+
+    const finalTrace = traces.at(-1);
+    expect(finalTrace).toMatchObject({
+      schemaVersion: 1,
+      buildIdentity: { sha: "e623e5e", context: "local", version: "6.0.0-alpha.3.1.1b" },
+      stage: "COMPLETED",
+      statusClass: "SUCCESS_2XX",
+      tokenStage: "SILENT_SUCCEEDED",
+      responseEnvelopeClass: "OBJECT_WITH_VALUE_ARRAY",
+      normalizedItemCount: 0,
+      rejectedItemCount: 0,
+      requestCompleted: true,
+    });
+    expect(JSON.stringify(finalTrace)).not.toMatch(/mail-token|account-id|tenant-id|private-message|private@example|Planning update|Ada Lovelace|exception text/i);
+    expect(traces.map((trace) => trace.stage)).toEqual(expect.arrayContaining([
+      "REFRESH_REQUESTED",
+      "TOKEN_REQUESTED",
+      "TOKEN_ACQUIRED",
+      "ACCOUNT_BINDING_EVALUATED",
+      "GRAPH_REQUEST_STARTED",
+      "GRAPH_RESPONSE_RECEIVED",
+      "RESPONSE_PARSE_STARTED",
+      "RESPONSE_PARSED",
+      "ITEMS_NORMALIZED",
+      "COMPLETED",
+    ]));
+  });
+
+  it("MAIL-TRACE-002 keeps diagnostics absent when the trace sink is not enabled", async () => {
+    const acquireTokenSilent = vi.fn().mockResolvedValue(mailToken({ homeAccountId: "account", tenantId: "tenant" }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(emptyMailboxResponse({ value: [] })));
+    const connector = connectedConnector(acquireTokenSilent);
+    const result = await connector.loadMailMessagesWithDiagnostic();
+    expect(result.diagnostic.reasonCode).toBe("MAIL_EMPTY");
+  });
+
+  it.each([[403, "FORBIDDEN_403"], [429, "RATE_LIMITED_429"], [503, "PROVIDER_5XX"]] as const)("MAIL-TRACE-003 maps synthetic Graph status %s safely", async (status, statusClass) => {
+    const acquireTokenSilent = vi.fn().mockResolvedValue(mailToken({ homeAccountId: "account", tenantId: "tenant" }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status, headers: new Headers() }));
+    const traces: MicrosoftMailRuntimeTrace[] = [];
+    await connectedConnector(acquireTokenSilent).loadMailMessagesWithDiagnostic({ diagnosticsEnabled: true, buildIdentity: { sha: "", context: "unknown", version: "" }, onTrace: (trace) => traces.push(trace) });
+    expect(traces.at(-1)).toMatchObject({ stage: "FAILED", statusClass, retryAttempted: false, requestCompleted: false, buildIdentity: { sha: "UNKNOWN", version: "UNKNOWN" } });
+  });
+
   it("MAIL-SCOPE-001 through 005 keeps profile, calendar, and mail scopes capability-specific", async () => {
     const loginRedirect = vi.fn().mockResolvedValue(undefined);
     const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
