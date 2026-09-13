@@ -48,7 +48,8 @@ describe("Microsoft Files metadata reads", () => {
   it("emits an ordered privacy-safe trace through Graph response mapping", async () => {
     const traces: Array<{ stage: string; sequence: number; tokenPresent?: boolean }> = [];
     const fetch = vi.fn().mockResolvedValue(response({ id: "drive-1", driveType: "personal" }));
-    await new MicrosoftFilesAdapter({ accessToken: token, fetch, accountKind: "PERSONAL_MICROSOFT_ACCOUNT", onTrace: (trace) => traces.push(trace) }).getOneDrive();
+    const filesAdapter = new MicrosoftFilesAdapter({ accessToken: token, fetch, accountKind: "PERSONAL_MICROSOFT_ACCOUNT", onTrace: (trace) => traces.push(trace) });
+    await filesAdapter.getOneDrive();
     expect(traces.map((trace) => trace.stage)).toEqual(expect.arrayContaining([
       "FILES_ACTION_RECEIVED",
       "FILES_ACCOUNT_CLASSIFICATION_SUCCEEDED",
@@ -59,9 +60,15 @@ describe("Microsoft Files metadata reads", () => {
       "FILES_FETCH_DISPATCH_RETURNED",
       "FILES_GRAPH_RESPONSE_RECEIVED",
       "FILES_RESULT_MAPPING_SUCCEEDED",
-      "FILES_ACTION_COMPLETED",
     ]));
-    expect(traces.every((trace) => trace.tokenPresent !== true || trace.tokenPresent === true)).toBe(true);
+    expect(traces.some((trace) => trace.stage === "FILES_ACTION_COMPLETED")).toBe(false);
+    filesAdapter.complete("MICROSOFT_ONEDRIVE_SUCCEEDED");
+    const serialized = JSON.stringify(traces);
+    expect(serialized).not.toContain("opaque-test-token");
+    expect(serialized).not.toContain("Authorization");
+    const allowedKeys = new Set(["schemaVersion", "correlationId", "action", "stage", "accountKind", "requestedScopeClass", "returnedScopeClass", "tokenPresent", "tokenSourceClass", "interactionRequired", "adapterAvailable", "fetchReached", "httpStatus", "reasonCode", "errorNameClass", "retryAttempted", "finalReasonCode", "buildIdentity", "sequence"]);
+    expect(traces.every((trace) => Object.keys(trace).every((key) => allowedKeys.has(key)))).toBe(true);
+    expect(traces.some((trace) => trace.stage === "FILES_ACTION_COMPLETED")).toBe(true);
     expect(traces.map((trace) => trace.sequence)).toEqual([...traces].map((trace) => trace.sequence).sort((a, b) => a - b));
   });
 
@@ -144,6 +151,20 @@ describe("Microsoft Files metadata reads", () => {
     const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: { code: "AccessDenied", message: "private detail" } }), { status: 403 }));
     await expect(adapter(fetch).getOneDrive()).rejects.toBeInstanceOf(MicrosoftFilesError);
     await expect(adapter(fetch).getOneDrive()).rejects.toMatchObject({ diagnostic: { httpStatus: 403, finalReasonCode: "MICROSOFT_FILES_HTTP_403" } });
+  });
+
+  it("classifies SharePoint site, library, item, and OneDrive drive 404s separately", async () => {
+    const site = adapter(vi.fn().mockResolvedValue(response({}, 404)));
+    await expect(site.resolveSharePoint({ hostname: "tenant.sharepoint.com", sitePath: "/sites/example" })).rejects.toMatchObject({ diagnostic: { finalReasonCode: "MICROSOFT_SHAREPOINT_SITE_NOT_FOUND" } });
+
+    const library = adapter(vi.fn().mockResolvedValue(response({ id: "site-1" }))) as MicrosoftFilesAdapter;
+    const libraryFetch = vi.fn().mockResolvedValueOnce(response({ id: "site-1" })).mockResolvedValueOnce(response({}, 404));
+    await expect(new MicrosoftFilesAdapter({ accessToken: token, fetch: libraryFetch, accountKind: "ORGANIZATIONAL_MICROSOFT_ACCOUNT" }).resolveSharePoint({ hostname: "tenant.sharepoint.com", sitePath: "/sites/example" })).rejects.toMatchObject({ diagnostic: { finalReasonCode: "MICROSOFT_SHAREPOINT_LIBRARY_NOT_FOUND" } });
+    expect(library).toBeDefined();
+
+    const itemFetch = vi.fn().mockResolvedValue(response({}, 404));
+    await expect(adapter(itemFetch).listChildren("drive-1", "item-1", "SHAREPOINT_LIBRARY", undefined, { siteId: "site-1", libraryId: "drive-1" })).rejects.toMatchObject({ diagnostic: { finalReasonCode: "MICROSOFT_SHAREPOINT_ITEM_NOT_FOUND" } });
+    await expect(adapter(vi.fn().mockResolvedValue(response({}, 404))).getOneDrive()).rejects.toMatchObject({ diagnostic: { finalReasonCode: "MICROSOFT_ONEDRIVE_NOT_PROVISIONED" } });
   });
 
   it("preserves a bounded fetch-dispatch failure instead of collapsing it to unknown", async () => {

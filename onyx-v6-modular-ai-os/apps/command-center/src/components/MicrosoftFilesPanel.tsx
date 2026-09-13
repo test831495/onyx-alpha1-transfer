@@ -87,6 +87,9 @@ export function MicrosoftFilesPanel({
   const [sharePointResolvedState, setSharePointResolvedState] = useState<SharePointUiState>();
   const [interactionRequired, setInteractionRequired] = useState(false);
   const resolvedState = sharePointResolvedState ?? sharePointState ?? capabilityState(sharePointAccountKind, sharePointAvailable);
+  const markInteractionRequired = (error: unknown): void => {
+    if (error instanceof MicrosoftFilesError && (error.diagnostic.finalReasonCode === "MICROSOFT_FILES_INTERACTION_REQUIRED" || error.diagnostic.finalReasonCode === "MICROSOFT_SHAREPOINT_CONSENT_REQUIRED")) setInteractionRequired(true);
+  };
 
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -107,7 +110,8 @@ export function MicrosoftFilesPanel({
         : result.drives.length === 0 ? "SHAREPOINT_NO_ACCESSIBLE_SITE" : "SHAREPOINT_AVAILABLE";
       setSharePointResolvedState(nextState);
       setSharePointMessage(stateLabels[nextState]);
-    } catch {
+    } catch (error) {
+      markInteractionRequired(error);
       setSharePointResolution(undefined);
       setSharePointMessage(stateLabels.SHAREPOINT_ERROR);
     } finally { setBusy(false); }
@@ -117,7 +121,7 @@ export function MicrosoftFilesPanel({
     if (!onReadSharePoint) return;
     setBusy(true);
     try { setSelectedLibrary(drive); setSharePointListing(await onReadSharePoint(sharePointResolution?.siteId ?? "", drive.driveId, itemId, continuation)); }
-    catch { setSharePointMessage(stateLabels.SHAREPOINT_ERROR); }
+    catch (error) { markInteractionRequired(error); setSharePointMessage(stateLabels.SHAREPOINT_ERROR); }
     finally { setBusy(false); }
   };
 
@@ -136,6 +140,7 @@ export function MicrosoftFilesPanel({
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(12rem,1fr))", gap: "1rem" }}><label htmlFor="sharepoint-hostname">SharePoint hostname<input id="sharepoint-hostname" value={sharePointHostname} onChange={(event) => setSharePointHostname(event.target.value)} placeholder="contoso.sharepoint.com" /></label><label htmlFor="sharepoint-site-path">SharePoint site path<input id="sharepoint-site-path" value={sharePointPath} onChange={(event) => setSharePointPath(event.target.value)} placeholder="sites/project-x" /></label></div>
         <button type="button" onClick={() => void resolveSharePoint()} disabled={busy || !onResolveSharePoint || !sharePointHostname.trim() || !sharePointPath.trim()}>Resolve SharePoint site</button>
         <small role="status">{sharePointMessage}</small>
+        {interactionRequired && onReconnectFiles && <button type="button" onClick={() => void onReconnectFiles()} disabled={busy}>Reconnect Microsoft Files</button>}
         {sharePointResolution && <div role="region" aria-label="Resolved SharePoint site" style={{ display: "grid", gap: "0.45rem" }}><div><b>{sharePointResolution.siteName ?? "Resolved SharePoint site"}</b> · <small>{sharePointResolution.siteId}</small></div><small>Diagnostic: {sharePointResolution.diagnostic.finalReasonCode}</small><div><b>Document libraries ({sharePointResolution.drives.length})</b><ul aria-label="SharePoint document libraries" style={{ margin: 0, paddingLeft: "1.2rem" }}>{sharePointResolution.drives.map((drive) => <li key={drive.driveId}><button type="button" onClick={() => void openSharePointFolder(drive, "root")} disabled={busy}>{drive.displayName ?? "Document library"}</button> <small>{drive.driveType}</small></li>)}</ul></div></div>}
         {sharePointListing && selectedLibrary && <div role="region" aria-label="SharePoint folder browser" style={{ display: "grid", gap: "0.45rem" }}><nav aria-label="SharePoint folder breadcrumb"><button type="button" onClick={() => void openSharePointFolder(selectedLibrary, "root")} disabled={busy}>Root</button> / {sharePointListing.parent.name}</nav><ul aria-label="SharePoint metadata listing" style={{ margin: 0, paddingLeft: "1.2rem" }}>{sharePointListing.items.map((item) => <li key={item.itemId}>{item.itemKind === "FOLDER" && <button type="button" onClick={() => void openSharePointFolder(selectedLibrary, item.itemId)} disabled={busy}>Open folder</button>} <span>{item.itemKind === "FOLDER" ? "Folder" : "File"}</span> {item.name}{item.size === undefined ? "" : ` (${item.size} bytes)`}</li>)}</ul>{sharePointListing.continuationCursor && <button type="button" onClick={() => void openSharePointFolder(selectedLibrary, sharePointListing.parent.itemId, sharePointListing.continuationCursor)} disabled={busy}>Next page</button>}<button type="button" onClick={() => setShowSharePointPreview(true)} disabled={busy || !onWriteSharePointTest}>Run bounded SharePoint read/write test</button></div>}
         {showSharePointPreview && selectedLibrary && sharePointListing && <div role="dialog" aria-label="SharePoint bounded test preview" style={{ border: "1px solid currentColor", padding: "0.7rem" }}><b>Bounded SharePoint test preview</b><p>Target site: {sharePointResolution?.siteName ?? sharePointResolution?.siteId}</p><p>Target library: {selectedLibrary.displayName ?? selectedLibrary.driveId}</p><p>Target folder: {sharePointListing.parent.name}</p><p>Test folder: ONYX-NOVA-Connector-Test</p><p>Test file: onyx-nova-connector-test-&lt;unique&gt;.txt</p><p>Only synthetic ONYX-NOVA-Connector-Test artifacts will be created, verified, renamed, moved, and cleaned up. An uncertain external effect stops further mutation without retry.</p><button type="button" onClick={() => void run(async () => { const receipt = await onWriteSharePointTest!(selectedLibrary.driveId, sharePointListing.parent.itemId); setShowSharePointPreview(false); setSharePointMessage(presentBoundedWriteResult(receipt)); })}>Confirm and run test</button><button type="button" onClick={() => setShowSharePointPreview(false)}>Cancel</button></div>}

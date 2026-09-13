@@ -28,6 +28,8 @@ import {
   getMailBuildIdentity,
   loadMicrosoftMailMessagesWithDiagnostic,
   runGoogleWorkspaceAction,
+  clearMicrosoftFilesTrace,
+  getMicrosoftFilesTrace,
 } from "./workspaceController";
 import { NovaDashboard } from "./components/NovaDashboard";
 import { OnyxDashboard } from "./components/OnyxDashboard";
@@ -408,12 +410,15 @@ export function App() {
 
     try {
       const nextWorkspace = await loadWorkspaceSnapshot();
+      const previousMicrosoft = workspace.providers.find((provider) => provider.provider === "microsoft");
+      const nextMicrosoft = nextWorkspace.providers.find((provider) => provider.provider === "microsoft");
+      if (previousMicrosoft?.profile?.accountId !== nextMicrosoft?.profile?.accountId && (previousMicrosoft?.profile?.accountId || nextMicrosoft?.profile?.accountId)) clearMicrosoftFilesTrace();
       setWorkspace(nextWorkspace);
       return nextWorkspace;
     } finally {
       setWorkspaceBusy(false);
     }
-  }, []);
+  }, [workspace.providers]);
 
   const reconcileWorkspaceAndCalendar = useCallback(async () => {
     const nextWorkspace = await refreshWorkspace();
@@ -1278,6 +1283,13 @@ export function App() {
             )}
           </>
         );
+      case "files":
+        return (
+          <>
+            <div className="app-card-summary"><strong>Files</strong><span>Microsoft OneDrive and SharePoint browse and test surface.</span></div>
+            {canOpenDetails && <button type="button" className="app-card-action" onClick={() => dispatchShell({ type: "OPEN_DETAILS", appId: "files" })}>Open Details</button>}
+          </>
+        );
       case "mail":
         return (
           <>
@@ -1521,10 +1533,12 @@ export function App() {
                     workspaceBusy,
                     onWorkspaceConnect: async () => {
                       setMailRuntimeTrace(undefined);
+                      clearMicrosoftFilesTrace();
                       await connectMicrosoft();
                     },
                     onWorkspaceReconnect: () => {
                       setMailRuntimeTrace(undefined);
+                      clearMicrosoftFilesTrace();
                       return reconcileMicrosoftReconnect({
                       reconnect: reconnectMicrosoft,
                       refreshWorkspace,
@@ -1542,6 +1556,7 @@ export function App() {
                     },
                     onWorkspaceDisconnect: async () => {
                       setMailRuntimeTrace(undefined);
+                      clearMicrosoftFilesTrace();
                       await disconnectMicrosoft();
                       calendarRequestCoordinator.current.invalidate();
                       setCalendarEvents([]);
@@ -1552,6 +1567,8 @@ export function App() {
                     },
                     onWorkspaceRefresh: refreshWorkspace,
                     mailConnected: workspace.providers.some((provider) => provider.provider === "microsoft" && provider.state === "connected"),
+                    filesRuntimeTrace: getMicrosoftFilesTrace(),
+                    onFilesTraceClear: clearMicrosoftFilesTrace,
                     mailBusy,
                     mailMessages,
                     mailReasonCode,
