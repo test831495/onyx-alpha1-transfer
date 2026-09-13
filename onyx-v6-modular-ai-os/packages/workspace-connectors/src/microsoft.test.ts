@@ -4,11 +4,14 @@ import {
   isSuccessfulMicrosoftCalendarDiagnostic,
   MicrosoftWorkspaceConnector,
   selectMicrosoftAccount,
+  MICROSOFT_CAPABILITY_SCOPES,
   MICROSOFT_COMBINED_WORKSPACE_SCOPES,
   MICROSOFT_GRAPH_APP_ID,
   normalizeScope,
   inspectTokenAudience,
   scrubGraphErrorMessage,
+  scrubGraphErrorCode,
+  extractGraphErrorDetails,
   createSanitizedDiagnosticEnvelope,
 } from "./microsoft";
 import { resolveRuntimeMicrosoftConfig } from "./microsoft-config";
@@ -830,79 +833,247 @@ describe("Track A Shared Microsoft Authorization & Audience Diagnostics", () => 
     return `${header}.${body}.${sig}`;
   }
 
-  it("recognizes Microsoft Graph GUID audience (00000003-0000-0000-c000-000000000000)", () => {
-    const token = makeSyntheticJwt({ aud: MICROSOFT_GRAPH_APP_ID, scp: "Calendars.Read Mail.ReadBasic" });
-    expect(inspectTokenAudience(token)).toBe("MICROSOFT_GRAPH_EXPECTED");
-  });
-
-  it("recognizes Microsoft Graph textual audience (https://graph.microsoft.com)", () => {
-    const token = makeSyntheticJwt({ aud: "https://graph.microsoft.com", scp: "Calendars.Read" });
-    expect(inspectTokenAudience(token)).toBe("MICROSOFT_GRAPH_EXPECTED");
-  });
-
-  it("recognizes legacy Microsoft Graph textual audience (https://graph.windows.net)", () => {
-    const token = makeSyntheticJwt({ aud: "https://graph.windows.net", scp: "Calendars.Read" });
-    expect(inspectTokenAudience(token)).toBe("MICROSOFT_GRAPH_EXPECTED");
-  });
-
-  it("classifies custom non-Graph audience as UNEXPECTED_RESOURCE", () => {
-    const token = makeSyntheticJwt({ aud: "api://onyx-server-authority", scp: "account.read" });
-    expect(inspectTokenAudience(token)).toBe("UNEXPECTED_RESOURCE");
-  });
-
-  it("classifies malformed, non-JWT, or empty tokens as NOT_INSPECTABLE without throwing", () => {
-    expect(inspectTokenAudience(undefined)).toBe("NOT_INSPECTABLE");
-    expect(inspectTokenAudience("")).toBe("NOT_INSPECTABLE");
-    expect(inspectTokenAudience("not.a.valid.jwt.token")).toBe("NOT_INSPECTABLE");
-    expect(inspectTokenAudience("random-opaque-string")).toBe("NOT_INSPECTABLE");
-    expect(inspectTokenAudience(makeSyntheticJwt({}))).toBe("NOT_INSPECTABLE");
-  });
-
-  it("normalizes scope strings across casing and resource prefixes", () => {
-    expect(normalizeScope("Calendars.Read")).toBe("calendars.read");
-    expect(normalizeScope("https://graph.microsoft.com/Mail.ReadBasic")).toBe("mail.readbasic");
-    expect(normalizeScope("  USER.READ  ")).toBe("user.read");
-    expect(normalizeScope("https://graph.windows.net/Calendars.ReadWrite")).toBe("calendars.readwrite");
-  });
-
-  it("scrubs PII and credential materials from Graph error messages", () => {
-    const rawError = "User rahul.kumar@example.com is unauthorized. Bearer custom-secret-token. Token eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJncmFwaCJ9.sig was rejected.";
-    const scrubbed = scrubGraphErrorMessage(rawError);
-    expect(scrubbed).not.toContain("rahul.kumar@example.com");
-    expect(scrubbed).not.toContain("custom-secret-token");
-    expect(scrubbed).not.toContain("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9");
-    expect(scrubbed).toContain("[REDACTED_EMAIL]");
-    expect(scrubbed).toContain("[REDACTED_TOKEN]");
-    expect(scrubbed).toContain("[REDACTED_JWT]");
-  });
-
-  it("creates a bounded sanitized diagnostic envelope without raw credentials or payload leaks", () => {
-    const envelope = createSanitizedDiagnosticEnvelope({
-      capability: "MICROSOFT_CALENDAR",
-      operation: "loadCalendarEvents",
-      requestedScopes: ["User.Read", "Calendars.Read"],
-      returnedScopes: ["User.Read", "Calendars.Read"],
-      accountBinding: "MATCHED",
-      fromCache: true,
-      forceRefresh: false,
-      tokenPresent: true,
-      tokenExpiryState: "VALID",
-      decodedAudience: "MICROSOFT_GRAPH_EXPECTED",
-      sanitizedGraphEndpoint: "/me/calendar/calendarView",
-      httpStatus: 200,
-      graphErrorCode: undefined,
-      graphErrorMessage: "Safe message",
-      requestId: "req-123",
-      clientRequestId: "client-req-456",
-      correlationId: "corr-789",
-      retryAttempt: false,
-      finalReasonCode: "CALENDAR_GRAPH_SUCCEEDED_WITH_EVENTS",
+  describe("Finding A & D: Token Decoding & Segment Bounding", () => {
+    it("returns NOT_INSPECTABLE for empty or non-string tokens", () => {
+      expect(inspectTokenAudience(undefined)).toBe("NOT_INSPECTABLE");
+      expect(inspectTokenAudience("")).toBe("NOT_INSPECTABLE");
     });
 
-    expect(envelope.capability).toBe("MICROSOFT_CALENDAR");
-    expect(envelope.decodedAudience).toBe("MICROSOFT_GRAPH_EXPECTED");
-    expect(envelope.finalReasonCode).toBe("CALENDAR_GRAPH_SUCCEEDED_WITH_EVENTS");
-    expect(Object.isFrozen(envelope)).toBe(true);
-    expect(JSON.stringify(envelope)).not.toMatch(/Bearer\s+|raw-token|user@example\.com/i);
+    it("returns NOT_INSPECTABLE for tokens with 0, 1, 2, 4, 5 segments", () => {
+      expect(inspectTokenAudience("nosegments")).toBe("NOT_INSPECTABLE");
+      expect(inspectTokenAudience("part1.part2")).toBe("NOT_INSPECTABLE");
+      expect(inspectTokenAudience("part1.part2.part3.part4")).toBe("NOT_INSPECTABLE");
+      expect(inspectTokenAudience("p1.p2.p3.p4.p5")).toBe("NOT_INSPECTABLE");
+    });
+
+    it("returns NOT_INSPECTABLE for oversized tokens", () => {
+      const hugeToken = `a.${"b".repeat(17000)}.c`;
+      expect(inspectTokenAudience(hugeToken)).toBe("NOT_INSPECTABLE");
+    });
+
+    it("returns NOT_INSPECTABLE for invalid Base64URL in payload", () => {
+      expect(inspectTokenAudience("header.!@#$%^&*.sig")).toBe("NOT_INSPECTABLE");
+    });
+
+    it("returns NOT_INSPECTABLE for invalid JSON in payload", () => {
+      const invalidJsonPayload = Buffer.from("not-a-json-string").toString("base64url");
+      expect(inspectTokenAudience(`header.${invalidJsonPayload}.sig`)).toBe("NOT_INSPECTABLE");
+    });
+
+    it("returns NOT_INSPECTABLE when aud claim is absent (does not fall back to appid or azp)", () => {
+      const tokenWithoutAud = makeSyntheticJwt({ appid: MICROSOFT_GRAPH_APP_ID, azp: "custom-client-id" });
+      expect(inspectTokenAudience(tokenWithoutAud)).toBe("NOT_INSPECTABLE");
+    });
+
+    it("never returns raw token text or secrets from decode helper", () => {
+      const token = "header.payload.signature";
+      const result = inspectTokenAudience(token);
+      expect(result).not.toContain("header");
+      expect(result).not.toContain("payload");
+      expect(result).not.toContain("signature");
+    });
+  });
+
+  describe("Finding B: Token and Secret Redaction", () => {
+    it.each([
+      ["Bearer containing base64 + / =", "Unauthorized. Bearer abc+/== token failed.", "Bearer [REDACTED_TOKEN]"],
+      ["Bearer with mixed casing", "Failed: bearer abc123def456_~-.", "Bearer [REDACTED_TOKEN]"],
+      ["Bearer with multiple spaces", "Error: Bearer    xyz789.", "Bearer [REDACTED_TOKEN]"],
+      ["JWT token in quotes", 'Token "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJncmFwaCJ9.sig" rejected', 'Token "[REDACTED_JWT]" rejected'],
+      ["Email address", "User rahul.kumar@example.com is blocked", "User [REDACTED_EMAIL] is blocked"],
+      ["Bearer at end of message", "Authentication rejected by Bearer secret-value-123", "Authentication rejected by Bearer [REDACTED_TOKEN]"],
+    ])("redacts %s without leaking credentials", (_label, rawMessage, expectedMatch) => {
+      const scrubbed = scrubGraphErrorMessage(rawMessage);
+      expect(scrubbed).toContain(expectedMatch);
+      expect(scrubbed).not.toMatch(/rahul\.kumar@example\.com|abc\+\/==|abc123def456|xyz789|secret-value-123/);
+    });
+  });
+
+  describe("Finding C: Deeply Frozen Scope Constants", () => {
+    it("freezes MICROSOFT_CAPABILITY_SCOPES and all nested arrays", () => {
+      expect(Object.isFrozen(MICROSOFT_CAPABILITY_SCOPES)).toBe(true);
+      expect(Object.isFrozen(MICROSOFT_CAPABILITY_SCOPES.profile)).toBe(true);
+      expect(Object.isFrozen(MICROSOFT_CAPABILITY_SCOPES.calendar)).toBe(true);
+      expect(Object.isFrozen(MICROSOFT_CAPABILITY_SCOPES.mail)).toBe(true);
+      expect(Object.isFrozen(MICROSOFT_COMBINED_WORKSPACE_SCOPES)).toBe(true);
+      expect(() => { (MICROSOFT_CAPABILITY_SCOPES.mail as any).push("Mail.Send"); }).toThrow();
+      expect(() => { (MICROSOFT_COMBINED_WORKSPACE_SCOPES as any).push("Mail.Send"); }).toThrow();
+    });
+
+    it("returns deterministic scope order without duplicates", () => {
+      expect(MICROSOFT_COMBINED_WORKSPACE_SCOPES).toEqual(["User.Read", "Calendars.Read", "Mail.ReadBasic"]);
+    });
+  });
+
+  describe("Finding E: Exact Audience & Safe Prefix Normalization", () => {
+    it("recognizes exact Microsoft Graph GUID audience (00000003-0000-0000-c000-000000000000)", () => {
+      const token = makeSyntheticJwt({ aud: MICROSOFT_GRAPH_APP_ID });
+      expect(inspectTokenAudience(token)).toBe("MICROSOFT_GRAPH_EXPECTED");
+    });
+
+    it("recognizes exact Microsoft Graph textual audience (https://graph.microsoft.com)", () => {
+      const token = makeSyntheticJwt({ aud: "https://graph.microsoft.com" });
+      expect(inspectTokenAudience(token)).toBe("MICROSOFT_GRAPH_EXPECTED");
+    });
+
+    it("recognizes accepted trailing slash on Microsoft Graph textual audience", () => {
+      const token = makeSyntheticJwt({ aud: "https://graph.microsoft.com/" });
+      expect(inspectTokenAudience(token)).toBe("MICROSOFT_GRAPH_EXPECTED");
+    });
+
+    it("recognizes legacy Microsoft Graph textual audience (https://graph.windows.net)", () => {
+      const token = makeSyntheticJwt({ aud: "https://graph.windows.net" });
+      expect(inspectTokenAudience(token)).toBe("MICROSOFT_GRAPH_EXPECTED");
+    });
+
+    it.each([
+      ["lookalike host", "https://graph.microsoft.com.evil.example"],
+      ["path suffix", "https://graph.microsoft.com/extra/path"],
+      ["query string", "https://graph.microsoft.com?target=evil"],
+      ["fragment", "https://graph.microsoft.com#fragment"],
+      ["userinfo trick", "https://graph.microsoft.com@evil.example"],
+      ["custom app audience", "api://onyx-server-authority"],
+    ])("rejects non-Graph audience %s as UNEXPECTED_RESOURCE", (_label, rawAud) => {
+      const token = makeSyntheticJwt({ aud: rawAud });
+      expect(inspectTokenAudience(token)).toBe("UNEXPECTED_RESOURCE");
+    });
+
+    it("handles aud array: returns MICROSOFT_GRAPH_EXPECTED if one matches, UNEXPECTED_RESOURCE if none match", () => {
+      const matchingArrayToken = makeSyntheticJwt({ aud: ["api://other-app", MICROSOFT_GRAPH_APP_ID] });
+      expect(inspectTokenAudience(matchingArrayToken)).toBe("MICROSOFT_GRAPH_EXPECTED");
+
+      const nonMatchingArrayToken = makeSyntheticJwt({ aud: ["api://other-app-1", "api://other-app-2"] });
+      expect(inspectTokenAudience(nonMatchingArrayToken)).toBe("UNEXPECTED_RESOURCE");
+    });
+
+    it("normalizes approved Graph scope prefixes and rejects unapproved prefixes", () => {
+      expect(normalizeScope("Calendars.Read")).toBe("calendars.read");
+      expect(normalizeScope("https://graph.microsoft.com/Mail.ReadBasic")).toBe("mail.readbasic");
+      expect(normalizeScope("https://graph.windows.net/Calendars.Read")).toBe("calendars.read");
+      expect(normalizeScope("https://attacker.example/Calendars.Read")).toBe("https://attacker.example/calendars.read");
+      expect(normalizeScope("https://attacker.example/Calendars.Read")).not.toBe("calendars.read");
+    });
+  });
+
+  describe("Finding H & I: Graph Error Extraction & Bounded Aggregation", () => {
+    it("extracts and bounds sanitized error code and message from Graph response", async () => {
+      const mockResponse = new Response(
+        JSON.stringify({
+          error: {
+            code: "InvalidAuthenticationToken",
+            message: "User user@example.com with Bearer token-123 failed.",
+          },
+        }),
+        {
+          status: 401,
+          headers: {
+            "content-type": "application/json",
+            "x-ms-request-id": "req-xyz-123",
+            "client-request-id": "client-abc-456",
+          },
+        },
+      );
+
+      const details = await extractGraphErrorDetails(mockResponse);
+      expect(details.httpStatus).toBe(401);
+      expect(details.graphErrorCode).toBe("InvalidAuthenticationToken");
+      expect(details.graphErrorMessage).toContain("[REDACTED_EMAIL]");
+      expect(details.graphErrorMessage).toContain("[REDACTED_TOKEN]");
+      expect(details.graphErrorMessage).not.toContain("user@example.com");
+      expect(details.graphErrorMessage).not.toContain("token-123");
+      expect(details.requestId).toBe("req-xyz-123");
+      expect(details.clientRequestId).toBe("client-abc-456");
+    });
+
+    it("bounds oversized or hostile Graph error codes", () => {
+      expect(scrubGraphErrorCode("ShortErrorCode")).toBe("ShortErrorCode");
+      expect(scrubGraphErrorCode("A".repeat(100))).toBe("UNKNOWN_BOUNDED_GRAPH_ERROR");
+      expect(scrubGraphErrorCode("code with spaces")).toBe("UNKNOWN_BOUNDED_GRAPH_ERROR");
+      expect(scrubGraphErrorCode("code@email.com")).toBe("UNKNOWN_BOUNDED_GRAPH_ERROR");
+      expect(scrubGraphErrorCode(undefined)).toBeUndefined();
+    });
+
+    it("preserves sanitized error details on non-401 Calendar responses (400, 403, 404, 429, 500)", async () => {
+      const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+      const acquireTokenSilent = vi.fn().mockResolvedValue({
+        accessToken: makeSyntheticJwt({ aud: MICROSOFT_GRAPH_APP_ID }),
+        scopes: ["User.Read", "Calendars.Read"],
+        account: { homeAccountId: "acct", tenantId: "tenant" },
+      });
+      const fetch = vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: { code: "ResourceNotFound", message: "The calendar was not found." },
+          }),
+          {
+            status: 404,
+            headers: { "content-type": "application/json", "x-ms-request-id": "req-404" },
+          },
+        ),
+      );
+      vi.stubGlobal("fetch", fetch);
+      Object.assign(connector, { application: { acquireTokenSilent }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+      const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+      expect(result.diagnostic.reasonCode).toBe("CALENDAR_GRAPH_HTTP_404");
+      expect(result.diagnostic.graphErrorCode).toBe("ResourceNotFound");
+      expect(result.diagnostic.graphErrorMessage).toBe("The calendar was not found.");
+      expect(result.diagnostic.sanitizedDiagnostic?.requestId).toBe("req-404");
+    });
+  });
+
+  describe("Finding F & G: Diagnostic Envelope Accuracy & Audience Preservation", () => {
+    it("creates an immutable sanitized diagnostic envelope without raw credentials", () => {
+      const envelope = createSanitizedDiagnosticEnvelope({
+        capability: "MICROSOFT_CALENDAR",
+        operation: "loadCalendarEvents",
+        requestedScopes: ["User.Read", "Calendars.Read"],
+        returnedScopes: ["User.Read", "Calendars.Read"],
+        accountBinding: "MATCHED",
+        fromCache: true,
+        forceRefresh: false,
+        tokenPresent: true,
+        tokenExpiryState: "VALID",
+        decodedAudience: "MICROSOFT_GRAPH_EXPECTED",
+        sanitizedGraphEndpoint: "/me/calendar/calendarView",
+        httpStatus: 200,
+        graphErrorCode: undefined,
+        graphErrorMessage: "Safe message",
+        requestId: "req-123",
+        clientRequestId: "client-req-456",
+        correlationId: "corr-789",
+        retryAttempt: false,
+        finalReasonCode: "CALENDAR_GRAPH_SUCCEEDED_WITH_EVENTS",
+      });
+
+      expect(envelope.capability).toBe("MICROSOFT_CALENDAR");
+      expect(envelope.decodedAudience).toBe("MICROSOFT_GRAPH_EXPECTED");
+      expect(envelope.finalReasonCode).toBe("CALENDAR_GRAPH_SUCCEEDED_WITH_EVENTS");
+      expect(Object.isFrozen(envelope)).toBe(true);
+      expect(JSON.stringify(envelope)).not.toMatch(/Bearer\s+|raw-token|user@example\.com/i);
+    });
+
+    it("preserves UNEXPECTED_RESOURCE in final envelope when token has non-Graph audience", async () => {
+      const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+      const acquireTokenSilent = vi.fn().mockResolvedValue({
+        accessToken: makeSyntheticJwt({ aud: "api://custom-audience" }),
+        scopes: ["User.Read", "Calendars.Read"],
+        account: { homeAccountId: "acct", tenantId: "tenant" },
+      });
+      const fetch = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ value: [] }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      vi.stubGlobal("fetch", fetch);
+      Object.assign(connector, { application: { acquireTokenSilent }, account: { homeAccountId: "acct", tenantId: "tenant" } });
+
+      const result = await connector.loadCalendarEventsWithDiagnostic(calendarRange);
+
+      expect(result.diagnostic.tokenAudience).toBe("UNEXPECTED_RESOURCE");
+      expect(result.diagnostic.sanitizedDiagnostic?.decodedAudience).toBe("UNEXPECTED_RESOURCE");
+    });
   });
 });

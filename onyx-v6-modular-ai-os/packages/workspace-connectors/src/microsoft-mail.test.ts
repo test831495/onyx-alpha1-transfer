@@ -385,5 +385,43 @@ describe("MicrosoftWorkspaceConnector Mail.ReadBasic foundation", () => {
     expect(result.diagnostic.graphErrorMessage).not.toContain("token-secret");
     expect(result.diagnostic.sanitizedDiagnostic).toBeDefined();
     expect(result.diagnostic.sanitizedDiagnostic?.capability).toBe("MICROSOFT_MAIL");
+    expect(result.diagnostic.sanitizedDiagnostic?.forceRefresh).toBe(true);
+    expect(result.diagnostic.sanitizedDiagnostic?.retryAttempt).toBe(true);
+  });
+
+  it("MAIL-DIAG-002 preserves actual audience in Mail diagnostic envelope instead of hardcoding", async () => {
+    function makeSyntheticJwt(payload: Record<string, unknown>): string {
+      const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT" })).toString("base64url");
+      const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
+      return `${header}.${body}.sig`;
+    }
+
+    const customAudienceToken = makeSyntheticJwt({ aud: "api://custom-audience" });
+    const acquireTokenSilent = vi.fn().mockResolvedValue({
+      accessToken: customAudienceToken,
+      scopes: ["User.Read", "Mail.ReadBasic"],
+      account: { homeAccountId: "account", tenantId: "tenant" },
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(emptyMailboxResponse({ value: [] })));
+    const connector = connectedConnector(acquireTokenSilent);
+
+    const result = await connector.loadMailMessagesWithDiagnostic();
+
+    expect(result.diagnostic.sanitizedDiagnostic?.decodedAudience).toBe("UNEXPECTED_RESOURCE");
+  });
+
+  it("MAIL-DIAG-003 constructs a refreshed diagnostic envelope when force-refresh fails silently", async () => {
+    const acquireTokenSilent = vi.fn()
+      .mockResolvedValueOnce(mailToken({ homeAccountId: "account", tenantId: "tenant" }))
+      .mockResolvedValueOnce({ accessToken: "", scopes: ["User.Read", "Mail.ReadBasic"], account: { homeAccountId: "account", tenantId: "tenant" } });
+    const fetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers() });
+    vi.stubGlobal("fetch", fetch);
+    const connector = connectedConnector(acquireTokenSilent);
+
+    const result = await connector.loadMailMessagesWithDiagnostic();
+
+    expect(result.diagnostic.reasonCode).toBe("MAIL_ACCESS_TOKEN_ABSENT");
+    expect(result.diagnostic.sanitizedDiagnostic?.forceRefresh).toBe(true);
+    expect(result.diagnostic.sanitizedDiagnostic?.retryAttempt).toBe(false);
   });
 });
