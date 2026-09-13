@@ -1,0 +1,11 @@
+{
+  "characterBibleVersion": "2.1",
+  "package": "@onyx/conversation-response-envelope",
+  "entries": [
+    {"requirement":"truth before fluency","implementation":"buildCharacterResponseEnvelope","acceptance":["B4B-TRUTH-001"]},
+    {"requirement":"supplied character identity independent of provider","implementation":"CHARACTER_PROFILES","acceptance":["B4B-CHARACTER-001"]},
+    {"requirement":"display and spoken semantic alignment","implementation":"validateDisplaySpokenParity","acceptance":["B4B-PARITY-001"]},
+    {"requirement":"privacy-safe non-authorizing projection","implementation":"buildCharacterResponseEnvelope","acceptance":["B4B-PRIVACY-001","B4B-AUTHORITY-001"]},
+    {"requirement":"no speaker selection, emotional context, Council, memory, or execution","implementation":"package boundary","acceptance":["B4B-PRESERVATION-001"]}
+  ]
+}
