@@ -18,7 +18,7 @@ export interface ConversationClassification {
   readonly legacyKind: string;
 }
 
-export const UNIFIED_PRIMARY_INTENT_CLASSES = [
+export const UNIFIED_PRIMARY_INTENT_CLASSES = Object.freeze([
   "POLICY_DENIED_OR_PROHIBITED",
   "CANCEL_OR_SESSION_CLOSE",
   "CORRECTION",
@@ -38,7 +38,7 @@ export const UNIFIED_PRIMARY_INTENT_CLASSES = [
   "UNSUPPORTED",
   "UNTRUSTED_INSTRUCTION_OR_PROMPT_INJECTION",
   "UNKNOWN",
-] as const;
+] as const);
 
 export type UnifiedPrimaryIntentClass = (typeof UNIFIED_PRIMARY_INTENT_CLASSES)[number];
 export type UnifiedConfidenceEvidence =
@@ -201,7 +201,20 @@ export function classifyUnifiedConversationRequest(
     confidenceEvidence = ["INSUFFICIENT_EVIDENCE"];
   }
 
-  const replayEvidence = stableReplayEvidence(request.normalizedText, request.source, request.locale, primaryIntentClass, secondaryIntentClasses.join(","));
+  const replayEvidence = stableReplayEvidence({
+    rawText: request.rawText,
+    normalizedText: request.normalizedText,
+    source: request.source,
+    locale: request.locale,
+    primaryIntentClass,
+    secondaryIntentClasses,
+    ambiguityClass,
+    clarificationRequired,
+    promptInjectionRisk: injection,
+    untrustedContent: options.untrustedContent === true,
+    latestVoiceGeneration: options.latestVoiceGeneration,
+    currentVoiceGeneration: request.voice?.generation,
+  });
   return Object.freeze({
     classificationId: `b3-${replayEvidence}`,
     primaryIntentClass,
@@ -240,9 +253,36 @@ function detectPromptInjection(rawText: string, untrustedContent: boolean): Unif
     : "NONE";
 }
 
-function stableReplayEvidence(...parts: readonly string[]): string {
+function stableReplayEvidence(input: Readonly<{
+  readonly rawText: string;
+  readonly normalizedText: string;
+  readonly source: ConversationRequest["source"];
+  readonly locale: string;
+  readonly primaryIntentClass: UnifiedPrimaryIntentClass;
+  readonly secondaryIntentClasses: readonly UnifiedPrimaryIntentClass[];
+  readonly ambiguityClass: UnifiedClassificationResult["ambiguityClass"];
+  readonly clarificationRequired: boolean;
+  readonly promptInjectionRisk: UnifiedClassificationResult["promptInjectionRisk"];
+  readonly untrustedContent: boolean;
+  readonly latestVoiceGeneration?: number;
+  readonly currentVoiceGeneration?: number;
+}>): string {
+  const parts = [
+    ["raw", input.rawText],
+    ["normalized", input.normalizedText],
+    ["source", input.source],
+    ["locale", input.locale],
+    ["primary", input.primaryIntentClass],
+    ["secondary", input.secondaryIntentClasses.join(",")],
+    ["ambiguity", input.ambiguityClass],
+    ["clarification", String(input.clarificationRequired)],
+    ["injection", input.promptInjectionRisk],
+    ["untrusted", String(input.untrustedContent)],
+    ["latestVoice", input.latestVoiceGeneration === undefined ? "MISSING" : String(input.latestVoiceGeneration)],
+    ["currentVoice", input.currentVoiceGeneration === undefined ? "MISSING" : String(input.currentVoiceGeneration)],
+  ].map(([key, value]) => `${key!.length}:${key!}${value!.length}:${value!}`);
   let hash = 2166136261;
-  for (const part of parts.join("|").normalize("NFKC")) {
+  for (const part of parts.join("").normalize("NFKC")) {
     hash ^= part.charCodeAt(0);
     hash = Math.imul(hash, 16777619);
   }
