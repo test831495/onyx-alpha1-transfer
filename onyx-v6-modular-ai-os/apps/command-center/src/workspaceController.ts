@@ -85,8 +85,8 @@ export const getMicrosoftFilesAccountKind = (): MicrosoftAccountClassification =
 export async function resolveMicrosoftSharePoint(hostname: string, sitePath: string): Promise<SharePointResolution> {
   return (await microsoftFiles().resolveSharePoint({ hostname, sitePath: sitePath.startsWith("/") ? sitePath : `/${sitePath}` }));
 }
-export async function loadMicrosoftSharePointFolder(driveId: string, itemId: string, continuation?: string) {
-  return (await microsoftFiles().listChildren(driveId, itemId, "SHAREPOINT_LIBRARY", continuation)).listing;
+export async function loadMicrosoftSharePointFolder(siteId: string, driveId: string, itemId: string, continuation?: string) {
+  return (await microsoftFiles().listChildren(driveId, itemId, "SHAREPOINT_LIBRARY", continuation, { siteId, libraryId: driveId })).listing;
 }
 export async function runBoundedMicrosoftSharePointTest(driveId: string, parentItemId: string) {
   return microsoftFiles().runBoundedWriteValidation({

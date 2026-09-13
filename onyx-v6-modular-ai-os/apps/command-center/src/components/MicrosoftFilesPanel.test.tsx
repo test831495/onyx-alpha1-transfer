@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { MicrosoftFilesPanel, type SharePointUiState } from "./MicrosoftFilesPanel";
+import { MicrosoftFilesPanel, presentBoundedWriteResult, type SharePointUiState } from "./MicrosoftFilesPanel";
 
 const props = {
   available: true,
@@ -12,6 +12,12 @@ const props = {
 } as any;
 
 describe("Microsoft Files SharePoint experience", () => {
+  it("presents verified, unverified, and uncertain write outcomes consistently", () => {
+    expect(presentBoundedWriteResult({ cleanupVerified: true, uncertainExternalEffect: false } as any)).toBe("Bounded Microsoft Files test completed. Cleanup verified.");
+    expect(presentBoundedWriteResult({ cleanupVerified: false, uncertainExternalEffect: false } as any)).toContain("Cleanup was not verified");
+    expect(presentBoundedWriteResult({ cleanupVerified: false, uncertainExternalEffect: true } as any)).toContain("uncertain external effect");
+    expect(presentBoundedWriteResult({ cleanupVerified: true, uncertainExternalEffect: false } as any)).not.toContain("external effect");
+  });
   it.each([
     ["SHAREPOINT_AVAILABLE", "SharePoint available"],
     ["SHAREPOINT_GUEST_SITE_AVAILABLE", "Guest SharePoint access detected"],

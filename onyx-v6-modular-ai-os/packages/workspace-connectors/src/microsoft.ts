@@ -606,8 +606,10 @@ export class MicrosoftWorkspaceConnector {
   get configured() { return Boolean(this.config.clientId && this.config.tenantId); }
   getFilesAccountKind(): FileAccountKind {
     const claims = this.account?.idTokenClaims as { acct?: unknown; tid?: unknown } | undefined;
-    if (claims?.acct === 0 || claims?.tid === "consumers") return "PERSONAL_MICROSOFT_ACCOUNT";
-    if (this.account?.tenantId || claims?.acct === 1) return "ORGANIZATIONAL_MICROSOFT_ACCOUNT";
+    const accountType = claims?.acct === 0 || claims?.acct === "0" ? "PERSONAL_MICROSOFT_ACCOUNT" : claims?.acct === 1 || claims?.acct === "1" ? "ORGANIZATIONAL_MICROSOFT_ACCOUNT" : undefined;
+    if (accountType === "PERSONAL_MICROSOFT_ACCOUNT" || claims?.tid === "consumers") return "PERSONAL_MICROSOFT_ACCOUNT";
+    if (accountType === "ORGANIZATIONAL_MICROSOFT_ACCOUNT" && this.account?.tenantId && this.config.tenantId && this.account.tenantId !== this.config.tenantId && this.config.tenantId !== "common") return "GUEST_MICROSOFT_ACCOUNT";
+    if (this.account?.tenantId && (accountType === "ORGANIZATIONAL_MICROSOFT_ACCOUNT" || claims?.tid)) return "ORGANIZATIONAL_MICROSOFT_ACCOUNT";
     return "UNKNOWN_MICROSOFT_ACCOUNT";
   }
   async initialize(): Promise<WorkspaceProviderSnapshot> {

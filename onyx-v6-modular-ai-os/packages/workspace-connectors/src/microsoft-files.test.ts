@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   MicrosoftFilesAdapter,
+  MicrosoftFilesError,
   classifyMicrosoftAccount,
   normalizeMicrosoftFileItem,
   validateGraphNextLink,
@@ -46,12 +47,12 @@ describe("Microsoft Files metadata reads", () => {
     const fetch = vi.fn().mockResolvedValue(response({ value: [{ id: "item-1", name: "notes.txt", parentReference: { id: "root", driveId: "drive-1" }, file: { mimeType: "text/plain", size: "12" } }], "@odata.nextLink": "https://graph.microsoft.com/v1.0/drives/drive-1/items/root/children?$skiptoken=x" }));
     const result = await adapter(fetch).listChildren("drive-1", "root");
     expect(result.listing.items[0]).toMatchObject({ itemId: "item-1", itemKind: "FILE", size: 12 });
-    expect(result.listing.continuationCursor).toContain("$skiptoken=x");
+    expect(result.listing.continuationCursor).toMatch(/^mfc1\./);
     expect(result.diagnostic.paginationPresent).toBe(true);
   });
 
   it("returns a non-error not-applicable state for standalone personal SharePoint", async () => {
-    const result = await new MicrosoftFilesAdapter({ accessToken: token, fetch: vi.fn(), accountKind: "PERSONAL_MICROSOFT_ACCOUNT" }).resolveSharePoint({ hostname: "tenant.sharepoint.com", sitePath: "/sites/example" });
+    const result = await new MicrosoftFilesAdapter({ accessToken: token, fetch: vi.fn(), accountKind: "PERSONAL_MICROSOFT_ACCOUNT" }).resolveSharePoint();
     expect(result.drives).toEqual([]);
     expect(result.diagnostic.finalReasonCode).toBe("MICROSOFT_SHAREPOINT_NOT_APPLICABLE_PERSONAL_ACCOUNT");
   });
@@ -78,9 +79,13 @@ describe("Microsoft Files metadata reads", () => {
       .mockResolvedValueOnce(response({ id: "child-1" }, 201))
       .mockResolvedValueOnce(response({}, 200))
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(response({}, 404))
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
-      .mockResolvedValueOnce(new Response(null, { status: 204 }));
-    const result = await adapter(fetch).runBoundedWriteValidation({
+      .mockResolvedValueOnce(response({}, 404))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(response({}, 404));
+    const filesAdapter = adapter(fetch);
+    const request = {
       operationId: "operation-1",
       idempotencyKey: "idempotency-1",
       provider: "microsoft",
@@ -92,9 +97,37 @@ describe("Microsoft Files metadata reads", () => {
       explicitTestMode: true,
       confirmed: true,
       sourcePathClass: "ONEDRIVE",
-    });
+    } as const;
+    const result = await filesAdapter.runBoundedWriteValidation(request);
     expect(result.cleanupVerified).toBe(true);
     expect(result.uncertainExternalEffect).toBe(false);
     expect(result.deletedItemIds).toEqual(["artifact-1", "child-1", "folder-1"]);
+    const callCount = fetch.mock.calls.length;
+    const replay = await filesAdapter.runBoundedWriteValidation(request);
+    expect(replay.replayDisposition).toBe("ALREADY_COMPLETED");
+    expect(fetch.mock.calls).toHaveLength(callCount);
+  });
+
+  it("binds continuation cursors to account, drive, parent and resource", async () => {
+    const firstFetch = vi.fn().mockResolvedValue(response({ value: [], "@odata.nextLink": "https://graph.microsoft.com/v1.0/drives/drive-1/items/root/children?$skiptoken=x" }));
+    const first = await adapter(firstFetch).listChildren("drive-1", "root");
+    const secondFetch = vi.fn();
+    await expect(new MicrosoftFilesAdapter({ accessToken: token, fetch: secondFetch, accountKind: "PERSONAL_MICROSOFT_ACCOUNT" }).listChildren("drive-1", "root", "ONEDRIVE", first.listing.continuationCursor)).rejects.toMatchObject({ diagnostic: { finalReasonCode: "MICROSOFT_FILES_CURSOR_ACCOUNT_MISMATCH" } });
+    expect(secondFetch).not.toHaveBeenCalled();
+    await expect(adapter(secondFetch).listChildren("other-drive", "root", "ONEDRIVE", first.listing.continuationCursor)).rejects.toMatchObject({ diagnostic: { finalReasonCode: "MICROSOFT_FILES_CURSOR_DRIVE_MISMATCH" } });
+    expect(secondFetch).not.toHaveBeenCalled();
+  });
+
+  it("returns structured HTTP failures without exposing tokens", async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: { code: "AccessDenied", message: "private detail" } }), { status: 403 }));
+    await expect(adapter(fetch).getOneDrive()).rejects.toBeInstanceOf(MicrosoftFilesError);
+    await expect(adapter(fetch).getOneDrive()).rejects.toMatchObject({ diagnostic: { httpStatus: 403, finalReasonCode: "MICROSOFT_ONEDRIVE_WRITE_FORBIDDEN" } });
+  });
+
+  it("blocks unknown accounts before Graph access and replays completed operations safely", async () => {
+    const unknownFetch = vi.fn();
+    const unknown = await new MicrosoftFilesAdapter({ accessToken: token, fetch: unknownFetch, accountKind: "UNKNOWN_MICROSOFT_ACCOUNT" }).runBoundedWriteValidation({ operationId: "unknown", idempotencyKey: "unknown-key", provider: "microsoft", driveId: "drive", parentItemId: "root", testFolderName: "ONYX-NOVA-Connector-Test", artifactName: "onyx-nova-connector-test-unknown.txt", consequencePreview: "bounded", explicitTestMode: true, confirmed: true, sourcePathClass: "ONEDRIVE" });
+    expect(unknown.finalReasonCode).toBe("MICROSOFT_ACCOUNT_CLASSIFICATION_FAILED");
+    expect(unknownFetch).not.toHaveBeenCalled();
   });
 });
