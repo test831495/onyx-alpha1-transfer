@@ -3,6 +3,7 @@ import type {
   DriveProjection,
   FileAccountKind,
   FileOperationReceipt,
+  FileRuntimeTrace,
   FolderListingProjection,
 } from "@onyx/workspace-contracts";
 import { MicrosoftFilesError, type SharePointResolution } from "@onyx/workspace-connectors";
@@ -32,6 +33,9 @@ export interface MicrosoftFilesPanelProps {
   readonly onResolveSharePoint?: (hostname: string, sitePath: string) => Promise<SharePointResolution>;
   readonly onReadSharePoint?: (siteId: string, driveId: string, itemId: string, continuation?: string) => Promise<FolderListingProjection>;
   readonly onWriteSharePointTest?: (driveId: string, parentItemId: string) => Promise<FileOperationReceipt>;
+  readonly runtimeTrace?: readonly FileRuntimeTrace[];
+  readonly onTraceClear?: () => void;
+  readonly onReconnectFiles?: () => Promise<void>;
 }
 
 const accountLabels: Record<FileAccountKind, string> = {
@@ -66,6 +70,9 @@ export function MicrosoftFilesPanel({
   onResolveSharePoint,
   onReadSharePoint,
   onWriteSharePointTest,
+  runtimeTrace = [],
+  onTraceClear,
+  onReconnectFiles,
 }: MicrosoftFilesPanelProps) {
   const [listing, setListing] = useState<FolderListingProjection>();
   const [busy, setBusy] = useState(false);
@@ -78,11 +85,12 @@ export function MicrosoftFilesPanel({
   const [sharePointMessage, setSharePointMessage] = useState("Enter a site target to begin.");
   const [showSharePointPreview, setShowSharePointPreview] = useState(false);
   const [sharePointResolvedState, setSharePointResolvedState] = useState<SharePointUiState>();
+  const [interactionRequired, setInteractionRequired] = useState(false);
   const resolvedState = sharePointResolvedState ?? sharePointState ?? capabilityState(sharePointAccountKind, sharePointAvailable);
 
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
-    try { await action(); } catch (error) { setMessage(error instanceof MicrosoftFilesError ? error.diagnostic.finalReasonCode : "MICROSOFT_FILES_UNKNOWN_BOUNDED_FAILURE"); }
+    try { setInteractionRequired(false); await action(); } catch (error) { const reason = error instanceof MicrosoftFilesError ? error.diagnostic.finalReasonCode : "MICROSOFT_FILES_UNKNOWN_BOUNDED_FAILURE"; setInteractionRequired(reason === "MICROSOFT_FILES_INTERACTION_REQUIRED"); setMessage(reason); }
     finally { setBusy(false); }
   };
 
@@ -119,12 +127,13 @@ export function MicrosoftFilesPanel({
       <button type="button" onClick={() => void run(async () => { const next = await onRead(); setListing(next); setMessage(next.itemCount === 0 ? "OneDrive folder is empty." : `${next.itemCount} metadata items loaded.`); })} disabled={busy || !available}>Open OneDrive</button>
     </div>
     {listing && <div><nav aria-label="OneDrive folder breadcrumb"><small>OneDrive / {listing.parent.name}</small></nav><ul aria-label="OneDrive metadata listing" style={{ margin: 0, paddingLeft: "1.2rem" }}>{listing.items.map((item) => <li key={item.itemId}><span>{item.itemKind === "FOLDER" ? "Folder" : "File"}</span> {item.name}{item.size === undefined ? "" : ` (${item.size} bytes)`}</li>)}</ul>{listing.continuationCursor && <button type="button" onClick={() => void run(async () => setListing(await onRead(listing.continuationCursor)))} disabled={busy}>Next page</button>}</div>}
-    <div style={{ display: "grid", gap: "0.35rem" }}><button type="button" onClick={() => void run(async () => { if (!window.confirm("Run the bounded Microsoft Files test? Only synthetic artifacts in ONYX-NOVA-Connector-Test will be affected and cleanup will run.")) return; const receipt = await onWriteTest(); setMessage(presentBoundedWriteResult(receipt)); })} disabled={busy || !available}>Run bounded OneDrive read/write test</button><small>{message}</small></div>
+    <div style={{ display: "grid", gap: "0.35rem" }}><button type="button" onClick={() => void run(async () => { if (!window.confirm("Run the bounded Microsoft Files test? Only synthetic artifacts in ONYX-NOVA-Connector-Test will be affected and cleanup will run.")) return; const receipt = await onWriteTest(); setMessage(presentBoundedWriteResult(receipt)); })} disabled={busy || !available}>Run bounded OneDrive read/write test</button><small>{message}</small>{interactionRequired && onReconnectFiles && <button type="button" onClick={() => void onReconnectFiles()} disabled={busy}>Reconnect Microsoft Files</button>}</div>
+    {runtimeTrace.length > 0 && <details><summary>Diagnostic details</summary><div role="region" aria-label="Microsoft Files diagnostic details" style={{ display: "grid", gap: "0.35rem", marginTop: "0.45rem" }}><small>Bounded stage trace: {runtimeTrace.length} events</small><ol>{runtimeTrace.map((trace) => <li key={`${trace.correlationId}-${trace.sequence}`}><small>{trace.sequence}. {trace.stage}{trace.finalReasonCode ? ` · ${trace.finalReasonCode}` : ""}</small></li>)}</ol>{onTraceClear && <button type="button" onClick={onTraceClear}>Clear diagnostic details</button>}</div></details>}
 
     <section aria-labelledby="sharepoint-heading" style={{ borderTop: "1px solid color-mix(in srgb, currentColor 18%, transparent)", paddingTop: "0.8rem", display: "grid", gap: "0.6rem" }}>
       <div><b id="sharepoint-heading">SharePoint</b><div><small>{accountLabels[sharePointAccountKind]}</small></div><strong aria-live="polite">{stateLabels[resolvedState]}</strong></div>
       {resolvedState === "SHAREPOINT_NOT_APPLICABLE_PERSONAL_ACCOUNT" ? <><p role="status" style={{ margin: 0 }}>SharePoint is not available for this account type. OneDrive remains available.</p>{onResolveSharePoint && <><label>Explicit guest hostname<input aria-label="SharePoint guest hostname" value={sharePointHostname} onChange={(event) => setSharePointHostname(event.target.value)} placeholder="contoso.sharepoint.com" /></label><label>Explicit guest site path<input aria-label="SharePoint guest site path" value={sharePointPath} onChange={(event) => setSharePointPath(event.target.value)} placeholder="sites/project-x" /></label><button type="button" onClick={() => void resolveSharePoint()} disabled={busy || !sharePointHostname.trim() || !sharePointPath.trim()}>Check explicit guest site access</button></>}</> : resolvedState === "SHAREPOINT_CONSENT_REQUIRED" ? <p role="status" style={{ margin: 0 }}>Reconnect Microsoft Files to grant the delegated SharePoint capability.</p> : resolvedState === "SHAREPOINT_POLICY_BLOCKED" ? <p role="status" style={{ margin: 0 }}>Your organization blocked SharePoint access. No site request was made.</p> : <>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(12rem,1fr))", gap: "0.5rem" }}><label>Hostname<input aria-label="SharePoint hostname" value={sharePointHostname} onChange={(event) => setSharePointHostname(event.target.value)} placeholder="contoso.sharepoint.com" /></label><label>Site path<input aria-label="SharePoint site path" value={sharePointPath} onChange={(event) => setSharePointPath(event.target.value)} placeholder="sites/project-x" /></label></div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(12rem,1fr))", gap: "1rem" }}><label htmlFor="sharepoint-hostname">SharePoint hostname<input id="sharepoint-hostname" value={sharePointHostname} onChange={(event) => setSharePointHostname(event.target.value)} placeholder="contoso.sharepoint.com" /></label><label htmlFor="sharepoint-site-path">SharePoint site path<input id="sharepoint-site-path" value={sharePointPath} onChange={(event) => setSharePointPath(event.target.value)} placeholder="sites/project-x" /></label></div>
         <button type="button" onClick={() => void resolveSharePoint()} disabled={busy || !onResolveSharePoint || !sharePointHostname.trim() || !sharePointPath.trim()}>Resolve SharePoint site</button>
         <small role="status">{sharePointMessage}</small>
         {sharePointResolution && <div role="region" aria-label="Resolved SharePoint site" style={{ display: "grid", gap: "0.45rem" }}><div><b>{sharePointResolution.siteName ?? "Resolved SharePoint site"}</b> · <small>{sharePointResolution.siteId}</small></div><small>Diagnostic: {sharePointResolution.diagnostic.finalReasonCode}</small><div><b>Document libraries ({sharePointResolution.drives.length})</b><ul aria-label="SharePoint document libraries" style={{ margin: 0, paddingLeft: "1.2rem" }}>{sharePointResolution.drives.map((drive) => <li key={drive.driveId}><button type="button" onClick={() => void openSharePointFolder(drive, "root")} disabled={busy}>{drive.displayName ?? "Document library"}</button> <small>{drive.driveType}</small></li>)}</ul></div></div>}

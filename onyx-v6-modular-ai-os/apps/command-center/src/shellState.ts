@@ -12,6 +12,7 @@ export type ShellAppId =
   | "tasks"
   | "news"
   | "workspace"
+  | "files"
   | "mail"
   | "calendar"
   | "automation"

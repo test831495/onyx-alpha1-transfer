@@ -671,6 +671,12 @@ export class MicrosoftWorkspaceConnector {
       throw error;
     }
   }
+  async reconnectFiles(): Promise<void> {
+    if (!this.application) await this.initialize();
+    if (!this.application || !this.configured) throw new Error("Microsoft workspace configuration is incomplete.");
+    this.diagnostic = "Redirecting to Microsoft Files consent.";
+    await this.application.loginRedirect({ scopes: [...profileScopes, ...MICROSOFT_CAPABILITY_SCOPES.filesReadWrite], prompt: "select_account" });
+  }
   async disconnect(): Promise<void> {
     if (!this.application || !this.account) return;
     await this.application.logoutRedirect({ account: this.account, postLogoutRedirectUri: window.location.origin });

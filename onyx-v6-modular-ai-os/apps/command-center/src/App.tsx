@@ -142,6 +142,7 @@ const SHELL_APP_LABELS: Record<ShellAppId, string> = {
   tasks: "Tasks",
   news: "News",
   workspace: "Workspace",
+  files: "Files",
   mail: "Mail",
   calendar: "Calendar",
   automation: "Automation",

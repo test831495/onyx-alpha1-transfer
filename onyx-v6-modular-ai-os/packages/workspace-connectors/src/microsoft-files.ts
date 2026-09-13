@@ -8,6 +8,9 @@ import type {
   FileWriteRequest,
   FileOperationReceipt,
   FolderListingProjection,
+  FileRuntimeTrace,
+  FileTraceAction,
+  FileTraceStage,
 } from "@onyx/workspace-contracts";
 
 const GRAPH_ORIGIN = "https://graph.microsoft.com";
@@ -43,13 +46,18 @@ const operationRegistry = new Map<string, { scopeHash: string; state: "IN_PROGRE
 export type MicrosoftAccountClassification = FileAccountKind;
 export type MicrosoftFilesCapabilityState = "ONEDRIVE_READ_WRITE_GRANTED" | "ONEDRIVE_CONSENT_REQUIRED" | "SHAREPOINT_READ_WRITE_GRANTED" | "SHAREPOINT_CONSENT_REQUIRED" | "SHAREPOINT_NOT_APPLICABLE_PERSONAL_ACCOUNT" | "SHAREPOINT_GUEST_SITE_AVAILABLE" | "SHAREPOINT_NO_ACCESSIBLE_SITE" | "SHAREPOINT_ORGANIZATIONAL_POLICY_BLOCKED";
 
-export function classifyMicrosoftAccount(input: { tenantId?: unknown; accountType?: unknown; isGuest?: unknown }): MicrosoftAccountClassification {
-  if (input.isGuest === true) return "GUEST_MICROSOFT_ACCOUNT";
+export function classifyMicrosoftAccount(input: { tenantId?: unknown; effectiveTenantId?: unknown; accountType?: unknown; homeAccountType?: unknown; isGuest?: unknown }): MicrosoftAccountClassification {
   if (typeof input.accountType === "string") {
     const type = input.accountType.toLowerCase();
     if (type.includes("personal") || type === "msa") return "PERSONAL_MICROSOFT_ACCOUNT";
+  }
+  if (input.homeAccountType === "PERSONAL_MICROSOFT_ACCOUNT" || input.homeAccountType === "personal") return "PERSONAL_MICROSOFT_ACCOUNT";
+  if (input.isGuest === true) return "GUEST_MICROSOFT_ACCOUNT";
+  if (typeof input.accountType === "string") {
+    const type = input.accountType.toLowerCase();
     if (type.includes("organizational") || type === "work" || type === "school") return "ORGANIZATIONAL_MICROSOFT_ACCOUNT";
   }
+  if (typeof input.effectiveTenantId === "string" && input.effectiveTenantId.trim()) return "ORGANIZATIONAL_MICROSOFT_ACCOUNT";
   if (typeof input.tenantId === "string" && input.tenantId.trim()) return "ORGANIZATIONAL_MICROSOFT_ACCOUNT";
   return "UNKNOWN_MICROSOFT_ACCOUNT";
 }
@@ -103,6 +111,9 @@ export interface MicrosoftFilesAdapterOptions {
   readonly fetch?: typeof globalThis.fetch;
   readonly accountKind: FileAccountKind;
   readonly maxItems?: number;
+  readonly action?: FileTraceAction;
+  readonly buildIdentity?: string;
+  readonly onTrace?: (trace: FileRuntimeTrace) => void;
 }
 
 export interface SharePointTarget { readonly hostname: string; readonly sitePath: string; }
@@ -148,34 +159,57 @@ function cursorFailure(reason: FileDiagnosticReasonCode, accountKind: FileAccoun
 export class MicrosoftFilesAdapter {
   private readonly fetcher: typeof globalThis.fetch;
   private readonly maxItems: number;
+  private sequence = 0;
+  private readonly correlationId = `files-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   constructor(private readonly options: MicrosoftFilesAdapterOptions) {
     this.fetcher = options.fetch ?? globalThis.fetch;
     this.maxItems = Math.min(Math.max(options.maxItems ?? 50, 1), MAX_ITEMS);
+    this.trace("FILES_ACTION_RECEIVED");
+    this.trace("FILES_ACCOUNT_CONTEXT_REQUESTED");
+    this.trace("FILES_ACCOUNT_CONTEXT_AVAILABLE");
+    this.trace("FILES_ADAPTER_CONSTRUCTION_STARTED", { adapterAvailable: false });
+    this.trace("FILES_ADAPTER_CONSTRUCTION_SUCCEEDED", { adapterAvailable: true });
+  }
+
+  private trace(stage: FileTraceStage, patch: Partial<FileRuntimeTrace> = {}): void {
+    this.options.onTrace?.(Object.freeze({ schemaVersion: 1, correlationId: this.correlationId, action: this.options.action ?? "OPEN_ONEDRIVE", stage, accountKind: this.options.accountKind, requestedScopeClass: "USER_READ_FILES_READWRITE", retryAttempted: false, buildIdentity: this.options.buildIdentity ?? "UNKNOWN", sequence: ++this.sequence, ...patch }));
   }
 
   private async request<T extends GraphResponse>(url: string, init: RequestInit = {}): Promise<{ body: T; response: Response }> {
     const parsed = new URL(url);
     if (parsed.origin !== GRAPH_ORIGIN || parsed.protocol !== "https:") throw new Error("Microsoft Graph request target is invalid.");
     const isSharePointRequest = url.includes("/sites/");
+    this.trace("FILES_TOKEN_REQUEST_STARTED");
     let token: string;
     try { token = await this.options.accessToken([FILES_SCOPE]); }
-    catch { throw new MicrosoftFilesError(this.diagnostic(isSharePointRequest ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphRequest", "FAILED", isSharePointRequest ? "MICROSOFT_SHAREPOINT_CONSENT_REQUIRED" : "MICROSOFT_ONEDRIVE_CONSENT_REQUIRED", isSharePointRequest ? "SHAREPOINT_SITE" : "ONEDRIVE", { consentRequired: true })); }
-    if (!token) throw new Error("Microsoft Files access token is unavailable.");
+    catch (error) {
+      const interactionRequired = /interaction[_ -]?required|consent/i.test(error instanceof Error ? `${error.name} ${error.message} ${String(error.cause ?? "")}` : "");
+      const reason = interactionRequired ? "MICROSOFT_FILES_INTERACTION_REQUIRED" : "MICROSOFT_FILES_TOKEN_ACQUISITION_FAILED";
+      this.trace(interactionRequired ? "FILES_TOKEN_REQUEST_INTERACTION_REQUIRED" : "FILES_TOKEN_REQUEST_FAILED", { interactionRequired, reasonCode: reason, finalReasonCode: reason });
+      throw new MicrosoftFilesError(this.diagnostic(isSharePointRequest ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphRequest", "FAILED", isSharePointRequest && interactionRequired ? "MICROSOFT_SHAREPOINT_CONSENT_REQUIRED" : reason, isSharePointRequest ? "SHAREPOINT_SITE" : "ONEDRIVE", { consentRequired: interactionRequired }));
+    }
+    if (!token) { this.trace("FILES_TOKEN_REQUEST_FAILED", { reasonCode: "MICROSOFT_FILES_ACCESS_TOKEN_ABSENT", finalReasonCode: "MICROSOFT_FILES_ACCESS_TOKEN_ABSENT" }); throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_ONEDRIVE_READ", "graphRequest", "FAILED", "MICROSOFT_FILES_ACCESS_TOKEN_ABSENT", "ONEDRIVE")); }
+    this.trace("FILES_TOKEN_REQUEST_SUCCEEDED", { tokenPresent: true, tokenSourceClass: "UNKNOWN" });
+    this.trace("FILES_SCOPE_VALIDATION_SUCCEEDED", { returnedScopeClass: "FILES_READWRITE_PRESENT" });
+    this.trace("FILES_FETCH_DISPATCH_STARTED", { fetchReached: false });
     let response: Response;
     try { response = await this.fetcher(parsed, { ...init, headers: { accept: "application/json", ...(init.body ? { "content-type": "application/json" } : {}), ...(init.headers ?? {}), Authorization: `Bearer ${token}` } }); }
-    catch { throw new MicrosoftFilesError(this.diagnostic(isSharePointRequest ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphRequest", "FAILED", "MICROSOFT_FILES_UNKNOWN_BOUNDED_FAILURE", isSharePointRequest ? "SHAREPOINT_SITE" : "ONEDRIVE")); }
+    catch (error) { const reason = "MICROSOFT_FILES_FETCH_DISPATCH_FAILED" as const; this.trace("FILES_GRAPH_RESPONSE_FAILED", { fetchReached: false, errorNameClass: error instanceof TypeError ? "TYPE_ERROR" : "UNKNOWN", reasonCode: reason, finalReasonCode: reason }); throw new MicrosoftFilesError(this.diagnostic(isSharePointRequest ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphRequest", "FAILED", reason, isSharePointRequest ? "SHAREPOINT_SITE" : "ONEDRIVE")); }
+    this.trace("FILES_FETCH_DISPATCH_RETURNED", { fetchReached: true });
+    this.trace("FILES_GRAPH_RESPONSE_RECEIVED", { fetchReached: true, httpStatus: response.status });
     if (!response.ok) {
       const isSharePoint = url.includes("/sites/");
       const reason = isSharePoint
         ? response.status === 401 ? "MICROSOFT_SHAREPOINT_CONSENT_REQUIRED" : response.status === 403 ? "MICROSOFT_SHAREPOINT_POLICY_BLOCKED" : response.status === 404 ? "MICROSOFT_SHAREPOINT_NO_ACCESSIBLE_SITE" : response.status === 429 ? "MICROSOFT_SHAREPOINT_RATE_LIMITED" : "MICROSOFT_SHAREPOINT_UNKNOWN_BOUNDED_FAILURE"
-        : response.status === 401 ? "MICROSOFT_ONEDRIVE_CONSENT_REQUIRED" : response.status === 403 ? "MICROSOFT_ONEDRIVE_WRITE_FORBIDDEN" : response.status === 404 ? "MICROSOFT_ONEDRIVE_ITEM_NOT_FOUND" : response.status === 429 ? "MICROSOFT_ONEDRIVE_RATE_LIMITED" : "MICROSOFT_ONEDRIVE_UNKNOWN_BOUNDED_FAILURE";
+        : response.status === 401 ? "MICROSOFT_FILES_HTTP_401" : response.status === 403 ? "MICROSOFT_FILES_HTTP_403" : response.status === 404 ? "MICROSOFT_ONEDRIVE_NOT_PROVISIONED" : response.status === 409 ? "MICROSOFT_FILES_HTTP_409" : response.status === 429 ? "MICROSOFT_FILES_RATE_LIMITED" : response.status >= 500 ? "MICROSOFT_FILES_PROVIDER_5XX" : "MICROSOFT_ONEDRIVE_UNKNOWN_BOUNDED_FAILURE";
+      this.trace("FILES_GRAPH_RESPONSE_FAILED", { httpStatus: response.status, reasonCode: reason, finalReasonCode: reason });
       throw new MicrosoftFilesError(this.diagnostic(isSharePoint ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphRequest", "FAILED", reason, isSharePoint ? "SHAREPOINT_SITE" : "ONEDRIVE", { httpStatus: response.status, graphErrorClass: reason }));
     }
     let body: unknown = {};
     if (response.status !== 204) {
-      try { body = await response.json(); } catch { throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_ONEDRIVE_READ", "graphResponse", "FAILED", "MICROSOFT_FILES_UNKNOWN_BOUNDED_FAILURE", "ONEDRIVE")); }
+      try { body = await response.json(); } catch { const reason = "MICROSOFT_FILES_MALFORMED_RESPONSE" as const; this.trace("FILES_RESULT_MAPPING_FAILED", { reasonCode: reason, finalReasonCode: reason }); throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_ONEDRIVE_READ", "graphResponse", "FAILED", reason, "ONEDRIVE")); }
     }
-    if (!body || typeof body !== "object" || Array.isArray(body)) throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_ONEDRIVE_READ", "graphResponse", "FAILED", "MICROSOFT_FILES_UNKNOWN_BOUNDED_FAILURE", "ONEDRIVE"));
+    if (!body || typeof body !== "object" || Array.isArray(body)) { const reason = "MICROSOFT_FILES_MALFORMED_RESPONSE" as const; this.trace("FILES_RESULT_MAPPING_FAILED", { reasonCode: reason, finalReasonCode: reason }); throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_ONEDRIVE_READ", "graphResponse", "FAILED", reason, "ONEDRIVE")); }
     return { body: body as T, response };
   }
 
@@ -184,12 +218,18 @@ export class MicrosoftFilesAdapter {
   }
 
   async getOneDrive(): Promise<{ drive: DriveProjection; diagnostic: FileDiagnosticEnvelope }> {
-    if (this.options.accountKind === "UNKNOWN_MICROSOFT_ACCOUNT") throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_ONEDRIVE_READ", "getOneDrive", "FAILED", "MICROSOFT_ACCOUNT_CLASSIFICATION_FAILED", "ONEDRIVE"));
+    this.trace("FILES_ACCOUNT_CLASSIFICATION_STARTED");
+    if (this.options.accountKind === "UNKNOWN_MICROSOFT_ACCOUNT") { this.trace("FILES_ACCOUNT_CLASSIFICATION_FAILED", { reasonCode: "MICROSOFT_ACCOUNT_CLASSIFICATION_FAILED", finalReasonCode: "MICROSOFT_ACCOUNT_CLASSIFICATION_FAILED" }); throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_ONEDRIVE_READ", "getOneDrive", "FAILED", "MICROSOFT_ACCOUNT_CLASSIFICATION_FAILED", "ONEDRIVE")); }
+    this.trace("FILES_ACCOUNT_CLASSIFICATION_SUCCEEDED");
+    this.trace("FILES_GET_DRIVE_STARTED");
     const { body } = await this.request<GraphResponse & GraphDrive>(`${GRAPH_BASE}/me/drive`);
+    this.trace("FILES_RESULT_MAPPING_STARTED");
     let driveId: string;
-    try { driveId = requireString(body.id, "drive id", 512); } catch { throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_ONEDRIVE_READ", "getOneDrive", "FAILED", "MICROSOFT_FILES_UNKNOWN_BOUNDED_FAILURE", "ONEDRIVE")); }
+    try { driveId = requireString(body.id, "drive id", 512); } catch { const reason = "MICROSOFT_FILES_MALFORMED_RESPONSE" as const; this.trace("FILES_RESULT_MAPPING_FAILED", { reasonCode: reason, finalReasonCode: reason }); throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_ONEDRIVE_READ", "getOneDrive", "FAILED", reason, "ONEDRIVE")); }
     const driveType = body.driveType === "personal" ? "PERSONAL" : body.driveType === "business" ? "BUSINESS" : "UNKNOWN";
     const drive = Object.freeze({ provider: "microsoft", accountKind: this.options.accountKind, driveId, driveType, ...(typeof body.name === "string" ? { displayName: body.name.slice(0, MAX_NAME) } : {}), sourcePathClass: "ONEDRIVE", sourceAttribution: "MICROSOFT_GRAPH" }) as DriveProjection;
+    this.trace("FILES_RESULT_MAPPING_SUCCEEDED");
+    this.trace("FILES_ACTION_COMPLETED", { finalReasonCode: "MICROSOFT_ONEDRIVE_SUCCEEDED" });
     return { drive, diagnostic: this.diagnostic("MICROSOFT_ONEDRIVE_READ", "getOneDrive", "COMPLETED", "MICROSOFT_ONEDRIVE_SUCCEEDED", "ONEDRIVE") };
   }
 

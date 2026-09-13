@@ -1,4 +1,4 @@
-import type { WorkspaceSnapshot } from "@onyx/workspace-contracts";
+import type { FileRuntimeTrace, WorkspaceSnapshot } from "@onyx/workspace-contracts";
 import {
   MicrosoftWorkspaceConnector,
   plannedProviderSnapshots,
@@ -59,19 +59,27 @@ export async function loadMicrosoftMailMessagesWithDiagnostic(options?: Microsof
 export const connectMicrosoftMail=()=>microsoft.connectMail();
 export const connectMicrosoft=()=>microsoft.connect();
 export const reconnectMicrosoft=()=>microsoft.reconnect();
+export const reconnectMicrosoftFiles=()=>microsoft.reconnectFiles();
 export const disconnectMicrosoft=()=>microsoft.disconnect();
-const microsoftFiles = (accountKind: MicrosoftAccountClassification = microsoft.getFilesAccountKind()) => new MicrosoftFilesAdapter({ accessToken: (scopes) => microsoft.getAccessToken(scopes), accountKind });
+let microsoftFilesTrace: readonly FileRuntimeTrace[] = Object.freeze([]);
+const recordMicrosoftFilesTrace = (trace: FileRuntimeTrace): void => {
+  microsoftFilesTrace = Object.freeze([...microsoftFilesTrace, Object.freeze(trace)].slice(-64));
+};
+export const getMicrosoftFilesTrace = (): readonly FileRuntimeTrace[] => microsoftFilesTrace;
+export const clearMicrosoftFilesTrace = (): void => { microsoftFilesTrace = Object.freeze([]); };
+const microsoftFiles = (action: "OPEN_ONEDRIVE" | "BOUNDED_ONEDRIVE_TEST" = "OPEN_ONEDRIVE", accountKind: MicrosoftAccountClassification = microsoft.getFilesAccountKind()) => new MicrosoftFilesAdapter({ accessToken: (scopes) => microsoft.getAccessToken(scopes), accountKind, action, onTrace: recordMicrosoftFilesTrace, buildIdentity: getMailBuildIdentity().sha });
 export async function loadMicrosoftOneDriveRoot(continuation?: string) {
-  const adapter = microsoftFiles();
+  const adapter = microsoftFiles("OPEN_ONEDRIVE");
   const { drive } = await adapter.getOneDrive();
   return adapter.listChildren(drive.driveId, "root", "ONEDRIVE", continuation);
 }
 export async function runBoundedMicrosoftOneDriveTest() {
-  return microsoftFiles().runBoundedWriteValidation({
+  const adapter = microsoftFiles("BOUNDED_ONEDRIVE_TEST");
+  return adapter.runBoundedWriteValidation({
     operationId: crypto.randomUUID(),
     idempotencyKey: `onyx-files-${crypto.randomUUID()}`,
     provider: "microsoft",
-    driveId: (await microsoftFiles().getOneDrive()).drive.driveId,
+    driveId: (await adapter.getOneDrive()).drive.driveId,
     parentItemId: "root",
     testFolderName: "ONYX-NOVA-Connector-Test",
     artifactName: `onyx-nova-connector-test-${crypto.randomUUID()}.txt`,

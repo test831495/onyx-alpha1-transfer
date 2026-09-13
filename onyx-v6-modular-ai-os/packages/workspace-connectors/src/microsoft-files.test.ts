@@ -17,9 +17,11 @@ function adapter(fetch: typeof globalThis.fetch) {
 describe("Microsoft Files account and URL boundaries", () => {
   it("classifies personal, organizational, guest and unknown accounts", () => {
     expect(classifyMicrosoftAccount({ accountType: "personal" })).toBe("PERSONAL_MICROSOFT_ACCOUNT");
+    expect(classifyMicrosoftAccount({ homeAccountType: "personal", tenantId: "guest-tenant", isGuest: true })).toBe("PERSONAL_MICROSOFT_ACCOUNT");
     expect(classifyMicrosoftAccount({ tenantId: "tenant" })).toBe("ORGANIZATIONAL_MICROSOFT_ACCOUNT");
     expect(classifyMicrosoftAccount({ isGuest: true })).toBe("GUEST_MICROSOFT_ACCOUNT");
     expect(classifyMicrosoftAccount({})).toBe("UNKNOWN_MICROSOFT_ACCOUNT");
+    expect(classifyMicrosoftAccount({ tenantId: 42, accountType: { value: "personal" } })).toBe("UNKNOWN_MICROSOFT_ACCOUNT");
   });
 
   it("accepts only bounded Microsoft Graph continuation URLs", () => {
@@ -41,6 +43,26 @@ describe("Microsoft Files metadata reads", () => {
     const result = await new MicrosoftFilesAdapter({ accessToken: token, fetch, accountKind: "PERSONAL_MICROSOFT_ACCOUNT" }).getOneDrive();
     expect(result.drive).toMatchObject({ driveId: "drive-1", driveType: "PERSONAL", accountKind: "PERSONAL_MICROSOFT_ACCOUNT" });
     expect(token).toHaveBeenCalledWith(["Files.ReadWrite"]);
+  });
+
+  it("emits an ordered privacy-safe trace through Graph response mapping", async () => {
+    const traces: Array<{ stage: string; sequence: number; tokenPresent?: boolean }> = [];
+    const fetch = vi.fn().mockResolvedValue(response({ id: "drive-1", driveType: "personal" }));
+    await new MicrosoftFilesAdapter({ accessToken: token, fetch, accountKind: "PERSONAL_MICROSOFT_ACCOUNT", onTrace: (trace) => traces.push(trace) }).getOneDrive();
+    expect(traces.map((trace) => trace.stage)).toEqual(expect.arrayContaining([
+      "FILES_ACTION_RECEIVED",
+      "FILES_ACCOUNT_CLASSIFICATION_SUCCEEDED",
+      "FILES_TOKEN_REQUEST_STARTED",
+      "FILES_TOKEN_REQUEST_SUCCEEDED",
+      "FILES_SCOPE_VALIDATION_SUCCEEDED",
+      "FILES_FETCH_DISPATCH_STARTED",
+      "FILES_FETCH_DISPATCH_RETURNED",
+      "FILES_GRAPH_RESPONSE_RECEIVED",
+      "FILES_RESULT_MAPPING_SUCCEEDED",
+      "FILES_ACTION_COMPLETED",
+    ]));
+    expect(traces.every((trace) => trace.tokenPresent !== true || trace.tokenPresent === true)).toBe(true);
+    expect(traces.map((trace) => trace.sequence)).toEqual([...traces].map((trace) => trace.sequence).sort((a, b) => a - b));
   });
 
   it("normalizes bounded folder listings and continuation", async () => {
@@ -121,7 +143,14 @@ describe("Microsoft Files metadata reads", () => {
   it("returns structured HTTP failures without exposing tokens", async () => {
     const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: { code: "AccessDenied", message: "private detail" } }), { status: 403 }));
     await expect(adapter(fetch).getOneDrive()).rejects.toBeInstanceOf(MicrosoftFilesError);
-    await expect(adapter(fetch).getOneDrive()).rejects.toMatchObject({ diagnostic: { httpStatus: 403, finalReasonCode: "MICROSOFT_ONEDRIVE_WRITE_FORBIDDEN" } });
+    await expect(adapter(fetch).getOneDrive()).rejects.toMatchObject({ diagnostic: { httpStatus: 403, finalReasonCode: "MICROSOFT_FILES_HTTP_403" } });
+  });
+
+  it("preserves a bounded fetch-dispatch failure instead of collapsing it to unknown", async () => {
+    const fetch = vi.fn().mockRejectedValue(new TypeError("network unavailable"));
+    await expect(adapter(fetch).getOneDrive()).rejects.toMatchObject({
+      diagnostic: { finalReasonCode: "MICROSOFT_FILES_FETCH_DISPATCH_FAILED", stage: "FAILED" },
+    });
   });
 
   it("blocks unknown accounts before Graph access and replays completed operations safely", async () => {

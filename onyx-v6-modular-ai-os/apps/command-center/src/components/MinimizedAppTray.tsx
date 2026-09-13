@@ -26,6 +26,7 @@ export const MinimizedAppTray: React.FC<MinimizedAppTrayProps> = ({
     const icons: Record<ShellAppId, string> = {
       home: "🏠",
       workspace: "▣",
+      files: "▤",
       automation: "◎",
       settings: "⚙",
       health: "♥",
