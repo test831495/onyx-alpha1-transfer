@@ -184,6 +184,15 @@ importers:
 
   packages/contracts: {}
 
+  packages/conversation-character-validation:
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.7
+        version: 3.2.7(@types/node@26.2.0)(tsx@4.23.12)
+
   packages/conversation-response-envelope:
     dependencies:
       '@onyx/conversation-truth-resolver':

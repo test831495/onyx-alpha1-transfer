@@ -1,0 +1,122 @@
+{
+  "schemaVersion": "B4D-BIBLE-CONFORMANCE-V1",
+  "package": "@onyx/conversation-character-validation",
+  "symbols": [
+    {
+      "symbol": "getGoldenConversation",
+      "acceptanceIds": ["B4D-GOLDEN-001", "B4D-DETERMINISM-001"],
+      "requirement": "canonical golden conversation retrieval and registry coverage"
+    },
+    {
+      "symbol": "evaluateGoldenConversationReplay",
+      "acceptanceIds": ["B4D-REPLAY-001", "B4D-DETERMINISM-001"],
+      "requirement": "deterministic replay fixture evaluation against structured expectations"
+    },
+    {
+      "symbol": "evaluateSpeakerSelectionMatrix",
+      "acceptanceIds": ["B4D-SPEAKER-MATRIX-001"],
+      "requirement": "speaker routing validation matrix against B4C rules"
+    },
+    {
+      "symbol": "evaluateIdentityDrift",
+      "acceptanceIds": ["B4D-IDENTITY-DRIFT-001", "B4D-PRIVACY-001"],
+      "requirement": "identity, role, decision style, and voice drift detection across session horizons"
+    },
+    {
+      "symbol": "evaluateCharacterDifferentiation",
+      "acceptanceIds": ["B4D-DIFFERENTIATION-001"],
+      "requirement": "character role differentiation while preserving shared authority and truth floor"
+    },
+    {
+      "symbol": "evaluateEmotionalDrift",
+      "acceptanceIds": ["B4D-EMOTIONAL-DRIFT-001", "B4D-ACCESS-AUTHORITY-001"],
+      "requirement": "emotional state adaptation limited to communication style without governance or authority changes"
+    },
+    {
+      "symbol": "evaluateCrossTurnEmotionalProgression",
+      "acceptanceIds": ["B4D-EMOTIONAL-SEQUENCE-001"],
+      "requirement": "multi-turn emotional progression validation with speaker and authority invariance"
+    },
+    {
+      "symbol": "evaluateCouncilReadinessFixture",
+      "acceptanceIds": ["B4D-COUNCIL-READINESS-001", "B4D-ACCESS-AUTHORITY-001"],
+      "requirement": "readiness evaluation for trade-off scenarios without Council execution"
+    },
+    {
+      "symbol": "evaluateCouncilRejectionFixture",
+      "acceptanceIds": ["B4D-COUNCIL-REJECTION-001"],
+      "requirement": "negative council eligibility fixtures and non-execution validation"
+    },
+    {
+      "symbol": "evaluateStrategicMemoryCompatibility",
+      "acceptanceIds": ["B4D-MEMORY-COMPATIBILITY-001"],
+      "requirement": "strategic memory candidate classification with non-admission and non-persistence invariants"
+    },
+    {
+      "symbol": "evaluateMultilingualConsistency",
+      "acceptanceIds": ["B4D-MULTILINGUAL-001"],
+      "requirement": "multilingual character consistency preservation across English, Hindi, and Hinglish"
+    },
+    {
+      "symbol": "buildOperationsCenterValidationProjection",
+      "acceptanceIds": ["B4D-PROJECTION-READINESS-001"],
+      "requirement": "pure metadata contract for future Operations Center integration"
+    },
+    {
+      "symbol": "buildShadowValidationReceipt",
+      "acceptanceIds": ["B4D-SHADOW-001", "B4D-DETERMINISM-001"],
+      "requirement": "shadow non-visible zero side-effect evidence receipt"
+    }
+  ],
+  "characterBible": {
+    "canonicalONYX": "ONYX",
+    "canonicalNOVA": "NOVA",
+    "version": "2.1",
+    "goldenScenarios": [
+      "ARCHITECTURE_REVIEW",
+      "GOVERNANCE_DECISION",
+      "RECOVERY_PLANNING",
+      "RISK_ANALYSIS",
+      "TRACK_PRIORITIZATION",
+      "COST_VS_QUALITY",
+      "PERSONAL_PRODUCTIVITY",
+      "PERSONAL_GUIDANCE",
+      "EMOTIONAL_SUPPORT",
+      "PLANNING_SESSION"
+    ],
+    "driftDetectionTypes": [
+      "IDENTITY_DRIFT",
+      "ROLE_DRIFT",
+      "DECISION_STYLE_DRIFT",
+      "VOICE_DRIFT"
+    ],
+    "emotionalStates": [
+      "NORMAL",
+      "CONFUSION",
+      "FRICTION",
+      "UNCERTAINTY",
+      "OVERLOAD",
+      "RECOVERY",
+      "ACHIEVEMENT",
+      "HIGH_CONSEQUENCE"
+    ],
+    "councilReadinessScenarios": [
+      "SPEED_VS_GOVERNANCE",
+      "COST_VS_QUALITY",
+      "INNOVATION_VS_RISK",
+      "ARCHITECTURE_VS_DELIVERY"
+    ],
+    "supportedLanguages": [
+      "ENGLISH",
+      "HINDI",
+      "HINGLISH"
+    ],
+    "prohibitions": [
+      "No runtime Council execution",
+      "No authority change from emotional state",
+      "No truth source modification from emotion",
+      "No persistent storage mutation",
+      "No UI or external connector access"
+    ]
+  }
+}
