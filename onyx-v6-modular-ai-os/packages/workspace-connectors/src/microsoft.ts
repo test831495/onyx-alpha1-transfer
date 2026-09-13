@@ -1,5 +1,6 @@
 import { BrowserCacheLocation, InteractionRequiredAuthError, PublicClientApplication, type AccountInfo, type Configuration } from "@azure/msal-browser";
 import type { WorkspaceProviderSnapshot, WorkspaceProfile } from "@onyx/workspace-contracts";
+import type { FileAccountKind } from "@onyx/workspace-contracts";
 export interface MicrosoftWorkspaceConfig { clientId?: string; tenantId?: string; authority?: string; redirectUri?: string; }
 export interface MicrosoftCalendarRange { start: string; end: string; timeZone: string; }
 export interface MicrosoftCalendarEvent {
@@ -603,6 +604,12 @@ export class MicrosoftWorkspaceConnector {
   private authority: string | undefined;
   constructor(private readonly config: MicrosoftWorkspaceConfig) {}
   get configured() { return Boolean(this.config.clientId && this.config.tenantId); }
+  getFilesAccountKind(): FileAccountKind {
+    const claims = this.account?.idTokenClaims as { acct?: unknown; tid?: unknown } | undefined;
+    if (claims?.acct === 0 || claims?.tid === "consumers") return "PERSONAL_MICROSOFT_ACCOUNT";
+    if (this.account?.tenantId || claims?.acct === 1) return "ORGANIZATIONAL_MICROSOFT_ACCOUNT";
+    return "UNKNOWN_MICROSOFT_ACCOUNT";
+  }
   async initialize(): Promise<WorkspaceProviderSnapshot> {
     if (this.initialization) return this.initialization;
     const attempt = Promise.resolve().then(() => this.initializeOnce());

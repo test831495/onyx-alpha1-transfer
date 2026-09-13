@@ -10,7 +10,7 @@ import {
   type MicrosoftMailRuntimeTraceOptions,
   type MicrosoftMailTraceBuildIdentity,
 } from "@onyx/workspace-connectors";
-import { MicrosoftFilesAdapter } from "@onyx/workspace-connectors";
+import { MicrosoftFilesAdapter, type MicrosoftAccountClassification, type SharePointResolution } from "@onyx/workspace-connectors";
 import { readMicrosoftRuntimeEnv } from "../viteMicrosoftEnvBridge";
 
 const browserOrigin =
@@ -60,7 +60,7 @@ export const connectMicrosoftMail=()=>microsoft.connectMail();
 export const connectMicrosoft=()=>microsoft.connect();
 export const reconnectMicrosoft=()=>microsoft.reconnect();
 export const disconnectMicrosoft=()=>microsoft.disconnect();
-const microsoftFiles = () => new MicrosoftFilesAdapter({ accessToken: (scopes) => microsoft.getAccessToken(scopes), accountKind: "UNKNOWN_MICROSOFT_ACCOUNT" });
+const microsoftFiles = (accountKind: MicrosoftAccountClassification = microsoft.getFilesAccountKind()) => new MicrosoftFilesAdapter({ accessToken: (scopes) => microsoft.getAccessToken(scopes), accountKind });
 export async function loadMicrosoftOneDriveRoot(continuation?: string) {
   const adapter = microsoftFiles();
   const { drive } = await adapter.getOneDrive();
@@ -79,6 +79,28 @@ export async function runBoundedMicrosoftOneDriveTest() {
     explicitTestMode: true,
     confirmed: true,
     sourcePathClass: "ONEDRIVE",
+  });
+}
+export const getMicrosoftFilesAccountKind = (): MicrosoftAccountClassification => microsoft.getFilesAccountKind();
+export async function resolveMicrosoftSharePoint(hostname: string, sitePath: string): Promise<SharePointResolution> {
+  return (await microsoftFiles().resolveSharePoint({ hostname, sitePath: sitePath.startsWith("/") ? sitePath : `/${sitePath}` }));
+}
+export async function loadMicrosoftSharePointFolder(driveId: string, itemId: string, continuation?: string) {
+  return (await microsoftFiles().listChildren(driveId, itemId, "SHAREPOINT_LIBRARY", continuation)).listing;
+}
+export async function runBoundedMicrosoftSharePointTest(driveId: string, parentItemId: string) {
+  return microsoftFiles().runBoundedWriteValidation({
+    operationId: crypto.randomUUID(),
+    idempotencyKey: `onyx-sharepoint-files-${crypto.randomUUID()}`,
+    provider: "microsoft",
+    driveId,
+    parentItemId,
+    testFolderName: "ONYX-NOVA-Connector-Test",
+    artifactName: `onyx-nova-connector-test-${crypto.randomUUID()}.txt`,
+    consequencePreview: "Create, verify, rename, move, and delete one synthetic SharePoint test artifact; remove only folders created by this run.",
+    explicitTestMode: true,
+    confirmed: true,
+    sourcePathClass: "SHAREPOINT_LIBRARY",
   });
 }
 type GoogleAction = "connect" | "reconnect" | "disconnect" | "refresh";

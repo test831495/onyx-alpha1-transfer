@@ -58,10 +58,11 @@ describe("Microsoft Files metadata reads", () => {
 
   it("resolves only an explicitly supplied SharePoint site and libraries", async () => {
     const fetch = vi.fn()
-      .mockResolvedValueOnce(response({ id: "site-1" }))
+      .mockResolvedValueOnce(response({ id: "site-1", name: "Project X" }))
       .mockResolvedValueOnce(response({ value: [{ id: "library-1", name: "Documents" }] }));
     const result = await adapter(fetch).resolveSharePoint({ hostname: "tenant.sharepoint.com", sitePath: "/sites/example" });
     expect(result.siteId).toBe("site-1");
+    expect(result.siteName).toBe("Project X");
     expect(result.drives[0]).toMatchObject({ driveId: "library-1", driveType: "DOCUMENT_LIBRARY" });
     expect(String(fetch.mock.calls[0]?.[0])).toContain("/sites/");
     expect(fetch).toHaveBeenCalledTimes(2);

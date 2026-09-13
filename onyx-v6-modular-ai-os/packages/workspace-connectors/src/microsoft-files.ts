@@ -89,6 +89,12 @@ export interface MicrosoftFilesAdapterOptions {
 }
 
 export interface SharePointTarget { readonly hostname: string; readonly sitePath: string; }
+export interface SharePointResolution {
+  readonly siteId: string;
+  readonly siteName?: string;
+  readonly drives: readonly DriveProjection[];
+  readonly diagnostic: FileDiagnosticEnvelope;
+}
 export interface BoundedWriteOptions extends FileWriteRequest {
   readonly confirmed: true;
   readonly sourcePathClass: "ONEDRIVE" | "SHAREPOINT_LIBRARY";
@@ -145,16 +151,16 @@ export class MicrosoftFilesAdapter {
     return { listing: Object.freeze({ parent, items: Object.freeze(items), itemCount: items.length, ...(next ? { continuationCursor: next } : {}), truncated: Boolean(next), sourceAttribution: "MICROSOFT_GRAPH", freshness: "LIVE", diagnosticReference: `${capability}:${itemId}` }), diagnostic: this.diagnostic(capability, "listChildren", "COMPLETED", reason, sourcePathClass === "ONEDRIVE" ? "ONEDRIVE" : "SHAREPOINT_LIBRARY", { itemCountBounded: items.length, paginationPresent: Boolean(next) }) };
   }
 
-  async resolveSharePoint(target: SharePointTarget): Promise<{ siteId: string; drives: readonly DriveProjection[]; diagnostic: FileDiagnosticEnvelope }> {
+  async resolveSharePoint(target: SharePointTarget): Promise<SharePointResolution> {
     if (this.options.accountKind === "PERSONAL_MICROSOFT_ACCOUNT") return { siteId: "", drives: [], diagnostic: this.diagnostic("MICROSOFT_SHAREPOINT_READ", "resolveSharePoint", "COMPLETED", "MICROSOFT_SHAREPOINT_NOT_APPLICABLE_PERSONAL_ACCOUNT", "SHAREPOINT_SITE") };
     if (!/^[a-z0-9.-]+$/i.test(target.hostname) || !target.sitePath.startsWith("/")) throw new Error("SharePoint target is malformed.");
     const siteUrl = `${GRAPH_BASE}/sites/${encodeURIComponent(target.hostname)}:${target.sitePath}`;
-    const { body: site } = await this.request<GraphResponse & { id?: unknown }>(siteUrl);
+    const { body: site } = await this.request<GraphResponse & { id?: unknown; name?: unknown }>(siteUrl);
     const siteId = requireString(site.id, "site id", 512);
     const { body } = await this.request<GraphResponse>(`${GRAPH_BASE}/sites/${encodeURIComponent(siteId)}/drives`);
     if (!Array.isArray(body.value) || body.value.length > MAX_ITEMS) throw new Error("SharePoint library collection is malformed.");
     const drives = body.value.map((value) => { const drive = value as GraphDrive; return Object.freeze({ provider: "microsoft", accountKind: this.options.accountKind, driveId: requireString(drive.id, "drive id", 512), driveType: "DOCUMENT_LIBRARY", ...(typeof drive.name === "string" ? { displayName: drive.name.slice(0, MAX_NAME) } : {}), sourcePathClass: "SHAREPOINT_LIBRARY", sourceAttribution: "MICROSOFT_GRAPH" }) as DriveProjection; });
-    return { siteId, drives: Object.freeze(drives), diagnostic: this.diagnostic("MICROSOFT_SHAREPOINT_READ", "resolveSharePoint", "COMPLETED", this.options.accountKind === "GUEST_MICROSOFT_ACCOUNT" ? "MICROSOFT_SHAREPOINT_GUEST_SITE_AVAILABLE" : reasonFor("MICROSOFT_SHAREPOINT_READ", drives.length === 0 ? "empty" : "success"), "SHAREPOINT_SITE", { itemCountBounded: drives.length }) };
+    return { siteId, ...(typeof site.name === "string" ? { siteName: site.name.slice(0, MAX_NAME) } : {}), drives: Object.freeze(drives), diagnostic: this.diagnostic("MICROSOFT_SHAREPOINT_READ", "resolveSharePoint", "COMPLETED", this.options.accountKind === "GUEST_MICROSOFT_ACCOUNT" ? "MICROSOFT_SHAREPOINT_GUEST_SITE_AVAILABLE" : reasonFor("MICROSOFT_SHAREPOINT_READ", drives.length === 0 ? "empty" : "success"), "SHAREPOINT_SITE", { itemCountBounded: drives.length }) };
   }
 
   async runBoundedWriteValidation(input: BoundedWriteOptions): Promise<FileOperationReceipt> {
