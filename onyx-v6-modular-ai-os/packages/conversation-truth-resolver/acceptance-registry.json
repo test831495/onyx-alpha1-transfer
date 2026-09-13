@@ -1,0 +1,17 @@
+{
+  "registryVersion": "B4A-1",
+  "characterBibleVersion": "2.1",
+  "records": [
+    { "id": "B4A-TAXONOMY-001", "family": "B4A-TAXONOMY", "requirement": "Closed versioned vocabularies and runtime immutability", "test": "taxonomy closure and unknown-value rejection" },
+    { "id": "B4A-EVIDENCE-001", "family": "B4A-EVIDENCE", "requirement": "Provider-neutral bounded evidence with privacy-safe fields", "test": "evidence schema and prohibited raw fields" },
+    { "id": "B4A-POLICY-001", "family": "B4A-POLICY", "requirement": "Immutable claim-specific policy registry", "test": "policy-specific resolution" },
+    { "id": "B4A-ELIGIBILITY-001", "family": "B4A-ELIGIBILITY", "requirement": "Eligibility gates precede precedence", "test": "stale, scope, provenance, privacy, and integrity rejection" },
+    { "id": "B4A-PRECEDENCE-001", "family": "B4A-PRECEDENCE", "requirement": "Policy-specific precedence and stable ordering", "test": "order-independent deterministic resolution" },
+    { "id": "B4A-CONFLICT-001", "family": "B4A-CONFLICT", "requirement": "Material conflict blocks convenient selection", "test": "material conflict detection" },
+    { "id": "B4A-UNCERTAINTY-001", "family": "B4A-UNCERTAINTY", "requirement": "Missing, stale, conflicting, and not-assessable distinctions", "test": "missing and stale distinction" },
+    { "id": "B4A-CLAIMS-001", "family": "B4A-CLAIMS", "requirement": "Claim-specific calendar, mail, PR, readiness, owner, public, explanation, and recommendation rules", "test": "policy-specific resolution" },
+    { "id": "B4A-RECEIPT-001", "family": "B4A-RECEIPT", "requirement": "Deterministic private non-authorizing receipt", "test": "receipt safety and replay" },
+    { "id": "B4A-SAFETY-001", "family": "B4A-SAFETY", "requirement": "No I/O, providers, models, persistence, clock, randomness, approval, or execution", "test": "static package-boundary scan" },
+    { "id": "B4A-BIBLE-001", "family": "B4A-BIBLE", "requirement": "Track A truth, Track B interpretation, Track C decision ownership", "test": "conformance map and package-boundary scan" }
+  ]
+}
