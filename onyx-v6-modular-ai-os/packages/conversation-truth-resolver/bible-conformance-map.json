@@ -1,0 +1,15 @@
+{
+  "characterBibleVersion": "2.1",
+  "package": "@onyx/conversation-truth-resolver",
+  "entries": [
+    { "requirement": "truth before fluency", "implementation": "resolveTruth", "acceptance": ["B4A-PRECEDENCE-001", "B4A-UNCERTAINTY-001"] },
+    { "requirement": "operational truth is connector-grounded", "implementation": "claimPolicies", "acceptance": ["B4A-CLAIMS-001"] },
+    { "requirement": "evidence provenance and freshness", "implementation": "EvidenceItem and eligibility", "acceptance": ["B4A-EVIDENCE-001", "B4A-ELIGIBILITY-001"] },
+    { "requirement": "eligibility before precedence", "implementation": "resolveTruth", "acceptance": ["B4A-ELIGIBILITY-001"] },
+    { "requirement": "material conflicts block conclusions", "implementation": "resolveTruth conflict stage", "acceptance": ["B4A-CONFLICT-001"] },
+    { "requirement": "generated content is not operational evidence", "implementation": "claimPolicies", "acceptance": ["B4A-CLAIMS-001"] },
+    { "requirement": "privacy-safe non-authorizing receipt", "implementation": "TruthResolutionReceipt", "acceptance": ["B4A-RECEIPT-001", "B4A-SAFETY-001"] },
+    { "requirement": "Track A owns collection; Track B interprets; Track C decides", "implementation": "package boundary and receipt flags", "acceptance": ["B4A-BIBLE-001"] },
+    { "requirement": "no response envelope, speaker selection, Council, memory write, approval, or execution", "implementation": "package boundary and non-authority flags", "acceptance": ["B4A-SAFETY-001", "B4A-BIBLE-001"] }
+  ]
+}
