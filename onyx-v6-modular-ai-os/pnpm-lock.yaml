@@ -184,6 +184,19 @@ importers:
 
   packages/contracts: {}
 
+  packages/conversation-response-envelope:
+    dependencies:
+      '@onyx/conversation-truth-resolver':
+        specifier: workspace:*
+        version: link:../conversation-truth-resolver
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.7
+        version: 3.2.7(@types/node@26.2.0)(tsx@4.23.12)
+
   packages/conversation-truth-resolver:
     devDependencies:
       typescript:

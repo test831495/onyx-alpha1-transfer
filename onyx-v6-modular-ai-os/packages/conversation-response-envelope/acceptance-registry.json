@@ -1,0 +1,18 @@
+{
+  "registryVersion": "B4B-1",
+  "characterBibleVersion": "2.1",
+  "records": [
+    {"id":"B4B-ENVELOPE-001","family":"B4B-ENVELOPE","requirement":"Closed immutable versioned envelope","test":"response envelope"},
+    {"id":"B4B-RESPONSE-CLASS-001","family":"B4B-RESPONSE-CLASS","requirement":"Closed response classes and deterministic mapping","test":"response envelope"},
+    {"id":"B4B-CHARACTER-001","family":"B4B-CHARACTER","requirement":"Supplied ONYX/NOVA identity only","test":"response envelope"},
+    {"id":"B4B-TRUTH-001","family":"B4B-TRUTH","requirement":"B4A receipt adoption without bypass","test":"B4A receipt tests"},
+    {"id":"B4B-GENERAL-001","family":"B4B-GENERAL","requirement":"Provider-neutral supplied content families","test":"general family test"},
+    {"id":"B4B-PARITY-001","family":"B4B-PARITY","requirement":"Critical display/spoken parity","test":"parity tests"},
+    {"id":"B4B-PRIVACY-001","family":"B4B-PRIVACY","requirement":"Bounded privacy-safe content","test":"privacy tests"},
+    {"id":"B4B-AUTHORITY-001","family":"B4B-AUTHORITY","requirement":"Every envelope is non-authorizing","test":"authority assertions"},
+    {"id":"B4B-DETERMINISM-001","family":"B4B-DETERMINISM","requirement":"Stable replay and property-order independence","test":"determinism test"},
+    {"id":"B4B-MALFORMED-001","family":"B4B-MALFORMED","requirement":"Invalid speakers and prohibited content fail closed","test":"malformed tests"},
+    {"id":"B4B-PRESERVATION-001","family":"B4B-PRESERVATION","requirement":"B3/B4A and later-track boundaries preserved","test":"package boundary scan"},
+    {"id":"B4B-BIBLE-001","family":"B4B-BIBLE","requirement":"Character Bible v2.1 conformance","test":"conformance map validation"}
+  ]
+}
