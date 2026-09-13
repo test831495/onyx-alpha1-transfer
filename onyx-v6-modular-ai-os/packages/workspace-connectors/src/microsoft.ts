@@ -57,6 +57,9 @@ export interface MicrosoftMailReadDiagnostic {
   returnedMessageCount?: number;
   normalizedMessageCount?: number;
   rejectedMessageCount?: number;
+  graphErrorCode?: string;
+  graphErrorMessage?: string;
+  sanitizedDiagnostic?: MicrosoftSanitizedDiagnosticEnvelope;
 }
 export type MicrosoftMailTraceStage =
   | "IDLE" | "REFRESH_REQUESTED" | "CONNECT_REQUESTED" | "AUTH_CALLBACK_RECEIVED"
@@ -202,6 +205,8 @@ export interface MicrosoftCalendarReadDiagnostic {
   directCalendarViewStatus?: number;
   eventsCollectionStatus?: number;
   graphErrorClass?: MicrosoftGraphErrorClass;
+  graphErrorCode?: string;
+  graphErrorMessage?: string;
   tokenAudience?: MicrosoftTokenAudienceClass;
   calendarScope?: MicrosoftCalendarScopeReport;
   calendarRequestedScopes?: readonly string[];
@@ -222,6 +227,7 @@ export interface MicrosoftCalendarReadDiagnostic {
   requestRangeClass?: string;
   requestRangeValid?: boolean;
   retryable?: boolean;
+  sanitizedDiagnostic?: MicrosoftSanitizedDiagnosticEnvelope;
 }
 export interface MicrosoftCalendarReadResult {
   events: readonly MicrosoftCalendarEvent[];
@@ -248,6 +254,146 @@ function isInteractionRequiredTokenError(error: unknown): boolean {
  * Used internally to trace token ownership and populate diagnostics.
  * @internal
  */
+export const MICROSOFT_GRAPH_APP_ID = "00000003-0000-0000-c000-000000000000";
+
+export const MICROSOFT_CAPABILITY_SCOPES = {
+  profile: ["User.Read"],
+  calendar: ["Calendars.Read"],
+  mail: ["Mail.ReadBasic"],
+};
+
+export const MICROSOFT_COMBINED_WORKSPACE_SCOPES: readonly string[] = Object.freeze([
+  ...MICROSOFT_CAPABILITY_SCOPES.profile,
+  ...MICROSOFT_CAPABILITY_SCOPES.calendar,
+  ...MICROSOFT_CAPABILITY_SCOPES.mail,
+]);
+
+export function normalizeScope(scope: string): string {
+  if (typeof scope !== "string") return "";
+  return scope.trim().replace(/^https?:\/\/[^\/]+\//i, "").toLowerCase();
+}
+
+export function inspectTokenAudience(accessToken: string | undefined): MicrosoftTokenAudienceClass {
+  if (!accessToken || typeof accessToken !== "string") return "NOT_INSPECTABLE";
+  const parts = accessToken.split(".");
+  if (parts.length !== 3) return "NOT_INSPECTABLE";
+  try {
+    const payloadBase64 = parts[1];
+    if (!payloadBase64) return "NOT_INSPECTABLE";
+    const base64 = payloadBase64.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, "=");
+    const jsonStr = typeof atob === "function"
+      ? atob(padded)
+      : typeof Buffer !== "undefined"
+        ? Buffer.from(padded, "base64").toString("utf8")
+        : "";
+    if (!jsonStr) return "NOT_INSPECTABLE";
+    const payload = JSON.parse(jsonStr);
+    if (!payload || typeof payload !== "object") return "NOT_INSPECTABLE";
+    const aud = payload.aud ?? payload.appid ?? payload.azp;
+    if (typeof aud === "string" && aud.trim().length > 0) {
+      const normalizedAud = aud.toLowerCase().trim();
+      if (
+        normalizedAud === MICROSOFT_GRAPH_APP_ID ||
+        normalizedAud.includes("graph.microsoft.com") ||
+        normalizedAud.includes("graph.windows.net")
+      ) {
+        return "MICROSOFT_GRAPH_EXPECTED";
+      }
+      return "UNEXPECTED_RESOURCE";
+    }
+    if (Array.isArray(payload.aud)) {
+      const match = payload.aud.some((item: unknown) => {
+        if (typeof item !== "string") return false;
+        const normalized = item.toLowerCase().trim();
+        return (
+          normalized === MICROSOFT_GRAPH_APP_ID ||
+          normalized.includes("graph.microsoft.com") ||
+          normalized.includes("graph.windows.net")
+        );
+      });
+      return match ? "MICROSOFT_GRAPH_EXPECTED" : "UNEXPECTED_RESOURCE";
+    }
+    return "NOT_INSPECTABLE";
+  } catch {
+    return "NOT_INSPECTABLE";
+  }
+}
+
+export function scrubGraphErrorMessage(message: unknown): string | undefined {
+  if (typeof message !== "string" || !message.trim()) return undefined;
+  let scrubbed = message.replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, "[REDACTED_JWT]");
+  scrubbed = scrubbed.replace(/Bearer\s+[A-Za-z0-9._-]+/gi, "Bearer [REDACTED_TOKEN]");
+  scrubbed = scrubbed.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, "[REDACTED_EMAIL]");
+  return scrubbed.slice(0, 200).trim();
+}
+
+export interface MicrosoftSanitizedDiagnosticEnvelope {
+  capability: "MICROSOFT_MAIL" | "MICROSOFT_CALENDAR";
+  operation: string;
+  requestedScopes: readonly string[];
+  returnedScopes?: readonly string[];
+  accountBinding: MicrosoftAccountBindingClass;
+  fromCache?: boolean;
+  forceRefresh: boolean;
+  tokenPresent: boolean;
+  tokenExpiryState?: "VALID" | "EXPIRED" | "UNKNOWN";
+  decodedAudience: MicrosoftTokenAudienceClass;
+  sanitizedGraphEndpoint: string;
+  httpStatus?: number;
+  graphErrorCode?: string;
+  graphErrorMessage?: string;
+  requestId?: string;
+  clientRequestId?: string;
+  correlationId?: string;
+  retryAttempt: boolean;
+  finalReasonCode: string;
+}
+
+export function createSanitizedDiagnosticEnvelope(params: {
+  capability: "MICROSOFT_MAIL" | "MICROSOFT_CALENDAR";
+  operation: string;
+  requestedScopes: readonly string[];
+  returnedScopes?: readonly string[];
+  accountBinding: MicrosoftAccountBindingClass;
+  fromCache?: boolean;
+  forceRefresh: boolean;
+  tokenPresent: boolean;
+  tokenExpiryState?: "VALID" | "EXPIRED" | "UNKNOWN";
+  decodedAudience: MicrosoftTokenAudienceClass;
+  sanitizedGraphEndpoint: string;
+  httpStatus?: number;
+  graphErrorCode?: string;
+  graphErrorMessage?: string;
+  requestId?: string;
+  clientRequestId?: string;
+  correlationId?: string;
+  retryAttempt: boolean;
+  finalReasonCode: string;
+}): MicrosoftSanitizedDiagnosticEnvelope {
+  return Object.freeze({
+    capability: params.capability,
+    operation: params.operation,
+    requestedScopes: Object.freeze([...params.requestedScopes]),
+    returnedScopes: params.returnedScopes ? Object.freeze([...params.returnedScopes]) : undefined,
+    accountBinding: params.accountBinding,
+    fromCache: params.fromCache,
+    forceRefresh: params.forceRefresh,
+    tokenPresent: params.tokenPresent,
+    tokenExpiryState: params.tokenExpiryState,
+    decodedAudience: params.decodedAudience,
+    sanitizedGraphEndpoint: params.sanitizedGraphEndpoint,
+    httpStatus: params.httpStatus,
+    graphErrorCode: params.graphErrorCode,
+    graphErrorMessage: params.graphErrorMessage ? scrubGraphErrorMessage(params.graphErrorMessage) : undefined,
+    requestId: params.requestId,
+    clientRequestId: params.clientRequestId,
+    correlationId: params.correlationId,
+    retryAttempt: params.retryAttempt,
+    finalReasonCode: params.finalReasonCode,
+  });
+}
+
 export interface BDynamicTokenAdjudication {
   accessToken: string;
   requestedScopes: readonly string[];
@@ -315,19 +461,13 @@ export function adjudicateTokenResult(
     }
   }
 
-  // Token audience: NOT_INSPECTABLE unless directly and safely evidenced
-  let tokenAudience: MicrosoftTokenAudienceClass = "NOT_INSPECTABLE";
-  if (typeof result?.aud === "string" && result.aud.trim().length > 0) {
-    const rawAud = result.aud.toLowerCase();
-    tokenAudience = (rawAud.includes("graph.microsoft.com") || rawAud.includes("graph.windows.net"))
-      ? "MICROSOFT_GRAPH_EXPECTED"
-      : "UNEXPECTED_RESOURCE";
-  }
+  // Token audience: inspected from JWT payload if available
+  const tokenAudience = inspectTokenAudience(accessToken);
 
   // Calendar scope report
   let calendarScope: MicrosoftCalendarScopeReport = "NOT_REPORTED";
   if (returnedScopes) {
-    const hasCalRead = returnedScopes.some((s: string) => typeof s === "string" && s.toLowerCase() === "calendars.read");
+    const hasCalRead = returnedScopes.some((s: string) => normalizeScope(s) === "calendars.read");
     calendarScope = hasCalRead ? "REPORTED_PRESENT" : "REPORTED_ABSENT";
   }
 
@@ -374,9 +514,9 @@ export function adjudicateTokenResult(
     valid,
   };
 }
-const profileScopes = ["User.Read"];
-const calendarScopes = ["Calendars.Read"];
-const mailScopes = ["Mail.ReadBasic"];
+const profileScopes = MICROSOFT_CAPABILITY_SCOPES.profile;
+const calendarScopes = MICROSOFT_CAPABILITY_SCOPES.calendar;
+const mailScopes = MICROSOFT_CAPABILITY_SCOPES.mail;
 const capabilities = [
   { id: "profile" as const, label: "Microsoft profile", enabled: true },
   { id: "mail" as const, label: "Outlook mail", enabled: true },
@@ -428,7 +568,7 @@ export class MicrosoftWorkspaceConnector {
     if (!this.application) { await this.initialize(); }
     if (!this.application || !this.configured) throw new Error("Microsoft workspace configuration is incomplete.");
     this.diagnostic = "Redirecting to Microsoft sign-in.";
-    await this.application.loginRedirect({ scopes: [...profileScopes, ...calendarScopes], prompt: "select_account" });
+    await this.application.loginRedirect({ scopes: [...MICROSOFT_COMBINED_WORKSPACE_SCOPES], prompt: "select_account" });
   }
   async connectMail(): Promise<void> {
     if (!this.application) await this.initialize();
@@ -440,12 +580,12 @@ export class MicrosoftWorkspaceConnector {
     if (!this.application) await this.initialize();
     if (!this.application || !this.account) throw new Error("Microsoft workspace is not connected.");
     try {
-      await this.getAccessToken(calendarScopes);
+      await this.getAccessToken([...MICROSOFT_COMBINED_WORKSPACE_SCOPES]);
     } catch (error) {
       const underlyingCause = error instanceof Error ? error.cause : undefined;
       if (isInteractionRequiredTokenError(underlyingCause) || isInteractionRequiredTokenError(error)) {
         this.diagnostic = "Redirecting to Microsoft sign-in.";
-        await this.application.loginRedirect({ scopes: [...profileScopes, ...calendarScopes], prompt: "select_account" });
+        await this.application.loginRedirect({ scopes: [...MICROSOFT_COMBINED_WORKSPACE_SCOPES], prompt: "select_account" });
         return;
       }
       throw error;
@@ -455,7 +595,7 @@ export class MicrosoftWorkspaceConnector {
     if (!this.application || !this.account) return;
     await this.application.logoutRedirect({ account: this.account, postLogoutRedirectUri: window.location.origin });
   }
-  async getAccessToken(scopes: string[]): Promise<string> {
+  async getAccessToken(scopes: readonly string[] | string[]): Promise<string> {
     if (!this.application || !this.account) {
       throw new Error(
         "Microsoft workspace is not connected. Connect Microsoft and try again.",
@@ -502,7 +642,7 @@ export class MicrosoftWorkspaceConnector {
   }
   async loadProfile(): Promise<WorkspaceProfile | undefined> {
     if (!this.application || !this.account) return undefined;
-    const token = await this.application.acquireTokenSilent({ account: this.account, scopes: profileScopes });
+    const token = await this.application.acquireTokenSilent({ account: this.account, scopes: [...profileScopes] });
     const response = await fetch("https://graph.microsoft.com/v1.0/me?$select=displayName,mail,userPrincipalName,id", { headers: { Authorization: `Bearer ${token.accessToken}` } });
     if (!response.ok) throw new Error(`Microsoft Graph profile request failed (${response.status}).`);
     const value = await response.json() as { displayName: string; mail?: string; userPrincipalName?: string; id?: string };
@@ -531,7 +671,7 @@ export class MicrosoftWorkspaceConnector {
       const returnedScopes = Array.isArray(result?.scopes) ? result.scopes : undefined;
       const mailScope: MicrosoftMailScopeReport = !returnedScopes
         ? "NOT_REPORTED"
-        : returnedScopes.some((scope: unknown) => typeof scope === "string" && scope.toLowerCase() === "mail.readbasic")
+        : returnedScopes.some((scope: unknown) => typeof scope === "string" && normalizeScope(scope) === "mail.readbasic")
           ? "REPORTED_PRESENT"
           : "REPORTED_ABSENT";
       if (!result?.accessToken) { trace?.emit({ stage: "FAILED", tokenStage: "FAILED", reasonCode: "MAIL_ACCESS_TOKEN_ABSENT" }); return { mailScope, accountBinding, reasonCode: "MAIL_ACCESS_TOKEN_ABSENT" }; }
@@ -561,6 +701,18 @@ export class MicrosoftWorkspaceConnector {
       accountBinding: initial.accountBinding,
       refreshAttempted: false,
       retryAttempted: false,
+      sanitizedDiagnostic: createSanitizedDiagnosticEnvelope({
+        capability: "MICROSOFT_MAIL",
+        operation: "loadMailMessages",
+        requestedScopes: [...profileScopes, ...mailScopes],
+        accountBinding: initial.accountBinding,
+        forceRefresh: false,
+        tokenPresent: Boolean(initial.accessToken),
+        decodedAudience: initial.accessToken ? inspectTokenAudience(initial.accessToken) : "NOT_INSPECTABLE",
+        sanitizedGraphEndpoint: "/me/messages",
+        retryAttempt: false,
+        finalReasonCode: reasonCode,
+      }),
     });
     if (!initial.accessToken) { trace?.emit({ stage: "FAILED", reasonCode: initial.reasonCode ?? "MAIL_PERMISSION_REQUIRED" }); return { messages: [], diagnostic: base(initial.reasonCode ?? "MAIL_PERMISSION_REQUIRED") }; }
 
@@ -595,38 +747,145 @@ export class MicrosoftWorkspaceConnector {
         return { messages: [], diagnostic: { ...base(reasonCode), mailScope: refreshed.mailScope, accountBinding: refreshed.accountBinding, refreshAttempted: true, retryAttempted: true } };
       }
       if (response.ok) return this.parseMailResponse(response, refreshed, true, trace);
-      const diagnostic = this.mailHttpFailure(response, refreshed, true);
+      const diagnostic = await this.mailHttpFailure(response, refreshed, true);
       trace?.emit({ stage: "FAILED", statusClass: mailTraceStatusClass(response.status), reasonCode: diagnostic.reasonCode, retryAttempted: true });
       return { messages: [], diagnostic };
     }
-    if (!response.ok) { const diagnostic = this.mailHttpFailure(response, initial, false); trace?.emit({ stage: "FAILED", statusClass: mailTraceStatusClass(response.status), reasonCode: diagnostic.reasonCode }); return { messages: [], diagnostic }; }
+    if (!response.ok) { const diagnostic = await this.mailHttpFailure(response, initial, false); trace?.emit({ stage: "FAILED", statusClass: mailTraceStatusClass(response.status), reasonCode: diagnostic.reasonCode }); return { messages: [], diagnostic }; }
     return this.parseMailResponse(response, initial, false, trace);
   }
-  private mailHttpFailure(response: Response, token: { mailScope: MicrosoftMailScopeReport; accountBinding: MicrosoftAccountBindingClass }, retried: boolean): MicrosoftMailReadDiagnostic {
-    const reasonCode: MicrosoftMailDiagnosticReasonCode = response.status === 401 ? "MAIL_HTTP_401" : response.status === 403 ? "MAIL_HTTP_403" : response.status === 429 ? "MAIL_HTTP_429" : response.status >= 500 ? "MAIL_PROVIDER_5XX" : "MAIL_MALFORMED_RESPONSE";
-    return { outcome: "FAILED", reasonCode, finalReasonCode: reasonCode, httpStatus: response.status, mailScope: token.mailScope, accountBinding: token.accountBinding, refreshAttempted: retried, retryAttempted: retried, requestIdPresent: Boolean(response.headers?.get?.("x-ms-request-id")), clientRequestIdPresent: Boolean(response.headers?.get?.("client-request-id")), retryAfterPresent: Boolean(response.headers?.get?.("retry-after")) };
+  private async mailHttpFailure(response: Response, token: { mailScope: MicrosoftMailScopeReport; accountBinding: MicrosoftAccountBindingClass }, retried: boolean): Promise<MicrosoftMailReadDiagnostic> {
+    let graphErrorCode: string | undefined;
+    let graphErrorMessage: string | undefined;
+    try {
+      const cloned = typeof response.clone === "function" ? response.clone() : response;
+      const errBody = typeof cloned.json === "function" ? (await cloned.json()) as { error?: { code?: unknown; message?: unknown } } : undefined;
+      if (typeof errBody?.error?.code === "string") {
+        graphErrorCode = errBody.error.code;
+      }
+      if (typeof errBody?.error?.message === "string") {
+        graphErrorMessage = scrubGraphErrorMessage(errBody.error.message);
+      }
+    } catch {
+      // non-JSON
+    }
+
+    const reasonCode: MicrosoftMailDiagnosticReasonCode = response.status === 401
+      ? "MAIL_HTTP_401"
+      : response.status === 403
+        ? "MAIL_HTTP_403"
+        : response.status === 429
+          ? "MAIL_HTTP_429"
+          : response.status >= 500
+            ? "MAIL_PROVIDER_5XX"
+            : "MAIL_MALFORMED_RESPONSE";
+
+    const requestId = response.headers?.get?.("x-ms-request-id") ?? undefined;
+    const clientRequestId = response.headers?.get?.("client-request-id") ?? undefined;
+
+    return {
+      outcome: "FAILED",
+      reasonCode,
+      finalReasonCode: reasonCode,
+      httpStatus: response.status,
+      mailScope: token.mailScope,
+      accountBinding: token.accountBinding,
+      refreshAttempted: retried,
+      retryAttempted: retried,
+      requestIdPresent: Boolean(requestId),
+      clientRequestIdPresent: Boolean(clientRequestId),
+      retryAfterPresent: Boolean(response.headers?.get?.("retry-after")),
+      graphErrorCode,
+      graphErrorMessage,
+      sanitizedDiagnostic: createSanitizedDiagnosticEnvelope({
+        capability: "MICROSOFT_MAIL",
+        operation: "loadMailMessages",
+        requestedScopes: [...profileScopes, ...mailScopes],
+        accountBinding: token.accountBinding,
+        forceRefresh: retried,
+        tokenPresent: true,
+        decodedAudience: "MICROSOFT_GRAPH_EXPECTED",
+        sanitizedGraphEndpoint: "/me/messages",
+        httpStatus: response.status,
+        graphErrorCode,
+        graphErrorMessage,
+        requestId,
+        clientRequestId,
+        retryAttempt: retried,
+        finalReasonCode: reasonCode,
+      }),
+    };
   }
   private async parseMailResponse(response: Response, token: { mailScope: MicrosoftMailScopeReport; accountBinding: MicrosoftAccountBindingClass }, retried: boolean, trace?: MailTraceContext): Promise<MicrosoftMailReadResult> {
     trace?.emit({ stage: "RESPONSE_PARSE_STARTED" });
     const contentTypeJson = Boolean(response.headers?.get?.("content-type")?.toLowerCase().includes("json"));
-    if (!contentTypeJson) { trace?.emit({ stage: "FAILED", statusClass: "MALFORMED_RESPONSE", responseEnvelopeClass: "NON_JSON", reasonCode: "MAIL_MALFORMED_RESPONSE" }); return { messages: [], diagnostic: { ...this.mailHttpFailure(response, token, retried), reasonCode: "MAIL_MALFORMED_RESPONSE", finalReasonCode: "MAIL_MALFORMED_RESPONSE", contentTypeJson } }; }
+    if (!contentTypeJson) {
+      trace?.emit({ stage: "FAILED", statusClass: "MALFORMED_RESPONSE", responseEnvelopeClass: "NON_JSON", reasonCode: "MAIL_MALFORMED_RESPONSE" });
+      const failDiag = await this.mailHttpFailure(response, token, retried);
+      return { messages: [], diagnostic: { ...failDiag, reasonCode: "MAIL_MALFORMED_RESPONSE", finalReasonCode: "MAIL_MALFORMED_RESPONSE", contentTypeJson } };
+    }
     let body: unknown;
-    try { body = await response.json(); } catch { trace?.emit({ stage: "FAILED", statusClass: "MALFORMED_RESPONSE", responseEnvelopeClass: "NON_JSON", reasonCode: "MAIL_MALFORMED_RESPONSE" }); return { messages: [], diagnostic: { ...this.mailHttpFailure(response, token, retried), reasonCode: "MAIL_MALFORMED_RESPONSE", finalReasonCode: "MAIL_MALFORMED_RESPONSE", contentTypeJson } }; }
+    try {
+      body = await response.json();
+    } catch {
+      trace?.emit({ stage: "FAILED", statusClass: "MALFORMED_RESPONSE", responseEnvelopeClass: "NON_JSON", reasonCode: "MAIL_MALFORMED_RESPONSE" });
+      const failDiag = await this.mailHttpFailure(response, token, retried);
+      return { messages: [], diagnostic: { ...failDiag, reasonCode: "MAIL_MALFORMED_RESPONSE", finalReasonCode: "MAIL_MALFORMED_RESPONSE", contentTypeJson } };
+    }
     const envelopeClass = mailTraceEnvelopeClass(body);
-    if (!isUnknownRecord(body) || !Array.isArray(body.value)) { trace?.emit({ stage: "FAILED", statusClass: "MALFORMED_RESPONSE", responseEnvelopeClass: envelopeClass, reasonCode: "MAIL_MALFORMED_RESPONSE" }); return { messages: [], diagnostic: { ...this.mailHttpFailure(response, token, retried), reasonCode: "MAIL_MALFORMED_RESPONSE", finalReasonCode: "MAIL_MALFORMED_RESPONSE", contentTypeJson } }; }
+    if (!isUnknownRecord(body) || !Array.isArray(body.value)) {
+      trace?.emit({ stage: "FAILED", statusClass: "MALFORMED_RESPONSE", responseEnvelopeClass: envelopeClass, reasonCode: "MAIL_MALFORMED_RESPONSE" });
+      const failDiag = await this.mailHttpFailure(response, token, retried);
+      return { messages: [], diagnostic: { ...failDiag, reasonCode: "MAIL_MALFORMED_RESPONSE", finalReasonCode: "MAIL_MALFORMED_RESPONSE", contentTypeJson } };
+    }
     trace?.emit({ stage: "RESPONSE_PARSED", responseEnvelopeClass: envelopeClass });
     const messages: MicrosoftMailMessage[] = [];
     for (const value of body.value) {
       const message = normalizeMailMessage(value);
       if (message) messages.push(message);
     }
-      const returnedMessageCount = body.value.length;
+    const returnedMessageCount = body.value.length;
     const normalizedMessageCount = messages.length;
     const rejectedMessageCount = returnedMessageCount - normalizedMessageCount;
     trace?.emit({ stage: "ITEMS_NORMALIZED", responseEnvelopeClass: envelopeClass, normalizedItemCount: Math.min(normalizedMessageCount, 10), rejectedItemCount: Math.min(rejectedMessageCount, 10) });
     const reasonCode: MicrosoftMailDiagnosticReasonCode = normalizedMessageCount === 0 && returnedMessageCount > 0 ? "MAIL_MALFORMED_RESPONSE" : retried ? "MAIL_RETRY_SUCCEEDED" : returnedMessageCount === 0 ? "MAIL_EMPTY" : "MAIL_SUCCEEDED";
     trace?.emit({ stage: "COMPLETED", reasonCode, requestCompleted: true });
-    return { messages: Object.freeze(messages), diagnostic: { outcome: returnedMessageCount === 0 ? "EMPTY" : normalizedMessageCount === 0 ? "FAILED" : "SUCCEEDED", reasonCode, finalReasonCode: reasonCode, httpStatus: response.status, mailScope: token.mailScope, accountBinding: token.accountBinding, refreshAttempted: retried, retryAttempted: retried, contentTypeJson, returnedMessageCount, normalizedMessageCount, rejectedMessageCount } };
+    const requestId = response.headers?.get?.("x-ms-request-id") ?? undefined;
+    const clientRequestId = response.headers?.get?.("client-request-id") ?? undefined;
+    return {
+      messages: Object.freeze(messages),
+      diagnostic: {
+        outcome: returnedMessageCount === 0 ? "EMPTY" : normalizedMessageCount === 0 ? "FAILED" : "SUCCEEDED",
+        reasonCode,
+        finalReasonCode: reasonCode,
+        httpStatus: response.status,
+        mailScope: token.mailScope,
+        accountBinding: token.accountBinding,
+        refreshAttempted: retried,
+        retryAttempted: retried,
+        contentTypeJson,
+        returnedMessageCount,
+        normalizedMessageCount,
+        rejectedMessageCount,
+        requestIdPresent: Boolean(requestId),
+        clientRequestIdPresent: Boolean(clientRequestId),
+        sanitizedDiagnostic: createSanitizedDiagnosticEnvelope({
+          capability: "MICROSOFT_MAIL",
+          operation: "loadMailMessages",
+          requestedScopes: [...profileScopes, ...mailScopes],
+          accountBinding: token.accountBinding,
+          forceRefresh: retried,
+          tokenPresent: true,
+          decodedAudience: "MICROSOFT_GRAPH_EXPECTED",
+          sanitizedGraphEndpoint: "/me/messages",
+          httpStatus: response.status,
+          requestId,
+          clientRequestId,
+          retryAttempt: retried,
+          finalReasonCode: reasonCode,
+        }),
+      },
+    };
   }
   async loadCalendarEvents(range: MicrosoftCalendarRange): Promise<readonly MicrosoftCalendarEvent[]> {
     const result = await this.loadCalendarEventsWithDiagnostic(range);
@@ -667,7 +926,25 @@ export class MicrosoftWorkspaceConnector {
     const start = new Date(range.start);
     const end = new Date(range.end);
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end) {
-      return { events: [], diagnostic: { stage: "RANGE_CONSTRUCTION", outcome: "FAILED", reasonCode: "CALENDAR_RANGE_INVALID", requestRangeValid: false } };
+      const diag: MicrosoftCalendarReadDiagnostic = {
+        stage: "RANGE_CONSTRUCTION",
+        outcome: "FAILED",
+        reasonCode: "CALENDAR_RANGE_INVALID",
+        requestRangeValid: false,
+        sanitizedDiagnostic: createSanitizedDiagnosticEnvelope({
+          capability: "MICROSOFT_CALENDAR",
+          operation: "loadCalendarEvents",
+          requestedScopes: [...profileScopes, ...calendarScopes],
+          accountBinding: "UNKNOWN",
+          forceRefresh: false,
+          tokenPresent: false,
+          decodedAudience: "NOT_INSPECTABLE",
+          sanitizedGraphEndpoint: "/me/calendar/calendarView",
+          retryAttempt: false,
+          finalReasonCode: "CALENDAR_RANGE_INVALID",
+        }),
+      };
+      return { events: [], diagnostic: diag };
     }
 
     const accountAvailable = Boolean(this.application && this.account);
@@ -694,7 +971,27 @@ export class MicrosoftWorkspaceConnector {
       if (this.hasMsalSilentRuntime()) {
         tokenMetadata = await this.acquireCalendarAccessTokenWithMetadata(false);
         if (!tokenMetadata || !tokenMetadata.accessToken) {
-          return { events: [], diagnostic: { ...baseDiagnostic, reasonCode: "MICROSOFT_ACCESS_TOKEN_ABSENT", finalReasonCode: "MICROSOFT_ACCESS_TOKEN_ABSENT", silentAttempted: true, silentOutcome: "ABSENT", credentialPresent: false } };
+          const diag: MicrosoftCalendarReadDiagnostic = {
+            ...baseDiagnostic,
+            reasonCode: "MICROSOFT_ACCESS_TOKEN_ABSENT",
+            finalReasonCode: "MICROSOFT_ACCESS_TOKEN_ABSENT",
+            silentAttempted: true,
+            silentOutcome: "ABSENT",
+            credentialPresent: false,
+          };
+          diag.sanitizedDiagnostic = createSanitizedDiagnosticEnvelope({
+            capability: "MICROSOFT_CALENDAR",
+            operation: "loadCalendarEvents",
+            requestedScopes: [...profileScopes, ...calendarScopes],
+            accountBinding: "UNKNOWN",
+            forceRefresh: false,
+            tokenPresent: false,
+            decodedAudience: "NOT_INSPECTABLE",
+            sanitizedGraphEndpoint: "/me/calendar/calendarView",
+            retryAttempt: false,
+            finalReasonCode: "MICROSOFT_ACCESS_TOKEN_ABSENT",
+          });
+          return { events: [], diagnostic: diag };
         }
         token = tokenMetadata.accessToken;
         baseDiagnostic.silentAttempted = true;
@@ -712,15 +1009,29 @@ export class MicrosoftWorkspaceConnector {
         // FINDING 1 FAIL CLOSED: Fail closed if initial token adjudication is invalid
         if (!tokenMetadata.valid) {
           const failureReason = tokenMetadata.failureReason ?? "MICROSOFT_ACTIVE_ACCOUNT_MISMATCH";
+          const diag: MicrosoftCalendarReadDiagnostic = {
+            ...baseDiagnostic,
+            outcome: "FAILED",
+            reasonCode: failureReason,
+            finalReasonCode: failureReason,
+            headerAttached: false, // FAIL CLOSED: Never attach header or perform Graph request
+          };
+          diag.sanitizedDiagnostic = createSanitizedDiagnosticEnvelope({
+            capability: "MICROSOFT_CALENDAR",
+            operation: "loadCalendarEvents",
+            requestedScopes: tokenMetadata.requestedScopes,
+            returnedScopes: tokenMetadata.returnedScopes,
+            accountBinding: tokenMetadata.accountBinding,
+            forceRefresh: false,
+            tokenPresent: Boolean(tokenMetadata.accessToken),
+            decodedAudience: tokenMetadata.tokenAudience,
+            sanitizedGraphEndpoint: "/me/calendar/calendarView",
+            retryAttempt: false,
+            finalReasonCode: failureReason,
+          });
           return {
             events: [],
-            diagnostic: {
-              ...baseDiagnostic,
-              outcome: "FAILED",
-              reasonCode: failureReason,
-              finalReasonCode: failureReason,
-              headerAttached: false, // FAIL CLOSED: Never attach header or perform Graph request
-            },
+            diagnostic: diag,
           };
         }
       } else {
@@ -728,9 +1039,36 @@ export class MicrosoftWorkspaceConnector {
       }
     } catch (error) {
       if (isInteractionRequiredTokenError(error)) {
-        return { events: [], diagnostic: { ...baseDiagnostic, reasonCode: "MICROSOFT_INTERACTION_REQUIRED", finalReasonCode: "MICROSOFT_INTERACTION_REQUIRED", interactionRequired: true, silentAttempted: true, silentOutcome: "INTERACTION_REQUIRED", credentialPresent: false } };
+        const diag: MicrosoftCalendarReadDiagnostic = { ...baseDiagnostic, reasonCode: "MICROSOFT_INTERACTION_REQUIRED", finalReasonCode: "MICROSOFT_INTERACTION_REQUIRED", interactionRequired: true, silentAttempted: true, silentOutcome: "INTERACTION_REQUIRED", credentialPresent: false };
+        diag.sanitizedDiagnostic = createSanitizedDiagnosticEnvelope({
+          capability: "MICROSOFT_CALENDAR",
+          operation: "loadCalendarEvents",
+          requestedScopes: [...profileScopes, ...calendarScopes],
+          accountBinding: "UNKNOWN",
+          forceRefresh: false,
+          tokenPresent: false,
+          decodedAudience: "NOT_INSPECTABLE",
+          sanitizedGraphEndpoint: "/me/calendar/calendarView",
+          retryAttempt: false,
+          finalReasonCode: "MICROSOFT_INTERACTION_REQUIRED",
+        });
+        return { events: [], diagnostic: diag };
       }
-      return { events: [], diagnostic: { ...baseDiagnostic, reasonCode: this.hasMsalSilentRuntime() ? "MICROSOFT_SILENT_TOKEN_FAILED" : "CALENDAR_TOKEN_ACQUISITION_FAILED", finalReasonCode: this.hasMsalSilentRuntime() ? "MICROSOFT_SILENT_TOKEN_FAILED" : "CALENDAR_TOKEN_ACQUISITION_FAILED", silentAttempted: true, silentOutcome: "FAILED", credentialPresent: false } };
+      const reasonCode = this.hasMsalSilentRuntime() ? "MICROSOFT_SILENT_TOKEN_FAILED" : "CALENDAR_TOKEN_ACQUISITION_FAILED";
+      const diag: MicrosoftCalendarReadDiagnostic = { ...baseDiagnostic, reasonCode, finalReasonCode: reasonCode, silentAttempted: true, silentOutcome: "FAILED", credentialPresent: false };
+      diag.sanitizedDiagnostic = createSanitizedDiagnosticEnvelope({
+        capability: "MICROSOFT_CALENDAR",
+        operation: "loadCalendarEvents",
+        requestedScopes: [...profileScopes, ...calendarScopes],
+        accountBinding: "UNKNOWN",
+        forceRefresh: false,
+        tokenPresent: false,
+        decodedAudience: "NOT_INSPECTABLE",
+        sanitizedGraphEndpoint: "/me/calendar/calendarView",
+        retryAttempt: false,
+        finalReasonCode: reasonCode,
+      });
+      return { events: [], diagnostic: diag };
     }
 
     // Token passed adjudication and is attached to header
@@ -752,7 +1090,20 @@ export class MicrosoftWorkspaceConnector {
         },
       });
     } catch {
-      return { events: [], diagnostic: { ...baseDiagnostic, stage: "GRAPH_REQUEST", outcome: "FAILED", reasonCode: "CALENDAR_GRAPH_NETWORK_FAILURE", finalReasonCode: "CALENDAR_GRAPH_NETWORK_FAILURE", requestRangeValid: true, retryable: true, interactionRequired: false } };
+      const diag: MicrosoftCalendarReadDiagnostic = { ...baseDiagnostic, stage: "GRAPH_REQUEST", outcome: "FAILED", reasonCode: "CALENDAR_GRAPH_NETWORK_FAILURE", finalReasonCode: "CALENDAR_GRAPH_NETWORK_FAILURE", requestRangeValid: true, retryable: true, interactionRequired: false };
+      diag.sanitizedDiagnostic = createSanitizedDiagnosticEnvelope({
+        capability: "MICROSOFT_CALENDAR",
+        operation: "loadCalendarEvents",
+        requestedScopes: [...profileScopes, ...calendarScopes],
+        accountBinding: baseDiagnostic.accountBinding ?? "UNKNOWN",
+        forceRefresh: false,
+        tokenPresent: true,
+        decodedAudience: baseDiagnostic.tokenAudience ?? "NOT_INSPECTABLE",
+        sanitizedGraphEndpoint: "/me/calendar/calendarView",
+        retryAttempt: false,
+        finalReasonCode: "CALENDAR_GRAPH_NETWORK_FAILURE",
+      });
+      return { events: [], diagnostic: diag };
     }
     if (!response.ok) {
       if (response.status === 401 && this.hasMsalSilentRuntime()) {
@@ -762,12 +1113,54 @@ export class MicrosoftWorkspaceConnector {
           refreshedMetadata = await this.acquireCalendarAccessTokenWithMetadata(true);
         } catch (error) {
           if (isInteractionRequiredTokenError(error)) {
-            return { events: [], diagnostic: { ...refreshBase, refreshOutcome: "INTERACTION_REQUIRED", interactionRequired: true, reasonCode: "MICROSOFT_INTERACTION_REQUIRED", finalReasonCode: "MICROSOFT_INTERACTION_REQUIRED" } };
+            const diag: MicrosoftCalendarReadDiagnostic = { ...refreshBase, refreshOutcome: "INTERACTION_REQUIRED", interactionRequired: true, reasonCode: "MICROSOFT_INTERACTION_REQUIRED", finalReasonCode: "MICROSOFT_INTERACTION_REQUIRED" };
+            diag.sanitizedDiagnostic = createSanitizedDiagnosticEnvelope({
+              capability: "MICROSOFT_CALENDAR",
+              operation: "loadCalendarEvents",
+              requestedScopes: [...profileScopes, ...calendarScopes],
+              accountBinding: refreshBase.accountBinding ?? "UNKNOWN",
+              forceRefresh: true,
+              tokenPresent: false,
+              decodedAudience: "NOT_INSPECTABLE",
+              sanitizedGraphEndpoint: "/me/calendar/calendarView",
+              httpStatus: 401,
+              retryAttempt: false,
+              finalReasonCode: "MICROSOFT_INTERACTION_REQUIRED",
+            });
+            return { events: [], diagnostic: diag };
           }
-          return { events: [], diagnostic: { ...refreshBase, refreshOutcome: "FAILED", reasonCode: "MICROSOFT_TOKEN_FORCE_REFRESH_FAILED", finalReasonCode: "MICROSOFT_TOKEN_FORCE_REFRESH_FAILED", interactionRequired: false } };
+          const diag: MicrosoftCalendarReadDiagnostic = { ...refreshBase, refreshOutcome: "FAILED", reasonCode: "MICROSOFT_TOKEN_FORCE_REFRESH_FAILED", finalReasonCode: "MICROSOFT_TOKEN_FORCE_REFRESH_FAILED", interactionRequired: false };
+          diag.sanitizedDiagnostic = createSanitizedDiagnosticEnvelope({
+            capability: "MICROSOFT_CALENDAR",
+            operation: "loadCalendarEvents",
+            requestedScopes: [...profileScopes, ...calendarScopes],
+            accountBinding: refreshBase.accountBinding ?? "UNKNOWN",
+            forceRefresh: true,
+            tokenPresent: false,
+            decodedAudience: "NOT_INSPECTABLE",
+            sanitizedGraphEndpoint: "/me/calendar/calendarView",
+            httpStatus: 401,
+            retryAttempt: false,
+            finalReasonCode: "MICROSOFT_TOKEN_FORCE_REFRESH_FAILED",
+          });
+          return { events: [], diagnostic: diag };
         }
         if (!refreshedMetadata || !refreshedMetadata.accessToken) {
-          return { events: [], diagnostic: { ...refreshBase, refreshOutcome: "ABSENT", reasonCode: "MICROSOFT_ACCESS_TOKEN_ABSENT", finalReasonCode: "MICROSOFT_ACCESS_TOKEN_ABSENT", credentialPresent: false, interactionRequired: false } };
+          const diag: MicrosoftCalendarReadDiagnostic = { ...refreshBase, refreshOutcome: "ABSENT", reasonCode: "MICROSOFT_ACCESS_TOKEN_ABSENT", finalReasonCode: "MICROSOFT_ACCESS_TOKEN_ABSENT", credentialPresent: false, interactionRequired: false };
+          diag.sanitizedDiagnostic = createSanitizedDiagnosticEnvelope({
+            capability: "MICROSOFT_CALENDAR",
+            operation: "loadCalendarEvents",
+            requestedScopes: [...profileScopes, ...calendarScopes],
+            accountBinding: refreshBase.accountBinding ?? "UNKNOWN",
+            forceRefresh: true,
+            tokenPresent: false,
+            decodedAudience: "NOT_INSPECTABLE",
+            sanitizedGraphEndpoint: "/me/calendar/calendarView",
+            httpStatus: 401,
+            retryAttempt: false,
+            finalReasonCode: "MICROSOFT_ACCESS_TOKEN_ABSENT",
+          });
+          return { events: [], diagnostic: diag };
         }
 
         // Independently update refreshed token metadata
@@ -779,16 +1172,31 @@ export class MicrosoftWorkspaceConnector {
         // FINDING 2 FAIL CLOSED: Validate refreshed token adjudication independently
         if (!refreshedMetadata.valid) {
           const failureReason = refreshedMetadata.failureReason ?? "MICROSOFT_ACTIVE_ACCOUNT_MISMATCH";
+          const diag: MicrosoftCalendarReadDiagnostic = {
+            ...refreshBase,
+            refreshOutcome: "FAILED",
+            reasonCode: failureReason,
+            finalReasonCode: failureReason,
+            retryAttempted: false, // FAIL CLOSED: Zero retry fetch calls made
+            interactionRequired: false,
+          };
+          diag.sanitizedDiagnostic = createSanitizedDiagnosticEnvelope({
+            capability: "MICROSOFT_CALENDAR",
+            operation: "loadCalendarEvents",
+            requestedScopes: refreshedMetadata.requestedScopes,
+            returnedScopes: refreshedMetadata.returnedScopes,
+            accountBinding: refreshedMetadata.accountBinding,
+            forceRefresh: true,
+            tokenPresent: Boolean(refreshedMetadata.accessToken),
+            decodedAudience: refreshedMetadata.tokenAudience,
+            sanitizedGraphEndpoint: "/me/calendar/calendarView",
+            httpStatus: 401,
+            retryAttempt: false,
+            finalReasonCode: failureReason,
+          });
           return {
             events: [],
-            diagnostic: {
-              ...refreshBase,
-              refreshOutcome: "FAILED",
-              reasonCode: failureReason,
-              finalReasonCode: failureReason,
-              retryAttempted: false, // FAIL CLOSED: Zero retry fetch calls made
-              interactionRequired: false,
-            },
+            diagnostic: diag,
           };
         }
 
@@ -798,31 +1206,126 @@ export class MicrosoftWorkspaceConnector {
           const retryResponse = await fetch(endpoint, { method: "GET", headers: { Authorization: `Bearer ${refreshedToken}`, Prefer: 'outlook.timezone="UTC"' } });
           if (retryResponse.ok) {
             const parsed = await this.parseCalendarGraphResponse(retryResponse);
-            if (parsed.ok) {
-              return { events: parsed.events, diagnostic: { ...refreshBase, ...parsed.diagnostic, stage: "GRAPH_RESPONSE", outcome: "SUCCEEDED", reasonCode: "MICROSOFT_GRAPH_RETRY_SUCCEEDED", finalReasonCode: "MICROSOFT_GRAPH_RETRY_SUCCEEDED", refreshAttempted: true, refreshOutcome: "SUCCEEDED", retryAttempted: true, retryGraphStatus: retryResponse.status, headerAttached: true, interactionRequired: false, httpStatus: retryResponse.status, forceRefreshAttempted: true } };
-            }
-            return { events: parsed.events, diagnostic: { ...refreshBase, ...parsed.diagnostic, stage: "GRAPH_RESPONSE", outcome: parsed.diagnostic.outcome, reasonCode: parsed.diagnostic.reasonCode, finalReasonCode: parsed.diagnostic.reasonCode, refreshAttempted: true, refreshOutcome: "SUCCEEDED", retryAttempted: true, retryGraphStatus: retryResponse.status, headerAttached: true, interactionRequired: false, httpStatus: retryResponse.status, forceRefreshAttempted: true } };
+            const diag: MicrosoftCalendarReadDiagnostic = { ...refreshBase, ...parsed.diagnostic, stage: "GRAPH_RESPONSE", outcome: parsed.ok ? "SUCCEEDED" : parsed.diagnostic.outcome, reasonCode: parsed.ok ? "MICROSOFT_GRAPH_RETRY_SUCCEEDED" : parsed.diagnostic.reasonCode, finalReasonCode: parsed.ok ? "MICROSOFT_GRAPH_RETRY_SUCCEEDED" : parsed.diagnostic.reasonCode, refreshAttempted: true, refreshOutcome: "SUCCEEDED", retryAttempted: true, retryGraphStatus: retryResponse.status, headerAttached: true, interactionRequired: false, httpStatus: retryResponse.status, forceRefreshAttempted: true };
+            diag.sanitizedDiagnostic = createSanitizedDiagnosticEnvelope({
+              capability: "MICROSOFT_CALENDAR",
+              operation: "loadCalendarEvents",
+              requestedScopes: [...profileScopes, ...calendarScopes],
+              accountBinding: refreshBase.accountBinding ?? "UNKNOWN",
+              forceRefresh: true,
+              tokenPresent: true,
+              decodedAudience: refreshBase.tokenAudience ?? "NOT_INSPECTABLE",
+              sanitizedGraphEndpoint: "/me/calendar/calendarView",
+              httpStatus: retryResponse.status,
+              retryAttempt: true,
+              finalReasonCode: diag.finalReasonCode ?? "MICROSOFT_GRAPH_RETRY_SUCCEEDED",
+            });
+            return { events: parsed.events, diagnostic: diag };
           }
           if (retryResponse.status === 401) {
             const persistent401 = await this.diagnosePersistent401(refreshedToken, { ...refreshBase, retryAttempted: true, retryGraphStatus: retryResponse.status, reasonCode: "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH", finalReasonCode: "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH", interactionRequired: false, headerAttached: true }, range);
+            persistent401.sanitizedDiagnostic = createSanitizedDiagnosticEnvelope({
+              capability: "MICROSOFT_CALENDAR",
+              operation: "loadCalendarEvents",
+              requestedScopes: [...profileScopes, ...calendarScopes],
+              accountBinding: refreshBase.accountBinding ?? "UNKNOWN",
+              forceRefresh: true,
+              tokenPresent: true,
+              decodedAudience: refreshBase.tokenAudience ?? "NOT_INSPECTABLE",
+              sanitizedGraphEndpoint: "/me/calendar/calendarView",
+              httpStatus: 401,
+              graphErrorCode: persistent401.graphErrorCode,
+              graphErrorMessage: persistent401.graphErrorMessage,
+              retryAttempt: true,
+              finalReasonCode: persistent401.finalReasonCode ?? "MICROSOFT_GRAPH_HTTP_401_AFTER_REFRESH",
+            });
             return { events: [], diagnostic: persistent401 };
           }
           const retryReasonCode = retryResponse.status === 400 ? "CALENDAR_GRAPH_HTTP_400" : retryResponse.status === 403 ? "CALENDAR_GRAPH_HTTP_403" : retryResponse.status === 404 ? "CALENDAR_GRAPH_HTTP_404" : retryResponse.status === 429 ? "CALENDAR_GRAPH_HTTP_429" : retryResponse.status >= 500 ? "CALENDAR_GRAPH_HTTP_5XX" : "CALENDAR_UNKNOWN_BOUNDED_FAILURE";
-          return { events: [], diagnostic: { ...refreshBase, retryAttempted: true, retryGraphStatus: retryResponse.status, reasonCode: retryReasonCode, finalReasonCode: retryReasonCode, interactionRequired: false, headerAttached: true } };
+          const diag: MicrosoftCalendarReadDiagnostic = { ...refreshBase, retryAttempted: true, retryGraphStatus: retryResponse.status, reasonCode: retryReasonCode, finalReasonCode: retryReasonCode, interactionRequired: false, headerAttached: true, httpStatus: retryResponse.status };
+          diag.sanitizedDiagnostic = createSanitizedDiagnosticEnvelope({
+            capability: "MICROSOFT_CALENDAR",
+            operation: "loadCalendarEvents",
+            requestedScopes: [...profileScopes, ...calendarScopes],
+            accountBinding: refreshBase.accountBinding ?? "UNKNOWN",
+            forceRefresh: true,
+            tokenPresent: true,
+            decodedAudience: refreshBase.tokenAudience ?? "NOT_INSPECTABLE",
+            sanitizedGraphEndpoint: "/me/calendar/calendarView",
+            httpStatus: retryResponse.status,
+            retryAttempt: true,
+            finalReasonCode: retryReasonCode,
+          });
+          return { events: [], diagnostic: diag };
         } catch {
-          return { events: [], diagnostic: { ...refreshBase, retryAttempted: true, retryGraphStatus: 0, reasonCode: "CALENDAR_GRAPH_NETWORK_FAILURE", finalReasonCode: "CALENDAR_GRAPH_NETWORK_FAILURE", interactionRequired: false } };
+          const diag: MicrosoftCalendarReadDiagnostic = { ...refreshBase, retryAttempted: true, retryGraphStatus: 0, reasonCode: "CALENDAR_GRAPH_NETWORK_FAILURE", finalReasonCode: "CALENDAR_GRAPH_NETWORK_FAILURE", interactionRequired: false };
+          diag.sanitizedDiagnostic = createSanitizedDiagnosticEnvelope({
+            capability: "MICROSOFT_CALENDAR",
+            operation: "loadCalendarEvents",
+            requestedScopes: [...profileScopes, ...calendarScopes],
+            accountBinding: refreshBase.accountBinding ?? "UNKNOWN",
+            forceRefresh: true,
+            tokenPresent: true,
+            decodedAudience: refreshBase.tokenAudience ?? "NOT_INSPECTABLE",
+            sanitizedGraphEndpoint: "/me/calendar/calendarView",
+            retryAttempt: true,
+            finalReasonCode: "CALENDAR_GRAPH_NETWORK_FAILURE",
+          });
+          return { events: [], diagnostic: diag };
         }
       }
       const reasonCode = response.status === 400 ? "CALENDAR_GRAPH_HTTP_400" : response.status === 401 ? "CALENDAR_GRAPH_HTTP_401" : response.status === 403 ? "CALENDAR_GRAPH_HTTP_403" : response.status === 404 ? "CALENDAR_GRAPH_HTTP_404" : response.status === 429 ? "CALENDAR_GRAPH_HTTP_429" : response.status >= 500 ? "CALENDAR_GRAPH_HTTP_5XX" : "CALENDAR_UNKNOWN_BOUNDED_FAILURE";
-      return { events: [], diagnostic: { ...baseDiagnostic, stage: "GRAPH_RESPONSE", outcome: "FAILED", reasonCode, finalReasonCode: reasonCode, httpStatus: response.status, requestRangeValid: true, retryable: response.status === 429 || response.status >= 500 } };
+      const diag: MicrosoftCalendarReadDiagnostic = { ...baseDiagnostic, stage: "GRAPH_RESPONSE", outcome: "FAILED", reasonCode, finalReasonCode: reasonCode, httpStatus: response.status, requestRangeValid: true, retryable: response.status === 429 || response.status >= 500 };
+      diag.sanitizedDiagnostic = createSanitizedDiagnosticEnvelope({
+        capability: "MICROSOFT_CALENDAR",
+        operation: "loadCalendarEvents",
+        requestedScopes: [...profileScopes, ...calendarScopes],
+        accountBinding: baseDiagnostic.accountBinding ?? "UNKNOWN",
+        forceRefresh: false,
+        tokenPresent: true,
+        decodedAudience: baseDiagnostic.tokenAudience ?? "NOT_INSPECTABLE",
+        sanitizedGraphEndpoint: "/me/calendar/calendarView",
+        httpStatus: response.status,
+        retryAttempt: false,
+        finalReasonCode: reasonCode,
+      });
+      return { events: [], diagnostic: diag };
     }
 
     const parsed = await this.parseCalendarGraphResponse(response);
     if (!parsed.ok) {
-      return { events: [], diagnostic: { ...baseDiagnostic, ...parsed.diagnostic, finalReasonCode: parsed.diagnostic.reasonCode } };
+      const diag: MicrosoftCalendarReadDiagnostic = { ...baseDiagnostic, ...parsed.diagnostic, finalReasonCode: parsed.diagnostic.reasonCode };
+      diag.sanitizedDiagnostic = createSanitizedDiagnosticEnvelope({
+        capability: "MICROSOFT_CALENDAR",
+        operation: "loadCalendarEvents",
+        requestedScopes: [...profileScopes, ...calendarScopes],
+        accountBinding: baseDiagnostic.accountBinding ?? "UNKNOWN",
+        forceRefresh: false,
+        tokenPresent: true,
+        decodedAudience: baseDiagnostic.tokenAudience ?? "NOT_INSPECTABLE",
+        sanitizedGraphEndpoint: "/me/calendar/calendarView",
+        httpStatus: response.status,
+        retryAttempt: false,
+        finalReasonCode: parsed.diagnostic.reasonCode,
+      });
+      return { events: [], diagnostic: diag };
     }
 
-    return { events: parsed.events, diagnostic: { ...baseDiagnostic, ...parsed.diagnostic, httpStatus: response.status, headerAttached: true, finalReasonCode: parsed.diagnostic.reasonCode } };
+    const diag: MicrosoftCalendarReadDiagnostic = { ...baseDiagnostic, ...parsed.diagnostic, httpStatus: response.status, headerAttached: true, finalReasonCode: parsed.diagnostic.reasonCode };
+    diag.sanitizedDiagnostic = createSanitizedDiagnosticEnvelope({
+      capability: "MICROSOFT_CALENDAR",
+      operation: "loadCalendarEvents",
+      requestedScopes: [...profileScopes, ...calendarScopes],
+      accountBinding: baseDiagnostic.accountBinding ?? "UNKNOWN",
+      forceRefresh: false,
+      tokenPresent: true,
+      decodedAudience: baseDiagnostic.tokenAudience ?? "NOT_INSPECTABLE",
+      sanitizedGraphEndpoint: "/me/calendar/calendarView",
+      httpStatus: response.status,
+      retryAttempt: false,
+      finalReasonCode: parsed.diagnostic.reasonCode,
+    });
+    return { events: parsed.events, diagnostic: diag };
   }
   private async parseCalendarGraphResponse(response: Response): Promise<{ ok: boolean; events: readonly MicrosoftCalendarEvent[]; diagnostic: MicrosoftCalendarReadDiagnostic }> {
     if (response.status === 401) {
@@ -856,9 +1359,26 @@ export class MicrosoftWorkspaceConnector {
         : normalizedEventCount === 0
           ? { stage: "GRAPH_RESPONSE" as const, outcome: "SUCCEEDED_EMPTY" as const, reasonCode: "CALENDAR_GRAPH_SUCCEEDED_EMPTY" as const }
           : { stage: "NORMALIZATION" as const, outcome: "SUCCEEDED" as const, reasonCode: "CALENDAR_NORMALIZATION_SUCCEEDED" as const };
-    return { ok: true, events: Object.freeze(normalized), diagnostic: { ...diagnostic, httpStatus: response.status, returnedEventCount, normalizedEventCount, rejectedEventCount, requestRangeValid: true, headerAttached: true, finalReasonCode: diagnostic.reasonCode } };
+    const requestId = response.headers?.get?.("x-ms-request-id") ?? undefined;
+    const clientRequestId = response.headers?.get?.("client-request-id") ?? undefined;
+    return {
+      ok: true,
+      events: Object.freeze(normalized),
+      diagnostic: {
+        ...diagnostic,
+        httpStatus: response.status,
+        returnedEventCount,
+        normalizedEventCount,
+        rejectedEventCount,
+        requestRangeValid: true,
+        headerAttached: true,
+        finalReasonCode: diagnostic.reasonCode,
+        graphRequestIdPresent: Boolean(requestId),
+        graphClientRequestIdPresent: Boolean(clientRequestId),
+      },
+    };
   }
-  private async probeGraphEndpoint(token: string, path: string): Promise<{ status?: number; envelopeValid: boolean; errorClass?: MicrosoftGraphErrorClass; requestIdPresent: boolean; clientRequestIdPresent: boolean; claimsChallengePresent: boolean; wwwAuthenticateClass: MicrosoftGraphWwwAuthenticateClass }> {
+  private async probeGraphEndpoint(token: string, path: string): Promise<{ status?: number; envelopeValid: boolean; errorClass?: MicrosoftGraphErrorClass; graphErrorCode?: string; graphErrorMessage?: string; requestIdPresent: boolean; clientRequestIdPresent: boolean; claimsChallengePresent: boolean; wwwAuthenticateClass: MicrosoftGraphWwwAuthenticateClass }> {
     try {
       const response = await fetch(`https://graph.microsoft.com/v1.0/${path}`, {
         method: "GET",
@@ -870,10 +1390,18 @@ export class MicrosoftWorkspaceConnector {
       const claimsChallengePresent = /claims/i.test(wwwAuthenticate);
       let envelopeValid = false;
       let errorClass: MicrosoftGraphErrorClass | undefined;
+      let graphErrorCode: string | undefined;
+      let graphErrorMessage: string | undefined;
       try {
-        const body = await response.json() as { value?: unknown; id?: unknown; error?: { code?: unknown } };
+        const body = await response.json() as { value?: unknown; id?: unknown; error?: { code?: unknown; message?: unknown } };
         envelopeValid = response.ok ? typeof body.id === "string" && body.id.trim().length > 0 : Boolean(body.error && typeof body.error.code === "string");
-        errorClass = typeof body.error?.code === "string" ? classifyGraphErrorCode(body.error.code) : undefined;
+        if (typeof body.error?.code === "string") {
+          graphErrorCode = body.error.code;
+          errorClass = classifyGraphErrorCode(body.error.code);
+        }
+        if (typeof body.error?.message === "string") {
+          graphErrorMessage = scrubGraphErrorMessage(body.error.message);
+        }
       } catch {
         envelopeValid = false;
       }
@@ -881,6 +1409,8 @@ export class MicrosoftWorkspaceConnector {
         status: response.status,
         envelopeValid,
         errorClass,
+        graphErrorCode,
+        graphErrorMessage,
         requestIdPresent,
         clientRequestIdPresent,
         claimsChallengePresent,

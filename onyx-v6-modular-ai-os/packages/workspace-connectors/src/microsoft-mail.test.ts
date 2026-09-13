@@ -340,4 +340,50 @@ describe("MicrosoftWorkspaceConnector Mail.ReadBasic foundation", () => {
     expect(result.diagnostic.outcome).toBe("EMPTY");
     expect(acquireTokenSilent).not.toHaveBeenCalledWith(expect.objectContaining({ scopes: expect.arrayContaining(["Calendars.Read"]) }));
   });
+
+  it("MAIL-SCOPE-008 recognizes resource-prefixed and uppercase Mail scopes", async () => {
+    const acquireTokenSilent = vi.fn().mockResolvedValue({
+      accessToken: "mail-token",
+      scopes: ["User.Read", "https://graph.microsoft.com/Mail.ReadBasic"],
+      account: { homeAccountId: "account", tenantId: "tenant" },
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(emptyMailboxResponse({ value: [] })));
+    const connector = connectedConnector(acquireTokenSilent);
+
+    const result = await connector.loadMailMessagesWithDiagnostic();
+
+    expect(result.diagnostic.mailScope).toBe("REPORTED_PRESENT");
+    expect(result.diagnostic.reasonCode).toBe("MAIL_EMPTY");
+  });
+
+  it("MAIL-DIAG-001 captures sanitized error details on persistent 401 without leaks", async () => {
+    const acquireTokenSilent = vi.fn()
+      .mockResolvedValueOnce(mailToken({ homeAccountId: "account", tenantId: "tenant" }))
+      .mockResolvedValueOnce(mailToken({ homeAccountId: "account", tenantId: "tenant" }));
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, headers: new Headers({ "x-ms-request-id": "req-123" }) })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        headers: new Headers({ "x-ms-request-id": "req-456", "client-request-id": "client-789" }),
+        json: async () => ({
+          error: {
+            code: "InvalidAuthenticationToken",
+            message: "CompactToken parsing failed for user admin@example.com with Bearer token-secret.",
+          },
+        }),
+      });
+    vi.stubGlobal("fetch", fetch);
+    const connector = connectedConnector(acquireTokenSilent);
+
+    const result = await connector.loadMailMessagesWithDiagnostic();
+
+    expect(result.diagnostic.reasonCode).toBe("MAIL_HTTP_401");
+    expect(result.diagnostic.graphErrorCode).toBe("InvalidAuthenticationToken");
+    expect(result.diagnostic.graphErrorMessage).toContain("[REDACTED_EMAIL]");
+    expect(result.diagnostic.graphErrorMessage).not.toContain("admin@example.com");
+    expect(result.diagnostic.graphErrorMessage).not.toContain("token-secret");
+    expect(result.diagnostic.sanitizedDiagnostic).toBeDefined();
+    expect(result.diagnostic.sanitizedDiagnostic?.capability).toBe("MICROSOFT_MAIL");
+  });
 });
