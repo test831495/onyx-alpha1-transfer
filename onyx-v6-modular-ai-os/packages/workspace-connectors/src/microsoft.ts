@@ -260,10 +260,12 @@ export const MICROSOFT_CAPABILITY_SCOPES = Object.freeze({
   profile: Object.freeze(["User.Read"] as const),
   calendar: Object.freeze(["Calendars.Read"] as const),
   mail: Object.freeze(["Mail.ReadBasic"] as const),
+  filesReadWrite: Object.freeze(["Files.ReadWrite"] as const),
 });
 
 export const MICROSOFT_COMBINED_WORKSPACE_SCOPES: readonly string[] = Object.freeze([
   ...MICROSOFT_CAPABILITY_SCOPES.profile,
+  ...MICROSOFT_CAPABILITY_SCOPES.filesReadWrite,
   ...MICROSOFT_CAPABILITY_SCOPES.calendar,
   ...MICROSOFT_CAPABILITY_SCOPES.mail,
 ]);
@@ -590,8 +592,8 @@ const capabilities = [
   { id: "profile" as const, label: "Microsoft profile", enabled: true },
   { id: "mail" as const, label: "Outlook mail", enabled: true },
   { id: "calendar" as const, label: "Microsoft calendar", enabled: true },
-  { id: "files" as const, label: "OneDrive", enabled: false, plannedRelease: "Alpha 3.1.3" },
-  { id: "sharepoint" as const, label: "SharePoint", enabled: false, plannedRelease: "Alpha 3.1.3" },
+  { id: "files" as const, label: "OneDrive", enabled: true },
+  { id: "sharepoint" as const, label: "SharePoint", enabled: true },
 ];
 export class MicrosoftWorkspaceConnector {
   private application?: PublicClientApplication;

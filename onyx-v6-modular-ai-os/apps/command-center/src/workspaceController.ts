@@ -10,6 +10,7 @@ import {
   type MicrosoftMailRuntimeTraceOptions,
   type MicrosoftMailTraceBuildIdentity,
 } from "@onyx/workspace-connectors";
+import { MicrosoftFilesAdapter } from "@onyx/workspace-connectors";
 import { readMicrosoftRuntimeEnv } from "../viteMicrosoftEnvBridge";
 
 const browserOrigin =
@@ -59,6 +60,27 @@ export const connectMicrosoftMail=()=>microsoft.connectMail();
 export const connectMicrosoft=()=>microsoft.connect();
 export const reconnectMicrosoft=()=>microsoft.reconnect();
 export const disconnectMicrosoft=()=>microsoft.disconnect();
+const microsoftFiles = () => new MicrosoftFilesAdapter({ accessToken: (scopes) => microsoft.getAccessToken(scopes), accountKind: "UNKNOWN_MICROSOFT_ACCOUNT" });
+export async function loadMicrosoftOneDriveRoot(continuation?: string) {
+  const adapter = microsoftFiles();
+  const { drive } = await adapter.getOneDrive();
+  return adapter.listChildren(drive.driveId, "root", "ONEDRIVE", continuation);
+}
+export async function runBoundedMicrosoftOneDriveTest() {
+  return microsoftFiles().runBoundedWriteValidation({
+    operationId: crypto.randomUUID(),
+    idempotencyKey: `onyx-files-${crypto.randomUUID()}`,
+    provider: "microsoft",
+    driveId: (await microsoftFiles().getOneDrive()).drive.driveId,
+    parentItemId: "root",
+    testFolderName: "ONYX-NOVA-Connector-Test",
+    artifactName: `onyx-nova-connector-test-${crypto.randomUUID()}.txt`,
+    consequencePreview: "Create, verify, rename, move, and delete one synthetic test artifact; remove only folders created by this run.",
+    explicitTestMode: true,
+    confirmed: true,
+    sourcePathClass: "ONEDRIVE",
+  });
+}
 type GoogleAction = "connect" | "reconnect" | "disconnect" | "refresh";
 const googleHeaders = async (mutating: boolean): Promise<HeadersInit> => {
   let proof = "";
