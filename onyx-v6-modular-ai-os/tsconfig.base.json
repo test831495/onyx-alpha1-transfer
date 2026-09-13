@@ -43,6 +43,9 @@
       "@onyx/account-authentication-server-authority": [
         "packages/account-authentication-server-authority/src/index"
       ],
+      "@onyx/conversation-character-validation": [
+        "packages/conversation-character-validation/src/index"
+      ],
       "@onyx/workspace-connectors": [
         "packages/workspace-connectors/src/index"
       ]

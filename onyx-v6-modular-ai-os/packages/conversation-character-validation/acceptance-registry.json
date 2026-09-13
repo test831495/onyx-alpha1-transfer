@@ -1,0 +1,176 @@
+{
+  "schemaVersion": "B4D-ACCEPTANCE-REGISTRY-V1",
+  "records": [
+    {
+      "id": "B4D-GOLDEN-001",
+      "family": "B4D-GOLDEN",
+      "requirement": "canonical golden conversations cover all 10 required scenarios",
+      "executableTest": "goldenConversations.test.ts::provides canonical golden conversations for all 10 scenarios",
+      "implementationEvidence": "GOLDEN_CONVERSATIONS registry and getGoldenConversation helper",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4D-REPLAY-001",
+      "family": "B4D-REPLAY",
+      "requirement": "golden conversation replay fixtures evaluate structured candidate projections deterministically",
+      "executableTest": "replayFixtures.test.ts::provides deterministic replay fixtures for all 10 golden scenarios",
+      "implementationEvidence": "GOLDEN_REPLAY_FIXTURES and evaluateGoldenConversationReplay",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4D-SPEAKER-MATRIX-001",
+      "family": "B4D-SPEAKER-MATRIX",
+      "requirement": "speaker-selection validation matrix tests explicit requests, follow-up, preferences, and fallbacks",
+      "executableTest": "speakerMatrix.test.ts::validates explicit ONYX request precedence over follow-up",
+      "implementationEvidence": "evaluateSpeakerSelectionMatrix helper",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4D-IDENTITY-DRIFT-001",
+      "family": "B4D-IDENTITY-DRIFT",
+      "requirement": "detects identity, role, decision style, and voice drift across single, multi, and long sessions",
+      "executableTest": "identityDrift.test.ts::detects role drift and voice drift across session horizons",
+      "implementationEvidence": "evaluateIdentityDrift function",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4D-DIFFERENTIATION-001",
+      "family": "B4D-DIFFERENTIATION",
+      "requirement": "proves ONYX and NOVA maintain distinct role emphasis and communication styles on shared scenarios",
+      "executableTest": "characterDifferentiation.test.ts::proves ONYX and NOVA maintain distinct role emphasis",
+      "implementationEvidence": "evaluateCharacterDifferentiation function",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4D-EMOTIONAL-DRIFT-001",
+      "family": "B4D-EMOTIONAL-DRIFT",
+      "requirement": "emotional state adapts communication style only without changing speaker, authority, truth source, or governance",
+      "executableTest": "emotionalDrift.test.ts::allows style adaptation while enforcing governance and authority invariance",
+      "implementationEvidence": "evaluateEmotionalDrift function",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4D-EMOTIONAL-SEQUENCE-001",
+      "family": "B4D-EMOTIONAL-SEQUENCE",
+      "requirement": "cross-turn emotional progression sequences preserve speaker identity, authority, and truth source invariants",
+      "executableTest": "emotionalProgression.test.ts::validates multi-turn NORMAL -> CONFUSION -> RECOVERY sequence",
+      "implementationEvidence": "evaluateCrossTurnEmotionalProgression function",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4D-COUNCIL-READINESS-001",
+      "family": "B4D-COUNCIL-READINESS",
+      "requirement": "validates council readiness fixtures without executing council runtime",
+      "executableTest": "councilReadiness.test.ts::evaluates council readiness scenarios with strictly prohibited runtime execution",
+      "implementationEvidence": "evaluateCouncilReadinessFixture function",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4D-COUNCIL-REJECTION-001",
+      "family": "B4D-COUNCIL-REJECTION",
+      "requirement": "council rejection and clarification fixtures validate non-eligibility without executing council runtime",
+      "executableTest": "councilRejection.test.ts::rejects simple factual question scenario with SINGLE_PERSPECTIVE_SUFFICIENT",
+      "implementationEvidence": "evaluateCouncilRejectionFixture function",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4D-MEMORY-COMPATIBILITY-001",
+      "family": "B4D-MEMORY-COMPATIBILITY",
+      "requirement": "strategic memory compatibility validation classifies candidates as non-authorizing and non-persistent metadata",
+      "executableTest": "memoryCompatibility.test.ts::classifies durable owner project principle as candidate eligible",
+      "implementationEvidence": "evaluateStrategicMemoryCompatibility function",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4D-MULTILINGUAL-001",
+      "family": "B4D-MULTILINGUAL",
+      "requirement": "preserves identity, role, decision style, and communication style across English, Hindi, and Hinglish",
+      "executableTest": "multilingualConsistency.test.ts::verifies character preservation across English, Hindi, and Hinglish",
+      "implementationEvidence": "evaluateMultilingualConsistency function",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4D-PRIVACY-001",
+      "family": "B4D-PRIVACY",
+      "requirement": "rejects sensitive token patterns and enforces non-persistence",
+      "executableTest": "identityDrift.test.ts::rejects sensitive payload content during evaluation",
+      "implementationEvidence": "evaluateIdentityDrift sensitive pattern sanitization",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4D-VOICE-PARITY-001",
+      "family": "B4D-VOICE-PARITY",
+      "requirement": "voice profile expectations preserve display and spoken semantic parity without activating voice hardware",
+      "executableTest": "goldenConversations.test.ts::provides canonical golden conversations for all 10 scenarios",
+      "implementationEvidence": "expectedVoiceProfile in GoldenTurn records",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4D-PROVIDER-INDEPENDENCE-001",
+      "family": "B4D-PROVIDER-INDEPENDENCE",
+      "requirement": "character identity validation remains provider neutral and independent of underlying model or connector",
+      "executableTest": "bibleConformance.test.ts::validates full machine-readable Character Bible v2.1 conformance",
+      "implementationEvidence": "CHARACTER_BIBLE_VERSION and provider-neutral validation contracts",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4D-ACCESS-AUTHORITY-001",
+      "family": "B4D-ACCESS-AUTHORITY",
+      "requirement": "B4D evaluations remain non-authorizing, non-executing, and advisory only",
+      "executableTest": "councilReadiness.test.ts::strictly enforces nonAuthority and false execution flags",
+      "implementationEvidence": "nonAuthority and false execution flags on evaluations",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4D-SHADOW-001",
+      "family": "B4D-SHADOW",
+      "requirement": "shadow validation builds zero side-effect evidence receipt",
+      "executableTest": "shadow.test.ts::generates shadow validation receipt with zero runtime side effects",
+      "implementationEvidence": "buildShadowValidationReceipt function",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4D-PROJECTION-READINESS-001",
+      "family": "B4D-PROJECTION-READINESS",
+      "requirement": "builds non-authorizing projection readiness contract for future Operations Center integration",
+      "executableTest": "projectionReadiness.test.ts::builds pure non-authorizing projection metadata",
+      "implementationEvidence": "buildOperationsCenterValidationProjection function",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4D-PRESERVATION-001",
+      "family": "B4D-PRESERVATION",
+      "requirement": "preserves predecessor B3, B4A, B4B, and B4C contract invariants",
+      "executableTest": "bibleConformance.test.ts::validates full machine-readable Character Bible v2.1 conformance",
+      "implementationEvidence": "Focused test suite execution across Track B packages",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4D-DETERMINISM-001",
+      "family": "B4D-DETERMINISM",
+      "requirement": "evaluation results and replay hashes are deterministic for equivalent inputs",
+      "executableTest": "goldenConversations.test.ts::produces deterministic validation evidence for golden turns",
+      "implementationEvidence": "fingerprint and deepFreeze helpers",
+      "status": "PASS",
+      "futureDependency": null
+    }
+  ]
+}
