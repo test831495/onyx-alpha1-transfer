@@ -8,6 +8,9 @@ import type {
   FileWriteRequest,
   FileOperationReceipt,
   FolderListingProjection,
+  FileRuntimeTrace,
+  FileTraceAction,
+  FileTraceStage,
 } from "@onyx/workspace-contracts";
 
 const GRAPH_ORIGIN = "https://graph.microsoft.com";
@@ -18,6 +21,7 @@ const ARTIFACT_PREFIX = "onyx-nova-connector-test-";
 const MAX_PAGE_SIZE = 200;
 const MAX_ITEMS = 200;
 const MAX_NAME = 256;
+type RequestTarget = "ONEDRIVE_DRIVE" | "ONEDRIVE_ITEM" | "SHAREPOINT_SITE" | "SHAREPOINT_LIBRARY" | "SHAREPOINT_ITEM";
 
 type GraphItem = { id?: unknown; name?: unknown; parentReference?: { id?: unknown; driveId?: unknown }; file?: { mimeType?: unknown; size?: unknown }; folder?: Record<string, unknown>; createdDateTime?: unknown; lastModifiedDateTime?: unknown; webUrl?: unknown; remoteItem?: unknown };
 type GraphDrive = { id?: unknown; driveType?: unknown; name?: unknown };
@@ -43,13 +47,18 @@ const operationRegistry = new Map<string, { scopeHash: string; state: "IN_PROGRE
 export type MicrosoftAccountClassification = FileAccountKind;
 export type MicrosoftFilesCapabilityState = "ONEDRIVE_READ_WRITE_GRANTED" | "ONEDRIVE_CONSENT_REQUIRED" | "SHAREPOINT_READ_WRITE_GRANTED" | "SHAREPOINT_CONSENT_REQUIRED" | "SHAREPOINT_NOT_APPLICABLE_PERSONAL_ACCOUNT" | "SHAREPOINT_GUEST_SITE_AVAILABLE" | "SHAREPOINT_NO_ACCESSIBLE_SITE" | "SHAREPOINT_ORGANIZATIONAL_POLICY_BLOCKED";
 
-export function classifyMicrosoftAccount(input: { tenantId?: unknown; accountType?: unknown; isGuest?: unknown }): MicrosoftAccountClassification {
-  if (input.isGuest === true) return "GUEST_MICROSOFT_ACCOUNT";
+export function classifyMicrosoftAccount(input: { tenantId?: unknown; effectiveTenantId?: unknown; accountType?: unknown; homeAccountType?: unknown; isGuest?: unknown }): MicrosoftAccountClassification {
   if (typeof input.accountType === "string") {
     const type = input.accountType.toLowerCase();
     if (type.includes("personal") || type === "msa") return "PERSONAL_MICROSOFT_ACCOUNT";
+  }
+  if (input.homeAccountType === "PERSONAL_MICROSOFT_ACCOUNT" || input.homeAccountType === "personal") return "PERSONAL_MICROSOFT_ACCOUNT";
+  if (input.isGuest === true) return "GUEST_MICROSOFT_ACCOUNT";
+  if (typeof input.accountType === "string") {
+    const type = input.accountType.toLowerCase();
     if (type.includes("organizational") || type === "work" || type === "school") return "ORGANIZATIONAL_MICROSOFT_ACCOUNT";
   }
+  if (typeof input.effectiveTenantId === "string" && input.effectiveTenantId.trim()) return "ORGANIZATIONAL_MICROSOFT_ACCOUNT";
   if (typeof input.tenantId === "string" && input.tenantId.trim()) return "ORGANIZATIONAL_MICROSOFT_ACCOUNT";
   return "UNKNOWN_MICROSOFT_ACCOUNT";
 }
@@ -103,6 +112,9 @@ export interface MicrosoftFilesAdapterOptions {
   readonly fetch?: typeof globalThis.fetch;
   readonly accountKind: FileAccountKind;
   readonly maxItems?: number;
+  readonly action?: FileTraceAction;
+  readonly buildIdentity?: string;
+  readonly onTrace?: (trace: FileRuntimeTrace) => void;
 }
 
 export interface SharePointTarget { readonly hostname: string; readonly sitePath: string; }
@@ -148,34 +160,64 @@ function cursorFailure(reason: FileDiagnosticReasonCode, accountKind: FileAccoun
 export class MicrosoftFilesAdapter {
   private readonly fetcher: typeof globalThis.fetch;
   private readonly maxItems: number;
+  private sequence = 0;
+  private readonly correlationId = `files-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   constructor(private readonly options: MicrosoftFilesAdapterOptions) {
     this.fetcher = options.fetch ?? globalThis.fetch;
     this.maxItems = Math.min(Math.max(options.maxItems ?? 50, 1), MAX_ITEMS);
+    this.trace("FILES_ACTION_RECEIVED");
+    this.trace("FILES_ACCOUNT_CONTEXT_REQUESTED");
+    this.trace("FILES_ACCOUNT_CONTEXT_AVAILABLE");
+    this.trace("FILES_ADAPTER_CONSTRUCTION_STARTED", { adapterAvailable: false });
+    this.trace("FILES_ADAPTER_CONSTRUCTION_SUCCEEDED", { adapterAvailable: true });
   }
 
-  private async request<T extends GraphResponse>(url: string, init: RequestInit = {}): Promise<{ body: T; response: Response }> {
+  private trace(stage: FileTraceStage, patch: Partial<FileRuntimeTrace> = {}): void {
+    this.options.onTrace?.(Object.freeze({ schemaVersion: 1, correlationId: this.correlationId, action: this.options.action ?? "OPEN_ONEDRIVE", stage, accountKind: this.options.accountKind, requestedScopeClass: "USER_READ_FILES_READWRITE", retryAttempted: false, buildIdentity: this.options.buildIdentity ?? "UNKNOWN", sequence: ++this.sequence, ...patch }));
+  }
+
+  complete(finalReasonCode?: FileRuntimeTrace["finalReasonCode"]): void {
+    this.trace("FILES_ACTION_COMPLETED", { finalReasonCode });
+  }
+
+  private async request<T extends GraphResponse>(url: string, init: RequestInit = {}, target: RequestTarget = url.includes("/sites/") ? "SHAREPOINT_SITE" : "ONEDRIVE_ITEM"): Promise<{ body: T; response: Response }> {
     const parsed = new URL(url);
     if (parsed.origin !== GRAPH_ORIGIN || parsed.protocol !== "https:") throw new Error("Microsoft Graph request target is invalid.");
-    const isSharePointRequest = url.includes("/sites/");
+    const isSharePointRequest = target.startsWith("SHAREPOINT");
+    this.trace("FILES_TOKEN_REQUEST_STARTED");
     let token: string;
     try { token = await this.options.accessToken([FILES_SCOPE]); }
-    catch { throw new MicrosoftFilesError(this.diagnostic(isSharePointRequest ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphRequest", "FAILED", isSharePointRequest ? "MICROSOFT_SHAREPOINT_CONSENT_REQUIRED" : "MICROSOFT_ONEDRIVE_CONSENT_REQUIRED", isSharePointRequest ? "SHAREPOINT_SITE" : "ONEDRIVE", { consentRequired: true })); }
-    if (!token) throw new Error("Microsoft Files access token is unavailable.");
+    catch (error) {
+      const interactionRequired = /interaction[_ -]?required|consent/i.test(error instanceof Error ? `${error.name} ${error.message} ${String(error.cause ?? "")}` : "");
+      const reason = interactionRequired ? "MICROSOFT_FILES_INTERACTION_REQUIRED" : "MICROSOFT_FILES_TOKEN_ACQUISITION_FAILED";
+      this.trace(interactionRequired ? "FILES_TOKEN_REQUEST_INTERACTION_REQUIRED" : "FILES_TOKEN_REQUEST_FAILED", { interactionRequired, reasonCode: reason, finalReasonCode: reason });
+      throw new MicrosoftFilesError(this.diagnostic(isSharePointRequest ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphRequest", "FAILED", isSharePointRequest && interactionRequired ? "MICROSOFT_SHAREPOINT_CONSENT_REQUIRED" : reason, isSharePointRequest ? "SHAREPOINT_SITE" : "ONEDRIVE", { consentRequired: interactionRequired }));
+    }
+    if (!token) { this.trace("FILES_TOKEN_REQUEST_FAILED", { reasonCode: "MICROSOFT_FILES_ACCESS_TOKEN_ABSENT", finalReasonCode: "MICROSOFT_FILES_ACCESS_TOKEN_ABSENT" }); throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_ONEDRIVE_READ", "graphRequest", "FAILED", "MICROSOFT_FILES_ACCESS_TOKEN_ABSENT", "ONEDRIVE")); }
+    this.trace("FILES_TOKEN_REQUEST_SUCCEEDED", { tokenPresent: true, tokenSourceClass: "UNKNOWN" });
+    this.trace("FILES_SCOPE_VALIDATION_SUCCEEDED", { returnedScopeClass: "FILES_READWRITE_PRESENT" });
+    this.trace("FILES_FETCH_DISPATCH_STARTED", { fetchReached: false });
     let response: Response;
     try { response = await this.fetcher(parsed, { ...init, headers: { accept: "application/json", ...(init.body ? { "content-type": "application/json" } : {}), ...(init.headers ?? {}), Authorization: `Bearer ${token}` } }); }
-    catch { throw new MicrosoftFilesError(this.diagnostic(isSharePointRequest ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphRequest", "FAILED", "MICROSOFT_FILES_UNKNOWN_BOUNDED_FAILURE", isSharePointRequest ? "SHAREPOINT_SITE" : "ONEDRIVE")); }
+    catch (error) { const reason = "MICROSOFT_FILES_FETCH_DISPATCH_FAILED" as const; this.trace("FILES_GRAPH_RESPONSE_FAILED", { fetchReached: false, errorNameClass: error instanceof TypeError ? "TYPE_ERROR" : "UNKNOWN", reasonCode: reason, finalReasonCode: reason }); throw new MicrosoftFilesError(this.diagnostic(isSharePointRequest ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphRequest", "FAILED", reason, isSharePointRequest ? "SHAREPOINT_SITE" : "ONEDRIVE")); }
+    this.trace("FILES_FETCH_DISPATCH_RETURNED", { fetchReached: true });
+    this.trace("FILES_GRAPH_RESPONSE_RECEIVED", { fetchReached: true, httpStatus: response.status });
     if (!response.ok) {
-      const isSharePoint = url.includes("/sites/");
-      const reason = isSharePoint
-        ? response.status === 401 ? "MICROSOFT_SHAREPOINT_CONSENT_REQUIRED" : response.status === 403 ? "MICROSOFT_SHAREPOINT_POLICY_BLOCKED" : response.status === 404 ? "MICROSOFT_SHAREPOINT_NO_ACCESSIBLE_SITE" : response.status === 429 ? "MICROSOFT_SHAREPOINT_RATE_LIMITED" : "MICROSOFT_SHAREPOINT_UNKNOWN_BOUNDED_FAILURE"
-        : response.status === 401 ? "MICROSOFT_ONEDRIVE_CONSENT_REQUIRED" : response.status === 403 ? "MICROSOFT_ONEDRIVE_WRITE_FORBIDDEN" : response.status === 404 ? "MICROSOFT_ONEDRIVE_ITEM_NOT_FOUND" : response.status === 429 ? "MICROSOFT_ONEDRIVE_RATE_LIMITED" : "MICROSOFT_ONEDRIVE_UNKNOWN_BOUNDED_FAILURE";
-      throw new MicrosoftFilesError(this.diagnostic(isSharePoint ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphRequest", "FAILED", reason, isSharePoint ? "SHAREPOINT_SITE" : "ONEDRIVE", { httpStatus: response.status, graphErrorClass: reason }));
+      const reason = target === "SHAREPOINT_SITE"
+        ? response.status === 404 ? "MICROSOFT_SHAREPOINT_SITE_NOT_FOUND" : response.status === 401 ? "MICROSOFT_SHAREPOINT_CONSENT_REQUIRED" : response.status === 403 ? "MICROSOFT_SHAREPOINT_POLICY_BLOCKED" : response.status === 429 ? "MICROSOFT_SHAREPOINT_RATE_LIMITED" : "MICROSOFT_SHAREPOINT_UNKNOWN_BOUNDED_FAILURE"
+        : target === "SHAREPOINT_LIBRARY"
+          ? response.status === 404 ? "MICROSOFT_SHAREPOINT_LIBRARY_NOT_FOUND" : response.status === 401 ? "MICROSOFT_SHAREPOINT_CONSENT_REQUIRED" : response.status === 403 ? "MICROSOFT_SHAREPOINT_POLICY_BLOCKED" : response.status === 429 ? "MICROSOFT_SHAREPOINT_RATE_LIMITED" : "MICROSOFT_SHAREPOINT_UNKNOWN_BOUNDED_FAILURE"
+          : target === "SHAREPOINT_ITEM"
+            ? response.status === 404 ? "MICROSOFT_SHAREPOINT_ITEM_NOT_FOUND" : response.status === 401 ? "MICROSOFT_SHAREPOINT_CONSENT_REQUIRED" : response.status === 403 ? "MICROSOFT_SHAREPOINT_POLICY_BLOCKED" : response.status === 429 ? "MICROSOFT_SHAREPOINT_RATE_LIMITED" : "MICROSOFT_SHAREPOINT_UNKNOWN_BOUNDED_FAILURE"
+            : response.status === 401 ? "MICROSOFT_FILES_HTTP_401" : response.status === 403 ? "MICROSOFT_FILES_HTTP_403" : response.status === 404 ? (target === "ONEDRIVE_DRIVE" ? "MICROSOFT_ONEDRIVE_NOT_PROVISIONED" : "MICROSOFT_ONEDRIVE_ITEM_NOT_FOUND") : response.status === 409 ? "MICROSOFT_FILES_HTTP_409" : response.status === 429 ? "MICROSOFT_FILES_RATE_LIMITED" : response.status >= 500 ? "MICROSOFT_FILES_PROVIDER_5XX" : "MICROSOFT_ONEDRIVE_UNKNOWN_BOUNDED_FAILURE";
+      this.trace("FILES_GRAPH_RESPONSE_FAILED", { httpStatus: response.status, reasonCode: reason, finalReasonCode: reason });
+      throw new MicrosoftFilesError(this.diagnostic(target.startsWith("SHAREPOINT") ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphRequest", "FAILED", reason, target === "SHAREPOINT_SITE" ? "SHAREPOINT_SITE" : target.startsWith("SHAREPOINT") ? "SHAREPOINT_LIBRARY" : "ONEDRIVE", { httpStatus: response.status, graphErrorClass: reason }));
     }
     let body: unknown = {};
     if (response.status !== 204) {
-      try { body = await response.json(); } catch { throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_ONEDRIVE_READ", "graphResponse", "FAILED", "MICROSOFT_FILES_UNKNOWN_BOUNDED_FAILURE", "ONEDRIVE")); }
+      try { body = await response.json(); } catch { const reason = "MICROSOFT_FILES_MALFORMED_RESPONSE" as const; this.trace("FILES_RESULT_MAPPING_FAILED", { reasonCode: reason, finalReasonCode: reason }); throw new MicrosoftFilesError(this.diagnostic(target.startsWith("SHAREPOINT") ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphResponse", "FAILED", reason, target === "SHAREPOINT_SITE" ? "SHAREPOINT_SITE" : target === "SHAREPOINT_ITEM" || target === "SHAREPOINT_LIBRARY" ? "SHAREPOINT_LIBRARY" : "ONEDRIVE")); }
     }
-    if (!body || typeof body !== "object" || Array.isArray(body)) throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_ONEDRIVE_READ", "graphResponse", "FAILED", "MICROSOFT_FILES_UNKNOWN_BOUNDED_FAILURE", "ONEDRIVE"));
+    if (!body || typeof body !== "object" || Array.isArray(body)) { const reason = "MICROSOFT_FILES_MALFORMED_RESPONSE" as const; this.trace("FILES_RESULT_MAPPING_FAILED", { reasonCode: reason, finalReasonCode: reason }); throw new MicrosoftFilesError(this.diagnostic(target.startsWith("SHAREPOINT") ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphResponse", "FAILED", reason, target === "SHAREPOINT_SITE" ? "SHAREPOINT_SITE" : target === "SHAREPOINT_ITEM" || target === "SHAREPOINT_LIBRARY" ? "SHAREPOINT_LIBRARY" : "ONEDRIVE")); }
     return { body: body as T, response };
   }
 
@@ -184,12 +226,17 @@ export class MicrosoftFilesAdapter {
   }
 
   async getOneDrive(): Promise<{ drive: DriveProjection; diagnostic: FileDiagnosticEnvelope }> {
-    if (this.options.accountKind === "UNKNOWN_MICROSOFT_ACCOUNT") throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_ONEDRIVE_READ", "getOneDrive", "FAILED", "MICROSOFT_ACCOUNT_CLASSIFICATION_FAILED", "ONEDRIVE"));
-    const { body } = await this.request<GraphResponse & GraphDrive>(`${GRAPH_BASE}/me/drive`);
+    this.trace("FILES_ACCOUNT_CLASSIFICATION_STARTED");
+    if (this.options.accountKind === "UNKNOWN_MICROSOFT_ACCOUNT") { this.trace("FILES_ACCOUNT_CLASSIFICATION_FAILED", { reasonCode: "MICROSOFT_ACCOUNT_CLASSIFICATION_FAILED", finalReasonCode: "MICROSOFT_ACCOUNT_CLASSIFICATION_FAILED" }); throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_ONEDRIVE_READ", "getOneDrive", "FAILED", "MICROSOFT_ACCOUNT_CLASSIFICATION_FAILED", "ONEDRIVE")); }
+    this.trace("FILES_ACCOUNT_CLASSIFICATION_SUCCEEDED");
+    this.trace("FILES_GET_DRIVE_STARTED");
+    const { body } = await this.request<GraphResponse & GraphDrive>(`${GRAPH_BASE}/me/drive`, {}, "ONEDRIVE_DRIVE");
+    this.trace("FILES_RESULT_MAPPING_STARTED");
     let driveId: string;
-    try { driveId = requireString(body.id, "drive id", 512); } catch { throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_ONEDRIVE_READ", "getOneDrive", "FAILED", "MICROSOFT_FILES_UNKNOWN_BOUNDED_FAILURE", "ONEDRIVE")); }
+    try { driveId = requireString(body.id, "drive id", 512); } catch { const reason = "MICROSOFT_FILES_MALFORMED_RESPONSE" as const; this.trace("FILES_RESULT_MAPPING_FAILED", { reasonCode: reason, finalReasonCode: reason }); throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_ONEDRIVE_READ", "getOneDrive", "FAILED", reason, "ONEDRIVE")); }
     const driveType = body.driveType === "personal" ? "PERSONAL" : body.driveType === "business" ? "BUSINESS" : "UNKNOWN";
     const drive = Object.freeze({ provider: "microsoft", accountKind: this.options.accountKind, driveId, driveType, ...(typeof body.name === "string" ? { displayName: body.name.slice(0, MAX_NAME) } : {}), sourcePathClass: "ONEDRIVE", sourceAttribution: "MICROSOFT_GRAPH" }) as DriveProjection;
+    this.trace("FILES_RESULT_MAPPING_SUCCEEDED");
     return { drive, diagnostic: this.diagnostic("MICROSOFT_ONEDRIVE_READ", "getOneDrive", "COMPLETED", "MICROSOFT_ONEDRIVE_SUCCEEDED", "ONEDRIVE") };
   }
 
@@ -216,7 +263,7 @@ export class MicrosoftFilesAdapter {
         if (!url.includes(`/drives/${encodeURIComponent(driveId)}/`) || !url.includes(`/items/${encodeURIComponent(itemId)}/children`)) throw cursorFailure("MICROSOFT_FILES_CURSOR_RESOURCE_MISMATCH", this.options.accountKind, "listChildren");
       } catch (error) { if (error instanceof MicrosoftFilesError) throw error; throw cursorFailure("MICROSOFT_FILES_CURSOR_INVALID", this.options.accountKind, "listChildren"); }
     } else url = `${GRAPH_BASE}/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(itemId)}/children?$top=${this.maxItems}`;
-    const { body } = await this.request<GraphResponse>(url!);
+    const { body } = await this.request<GraphResponse>(url!, {}, sourcePathClass === "ONEDRIVE" ? "ONEDRIVE_ITEM" : "SHAREPOINT_ITEM");
     if (!Array.isArray(body.value) || body.value.length > MAX_ITEMS) throw new MicrosoftFilesError(this.diagnostic(capability, "listChildren", "FAILED", "MICROSOFT_FILES_UNKNOWN_BOUNDED_FAILURE", sourcePathClass === "ONEDRIVE" ? "ONEDRIVE" : "SHAREPOINT_LIBRARY"));
     const parent: FileItemProjection = Object.freeze({ provider: "microsoft", accountKind: this.options.accountKind, driveId, itemId, name: itemId === "root" ? "Root" : "Folder", itemKind: "FOLDER", sourcePathClass, writeCapability: "READ_WRITE", sourceAttribution: "MICROSOFT_GRAPH" });
     let items: FileItemProjection[];
@@ -234,10 +281,10 @@ export class MicrosoftFilesAdapter {
     if (!target) throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_SHAREPOINT_READ", "resolveSharePoint", "FAILED", "MICROSOFT_SHAREPOINT_NO_ACCESSIBLE_SITE", "SHAREPOINT_SITE"));
     if (!/^[a-z0-9.-]+$/i.test(target.hostname) || !target.sitePath.startsWith("/")) throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_SHAREPOINT_READ", "resolveSharePoint", "FAILED", "MICROSOFT_FILES_UNKNOWN_BOUNDED_FAILURE", "SHAREPOINT_SITE"));
     const siteUrl = `${GRAPH_BASE}/sites/${encodeURIComponent(target.hostname)}:${target.sitePath}`;
-    const { body: site } = await this.request<GraphResponse & { id?: unknown; name?: unknown }>(siteUrl);
+    const { body: site } = await this.request<GraphResponse & { id?: unknown; name?: unknown }>(siteUrl, {}, "SHAREPOINT_SITE");
     let siteId: string;
     try { siteId = requireString(site.id, "site id", 512); } catch { throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_SHAREPOINT_READ", "resolveSharePoint", "FAILED", "MICROSOFT_SHAREPOINT_SITE_NOT_FOUND", "SHAREPOINT_SITE")); }
-    const { body } = await this.request<GraphResponse>(`${GRAPH_BASE}/sites/${encodeURIComponent(siteId)}/drives`);
+    const { body } = await this.request<GraphResponse>(`${GRAPH_BASE}/sites/${encodeURIComponent(siteId)}/drives`, {}, "SHAREPOINT_LIBRARY");
     if (!Array.isArray(body.value) || body.value.length > MAX_ITEMS) throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_SHAREPOINT_READ", "resolveSharePoint", "FAILED", "MICROSOFT_SHAREPOINT_LIBRARY_NOT_FOUND", "SHAREPOINT_SITE"));
     let drives: DriveProjection[];
     try { drives = body.value.map((value) => { const drive = value as GraphDrive; return Object.freeze({ provider: "microsoft", accountKind: this.options.accountKind, driveId: requireString(drive.id, "drive id", 512), driveType: "DOCUMENT_LIBRARY", ...(typeof drive.name === "string" ? { displayName: drive.name.slice(0, MAX_NAME) } : {}), sourcePathClass: "SHAREPOINT_LIBRARY", sourceAttribution: "MICROSOFT_GRAPH" }) as DriveProjection; }); }
@@ -265,28 +312,29 @@ export class MicrosoftFilesAdapter {
     let testFolderId = "";
     let childFolderId = "";
     let artifactId = "";
+    const requestTarget = input.sourcePathClass === "SHAREPOINT_LIBRARY" ? "SHAREPOINT_ITEM" : "ONEDRIVE_ITEM";
     try {
       const existing = await this.listChildren(input.driveId, input.parentItemId, input.sourcePathClass);
       const collision = existing.listing.items.find((item) => item.name === TEST_FOLDER);
       if (collision && collision.itemKind !== "FOLDER") throw new Error("Microsoft Files test folder name collides with a file.");
       if (collision) testFolderId = collision.itemId;
       else {
-        const created = await this.mutate(`${GRAPH_BASE}/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.parentItemId)}/children`, { method: "POST", body: JSON.stringify({ name: TEST_FOLDER, folder: {}, "@microsoft.graph.conflictBehavior": "fail" }) });
+        const created = await this.mutate(`${GRAPH_BASE}/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.parentItemId)}/children`, { method: "POST", body: JSON.stringify({ name: TEST_FOLDER, folder: {}, "@microsoft.graph.conflictBehavior": "fail" }) }, requestTarget);
         testFolderId = requireString(created.body.id, "created folder id", 512); createdItemIds.push(testFolderId);
       }
       const folderItems = await this.listChildren(input.driveId, testFolderId, input.sourcePathClass);
       if (folderItems.listing.items.some((item) => item.name === input.artifactName)) throw new Error("Microsoft Files synthetic artifact already exists.");
-      const upload = await this.mutate(`${GRAPH_BASE}/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(testFolderId)}:/${encodeURIComponent(input.artifactName)}:/content`, { method: "PUT", headers: { "content-type": "text/plain" }, body: "ONYX-NOVA bounded connector validation artifact" });
+      const upload = await this.mutate(`${GRAPH_BASE}/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(testFolderId)}:/${encodeURIComponent(input.artifactName)}:/content`, { method: "PUT", headers: { "content-type": "text/plain" }, body: "ONYX-NOVA bounded connector validation artifact" }, requestTarget);
       artifactId = requireString(upload.body.id, "uploaded artifact id", 512); createdItemIds.push(artifactId);
-      await this.mutate(`${GRAPH_BASE}/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(artifactId)}`, { method: "PATCH", body: JSON.stringify({ name: `${input.artifactName}.renamed` }) });
-      const child = await this.mutate(`${GRAPH_BASE}/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(testFolderId)}/children`, { method: "POST", body: JSON.stringify({ name: `${TEST_FOLDER}-child`, folder: {}, "@microsoft.graph.conflictBehavior": "fail" }) });
+      await this.mutate(`${GRAPH_BASE}/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(artifactId)}`, { method: "PATCH", body: JSON.stringify({ name: `${input.artifactName}.renamed` }) }, requestTarget);
+      const child = await this.mutate(`${GRAPH_BASE}/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(testFolderId)}/children`, { method: "POST", body: JSON.stringify({ name: `${TEST_FOLDER}-child`, folder: {}, "@microsoft.graph.conflictBehavior": "fail" }) }, requestTarget);
       childFolderId = requireString(child.body.id, "created child folder id", 512); createdItemIds.push(childFolderId);
-      await this.mutate(`${GRAPH_BASE}/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(artifactId)}`, { method: "PATCH", body: JSON.stringify({ parentReference: { id: childFolderId } }) });
-      await this.deleteOwnedAndVerify(input.driveId, artifactId);
+      await this.mutate(`${GRAPH_BASE}/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(artifactId)}`, { method: "PATCH", body: JSON.stringify({ parentReference: { id: childFolderId } }) }, requestTarget);
+      await this.deleteOwnedAndVerify(input.driveId, artifactId, requestTarget);
       deletedItemIds.push(artifactId);
-      await this.deleteOwnedAndVerify(input.driveId, childFolderId);
+      await this.deleteOwnedAndVerify(input.driveId, childFolderId, requestTarget);
       deletedItemIds.push(childFolderId);
-      if (createdItemIds.includes(testFolderId)) { await this.deleteOwnedAndVerify(input.driveId, testFolderId); deletedItemIds.push(testFolderId); }
+      if (createdItemIds.includes(testFolderId)) { await this.deleteOwnedAndVerify(input.driveId, testFolderId, requestTarget); deletedItemIds.push(testFolderId); }
       const receipt = Object.freeze({ operationId: input.operationId, idempotencyKey: boundedHash(input.idempotencyKey), createdItemIds: Object.freeze(createdItemIds), deletedItemIds: Object.freeze(deletedItemIds), cleanupVerified: true, uncertainExternalEffect, replayDisposition: "NEW_EXECUTION" as const, finalReasonCode: "MICROSOFT_FILES_CLEANUP_VERIFIED" as const });
       operationRegistry.set(input.idempotencyKey, { scopeHash, state: "SUCCEEDED", receipt });
       return receipt;
@@ -296,7 +344,7 @@ export class MicrosoftFilesAdapter {
       if (!uncertainExternalEffect) {
         try {
           for (const itemId of [artifactId, childFolderId, testFolderId].filter((itemId) => itemId && createdItemIds.includes(itemId) && !deletedItemIds.includes(itemId)).reverse()) {
-            await this.deleteOwnedAndVerify(input.driveId, itemId);
+            await this.deleteOwnedAndVerify(input.driveId, itemId, requestTarget);
             deletedItemIds.push(itemId);
           }
           cleanupVerified = true;
@@ -309,13 +357,13 @@ export class MicrosoftFilesAdapter {
     }
   }
 
-  private async mutate(url: string, init: RequestInit): Promise<{ body: GraphResponse & { id?: unknown }; response: Response }> {
-    return this.request<GraphResponse & { id?: unknown }>(url, init);
+  private async mutate(url: string, init: RequestInit, target: RequestTarget = "ONEDRIVE_ITEM"): Promise<{ body: GraphResponse & { id?: unknown }; response: Response }> {
+    return this.request<GraphResponse & { id?: unknown }>(url, init, target);
   }
 
-  private async deleteOwnedAndVerify(driveId: string, itemId: string): Promise<void> {
-    await this.mutate(`${GRAPH_BASE}/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(itemId)}`, { method: "DELETE" });
-    try { await this.request(`${GRAPH_BASE}/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(itemId)}`); }
+  private async deleteOwnedAndVerify(driveId: string, itemId: string, target: RequestTarget = "ONEDRIVE_ITEM"): Promise<void> {
+    await this.mutate(`${GRAPH_BASE}/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(itemId)}`, { method: "DELETE" }, target);
+    try { await this.request(`${GRAPH_BASE}/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(itemId)}`, {}, target); }
     catch (error) { if (error instanceof MicrosoftFilesError && error.diagnostic.httpStatus === 404) return; throw error; }
     throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_ONEDRIVE_WRITE", "cleanupVerification", "FAILED", "MICROSOFT_FILES_CLEANUP_FAILED", "ONEDRIVE"));
   }

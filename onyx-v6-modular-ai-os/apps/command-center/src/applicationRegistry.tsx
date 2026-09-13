@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { AutomationDashboard } from "./components/AutomationDashboard";
 import { MailPanel } from "./components/MailPanel";
 import { WorkspacePanel } from "./components/WorkspacePanel";
+import { MicrosoftFilesPanel } from "./components/MicrosoftFilesPanel";
+import { loadMicrosoftOneDriveRoot, runBoundedMicrosoftOneDriveTest } from "./workspaceController";
 
 export type AppRegistryEntry = {
   appId: string;
@@ -97,6 +99,19 @@ export const APP_REGISTRY: AppRegistryEntry[] = [
     supportsClose: true,
     supportsDetails: true,
     compactSummary: "Outlook Mail is ready to connect.",
+  },
+  {
+    appId: "files",
+    friendlyLabel: "Files",
+    accessibleLabel: "Files",
+    component: <MicrosoftFilesPanel available={false} onRead={async (continuation) => (await loadMicrosoftOneDriveRoot(continuation)).listing} onWriteTest={runBoundedMicrosoftOneDriveTest} />,
+    detailComponent: <MicrosoftFilesPanel available={false} onRead={async (continuation) => (await loadMicrosoftOneDriveRoot(continuation)).listing} onWriteTest={runBoundedMicrosoftOneDriveTest} />,
+    launcherOrder: 5,
+    icon: "▤",
+    supportsMinimize: true,
+    supportsClose: true,
+    supportsDetails: true,
+    compactSummary: "Provider-neutral files shell; Microsoft OneDrive and SharePoint are available when connected.",
   },
   {
     appId: "automation",

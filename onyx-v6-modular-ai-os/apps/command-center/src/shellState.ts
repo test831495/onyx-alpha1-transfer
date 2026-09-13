@@ -12,6 +12,7 @@ export type ShellAppId =
   | "tasks"
   | "news"
   | "workspace"
+  | "files"
   | "mail"
   | "calendar"
   | "automation"
@@ -559,7 +560,8 @@ const SHELL_APP_ALIASES: Record<string, ShellAppId> = {
   workspace: "workspace",
   mail: "mail",
   outlook: "mail",
-  files: "workspace",
+  files: "files",
+  file: "files",
   calendar: "calendar",
   automation: "automation",
   automations: "automation",
@@ -589,6 +591,7 @@ export function resolveShellIntent(raw: string): ShellIntent | null {
   if (/^show onyx and nova$|^show both$|^show onyx and nova together$/.test(text)) {
     return { type: "SET_PRESENCE_MODE", mode: "ONYX_AND_NOVA" };
   }
+  if (text === "files" || text === "file") return { type: "OPEN_APP", appId: "files" };
 
   const detailsMatch = text.match(/^(open|show)\s+(.+)\s+details$/);
   if (detailsMatch) {

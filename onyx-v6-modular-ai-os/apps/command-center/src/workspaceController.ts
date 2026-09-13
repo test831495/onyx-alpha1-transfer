@@ -1,4 +1,4 @@
-import type { WorkspaceSnapshot } from "@onyx/workspace-contracts";
+import type { FileRuntimeTrace, WorkspaceSnapshot } from "@onyx/workspace-contracts";
 import {
   MicrosoftWorkspaceConnector,
   plannedProviderSnapshots,
@@ -59,19 +59,33 @@ export async function loadMicrosoftMailMessagesWithDiagnostic(options?: Microsof
 export const connectMicrosoftMail=()=>microsoft.connectMail();
 export const connectMicrosoft=()=>microsoft.connect();
 export const reconnectMicrosoft=()=>microsoft.reconnect();
+export const reconnectMicrosoftFiles=()=>microsoft.reconnectFiles();
 export const disconnectMicrosoft=()=>microsoft.disconnect();
-const microsoftFiles = (accountKind: MicrosoftAccountClassification = microsoft.getFilesAccountKind()) => new MicrosoftFilesAdapter({ accessToken: (scopes) => microsoft.getAccessToken(scopes), accountKind });
+let microsoftFilesTrace: readonly FileRuntimeTrace[] = Object.freeze([]);
+const microsoftFilesTraceListeners = new Set<() => void>();
+const recordMicrosoftFilesTrace = (trace: FileRuntimeTrace): void => {
+  microsoftFilesTrace = Object.freeze([...microsoftFilesTrace, Object.freeze(trace)].slice(-64));
+  microsoftFilesTraceListeners.forEach((listener) => listener());
+};
+export const getMicrosoftFilesTrace = (): readonly FileRuntimeTrace[] => microsoftFilesTrace;
+export const subscribeMicrosoftFilesTrace = (listener: () => void): (() => void) => { microsoftFilesTraceListeners.add(listener); return () => microsoftFilesTraceListeners.delete(listener); };
+export const clearMicrosoftFilesTrace = (): void => { microsoftFilesTrace = Object.freeze([]); microsoftFilesTraceListeners.forEach((listener) => listener()); };
+export const completeMicrosoftFilesTrace = (adapter: MicrosoftFilesAdapter, finalReasonCode: FileRuntimeTrace["finalReasonCode"]): void => { adapter.complete(finalReasonCode); };
+const microsoftFiles = (action: "OPEN_ONEDRIVE" | "BOUNDED_ONEDRIVE_TEST" = "OPEN_ONEDRIVE", accountKind: MicrosoftAccountClassification = microsoft.getFilesAccountKind()) => new MicrosoftFilesAdapter({ accessToken: (scopes) => microsoft.getAccessToken(scopes), accountKind, action, onTrace: recordMicrosoftFilesTrace, buildIdentity: getMailBuildIdentity().sha });
 export async function loadMicrosoftOneDriveRoot(continuation?: string) {
-  const adapter = microsoftFiles();
+  const adapter = microsoftFiles("OPEN_ONEDRIVE");
   const { drive } = await adapter.getOneDrive();
-  return adapter.listChildren(drive.driveId, "root", "ONEDRIVE", continuation);
+  const result = await adapter.listChildren(drive.driveId, "root", "ONEDRIVE", continuation);
+  completeMicrosoftFilesTrace(adapter, result.diagnostic.finalReasonCode);
+  return result;
 }
 export async function runBoundedMicrosoftOneDriveTest() {
-  return microsoftFiles().runBoundedWriteValidation({
+  const adapter = microsoftFiles("BOUNDED_ONEDRIVE_TEST");
+  const result = await adapter.runBoundedWriteValidation({
     operationId: crypto.randomUUID(),
     idempotencyKey: `onyx-files-${crypto.randomUUID()}`,
     provider: "microsoft",
-    driveId: (await microsoftFiles().getOneDrive()).drive.driveId,
+    driveId: (await adapter.getOneDrive()).drive.driveId,
     parentItemId: "root",
     testFolderName: "ONYX-NOVA-Connector-Test",
     artifactName: `onyx-nova-connector-test-${crypto.randomUUID()}.txt`,
@@ -80,13 +94,21 @@ export async function runBoundedMicrosoftOneDriveTest() {
     confirmed: true,
     sourcePathClass: "ONEDRIVE",
   });
+  completeMicrosoftFilesTrace(adapter, result.finalReasonCode);
+  return result;
 }
 export const getMicrosoftFilesAccountKind = (): MicrosoftAccountClassification => microsoft.getFilesAccountKind();
 export async function resolveMicrosoftSharePoint(hostname: string, sitePath: string): Promise<SharePointResolution> {
-  return (await microsoftFiles().resolveSharePoint({ hostname, sitePath: sitePath.startsWith("/") ? sitePath : `/${sitePath}` }));
+  const adapter = microsoftFiles("OPEN_ONEDRIVE");
+  const result = await adapter.resolveSharePoint({ hostname, sitePath: sitePath.startsWith("/") ? sitePath : `/${sitePath}` });
+  completeMicrosoftFilesTrace(adapter, result.diagnostic.finalReasonCode);
+  return result;
 }
 export async function loadMicrosoftSharePointFolder(siteId: string, driveId: string, itemId: string, continuation?: string) {
-  return (await microsoftFiles().listChildren(driveId, itemId, "SHAREPOINT_LIBRARY", continuation, { siteId, libraryId: driveId })).listing;
+  const adapter = microsoftFiles("OPEN_ONEDRIVE");
+  const result = await adapter.listChildren(driveId, itemId, "SHAREPOINT_LIBRARY", continuation, { siteId, libraryId: driveId });
+  completeMicrosoftFilesTrace(adapter, result.diagnostic.finalReasonCode);
+  return result.listing;
 }
 export async function runBoundedMicrosoftSharePointTest(driveId: string, parentItemId: string) {
   return microsoftFiles().runBoundedWriteValidation({

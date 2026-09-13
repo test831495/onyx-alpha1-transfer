@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { ShellAppId } from "./shellState";
 import { NewsPanel } from "./components/NewsPanel";
 import { MailPanel } from "./components/MailPanel";
@@ -7,6 +7,8 @@ import { CalendarIntelligencePanel } from "./components/CalendarIntelligencePane
 import { AutomationDashboard } from "./components/AutomationDashboard";
 import { SettingsCenter } from "./components/SettingsCenter";
 import { ProviderHealthDashboard } from "./components/ProviderHealthDashboard";
+import { MicrosoftFilesPanel } from "./components/MicrosoftFilesPanel";
+import { getMicrosoftFilesAccountKind, getMicrosoftFilesTrace, loadMicrosoftOneDriveRoot, loadMicrosoftSharePointFolder, reconnectMicrosoftFiles, resolveMicrosoftSharePoint, runBoundedMicrosoftOneDriveTest, runBoundedMicrosoftSharePointTest, subscribeMicrosoftFilesTrace } from "./workspaceController";
 import type { CalendarEventRecord, CalendarRangeKind } from "@onyx/calendar-intelligence";
 import type { MicrosoftCalendarReadDiagnostic } from "@onyx/workspace-connectors";
 import type { WorkspaceProviderId } from "@onyx/workspace-contracts";
@@ -47,6 +49,8 @@ export const DetailDataContext = React.createContext<{
   calendarUnavailable?: boolean;
   calendarEvents?: readonly CalendarEventRecord[];
   calendarDiagnostic?: MicrosoftCalendarReadDiagnostic;
+  filesRuntimeTrace?: readonly import("@onyx/workspace-contracts").FileRuntimeTrace[];
+  onFilesTraceClear?: () => void;
 }>({});
 
 // Real detail components wrapped to match the required signature
@@ -86,6 +90,16 @@ const WorkspaceDetail: React.FC<{ appId: ShellAppId }> = ({ appId }) => {
       onProviderAction={data.onWorkspaceProviderAction}
     />
   );
+};
+
+const FilesDetail: React.FC<{ appId: ShellAppId }> = () => {
+  const data = useContext(DetailDataContext);
+  const [filesTrace, setFilesTrace] = useState(getMicrosoftFilesTrace);
+  useEffect(() => subscribeMicrosoftFilesTrace(() => setFilesTrace(getMicrosoftFilesTrace())), []);
+  const snapshot = data.workspaceSnapshot;
+  const provider = snapshot?.providers?.find((entry: any) => entry.provider === "microsoft");
+  const available = provider?.state === "connected" && provider.capabilities.some((capability: any) => capability.id === "files" && capability.enabled);
+  return <MicrosoftFilesPanel available={available} onRead={async (continuation) => (await loadMicrosoftOneDriveRoot(continuation)).listing} onWriteTest={runBoundedMicrosoftOneDriveTest} onReconnectFiles={reconnectMicrosoftFiles} runtimeTrace={filesTrace} onTraceClear={data.onFilesTraceClear} sharePointAccountKind={getMicrosoftFilesAccountKind()} sharePointAvailable={Boolean(provider?.capabilities?.some((capability: any) => capability.id === "sharepoint" && capability.enabled))} onResolveSharePoint={resolveMicrosoftSharePoint} onReadSharePoint={loadMicrosoftSharePointFolder} onWriteSharePointTest={runBoundedMicrosoftSharePointTest} />;
 };
 
 const MailDetail: React.FC<{ appId: ShellAppId }> = () => {
@@ -185,6 +199,14 @@ export const APP_DETAIL_REGISTRY: AppDetailSpec[] = [
     icon: "▣",
     cardComponent: () => <SimpleCard appId="workspace" title="Workspace" />,
     detailComponent: WorkspaceDetail,
+    supportsDetails: true,
+  },
+  {
+    appId: "files",
+    label: "Files",
+    icon: "▤",
+    cardComponent: () => <SimpleCard appId="files" title="Files" />,
+    detailComponent: FilesDetail,
     supportsDetails: true,
   },
   {

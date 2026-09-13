@@ -95,6 +95,16 @@ describe("Microsoft runtime config reachability", () => {
     expect(getAccessToken).toHaveBeenCalledWith([...MICROSOFT_COMBINED_WORKSPACE_SCOPES]);
   });
 
+  it("requests only profile and Files scopes for Files recovery", async () => {
+    const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
+    const loginRedirect = vi.fn().mockResolvedValue(undefined);
+    Object.assign(connector, { application: { loginRedirect } });
+
+    await connector.reconnectFiles();
+
+    expect(loginRedirect).toHaveBeenCalledWith({ scopes: ["User.Read", "Files.ReadWrite"], prompt: "select_account" });
+  });
+
   it("invokes the existing interactive sign-in flow when explicit reconnect requires interaction", async () => {
     const connector = new MicrosoftWorkspaceConnector({ clientId: "client", tenantId: "tenant" });
     const loginRedirect = vi.fn().mockResolvedValue(undefined);
