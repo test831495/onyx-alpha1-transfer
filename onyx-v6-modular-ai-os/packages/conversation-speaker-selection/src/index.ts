@@ -1,6 +1,6 @@
 export const SPEAKER_SELECTION_VERSION = "B4C-1" as const;
 
-export const SPEAKERS = ["ONYX", "NOVA"] as const;
+export const SPEAKERS = Object.freeze(["ONYX", "NOVA"] as const);
 export type Speaker = (typeof SPEAKERS)[number];
 export type ExplicitSpeakerRequest = "NONE" | "ONYX" | "NOVA" | "BOTH" | "COUNCIL";
 export type SelectionDisposition = "SELECTED" | "COUNCIL_ELIGIBLE" | "CLARIFICATION_REQUIRED" | "UNAVAILABLE" | "NOT_ASSESSABLE";
@@ -194,7 +194,25 @@ export const DEFAULT_REQUEST: SpeakerSelectionRequest = Object.freeze({
   boundedSessionLineage: Object.freeze(["default-session"]),
 });
 
-const freeze = <T>(value: T): T => Object.freeze(value);
+const deepFreeze = <T>(value: T): T => {
+  if (!value || typeof value !== "object") return value;
+  const seen = new WeakSet<object>();
+  const freezeRecursively = (entry: unknown): void => {
+    if (!entry || typeof entry !== "object") return;
+    if (seen.has(entry as object)) return;
+    seen.add(entry as object);
+    Object.getOwnPropertyNames(entry as object).forEach((key) => {
+      const descriptor = Object.getOwnPropertyDescriptor(entry as object, key);
+      if (descriptor && typeof descriptor.value === "object" && descriptor.value !== null) {
+        freezeRecursively(descriptor.value);
+      }
+    });
+    Object.freeze(entry as object);
+  };
+  freezeRecursively(value);
+  return value;
+};
+const freeze = <T>(value: T): T => deepFreeze(value);
 const stableStringify = (value: unknown): string => {
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
   if (value && typeof value === "object") return `{${Object.keys(value as Record<string, unknown>).sort().map((key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`).join(",")}}`;
@@ -209,14 +227,51 @@ const hash = (value: unknown): string => {
   return (result >>> 0).toString(16).padStart(8, "0");
 };
 
+const readRequired = <T>(source: Record<string, unknown>, key: string): T => {
+  const value = Reflect.get(source, key);
+  if (value === undefined) throw new Error(`MISSING_${key}`);
+  return value as T;
+};
+
 const normalizeRequest = (request: SpeakerSelectionRequest): SpeakerSelectionRequest => {
   if (!request || typeof request !== "object") throw new Error("INVALID_REQUEST");
-  return freeze({
-    ...request,
-    emotionalEvidence: Object.freeze([...request.emotionalEvidence]),
-    trustedFreshnessFacts: Object.freeze([...request.trustedFreshnessFacts]),
-    boundedSessionLineage: Object.freeze([...request.boundedSessionLineage]),
-  });
+  const source = request as Record<string, unknown>;
+  const emotionalEvidence = Array.isArray(readRequired(source, "emotionalEvidence")) ? [...readRequired(source, "emotionalEvidence") as unknown[]] : [];
+  const trustedFreshnessFacts = Array.isArray(readRequired(source, "trustedFreshnessFacts")) ? [...readRequired(source, "trustedFreshnessFacts") as unknown[]] : [];
+  const boundedSessionLineage = Array.isArray(readRequired(source, "boundedSessionLineage")) ? [...readRequired(source, "boundedSessionLineage") as unknown[]] : [];
+  const normalized: SpeakerSelectionRequest = {
+    requestVersion: readRequired(source, "requestVersion") as string,
+    requestFingerprint: readRequired(source, "requestFingerprint") as string,
+    explicitSpeakerRequest: readRequired(source, "explicitSpeakerRequest") as ExplicitSpeakerRequest,
+    explicitRequestTrusted: Boolean(readRequired(source, "explicitRequestTrusted")),
+    externalOrUntrustedSpeakerDirectivePresent: Boolean(readRequired(source, "externalOrUntrustedSpeakerDirectivePresent")),
+    intentClass: readRequired(source, "intentClass") as IntentClass,
+    ambiguityClass: readRequired(source, "ambiguityClass") as AmbiguityClass,
+    clarificationRequired: Boolean(readRequired(source, "clarificationRequired")),
+    sessionFingerprint: readRequired(source, "sessionFingerprint") as string,
+    currentTurnOwner: readRequired(source, "currentTurnOwner") as Speaker | "NONE",
+    followUpClass: readRequired(source, "followUpClass") as FollowUpClass,
+    followUpOwnershipFreshness: readRequired(source, "followUpOwnershipFreshness") as FreshnessClass,
+    currentDefaultSpeaker: readRequired(source, "currentDefaultSpeaker") as Speaker,
+    onyxAvailable: Boolean(readRequired(source, "onyxAvailable")),
+    novaAvailable: Boolean(readRequired(source, "novaAvailable")),
+    localCapabilityAvailable: Boolean(readRequired(source, "localCapabilityAvailable")),
+    cloudCapabilityAvailable: Boolean(readRequired(source, "cloudCapabilityAvailable")),
+    topicClass: readRequired(source, "topicClass") as SpeakerTopicClass,
+    materialityClass: readRequired(source, "materialityClass") as "LOW" | "MEDIUM" | "HIGH",
+    truthSourceClass: readRequired(source, "truthSourceClass") as SpeakerSelectionRequest["truthSourceClass"],
+    uncertaintyClass: readRequired(source, "uncertaintyClass") as SpeakerSelectionRequest["uncertaintyClass"],
+    materialConflictPresent: Boolean(readRequired(source, "materialConflictPresent")),
+    languageClass: readRequired(source, "languageClass") as LanguageClass,
+    codeSwitchEvidenceClass: readRequired(source, "codeSwitchEvidenceClass") as CodeSwitchEvidenceClass,
+    operatingMode: readRequired(source, "operatingMode") as OperatingMode,
+    featureMode: readRequired(source, "featureMode") as FeatureMode,
+    privacyEligibility: readRequired(source, "privacyEligibility") as PrivacyResult,
+    emotionalEvidence: Object.freeze(emotionalEvidence),
+    trustedFreshnessFacts: Object.freeze(trustedFreshnessFacts),
+    boundedSessionLineage: Object.freeze(boundedSessionLineage),
+  };
+  return freeze(normalized);
 };
 
 const canUseSpeaker = (speaker: Speaker, request: SpeakerSelectionRequest): boolean => {
@@ -275,7 +330,7 @@ function buildEmission(request: SpeakerSelectionRequest, selectedSpeaker?: Speak
     responseGenerated: false,
   };
 
-  return Object.freeze({
+  return deepFreeze({
     ...decision,
     replayEvidence: hash({
       decision,
@@ -286,12 +341,47 @@ function buildEmission(request: SpeakerSelectionRequest, selectedSpeaker?: Speak
 }
 
 export function decideSpeaker(request: SpeakerSelectionRequest): SpeakerDecision {
-  const normalized = normalizeRequest(request);
-  if (normalized.privacyEligibility === "NOT_ELIGIBLE") {
-    return buildEmission(normalized, undefined);
+  let normalized: SpeakerSelectionRequest;
+  try {
+    normalized = normalizeRequest(request);
+  } catch {
+    return deepFreeze({
+      ...buildEmission(DEFAULT_REQUEST, undefined),
+      selectedSpeaker: undefined,
+      selectionDisposition: "NOT_ASSESSABLE",
+      selectionReasonCode: "NOT_ASSESSABLE",
+      councilEligibility: "CLARIFICATION_REQUIRED",
+      councilEligibilityReason: "POLICY_RESTRICTED",
+      clarificationRequired: true,
+      limitations: ["POLICY_RESTRICTED"],
+      confidenceEvidence: "LOW",
+      precedenceLevel: 1,
+      explicitRequestHonored: false,
+      followUpOwnershipUsed: false,
+      fallbackApplied: false,
+      activeDefaultSpeakerUsed: false,
+    });
+  }
+  if (normalized.privacyEligibility === "NOT_ELIGIBLE" || normalized.privacyEligibility === "UNKNOWN") {
+    return deepFreeze({
+      ...buildEmission(normalized, undefined),
+      selectedSpeaker: undefined,
+      selectionDisposition: "NOT_ASSESSABLE",
+      selectionReasonCode: "POLICY_RESTRICTED",
+      councilEligibility: "CLARIFICATION_REQUIRED",
+      councilEligibilityReason: "POLICY_RESTRICTED",
+      clarificationRequired: true,
+      limitations: ["POLICY_RESTRICTED"],
+      confidenceEvidence: "LOW",
+      precedenceLevel: 1,
+      explicitRequestHonored: false,
+      followUpOwnershipUsed: false,
+      fallbackApplied: false,
+      activeDefaultSpeakerUsed: false,
+    });
   }
   if (normalized.externalOrUntrustedSpeakerDirectivePresent || (normalized.explicitSpeakerRequest !== "NONE" && !normalized.explicitRequestTrusted)) {
-    return Object.freeze({
+    return deepFreeze({
       ...buildEmission(normalized, undefined),
       selectionDisposition: "NOT_ASSESSABLE",
       selectionReasonCode: "UNTRUSTED_SPEAKER_DIRECTIVE_REJECTED",
@@ -312,7 +402,7 @@ export function decideSpeaker(request: SpeakerSelectionRequest): SpeakerDecision
   if (normalized.explicitSpeakerRequest === "ONYX" || normalized.explicitSpeakerRequest === "NOVA") {
     const speaker = normalized.explicitSpeakerRequest as Speaker;
     if (!canUseSpeaker(speaker, normalized)) {
-      return Object.freeze({
+      return deepFreeze({
         ...buildEmission(normalized, undefined),
         selectedSpeaker: undefined,
         selectionDisposition: "UNAVAILABLE",
@@ -327,7 +417,7 @@ export function decideSpeaker(request: SpeakerSelectionRequest): SpeakerDecision
         followUpOwnershipUsed: false,
       });
     }
-    return Object.freeze({
+    return deepFreeze({
       ...buildEmission(normalized, speaker),
       selectedSpeaker: speaker,
       selectionDisposition: "SELECTED",
@@ -344,7 +434,7 @@ export function decideSpeaker(request: SpeakerSelectionRequest): SpeakerDecision
   }
 
   if (normalized.explicitSpeakerRequest === "BOTH" || normalized.explicitSpeakerRequest === "COUNCIL") {
-    return Object.freeze({
+    return deepFreeze({
       ...buildEmission(normalized, undefined),
       selectedSpeaker: undefined,
       selectionDisposition: "COUNCIL_ELIGIBLE",
@@ -362,7 +452,26 @@ export function decideSpeaker(request: SpeakerSelectionRequest): SpeakerDecision
   }
 
   if (normalized.followUpClass === "FOLLOW_UP_OWNERSHIP" && normalized.followUpOwnershipFreshness === "CURRENT" && normalized.currentTurnOwner !== "NONE") {
-    return Object.freeze({
+    const validOwnership = normalized.trustedFreshnessFacts.includes("CURRENT_SESSION") && normalized.boundedSessionLineage.includes(normalized.sessionFingerprint);
+    if (!validOwnership) {
+      return deepFreeze({
+        ...buildEmission(normalized, undefined),
+        selectedSpeaker: undefined,
+        selectionDisposition: "NOT_ASSESSABLE",
+        selectionReasonCode: "SESSION_OWNERSHIP_INVALID",
+        councilEligibility: "CLARIFICATION_REQUIRED",
+        councilEligibilityReason: "CLARIFICATION_REQUIRED",
+        clarificationRequired: true,
+        limitations: ["NEEDS_CLARIFICATION"] as readonly RouterLimitation[],
+        confidenceEvidence: "LOW",
+        precedenceLevel: 3,
+        explicitRequestHonored: false,
+        followUpOwnershipUsed: false,
+        fallbackApplied: false,
+        activeDefaultSpeakerUsed: false,
+      });
+    }
+    return deepFreeze({
       ...buildEmission(normalized, normalized.currentTurnOwner as Speaker),
       selectedSpeaker: normalized.currentTurnOwner as Speaker,
       selectionDisposition: "SELECTED",
@@ -380,9 +489,25 @@ export function decideSpeaker(request: SpeakerSelectionRequest): SpeakerDecision
   }
 
   if (normalized.topicClass === "LOCAL_PRACTICAL") {
-    return Object.freeze({
-      ...buildEmission(normalized, "NOVA"),
-      selectedSpeaker: "NOVA",
+    const speaker = normalized.novaAvailable ? "NOVA" : normalized.onyxAvailable ? "ONYX" : undefined;
+    if (!speaker) {
+      return deepFreeze({
+        ...buildEmission(normalized, undefined),
+        selectedSpeaker: undefined,
+        selectionDisposition: "UNAVAILABLE",
+        selectionReasonCode: "REQUESTED_CHARACTER_UNAVAILABLE",
+        councilEligibility: "NOT_ELIGIBLE",
+        councilEligibilityReason: "POLICY_RESTRICTED",
+        clarificationRequired: true,
+        limitations: ["UNAVAILABLE_CHARACTER"] as readonly RouterLimitation[],
+        precedenceLevel: 4,
+        explicitRequestHonored: false,
+        followUpOwnershipUsed: false,
+      });
+    }
+    return deepFreeze({
+      ...buildEmission(normalized, speaker),
+      selectedSpeaker: normalized.featureMode === "SHADOW" ? undefined : speaker,
       selectionDisposition: "SELECTED",
       selectionReasonCode: "NOVA_LOCAL_PRACTICAL_PREFERENCE",
       precedenceLevel: 4,
@@ -398,9 +523,25 @@ export function decideSpeaker(request: SpeakerSelectionRequest): SpeakerDecision
   }
 
   if (normalized.topicClass === "ARCHITECTURE_AND_RISK") {
-    return Object.freeze({
-      ...buildEmission(normalized, "ONYX"),
-      selectedSpeaker: "ONYX",
+    const speaker = normalized.onyxAvailable ? "ONYX" : normalized.novaAvailable ? "NOVA" : undefined;
+    if (!speaker) {
+      return deepFreeze({
+        ...buildEmission(normalized, undefined),
+        selectedSpeaker: undefined,
+        selectionDisposition: "UNAVAILABLE",
+        selectionReasonCode: "REQUESTED_CHARACTER_UNAVAILABLE",
+        councilEligibility: "NOT_ELIGIBLE",
+        councilEligibilityReason: "POLICY_RESTRICTED",
+        clarificationRequired: true,
+        limitations: ["UNAVAILABLE_CHARACTER"] as readonly RouterLimitation[],
+        precedenceLevel: 5,
+        explicitRequestHonored: false,
+        followUpOwnershipUsed: false,
+      });
+    }
+    return deepFreeze({
+      ...buildEmission(normalized, speaker),
+      selectedSpeaker: normalized.featureMode === "SHADOW" ? undefined : speaker,
       selectionDisposition: "SELECTED",
       selectionReasonCode: "ONYX_ARCHITECTURE_STRATEGY_PREFERENCE",
       precedenceLevel: 5,
@@ -416,7 +557,7 @@ export function decideSpeaker(request: SpeakerSelectionRequest): SpeakerDecision
   }
 
   if (normalized.materialConflictPresent || normalized.materialityClass === "HIGH") {
-    return Object.freeze({
+    return deepFreeze({
       ...buildEmission(normalized, undefined),
       selectionDisposition: "COUNCIL_ELIGIBLE",
       selectionReasonCode: "MATERIAL_DUAL_PERSPECTIVE_COUNCIL_CANDIDATE",
@@ -433,10 +574,18 @@ export function decideSpeaker(request: SpeakerSelectionRequest): SpeakerDecision
   }
 
   const defaultSpeaker = normalized.currentDefaultSpeaker;
-  if (defaultSpeaker === "NOVA" || defaultSpeaker === "ONYX") {
-    return Object.freeze({
-      ...buildEmission(normalized, defaultSpeaker),
-      selectedSpeaker: defaultSpeaker,
+  const candidateDefault = canUseSpeaker(defaultSpeaker, normalized)
+    ? defaultSpeaker
+    : normalized.novaAvailable
+      ? "NOVA"
+      : normalized.onyxAvailable
+        ? "ONYX"
+        : undefined;
+
+  if (candidateDefault) {
+    return deepFreeze({
+      ...buildEmission(normalized, candidateDefault),
+      selectedSpeaker: normalized.featureMode === "SHADOW" ? undefined : candidateDefault,
       selectionDisposition: "SELECTED",
       selectionReasonCode: "LOW_CONFIDENCE_DEFAULT_SPEAKER",
       precedenceLevel: 7,
@@ -451,7 +600,7 @@ export function decideSpeaker(request: SpeakerSelectionRequest): SpeakerDecision
     });
   }
 
-  return Object.freeze({
+  return deepFreeze({
     ...buildEmission(normalized, undefined),
     selectedSpeaker: undefined,
     selectionDisposition: "CLARIFICATION_REQUIRED",
@@ -469,7 +618,47 @@ export function decideSpeaker(request: SpeakerSelectionRequest): SpeakerDecision
 }
 
 export function buildEmotionalContextProjection(input: EmotionalContextProjectionInput): EmotionalContextProjection {
-  const evidence = [...input.emotionalEvidence].filter((entry) => typeof entry === "string");
+  if (input.privacyResult === "NOT_ELIGIBLE" || input.privacyResult === "UNKNOWN") {
+    const result: EmotionalContextProjection = {
+      projectionVersion: input.projectionVersion,
+      context: "NORMAL",
+      evidenceClass: "INSUFFICIENT_EVIDENCE",
+      confidenceEvidence: "LOW",
+      reasonCodes: Object.freeze(["POLICY_RESTRICTED"]),
+      responseAdaptations: Object.freeze(["STANDARD"]),
+      prohibitedEffects: Object.freeze(["speakerSelectedByEmotion", "authorityChanged", "crossSessionStorage", "diagnosis"]),
+      sessionBound: true,
+      expiresWithSession: true,
+      strategicMemoryEligible: false,
+      psychologicalDiagnosis: false,
+      crossSessionScoring: false,
+      authorityChanged: false,
+      truthPolicyChanged: false,
+      speakerSelectedByEmotion: false,
+      privacyResult: input.privacyResult,
+      replayEvidence: hash({
+        projectionVersion: input.projectionVersion,
+        sessionFingerprint: input.sessionFingerprint,
+        context: "NORMAL",
+        evidence: [],
+        privacyResult: input.privacyResult,
+      }),
+    };
+    return deepFreeze(result);
+  }
+
+  const allowedEvidence = new Set([
+    "EXPLICIT_CONFUSION",
+    "STRONG_FRICTION",
+    "TIME_FRICTION",
+    "LACK_OF_NEXT_STEP_CERTAINTY",
+    "EXCESSIVE_LOAD",
+    "RECOVERY",
+    "EXPLICIT_RECOVERY",
+    "VERIFIED_SUCCESS",
+    "HIGH_CONSEQUENCE",
+  ]);
+  const evidence = [...input.emotionalEvidence].filter((entry): entry is string => typeof entry === "string" && allowedEvidence.has(entry));
   const contextMap: Record<string, EmotionalContext> = {
     EXPLICIT_CONFUSION: "CONFUSION",
     STRONG_FRICTION: "FRICTION",
@@ -477,6 +666,7 @@ export function buildEmotionalContextProjection(input: EmotionalContextProjectio
     LACK_OF_NEXT_STEP_CERTAINTY: "UNCERTAINTY",
     EXCESSIVE_LOAD: "OVERLOAD",
     RECOVERY: "RECOVERY",
+    EXPLICIT_RECOVERY: "RECOVERY",
     VERIFIED_SUCCESS: "ACHIEVEMENT",
     HIGH_CONSEQUENCE: "HIGH_CONSEQUENCE",
   };
@@ -491,8 +681,8 @@ export function buildEmotionalContextProjection(input: EmotionalContextProjectio
     context,
     evidenceClass: evidence.length === 0 ? "INSUFFICIENT_EVIDENCE" : "EXPLICIT_USER_STATEMENT",
     confidenceEvidence: context === "NORMAL" ? "LOW" : "MEDIUM",
-    reasonCodes,
-    responseAdaptations: context === "NORMAL" ? ["STANDARD"] : ["CONCISE_NEXT_STEP"],
+    reasonCodes: Object.freeze(reasonCodes),
+    responseAdaptations: Object.freeze(context === "NORMAL" ? ["STANDARD"] : ["CONCISE_NEXT_STEP"]),
     prohibitedEffects: Object.freeze(["speakerSelectedByEmotion", "authorityChanged", "crossSessionStorage", "diagnosis"]),
     sessionBound: true,
     expiresWithSession: true,
@@ -511,7 +701,7 @@ export function buildEmotionalContextProjection(input: EmotionalContextProjectio
       privacyResult: input.privacyResult,
     }),
   };
-  return Object.freeze(result);
+  return deepFreeze(result);
 }
 
 export function buildShadowDivergenceReceipt(input: {
@@ -528,6 +718,9 @@ export function buildShadowDivergenceReceipt(input: {
   authorityInvariantEqual: boolean;
   replayEvidence: string;
 }): ShadowDivergenceReceipt {
+  if (input.featureMode !== "SHADOW") {
+    throw new Error("SHADOW_MODE_REQUIRED");
+  }
   const receipt: ShadowDivergenceReceipt = {
     receiptVersion: SPEAKER_SELECTION_VERSION,
     featureMode: input.featureMode,
@@ -547,5 +740,5 @@ export function buildShadowDivergenceReceipt(input: {
     persistenceOccurred: false,
     replayEvidence: input.replayEvidence,
   };
-  return Object.freeze(receipt);
+  return deepFreeze(receipt);
 }
