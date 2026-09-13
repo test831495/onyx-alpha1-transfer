@@ -390,6 +390,7 @@ export function App() {
   const followUpSession = useRef(new FollowUpListeningSession());
   const startFollowUp = useRef<(() => boolean) | null>(null);
   const stopFollowUp = useRef<(() => void) | null>(null);
+  const previousMicrosoftAccountIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     modeRef.current = mode;
@@ -410,15 +411,18 @@ export function App() {
 
     try {
       const nextWorkspace = await loadWorkspaceSnapshot();
-      const previousMicrosoft = workspace.providers.find((provider) => provider.provider === "microsoft");
       const nextMicrosoft = nextWorkspace.providers.find((provider) => provider.provider === "microsoft");
-      if (previousMicrosoft?.profile?.accountId !== nextMicrosoft?.profile?.accountId && (previousMicrosoft?.profile?.accountId || nextMicrosoft?.profile?.accountId)) clearMicrosoftFilesTrace();
+      const nextAccountId = nextMicrosoft?.profile?.accountId;
+      if (previousMicrosoftAccountIdRef.current !== nextAccountId && (previousMicrosoftAccountIdRef.current || nextAccountId)) {
+        clearMicrosoftFilesTrace();
+      }
+      previousMicrosoftAccountIdRef.current = nextAccountId;
       setWorkspace(nextWorkspace);
       return nextWorkspace;
     } finally {
       setWorkspaceBusy(false);
     }
-  }, [workspace.providers]);
+  }, []);
 
   const reconcileWorkspaceAndCalendar = useCallback(async () => {
     const nextWorkspace = await refreshWorkspace();
