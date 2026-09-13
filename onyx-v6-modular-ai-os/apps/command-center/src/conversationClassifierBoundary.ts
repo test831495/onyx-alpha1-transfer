@@ -18,6 +18,64 @@ export interface ConversationClassification {
   readonly legacyKind: string;
 }
 
+export const UNIFIED_PRIMARY_INTENT_CLASSES = Object.freeze([
+  "POLICY_DENIED_OR_PROHIBITED",
+  "CANCEL_OR_SESSION_CLOSE",
+  "CORRECTION",
+  "FOLLOW_UP",
+  "CLARIFICATION_RESPONSE",
+  "DETERMINISTIC_DATE_TIME",
+  "NAVIGATION_OR_REGISTERED_APPLICATION",
+  "LOCAL_CAPABILITY_REQUEST",
+  "CONNECTOR_CAPABILITY_REQUEST",
+  "SEARCH_OR_RETRIEVAL_REQUEST",
+  "EXPLANATION_OR_COMPARISON",
+  "CREATIVE_OR_BRAINSTORMING",
+  "GENERAL_CONVERSATION",
+  "MULTI_INTENT",
+  "AMBIGUOUS",
+  "OUT_OF_DOMAIN",
+  "UNSUPPORTED",
+  "UNTRUSTED_INSTRUCTION_OR_PROMPT_INJECTION",
+  "UNKNOWN",
+] as const);
+
+export type UnifiedPrimaryIntentClass = (typeof UNIFIED_PRIMARY_INTENT_CLASSES)[number];
+export type UnifiedConfidenceEvidence =
+  | "EXACT_RULE"
+  | "STRUCTURED_CONTEXT"
+  | "ALIAS_MATCH"
+  | "HEURISTIC_MATCH"
+  | "CONFLICTING_EVIDENCE"
+  | "INSUFFICIENT_EVIDENCE";
+
+export interface UnifiedClassifierOptions {
+  readonly latestVoiceGeneration?: number;
+  readonly untrustedContent?: boolean;
+}
+
+export interface UnifiedClassificationResult {
+  readonly classificationId: string;
+  readonly primaryIntentClass: UnifiedPrimaryIntentClass;
+  readonly secondaryIntentClasses: readonly UnifiedPrimaryIntentClass[];
+  readonly proposedSteps: readonly string[];
+  readonly ambiguityClass: "NONE" | "STALE_VOICE_GENERATION" | "INSUFFICIENT_EVIDENCE" | "CONFLICTING_CONTEXT";
+  readonly clarificationRequired: boolean;
+  readonly confidenceEvidence: readonly UnifiedConfidenceEvidence[];
+  readonly languageEvidence: Readonly<{ locale: string; codeSwitch: boolean }>;
+  readonly promptInjectionRisk: "NONE" | "UNTRUSTED_CONTENT" | "DIRECT_INJECTION";
+  readonly proposedNextBoundary: "NONE" | "LEGACY_DISPATCH" | "CLARIFICATION_OR_ABSTENTION";
+  readonly truthSourceRequirement: "DETERMINISTIC_LOCAL" | "CONNECTOR" | "UNKNOWN";
+  readonly contextRequirement: "NONE" | "SESSION_CONTEXT";
+  readonly replayEvidence: string;
+  readonly limitationCodes: readonly string[];
+  readonly executionAuthorized: false;
+  readonly approvalGranted: false;
+  readonly sideEffectPerformed: false;
+  readonly zeroSideEffect: true;
+  readonly nonAuthorizing: true;
+}
+
 export function classifyConversationRequest(request: ConversationRequest): ConversationClassification {
   const envelope = parseConversationalRequest(request.rawText);
   if (/(?:ignore|bypass|override|circumvent)[^\n]{0,80}\b(?:rules?|policy|security)\b/i.test(request.normalizedText)) {
@@ -38,6 +96,197 @@ export function classifyConversationRequest(request: ConversationRequest): Conve
   const shell = resolveShellIntent(request.rawText);
   if (shell) return result("REGISTERED_APPLICATION", "SHELL", "NAVIGATION", "DETERMINISTIC_LOCAL", envelope);
   return result("GENERAL_CONVERSATION", "GENERAL_FALLBACK", "GENERAL_CONVERSATION", "UNKNOWN", envelope);
+}
+
+export function classifyUnifiedConversationRequest(
+  request: ConversationRequest,
+  options: UnifiedClassifierOptions = {},
+): UnifiedClassificationResult {
+  const envelope = parseConversationalRequest(request.rawText);
+  const languageEvidence = Object.freeze({
+    locale: request.locale,
+    codeSwitch: hasCodeSwitchEvidence(request.rawText, envelope.kind),
+  });
+  const injection = detectPromptInjection(request.rawText, options.untrustedContent === true);
+  const staleVoice = request.source === "VOICE" && request.voice?.generation !== undefined
+    && options.latestVoiceGeneration !== undefined
+    && request.voice.generation < options.latestVoiceGeneration;
+
+  let primaryIntentClass: UnifiedPrimaryIntentClass;
+  let secondaryIntentClasses: UnifiedPrimaryIntentClass[] = [];
+  let proposedSteps: string[] = [];
+  let ambiguityClass: UnifiedClassificationResult["ambiguityClass"] = "NONE";
+  let clarificationRequired = false;
+  let confidenceEvidence: UnifiedConfidenceEvidence[] = ["EXACT_RULE"];
+  let proposedNextBoundary: UnifiedClassificationResult["proposedNextBoundary"] = "LEGACY_DISPATCH";
+  let truthSourceRequirement: UnifiedClassificationResult["truthSourceRequirement"] = "UNKNOWN";
+  let contextRequirement: UnifiedClassificationResult["contextRequirement"] = "NONE";
+  const limitationCodes: string[] = [];
+
+  if (injection === "UNTRUSTED_CONTENT") {
+    primaryIntentClass = "UNTRUSTED_INSTRUCTION_OR_PROMPT_INJECTION";
+    proposedNextBoundary = "CLARIFICATION_OR_ABSTENTION";
+    confidenceEvidence = ["EXACT_RULE"];
+    limitationCodes.push("UNTRUSTED_CONTENT");
+  } else if (envelope.risk === "R5_PROHIBITED") {
+    primaryIntentClass = "POLICY_DENIED_OR_PROHIBITED";
+    proposedNextBoundary = "CLARIFICATION_OR_ABSTENTION";
+    truthSourceRequirement = "DETERMINISTIC_LOCAL";
+    limitationCodes.push("POLICY_DENIED_OR_PROHIBITED");
+  } else if (injection !== "NONE") {
+    primaryIntentClass = "UNTRUSTED_INSTRUCTION_OR_PROMPT_INJECTION";
+    proposedNextBoundary = "CLARIFICATION_OR_ABSTENTION";
+    confidenceEvidence = ["EXACT_RULE"];
+    limitationCodes.push(injection === "DIRECT_INJECTION" ? "DIRECT_INJECTION" : "UNTRUSTED_CONTENT");
+  } else if (staleVoice) {
+    primaryIntentClass = "AMBIGUOUS";
+    ambiguityClass = "STALE_VOICE_GENERATION";
+    proposedNextBoundary = "CLARIFICATION_OR_ABSTENTION";
+    confidenceEvidence = ["INSUFFICIENT_EVIDENCE"];
+    limitationCodes.push("STALE_VOICE_GENERATION");
+  } else if (isUiVisibilityRequest(request.normalizedText, envelope.kind)) {
+    primaryIntentClass = "LOCAL_CAPABILITY_REQUEST";
+    truthSourceRequirement = "DETERMINISTIC_LOCAL";
+  } else if (envelope.clarificationRequired) {
+    primaryIntentClass = "AMBIGUOUS";
+    ambiguityClass = "INSUFFICIENT_EVIDENCE";
+    clarificationRequired = true;
+    proposedNextBoundary = "CLARIFICATION_OR_ABSTENTION";
+    confidenceEvidence = ["INSUFFICIENT_EVIDENCE"];
+    limitationCodes.push("CLARIFICATION_REQUIRED");
+  } else if (envelope.kind === "CANCEL" || envelope.intentFamily === "SESSION_CLOSE_INTENT") {
+    primaryIntentClass = "CANCEL_OR_SESSION_CLOSE";
+    proposedNextBoundary = "LEGACY_DISPATCH";
+    truthSourceRequirement = "DETERMINISTIC_LOCAL";
+  } else if (envelope.correction || envelope.discourseAct === "CORRECTION") {
+    primaryIntentClass = "CORRECTION";
+    contextRequirement = "SESSION_CONTEXT";
+    proposedNextBoundary = "CLARIFICATION_OR_ABSTENTION";
+    confidenceEvidence = ["STRUCTURED_CONTEXT"];
+  } else if (envelope.kind === "COMPOSITE_NAVIGATE_AND_FACT") {
+    primaryIntentClass = "MULTI_INTENT";
+    secondaryIntentClasses = ["NAVIGATION_OR_REGISTERED_APPLICATION", "DETERMINISTIC_DATE_TIME"];
+    proposedSteps = ["NAVIGATION_OR_REGISTERED_APPLICATION", "DETERMINISTIC_DATE_TIME"];
+    truthSourceRequirement = "DETERMINISTIC_LOCAL";
+  } else if (envelope.kind === "FOLLOW_UP_DATE_QUESTION") {
+    primaryIntentClass = envelope.unsupportedReason ? "AMBIGUOUS" : "FOLLOW_UP";
+    contextRequirement = "SESSION_CONTEXT";
+    truthSourceRequirement = "DETERMINISTIC_LOCAL";
+    if (envelope.unsupportedReason) {
+      ambiguityClass = "INSUFFICIENT_EVIDENCE";
+      proposedNextBoundary = "CLARIFICATION_OR_ABSTENTION";
+      confidenceEvidence = ["INSUFFICIENT_EVIDENCE"];
+    }
+  } else if (envelope.kind === "DATE_QUESTION" || envelope.kind === "TIME_QUERY" || envelope.kind === "CALENDAR_LOCAL_FACT" || envelope.kind === "UI_VISIBLE_QUESTION") {
+    primaryIntentClass = "DETERMINISTIC_DATE_TIME";
+    truthSourceRequirement = "DETERMINISTIC_LOCAL";
+  } else if (envelope.kind === "CALENDAR_PROVIDER_LIMITATION") {
+    primaryIntentClass = "CONNECTOR_CAPABILITY_REQUEST";
+    truthSourceRequirement = "CONNECTOR";
+    limitationCodes.push("CONNECTOR_UNAVAILABLE");
+    proposedNextBoundary = "CLARIFICATION_OR_ABSTENTION";
+  } else if (envelope.kind === "NAVIGATION" || resolveShellIntent(request.rawText)) {
+    primaryIntentClass = "NAVIGATION_OR_REGISTERED_APPLICATION";
+    truthSourceRequirement = "DETERMINISTIC_LOCAL";
+  } else if (envelope.kind === "UNSUPPORTED") {
+    primaryIntentClass = /\b(?:api|connector|calendar|mail|search|retrieve|open|launch)\b/i.test(request.rawText)
+      ? "UNSUPPORTED"
+      : "GENERAL_CONVERSATION";
+    proposedNextBoundary = "CLARIFICATION_OR_ABSTENTION";
+    confidenceEvidence = ["INSUFFICIENT_EVIDENCE"];
+    limitationCodes.push("UNSUPPORTED_OR_UNVERIFIED");
+  } else {
+    primaryIntentClass = "UNKNOWN";
+    proposedNextBoundary = "CLARIFICATION_OR_ABSTENTION";
+    confidenceEvidence = ["INSUFFICIENT_EVIDENCE"];
+  }
+
+  const replayEvidence = stableReplayEvidence({
+    rawText: request.rawText,
+    normalizedText: request.normalizedText,
+    source: request.source,
+    locale: request.locale,
+    primaryIntentClass,
+    secondaryIntentClasses,
+    ambiguityClass,
+    clarificationRequired,
+    promptInjectionRisk: injection,
+    untrustedContent: options.untrustedContent === true,
+    latestVoiceGeneration: options.latestVoiceGeneration,
+    currentVoiceGeneration: request.voice?.generation,
+  });
+  return Object.freeze({
+    classificationId: `b3-${replayEvidence}`,
+    primaryIntentClass,
+    secondaryIntentClasses: Object.freeze(secondaryIntentClasses),
+    proposedSteps: Object.freeze(proposedSteps),
+    ambiguityClass,
+    clarificationRequired,
+    confidenceEvidence: Object.freeze(confidenceEvidence),
+    languageEvidence,
+    promptInjectionRisk: injection,
+    proposedNextBoundary,
+    truthSourceRequirement,
+    contextRequirement,
+    replayEvidence,
+    limitationCodes: Object.freeze(limitationCodes),
+    executionAuthorized: false,
+    approvalGranted: false,
+    sideEffectPerformed: false,
+    zeroSideEffect: true,
+    nonAuthorizing: true,
+  });
+}
+
+function hasCodeSwitchEvidence(rawText: string, kind: ConversationIntentEnvelope["kind"]): boolean {
+  return kind === "UNSUPPORTED" && /\b(?:kal|aaj|kholo|dikhao|batao)\b/i.test(rawText);
+}
+
+function isUiVisibilityRequest(normalizedText: string, kind: ConversationIntentEnvelope["kind"]): boolean {
+  return kind === "UI_VISIBLE_QUESTION" || /^(?:show ui|display interface|show screen)$/.test(normalizedText);
+}
+
+function detectPromptInjection(rawText: string, untrustedContent: boolean): UnifiedClassificationResult["promptInjectionRisk"] {
+  if (untrustedContent) return "UNTRUSTED_CONTENT";
+  return /\b(?:ignore|bypass|override|reveal|disclose)\b[^\n]{0,100}\b(?:rules?|policy|system prompt|instructions?)\b/i.test(rawText)
+    ? "DIRECT_INJECTION"
+    : "NONE";
+}
+
+function stableReplayEvidence(input: Readonly<{
+  readonly rawText: string;
+  readonly normalizedText: string;
+  readonly source: ConversationRequest["source"];
+  readonly locale: string;
+  readonly primaryIntentClass: UnifiedPrimaryIntentClass;
+  readonly secondaryIntentClasses: readonly UnifiedPrimaryIntentClass[];
+  readonly ambiguityClass: UnifiedClassificationResult["ambiguityClass"];
+  readonly clarificationRequired: boolean;
+  readonly promptInjectionRisk: UnifiedClassificationResult["promptInjectionRisk"];
+  readonly untrustedContent: boolean;
+  readonly latestVoiceGeneration?: number;
+  readonly currentVoiceGeneration?: number;
+}>): string {
+  const parts = [
+    ["raw", input.rawText],
+    ["normalized", input.normalizedText],
+    ["source", input.source],
+    ["locale", input.locale],
+    ["primary", input.primaryIntentClass],
+    ["secondary", input.secondaryIntentClasses.join(",")],
+    ["ambiguity", input.ambiguityClass],
+    ["clarification", String(input.clarificationRequired)],
+    ["injection", input.promptInjectionRisk],
+    ["untrusted", String(input.untrustedContent)],
+    ["latestVoice", input.latestVoiceGeneration === undefined ? "MISSING" : String(input.latestVoiceGeneration)],
+    ["currentVoice", input.currentVoiceGeneration === undefined ? "MISSING" : String(input.currentVoiceGeneration)],
+  ].map(([key, value]) => `${key!.length}:${key!}${value!.length}:${value!}`);
+  let hash = 2166136261;
+  for (const part of parts.join("").normalize("NFKC")) {
+    hash ^= part.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
 }
 
 function result(
