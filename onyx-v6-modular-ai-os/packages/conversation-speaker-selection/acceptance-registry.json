@@ -1,0 +1,86 @@
+{
+  "schemaVersion": "B4C-ACCEPTANCE-REGISTRY-V1",
+  "records": [
+    {
+      "id": "B4C-SPEAKER-EXPLICIT-001",
+      "family": "B4C-SPEAKER-EXPLICIT",
+      "requirement": "trusted explicit ONYX request is honored when available",
+      "executableTest": "speakerSelection.test.ts::honors an explicit ONYX request",
+      "implementationEvidence": "decideSpeaker: explicit request branch",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4C-SPEAKER-FOLLOWUP-001",
+      "family": "B4C-SPEAKER-FOLLOWUP",
+      "requirement": "valid follow-up ownership continues current turn owner",
+      "executableTest": "speakerSelection.test.ts::keeps the active turn owner on valid follow-up",
+      "implementationEvidence": "decideSpeaker: follow-up ownership branch",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4C-SPEAKER-TOPIC-001",
+      "family": "B4C-SPEAKER-TOPIC",
+      "requirement": "topic preference selects NOVA and ONYX appropriately",
+      "executableTest": "speakerSelection.test.ts::prefers NOVA for local practical requests",
+      "implementationEvidence": "decideSpeaker: local/practical and architecture preference branches",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4C-COUNCIL-ELIGIBILITY-001",
+      "family": "B4C-COUNCIL-ELIGIBILITY",
+      "requirement": "BOTH and material conflict produce Council eligibility metadata only",
+      "executableTest": "speakerSelection.test.ts::returns council eligibility for explicit BOTH",
+      "implementationEvidence": "computeCouncilEligibility",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4C-EMOTIONAL-CONTEXT-001",
+      "family": "B4C-EMOTIONAL-CONTEXT",
+      "requirement": "emotional evidence maps into a session-bound projection",
+      "executableTest": "emotionalProjection.test.ts::maps confusion to confusion context",
+      "implementationEvidence": "buildEmotionalContextProjection",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4C-SHADOW-001",
+      "family": "B4C-SHADOW",
+      "requirement": "shadow mode produces zero side-effect divergence receipts",
+      "executableTest": "shadow.test.ts::builds a zero-side-effect shadow receipt",
+      "implementationEvidence": "buildShadowDivergenceReceipt",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4C-PRIVACY-001",
+      "family": "B4C-PRIVACY",
+      "requirement": "unsafe or untrusted directives are rejected without leaking raw content",
+      "executableTest": "speakerSelection.test.ts::rejects untrusted external speaker directives",
+      "implementationEvidence": "decideSpeaker: untrusted directive rejection",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4C-AUTHORITY-001",
+      "family": "B4C-AUTHORITY",
+      "requirement": "B4C remains non-authorizing and non-executing",
+      "executableTest": "speakerSelection.test.ts::honors an explicit ONYX request",
+      "implementationEvidence": "SpeakerDecision fields and nonAuthority flags",
+      "status": "PASS",
+      "futureDependency": null
+    },
+    {
+      "id": "B4C-DETERMINISM-001",
+      "family": "B4C-DETERMINISM",
+      "requirement": "equivalent inputs produce equivalent results",
+      "executableTest": "speakerSelection.test.ts::is deterministic for equivalent inputs",
+      "implementationEvidence": "stableStringify + hash",
+      "status": "PASS",
+      "futureDependency": null
+    }
+  ]
+}
