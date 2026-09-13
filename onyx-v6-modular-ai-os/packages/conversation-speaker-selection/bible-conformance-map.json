@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "B4C-BIBLE-CONFORMANCE-V1",
+  "package": "@onyx/conversation-speaker-selection",
+  "symbols": [
+    {
+      "symbol": "decideSpeaker",
+      "acceptanceIds": ["B4C-SPEAKER-EXPLICIT-001", "B4C-SPEAKER-FOLLOWUP-001", "B4C-SPEAKER-TOPIC-001", "B4C-COUNCIL-ELIGIBILITY-001", "B4C-PRIVACY-001", "B4C-DETERMINISM-001"],
+      "requirement": "speaker precedence and policy enforcement"
+    },
+    {
+      "symbol": "buildEmotionalContextProjection",
+      "acceptanceIds": ["B4C-EMOTIONAL-CONTEXT-001"],
+      "requirement": "session-bound emotional projection only"
+    },
+    {
+      "symbol": "buildShadowDivergenceReceipt",
+      "acceptanceIds": ["B4C-SHADOW-001"],
+      "requirement": "shadow non-visible zero side-effect receipt"
+    },
+    {
+      "symbol": "SpeakerDecision",
+      "acceptanceIds": ["B4C-AUTHORITY-001"],
+      "requirement": "non-authorizing decision contract"
+    }
+  ],
+  "characterBible": {
+    "canonicalONYX": "ONYX",
+    "canonicalNOVA": "NOVA",
+    "explicitRequestPriority": "trusted explicit request wins over follow-up and defaults",
+    "boundedFollowUpOwnership": "current turn ownership only when fresh and session-aligned",
+    "novaPracticalPreference": "NOVA local/practical preference for local personal workflow scenarios",
+    "onyxArchitecturePreference": "ONYX architecture and risk preference for architecture and governance trade-offs",
+    "councilEligibilitySeparation": "Council eligibility metadata is emitted without Council execution",
+    "emotionalProjection": "emotional context is session-bound metadata, never a decision driver",
+    "sessionBoundPrivacy": "all emotional inputs remain session-local and never stored or cross-session scored",
+    "noDiagnosis": "psychological diagnosis remains false and prohibited",
+    "noAuthorityChange": "authority and approval flags remain false",
+    "noEmotionalSpeakerSelection": "emotion alone does not select the speaker",
+    "featureModes": ["OFF", "TEST_HARNESS", "SHADOW"],
+    "zeroSideEffects": "shadow mode records only non-visible divergence evidence",
+    "trackBoundaries": ["B3", "B4A", "B4B", "B4D", "TrackA", "TrackC"],
+    "ownerAuthority": "Rahul remains the owner authority for scope and approval decisions"
+  }
+}
