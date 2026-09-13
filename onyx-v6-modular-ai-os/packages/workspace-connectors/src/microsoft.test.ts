@@ -901,7 +901,7 @@ describe("Track A Shared Microsoft Authorization & Audience Diagnostics", () => 
     });
 
     it("returns deterministic scope order without duplicates", () => {
-      expect(MICROSOFT_COMBINED_WORKSPACE_SCOPES).toEqual(["User.Read", "Calendars.Read", "Mail.ReadBasic"]);
+      expect(MICROSOFT_COMBINED_WORKSPACE_SCOPES).toEqual(["User.Read", "Files.ReadWrite", "Calendars.Read", "Mail.ReadBasic"]);
     });
   });
 

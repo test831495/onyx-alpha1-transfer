@@ -1,5 +1,6 @@
 import { BrowserCacheLocation, InteractionRequiredAuthError, PublicClientApplication, type AccountInfo, type Configuration } from "@azure/msal-browser";
 import type { WorkspaceProviderSnapshot, WorkspaceProfile } from "@onyx/workspace-contracts";
+import type { FileAccountKind } from "@onyx/workspace-contracts";
 export interface MicrosoftWorkspaceConfig { clientId?: string; tenantId?: string; authority?: string; redirectUri?: string; }
 export interface MicrosoftCalendarRange { start: string; end: string; timeZone: string; }
 export interface MicrosoftCalendarEvent {
@@ -260,10 +261,12 @@ export const MICROSOFT_CAPABILITY_SCOPES = Object.freeze({
   profile: Object.freeze(["User.Read"] as const),
   calendar: Object.freeze(["Calendars.Read"] as const),
   mail: Object.freeze(["Mail.ReadBasic"] as const),
+  filesReadWrite: Object.freeze(["Files.ReadWrite"] as const),
 });
 
 export const MICROSOFT_COMBINED_WORKSPACE_SCOPES: readonly string[] = Object.freeze([
   ...MICROSOFT_CAPABILITY_SCOPES.profile,
+  ...MICROSOFT_CAPABILITY_SCOPES.filesReadWrite,
   ...MICROSOFT_CAPABILITY_SCOPES.calendar,
   ...MICROSOFT_CAPABILITY_SCOPES.mail,
 ]);
@@ -590,8 +593,8 @@ const capabilities = [
   { id: "profile" as const, label: "Microsoft profile", enabled: true },
   { id: "mail" as const, label: "Outlook mail", enabled: true },
   { id: "calendar" as const, label: "Microsoft calendar", enabled: true },
-  { id: "files" as const, label: "OneDrive", enabled: false, plannedRelease: "Alpha 3.1.3" },
-  { id: "sharepoint" as const, label: "SharePoint", enabled: false, plannedRelease: "Alpha 3.1.3" },
+  { id: "files" as const, label: "OneDrive", enabled: true },
+  { id: "sharepoint" as const, label: "SharePoint", enabled: true },
 ];
 export class MicrosoftWorkspaceConnector {
   private application?: PublicClientApplication;
@@ -601,6 +604,14 @@ export class MicrosoftWorkspaceConnector {
   private authority: string | undefined;
   constructor(private readonly config: MicrosoftWorkspaceConfig) {}
   get configured() { return Boolean(this.config.clientId && this.config.tenantId); }
+  getFilesAccountKind(): FileAccountKind {
+    const claims = this.account?.idTokenClaims as { acct?: unknown; tid?: unknown } | undefined;
+    const accountType = claims?.acct === 0 || claims?.acct === "0" ? "PERSONAL_MICROSOFT_ACCOUNT" : claims?.acct === 1 || claims?.acct === "1" ? "ORGANIZATIONAL_MICROSOFT_ACCOUNT" : undefined;
+    if (accountType === "PERSONAL_MICROSOFT_ACCOUNT" || claims?.tid === "consumers") return "PERSONAL_MICROSOFT_ACCOUNT";
+    if (accountType === "ORGANIZATIONAL_MICROSOFT_ACCOUNT" && this.account?.tenantId && this.config.tenantId && this.account.tenantId !== this.config.tenantId && this.config.tenantId !== "common") return "GUEST_MICROSOFT_ACCOUNT";
+    if (this.account?.tenantId && (accountType === "ORGANIZATIONAL_MICROSOFT_ACCOUNT" || claims?.tid)) return "ORGANIZATIONAL_MICROSOFT_ACCOUNT";
+    return "UNKNOWN_MICROSOFT_ACCOUNT";
+  }
   async initialize(): Promise<WorkspaceProviderSnapshot> {
     if (this.initialization) return this.initialization;
     const attempt = Promise.resolve().then(() => this.initializeOnce());
