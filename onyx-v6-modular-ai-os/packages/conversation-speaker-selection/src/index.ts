@@ -236,9 +236,9 @@ const readRequired = <T>(source: Record<string, unknown>, key: string): T => {
 const normalizeRequest = (request: SpeakerSelectionRequest): SpeakerSelectionRequest => {
   if (!request || typeof request !== "object") throw new Error("INVALID_REQUEST");
   const source = request as Record<string, unknown>;
-  const emotionalEvidence = Array.isArray(readRequired(source, "emotionalEvidence")) ? [...readRequired(source, "emotionalEvidence") as unknown[]] : [];
-  const trustedFreshnessFacts = Array.isArray(readRequired(source, "trustedFreshnessFacts")) ? [...readRequired(source, "trustedFreshnessFacts") as unknown[]] : [];
-  const boundedSessionLineage = Array.isArray(readRequired(source, "boundedSessionLineage")) ? [...readRequired(source, "boundedSessionLineage") as unknown[]] : [];
+  const emotionalEvidence = Array.isArray(readRequired(source, "emotionalEvidence")) ? [...readRequired(source, "emotionalEvidence") as string[]] : [];
+  const trustedFreshnessFacts = Array.isArray(readRequired(source, "trustedFreshnessFacts")) ? [...readRequired(source, "trustedFreshnessFacts") as string[]] : [];
+  const boundedSessionLineage = Array.isArray(readRequired(source, "boundedSessionLineage")) ? [...readRequired(source, "boundedSessionLineage") as string[]] : [];
   const normalized: SpeakerSelectionRequest = {
     requestVersion: readRequired(source, "requestVersion") as string,
     requestFingerprint: readRequired(source, "requestFingerprint") as string,
