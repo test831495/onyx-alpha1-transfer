@@ -1,5 +1,6 @@
 import type { LocalFileCapabilityProjection, LocalPermissionState, LocalPreviewState, LocalSelectedFileProjection, LocalSelectionMechanism } from "@onyx/workspace-contracts";
 import { convertersFor } from "./localFileConverters";
+import { classifyLocalFileName, type LocalFileViewerRegistration } from "./localFileRegistries";
 
 export const MAX_TEXT_PREVIEW_BYTES = 1_000_000;
 export const MAX_DIRECTORY_ITEMS = 100;
@@ -27,13 +28,21 @@ export function formatBytes(bytes: number): string { return `${new Intl.NumberFo
 export function permissionStateFor(handle?: WritableFileHandle): LocalPermissionState { return handle ? "GRANTED" : "DENIED"; }
 
 export function projectLocalFile(file: File, mechanism: LocalSelectionMechanism, handle?: WritableFileHandle): LocalSelectedFileProjection {
-  const extension = extensionOf(file.name); const mimeType = file.type || "application/octet-stream";
-  return { sourceId: "local", selectionId: crypto.randomUUID(), name: file.name, extension, mimeType, size: file.size, lastModified: file.lastModified || undefined, itemKind: "FILE", selectionMechanism: mechanism, readCapability: true, originalSaveCapability: Boolean(handle?.createWritable), saveAsCapability: true, previewCapability: supportedPreview(mimeType, extension), editCapability: supportedEditor(mimeType, extension), conversionCapabilities: conversionCapabilities(mimeType), dirty: false, permissionState: permissionStateFor(handle), previewState: "NOT_REQUESTED", validationState: "NOT_VALIDATED" };
+  const { extension, viewer } = classifyLocalFileName(file.name, file.type || "application/octet-stream"); const mimeType = file.type || "application/octet-stream";
+  return { sourceId: "local", selectionId: crypto.randomUUID(), name: file.name, extension, mimeType, size: file.size, lastModified: file.lastModified || undefined, itemKind: "FILE", selectionMechanism: mechanism, readCapability: true, originalSaveCapability: Boolean(handle?.createWritable), saveAsCapability: true, previewCapability: supportedPreview(mimeType, extension) || viewer?.previewSupport === "LIMITED", editCapability: supportedEditor(mimeType, extension), conversionCapabilities: conversionCapabilities(mimeType), dirty: false, permissionState: permissionStateFor(handle), previewState: "NOT_REQUESTED", validationState: "NOT_VALIDATED", viewerId: viewer?.capabilityId };
+}
+
+export async function validateLocalSignature(file: File, viewer?: LocalFileViewerRegistration): Promise<"VALID" | "INVALID" | "NOT_VALIDATED"> {
+  if (!viewer || !["pdf-viewer", "zip-explorer", "database-inspector"].includes(viewer.capabilityId)) return "NOT_VALIDATED";
+  const bytes = new Uint8Array(await file.slice(0, 16).arrayBuffer());
+  if (viewer.capabilityId === "pdf-viewer") return new TextDecoder().decode(bytes.slice(0, 5)) === "%PDF-" ? "VALID" : "INVALID";
+  if (viewer.capabilityId === "zip-explorer") return bytes[0] === 0x50 && bytes[1] === 0x4b ? "VALID" : "INVALID";
+  const sqlite = new TextDecoder().decode(bytes.slice(0, 16)); return sqlite === "SQLite format 3\u0000" ? "VALID" : "INVALID";
 }
 
 export async function selectLocalFile(): Promise<LocalSelection | undefined> {
   const browser = browserWindow(); if (!browser?.showOpenFilePicker) return undefined;
-  try { const handle = (await browser.showOpenFilePicker({ multiple: false }))[0]; if (!handle) return undefined; const file = await handle.getFile(); return { file, handle, projection: projectLocalFile(file, "FILE_SYSTEM_HANDLE", handle) }; }
+  try { const handle = (await browser.showOpenFilePicker({ multiple: false }))[0]; if (!handle) return undefined; const file = await handle.getFile(); const projection = projectLocalFile(file, "FILE_SYSTEM_HANDLE", handle); const viewer = projection.viewerId ? (await import("./localFileRegistries")).LocalFileViewerRegistry.find((entry) => entry.capabilityId === projection.viewerId) : undefined; return { file, handle, projection: { ...projection, validationState: await validateLocalSignature(file, viewer) } }; }
   catch (error) { if (error instanceof DOMException && error.name === "AbortError") return undefined; throw error; }
 }
 
@@ -41,7 +50,7 @@ export async function selectLocalFileFallback(): Promise<LocalSelection | undefi
   if (typeof document === "undefined") return undefined;
   return new Promise((resolve, reject) => {
     const input = document.createElement("input"); input.type = "file"; input.accept = "*/*";
-    input.onchange = () => { const file = input.files?.[0]; resolve(file ? { file, projection: projectLocalFile(file, "FILE_INPUT") } : undefined); };
+    input.onchange = () => { const file = input.files?.[0]; if (!file) { resolve(undefined); return; } const projection = projectLocalFile(file, "FILE_INPUT"); void (async () => { const viewer = projection.viewerId ? (await import("./localFileRegistries")).LocalFileViewerRegistry.find((entry) => entry.capabilityId === projection.viewerId) : undefined; resolve({ file, projection: { ...projection, validationState: await validateLocalSignature(file, viewer) } }); })(); };
     input.onerror = () => reject(new Error("Local file selection failed.")); input.click();
   });
 }
