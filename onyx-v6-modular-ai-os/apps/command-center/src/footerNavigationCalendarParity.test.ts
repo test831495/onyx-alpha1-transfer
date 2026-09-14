@@ -31,8 +31,8 @@ describe("footer navigation calendar parity (ONYX/NOVA)", () => {
     expect(footerNav).toContain('<button onClick={() => openShellApp("calendar")}>Calendar</button>');
   });
 
-  it("preserves navigation ordering: Home, Messages, Tasks, News, Workspace, Calendar, Automation, Settings, Health", () => {
-    const labels = ["Home", "Messages", "Tasks", "News", "Workspace", "Calendar", "Automation", "Settings", "Health"];
+  it("preserves navigation ordering: Home, Messages, Tasks, News, Workspace, Files, Mail, Calendar, Automation, Settings, Health", () => {
+    const labels = ["Home", "Messages", "Tasks", "News", "Workspace", "Files", "Mail", "Calendar", "Automation", "Settings", "Health"];
     let cursor = -1;
     for (const label of labels) {
       const index = footerNav.indexOf(label, cursor + 1);
@@ -53,6 +53,8 @@ describe("footer navigation calendar parity (ONYX/NOVA)", () => {
       ["Tasks", "tasks"],
       ["News", "news"],
       ["Workspace", "workspace"],
+      ["Files", "files"],
+      ["Mail", "mail"],
       ["Automation", "automation"],
       ["Settings", "settings"],
       ["Health", "health"],

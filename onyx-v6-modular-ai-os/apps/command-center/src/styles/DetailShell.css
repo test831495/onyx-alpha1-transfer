@@ -55,8 +55,8 @@
 .detail-shell__back-button:hover,
 .detail-shell__close-button:hover,
 .detail-shell__maximize-button:hover,
-.detail-shell__minimize-button:hover { background: #123b56; }
-  background: rgba(255, 255, 255, 0.25);
+.detail-shell__minimize-button:hover {
+  background: #123b56;
   border-color: rgba(255, 255, 255, 0.5);
 }
 
