@@ -6,6 +6,31 @@ export type FileSourceOperation = "BROWSE" | "READ_METADATA" | "READ_CONTENT" | 
 export type FileProviderDiagnostic = { readonly sourceId: FileSourceId; readonly providerFamily: string; readonly operation: FileSourceOperation; readonly state: FileSourceAvailability; readonly reasonCode?: string; readonly freshness: "LIVE" | "STALE" | "NOT_AVAILABLE"; readonly retryEligible: boolean; readonly userActionRequired: boolean; };
 export type FileSourceCapability = { readonly operation: FileSourceOperation; readonly enabled: boolean; };
 export type FileProviderAction = "OPEN" | "CONNECT" | "RECONNECT" | "REFRESH" | "CLEAR";
+export type LocalSelectionMechanism = "FILE_SYSTEM_HANDLE" | "FILE_INPUT" | "DRAG_AND_DROP";
+export type LocalPermissionState = "UNKNOWN" | "GRANTED" | "PROMPT_REQUIRED" | "DENIED";
+export type LocalPreviewState = "NOT_REQUESTED" | "AVAILABLE" | "UNSUPPORTED" | "UNAVAILABLE" | "TOO_LARGE" | "FAILED";
+export type LocalValidationState = "VALID" | "INVALID" | "NOT_VALIDATED";
+export interface LocalSelectedFileProjection {
+  readonly sourceId: "local";
+  readonly selectionId: string;
+  readonly name: string;
+  readonly extension: string;
+  readonly mimeType: string;
+  readonly size: number;
+  readonly lastModified?: number;
+  readonly itemKind: "FILE";
+  readonly selectionMechanism: LocalSelectionMechanism;
+  readonly readCapability: boolean;
+  readonly originalSaveCapability: boolean;
+  readonly saveAsCapability: boolean;
+  readonly previewCapability: boolean;
+  readonly editCapability: boolean;
+  readonly conversionCapabilities: readonly string[];
+  readonly dirty: boolean;
+  readonly permissionState: LocalPermissionState;
+  readonly previewState: LocalPreviewState;
+  readonly validationState: LocalValidationState;
+}
 export interface FileSourceProjection { readonly sourceId: FileSourceId; readonly displayName: string; readonly providerFamily: string; readonly availability: FileSourceAvailability; readonly connection: FileSourceConnectionState; readonly capabilities: readonly FileSourceCapability[]; readonly diagnostic?: FileProviderDiagnostic; }
 export interface FilesHubSnapshot { readonly availability: "AVAILABLE"; readonly sources: readonly FileSourceProjection[]; }
 export interface LocalFileCapabilityProjection { readonly filePicker: "LOCAL_FILE_PICKER_SUPPORTED" | "LOCAL_FILE_ACCESS_NOT_SUPPORTED" | "LOCAL_PERMISSION_REQUIRED" | "LOCAL_PERMISSION_GRANTED" | "LOCAL_PERMISSION_DENIED" | "LOCAL_SELECTION_CANCELLED"; readonly directoryPicker: "LOCAL_DIRECTORY_PICKER_SUPPORTED" | "LOCAL_FILE_ACCESS_NOT_SUPPORTED" | "LOCAL_PERMISSION_REQUIRED" | "LOCAL_PERMISSION_GRANTED" | "LOCAL_PERMISSION_DENIED" | "LOCAL_SELECTION_CANCELLED"; }

@@ -1,0 +1,36 @@
+import { describe, expect, it } from "vitest";
+import { convertersFor } from "./localFileConverters";
+import { MAX_TEXT_PREVIEW_BYTES, projectLocalFile, readTextPreview, supportedPreview, writeToHandle } from "./localFilesProvider";
+
+describe("Local Files provider", () => {
+  it("projects truthful metadata and distinguishes writable handles", () => {
+    const file = new File(["hello"], "note.txt", { type: "text/plain", lastModified: 123 });
+    const fallback = projectLocalFile(file, "FILE_INPUT");
+    const handle = { createWritable: async () => ({ write: async () => undefined, close: async () => undefined }) } as never;
+    const writable = projectLocalFile(file, "FILE_SYSTEM_HANDLE", handle);
+    expect(fallback).toMatchObject({ sourceId: "local", extension: ".txt", size: 5, mimeType: "text/plain", originalSaveCapability: false, saveAsCapability: true, editCapability: true });
+    expect(writable.originalSaveCapability).toBe(true);
+    expect(JSON.stringify(fallback)).not.toContain("hello");
+  });
+
+  it("bounds text preview and does not guess binary content", async () => {
+    const text = new File(["hello"], "note.txt", { type: "text/plain" });
+    expect((await readTextPreview(text)).text).toBe("hello");
+    const oversized = new File([new Uint8Array(MAX_TEXT_PREVIEW_BYTES + 1)], "large.txt", { type: "text/plain" });
+    expect((await readTextPreview(oversized)).state).toBe("TOO_LARGE");
+    expect(supportedPreview("application/octet-stream", ".bin")).toBe(false);
+  });
+
+  it("only advertises registered image conversions", () => {
+    expect(convertersFor("image/png").map((converter) => converter.destinationMimeType)).toEqual(["image/png", "image/jpeg", "image/webp"]);
+    expect(convertersFor("application/octet-stream")).toEqual([]);
+  });
+
+  it("requires permission and verifies the bounded original save", async () => {
+    let contents = "hello";
+    const file = new File([contents], "note.txt", { type: "text/plain", lastModified: 123 });
+    const handle = { queryPermission: async () => "granted", createWritable: async () => ({ write: async (value: Blob | string) => { contents = typeof value === "string" ? value : await value.text(); }, close: async () => undefined }), getFile: async () => new File([contents], "note.txt", { type: "text/plain", lastModified: 123 }) } as never;
+    await writeToHandle(handle, "updated", file);
+    expect(contents).toBe("updated");
+  });
+});
