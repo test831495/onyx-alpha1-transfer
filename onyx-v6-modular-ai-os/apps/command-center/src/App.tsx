@@ -1509,7 +1509,7 @@ export function App() {
                       y={presentation.y}
                       zIndex={presentation.zIndex}
                       hasManualPosition={presentation.hasManualPosition}
-                      icon={appId === "workspace" ? "▣" : appId === "automation" ? "◎" : appId === "settings" ? "⚙" : appId === "health" ? "♥" : appId === "messages" || appId === "mail" ? "✉" : appId === "calendar" ? "◫" : appId === "news" ? "◍" : appId === "tasks" ? "✓" : "◈"}
+                      icon={appId === "workspace" ? "▣" : appId === "files" ? "▤" : appId === "automation" ? "◎" : appId === "settings" ? "⚙" : appId === "health" ? "♥" : appId === "messages" || appId === "mail" ? "✉" : appId === "calendar" ? "◫" : appId === "news" ? "◍" : appId === "tasks" ? "✓" : "◈"}
                       onSelect={() => dispatchShell({ type: "FOCUS_APP", appId })}
                       onMove={(x, y) => dispatchShell({ type: "SET_CARD_POSITION_PREVIEW", appId, x, y })}
                       onMoveEnd={(x, y) => dispatchShell({ type: "SET_CARD_POSITION", appId, x, y })}
@@ -1735,6 +1735,7 @@ export function App() {
             <button onClick={() => openShellApp("tasks")}>Tasks</button>
             <button onClick={() => openShellApp("news")}>News</button>
             <button onClick={() => openShellApp("workspace")}>Workspace</button>
+            <button onClick={() => openShellApp("files")}>Files</button>
             <button onClick={() => openShellApp("mail")}>Mail</button>
             <button onClick={() => openShellApp("calendar")}>Calendar</button>
             <button onClick={() => openShellApp("automation")}>Automation</button>
