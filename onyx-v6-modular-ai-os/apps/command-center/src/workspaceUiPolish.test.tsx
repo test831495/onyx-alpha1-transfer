@@ -1,9 +1,16 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { WorkspacePanel } from "./components/WorkspacePanel";
 import { APP_REGISTRY } from "./applicationRegistry";
 import { APP_DETAIL_REGISTRY } from "./appDetailRegistry";
 import { shellReducer, shellStateFactory } from "./shellState";
+
+const stylesSource = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
+const microsoftFilesSource = readFileSync(
+  new URL("./components/MicrosoftFilesPanel.tsx", import.meta.url),
+  "utf8",
+);
 
 describe("Track A Workspace UI Polish", () => {
   describe("Fix A: Files Dock Visibility & Application Registry", () => {
@@ -61,6 +68,24 @@ describe("Track A Workspace UI Polish", () => {
   });
 
   describe("Fix B & C: Google Tile Containment & Button Standardization", () => {
+    it("scopes Workspace button wrapping while preserving compact action styling", () => {
+      expect(stylesSource).not.toMatch(
+        /#panel-workspace button\s*\{[^}]*white-space:\s*nowrap/,
+      );
+      expect(stylesSource).toMatch(
+        /#panel-workspace button\s*\{[^}]*box-sizing:\s*border-box;[^}]*max-width:\s*100%;/s,
+      );
+      expect(stylesSource).toMatch(
+        /#panel-workspace \[aria-labelledby="microsoft-files-heading"\] button\s*\{[^}]*white-space:\s*normal;[^}]*overflow-wrap:\s*anywhere;[^}]*max-width:\s*100%;[^}]*height:\s*auto;[^}]*line-height:\s*1\.3;/s,
+      );
+      expect(stylesSource).toMatch(
+        /#panel-workspace \[aria-labelledby="microsoft-files-heading"\] > div:first-child > button\s*\{[^}]*white-space:\s*nowrap/s,
+      );
+      expect(microsoftFilesSource).toContain("Run bounded OneDrive read/write test");
+      expect(microsoftFilesSource).toContain("Run bounded SharePoint read/write test");
+      expect(microsoftFilesSource).not.toContain("compactActionStyle");
+    });
+
     it("renders Google Connect Google and Refresh Status buttons with standard compactActionStyle", () => {
       const html = renderToStaticMarkup(
         <WorkspacePanel
