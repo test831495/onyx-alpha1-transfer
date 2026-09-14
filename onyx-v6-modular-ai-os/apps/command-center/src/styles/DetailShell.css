@@ -83,6 +83,11 @@
   gap: 1rem;
   color: #e8f7ff;
   min-height: 0;
+  min-width: 0;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: max(2.5rem, env(safe-area-inset-bottom));
   transform: translateZ(0);
 }
 .detail-shell__content > * { min-width: 0; color: inherit; }
