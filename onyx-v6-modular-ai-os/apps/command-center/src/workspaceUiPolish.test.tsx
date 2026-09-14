@@ -7,8 +7,16 @@ import { APP_DETAIL_REGISTRY } from "./appDetailRegistry";
 import { shellReducer, shellStateFactory } from "./shellState";
 
 const stylesSource = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
+const detailShellStyles = readFileSync(
+  new URL("./styles/DetailShell.css", import.meta.url),
+  "utf8",
+);
 const microsoftFilesSource = readFileSync(
   new URL("./components/MicrosoftFilesPanel.tsx", import.meta.url),
+  "utf8",
+);
+const workspacePanelSource = readFileSync(
+  new URL("./components/WorkspacePanel.tsx", import.meta.url),
   "utf8",
 );
 
@@ -81,6 +89,35 @@ describe("Track A Workspace UI Polish", () => {
       expect(stylesSource).toMatch(
         /#panel-workspace \[aria-labelledby="microsoft-files-heading"\] > div:first-child > button\s*\{[^}]*white-space:\s*nowrap/s,
       );
+      expect(stylesSource).toMatch(
+        /\.microsoft-files-panel \.microsoft-files-diagnostic-trace\s*\{[^}]*max-height:\s*12rem;[^}]*overflow-x:\s*hidden;[^}]*overflow-y:\s*auto/s,
+      );
+      const detailContentRule = detailShellStyles.match(
+        /\.detail-shell__content\s*\{[^}]*\}/s,
+      )?.[0] ?? "";
+      expect(detailContentRule).toContain("min-height: 0;");
+      expect(detailContentRule).toContain("min-width: 0;");
+      expect(detailContentRule).toContain("overflow-x: hidden;");
+      expect(detailContentRule).toContain("overflow-y: auto;");
+      expect(detailContentRule).toContain("overscroll-behavior: contain;");
+      expect(detailContentRule).toContain("-webkit-overflow-scrolling: touch;");
+      expect(detailContentRule).toContain(
+        "padding-bottom: max(2.5rem, env(safe-area-inset-bottom));",
+      );
+      expect(stylesSource).toMatch(
+        /#panel-workspace\s*\{[^}]*overflow-x:\s*clip;[^}]*overflow-y:\s*visible/s,
+      );
+      expect(stylesSource).not.toMatch(
+        /#panel-workspace\s*\{[^}]*overflow-y:\s*auto/s,
+      );
+      expect(workspacePanelSource).not.toMatch(
+        /<section id="panel-workspace"[^>]*overflow:\s*"hidden"/s,
+      );
+      expect(workspacePanelSource).not.toMatch(
+        /<article key=\{provider\.provider\}[^>]*overflow:\s*"hidden"/s,
+      );
+      expect(microsoftFilesSource).toContain('className="microsoft-files-panel"');
+      expect(microsoftFilesSource).toContain('className="microsoft-files-diagnostic-trace"');
       expect(microsoftFilesSource).toContain("Run bounded OneDrive read/write test");
       expect(microsoftFilesSource).toContain("Run bounded SharePoint read/write test");
       expect(microsoftFilesSource).not.toContain("compactActionStyle");
@@ -164,7 +201,8 @@ describe("Track A Workspace UI Polish", () => {
       expect(html).toContain("Google");
       expect(html).toContain("overflow-wrap:anywhere");
       expect(html).toContain("word-break:break-word");
-      expect(html).toContain("overflow:hidden");
+      expect(html).toContain('class="workspace-files-content"');
+      expect(html).toContain('class="microsoft-files-panel"');
       expect(html).toContain("min-width:0");
     });
   });

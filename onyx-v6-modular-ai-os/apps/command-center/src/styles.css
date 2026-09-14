@@ -538,7 +538,8 @@ html,body,#root{height:100%;min-height:100%;overflow:hidden!important}.phase0-fo
   gap: 0.9rem;
   max-width: 100%;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 #panel-workspace article {
@@ -550,7 +551,22 @@ html,body,#root{height:100%;min-height:100%;overflow:hidden!important}.phase0-fo
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+#panel-workspace .workspace-files-content {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.microsoft-files-panel .microsoft-files-diagnostic-trace {
+  max-width: 100%;
+  max-height: 12rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 #panel-workspace article > div,
