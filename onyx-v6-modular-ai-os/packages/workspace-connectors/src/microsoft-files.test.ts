@@ -162,9 +162,9 @@ describe("Microsoft Files metadata reads", () => {
     await expect(adapter(fetch).getOneDrive()).rejects.toMatchObject({ diagnostic: { httpStatus: 403, finalReasonCode: "MICROSOFT_FILES_HTTP_403" } });
   });
 
-  it("distinguishes fetch rejection from Graph HTTP and parsing failures", async () => {
+  it("distinguishes sync invocation failures, async fetch rejections, Graph HTTP and parsing failures", async () => {
     await expect(adapter(vi.fn(() => { throw new TypeError("network unavailable"); })).getOneDrive()).rejects.toMatchObject({
-      diagnostic: { finalReasonCode: "MICROSOFT_FILES_FETCH_REJECTED" },
+      diagnostic: { finalReasonCode: "FETCH_IMPLEMENTATION_INVOCATION_FAILED" },
     });
 
     const http401 = adapter(vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: { code: "Unauthorized" } }), { status: 401 })));
@@ -174,7 +174,7 @@ describe("Microsoft Files metadata reads", () => {
     await expect(notJson.getOneDrive()).rejects.toMatchObject({ diagnostic: { finalReasonCode: "MICROSOFT_FILES_NON_JSON_RESPONSE" } });
 
     const malformed = adapter(vi.fn().mockResolvedValue(new Response("{not-json", { status: 200, headers: { "content-type": "application/json" } })));
-    await expect(malformed.getOneDrive()).rejects.toMatchObject({ diagnostic: { finalReasonCode: "MICROSOFT_FILES_RESPONSE_BODY_READ_FAILED" } });
+    await expect(malformed.getOneDrive()).rejects.toMatchObject({ diagnostic: { finalReasonCode: "MICROSOFT_FILES_MALFORMED_RESPONSE" } });
   });
 
   it("fails closed when the fetch implementation is missing or not callable", async () => {

@@ -180,6 +180,37 @@ export class MicrosoftFilesAdapter {
     this.trace("FILES_ACTION_COMPLETED", { finalReasonCode });
   }
 
+  private buildAuthorizationHeaders(init: RequestInit, token: string, target: RequestTarget): Headers {
+    this.trace("FILES_AUTHORIZATION_HEADER_STARTED");
+    try {
+      const incomingHeaders = new Headers(init.headers ?? {});
+      const incomingAuthorization = incomingHeaders.get("authorization");
+      if (incomingAuthorization !== null && incomingAuthorization !== `Bearer ${token}`) {
+        const reason = "MICROSOFT_FILES_AUTHORIZATION_HEADER_FAILED" as const;
+        this.trace("FILES_AUTHORIZATION_HEADER_FAILED", { reasonCode: reason, finalReasonCode: reason });
+        throw new MicrosoftFilesError(this.diagnostic(target.startsWith("SHAREPOINT") ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphRequest", "FAILED", reason, target === "SHAREPOINT_SITE" ? "SHAREPOINT_SITE" : target.startsWith("SHAREPOINT") ? "SHAREPOINT_LIBRARY" : "ONEDRIVE"));
+      }
+      if (typeof token !== "string" || !token.trim() || /[\r\n]/.test(token)) {
+        const reason = "MICROSOFT_FILES_AUTHORIZATION_HEADER_FAILED" as const;
+        this.trace("FILES_AUTHORIZATION_HEADER_FAILED", { reasonCode: reason, finalReasonCode: reason });
+        throw new MicrosoftFilesError(this.diagnostic(target.startsWith("SHAREPOINT") ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphRequest", "FAILED", reason, target === "SHAREPOINT_SITE" ? "SHAREPOINT_SITE" : target.startsWith("SHAREPOINT") ? "SHAREPOINT_LIBRARY" : "ONEDRIVE"));
+      }
+      const headerInit = new Headers({ accept: "application/json", ...(init.body ? { "content-type": "application/json" } : {}) });
+      incomingHeaders.forEach((value, key) => {
+        if (key.toLowerCase() === "authorization") return;
+        headerInit.set(key, value);
+      });
+      headerInit.set("Authorization", `Bearer ${token}`);
+      this.trace("FILES_AUTHORIZATION_HEADER_SUCCEEDED", { authorizationHeaderPresent: true });
+      return headerInit;
+    } catch (error) {
+      if (error instanceof MicrosoftFilesError) throw error;
+      const reason = "MICROSOFT_FILES_AUTHORIZATION_HEADER_FAILED" as const;
+      this.trace("FILES_AUTHORIZATION_HEADER_FAILED", { reasonCode: reason, finalReasonCode: reason });
+      throw new MicrosoftFilesError(this.diagnostic(target.startsWith("SHAREPOINT") ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphRequest", "FAILED", reason, target === "SHAREPOINT_SITE" ? "SHAREPOINT_SITE" : target.startsWith("SHAREPOINT") ? "SHAREPOINT_LIBRARY" : "ONEDRIVE"));
+    }
+  }
+
   private async request<T extends GraphResponse>(url: string, init: RequestInit = {}, target: RequestTarget = url.includes("/sites/") ? "SHAREPOINT_SITE" : "ONEDRIVE_ITEM"): Promise<{ body: T; response: Response }> {
     const isSharePointRequest = target.startsWith("SHAREPOINT");
     this.trace("FILES_REQUEST_CONSTRUCTION_STARTED");
@@ -208,16 +239,7 @@ export class MicrosoftFilesAdapter {
     if (!token) { this.trace("FILES_TOKEN_REQUEST_FAILED", { reasonCode: "MICROSOFT_FILES_ACCESS_TOKEN_ABSENT", finalReasonCode: "MICROSOFT_FILES_ACCESS_TOKEN_ABSENT" }); throw new MicrosoftFilesError(this.diagnostic("MICROSOFT_ONEDRIVE_READ", "graphRequest", "FAILED", "MICROSOFT_FILES_ACCESS_TOKEN_ABSENT", "ONEDRIVE")); }
     this.trace("FILES_TOKEN_REQUEST_SUCCEEDED", { tokenPresent: true, tokenSourceClass: "UNKNOWN" });
     this.trace("FILES_SCOPE_VALIDATION_SUCCEEDED", { returnedScopeClass: "FILES_READWRITE_PRESENT" });
-    this.trace("FILES_AUTHORIZATION_HEADER_STARTED");
-    const incomingHeaders = new Headers(init.headers ?? {});
-    if (incomingHeaders.has("authorization") && incomingHeaders.get("authorization") !== `Bearer ${token}`) {
-      const reason = "MICROSOFT_FILES_AUTHORIZATION_HEADER_FAILED" as const;
-      this.trace("FILES_AUTHORIZATION_HEADER_FAILED", { reasonCode: reason, finalReasonCode: reason });
-      throw new MicrosoftFilesError(this.diagnostic(isSharePointRequest ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphRequest", "FAILED", reason, isSharePointRequest ? "SHAREPOINT_SITE" : "ONEDRIVE"));
-    }
-    const headerInit = new Headers({ accept: "application/json", ...(init.body ? { "content-type": "application/json" } : {}), ...(init.headers ?? {}) });
-    headerInit.set("Authorization", `Bearer ${token}`);
-    this.trace("FILES_AUTHORIZATION_HEADER_SUCCEEDED", { authorizationHeaderPresent: true });
+    const headerInit = this.buildAuthorizationHeaders(init, token, target);
     const fetchImplementation = this.fetcher ?? globalThis.fetch;
     if (fetchImplementation === undefined) {
       const reason = "FETCH_IMPLEMENTATION_ABSENT" as const;
@@ -230,8 +252,20 @@ export class MicrosoftFilesAdapter {
       throw new MicrosoftFilesError(this.diagnostic(isSharePointRequest ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphRequest", "FAILED", reason, isSharePointRequest ? "SHAREPOINT_SITE" : "ONEDRIVE"));
     }
     this.trace("FILES_FETCH_INVOCATION_STARTED", { fetchReached: false });
+    let invocationResult: unknown;
     let response: Response;
-    try { response = await fetchImplementation.call(globalThis, parsed, { ...init, headers: headerInit }); }
+    try { invocationResult = fetchImplementation.call(globalThis, parsed, { ...init, headers: headerInit }); }
+    catch (error) {
+      const reason = "FETCH_IMPLEMENTATION_INVOCATION_FAILED" as const;
+      this.trace("FILES_FETCH_INVOCATION_FAILED", { fetchReached: false, errorNameClass: error instanceof TypeError ? "TYPE_ERROR" : "UNKNOWN", reasonCode: reason, finalReasonCode: reason });
+      throw new MicrosoftFilesError(this.diagnostic(isSharePointRequest ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphRequest", "FAILED", reason, isSharePointRequest ? "SHAREPOINT_SITE" : "ONEDRIVE"));
+    }
+    if (!invocationResult || (typeof invocationResult !== "object" && typeof invocationResult !== "function")) {
+      const reason = "FETCH_IMPLEMENTATION_INVOCATION_FAILED" as const;
+      this.trace("FILES_FETCH_INVOCATION_FAILED", { fetchReached: false, reasonCode: reason, finalReasonCode: reason });
+      throw new MicrosoftFilesError(this.diagnostic(isSharePointRequest ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphRequest", "FAILED", reason, isSharePointRequest ? "SHAREPOINT_SITE" : "ONEDRIVE"));
+    }
+    try { response = await invocationResult as Response; }
     catch (error) {
       const reason = "MICROSOFT_FILES_FETCH_REJECTED" as const;
       this.trace("FILES_FETCH_REJECTED", { fetchReached: false, errorNameClass: error instanceof TypeError ? "TYPE_ERROR" : "UNKNOWN", reasonCode: reason, finalReasonCode: reason });
@@ -264,14 +298,14 @@ export class MicrosoftFilesAdapter {
         const raw = await response.text();
         this.trace("FILES_RESPONSE_BODY_READ_SUCCEEDED");
         if (!raw.trim()) {
-          const reason = "MICROSOFT_FILES_RESPONSE_BODY_READ_FAILED" as const;
+          const reason = "MICROSOFT_FILES_MALFORMED_RESPONSE" as const;
           this.trace("FILES_RESPONSE_PARSE_FAILED", { reasonCode: reason, finalReasonCode: reason });
           throw new MicrosoftFilesError(this.diagnostic(target.startsWith("SHAREPOINT") ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphResponse", "FAILED", reason, target === "SHAREPOINT_SITE" ? "SHAREPOINT_SITE" : target === "SHAREPOINT_ITEM" || target === "SHAREPOINT_LIBRARY" ? "SHAREPOINT_LIBRARY" : "ONEDRIVE"));
         }
         this.trace("FILES_RESPONSE_PARSE_STARTED");
         try { body = JSON.parse(raw); }
         catch (error) {
-          const reason = "MICROSOFT_FILES_RESPONSE_BODY_READ_FAILED" as const;
+          const reason = "MICROSOFT_FILES_MALFORMED_RESPONSE" as const;
           this.trace("FILES_RESPONSE_PARSE_FAILED", { reasonCode: reason, finalReasonCode: reason, errorNameClass: error instanceof SyntaxError ? "UNKNOWN" : "UNKNOWN" });
           throw new MicrosoftFilesError(this.diagnostic(target.startsWith("SHAREPOINT") ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphResponse", "FAILED", reason, target === "SHAREPOINT_SITE" ? "SHAREPOINT_SITE" : target === "SHAREPOINT_ITEM" || target === "SHAREPOINT_LIBRARY" ? "SHAREPOINT_LIBRARY" : "ONEDRIVE"));
         }
