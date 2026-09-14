@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { convertersFor } from "./localFileConverters";
-import { MAX_TEXT_PREVIEW_BYTES, projectLocalFile, readTextPreview, supportedPreview, writeToHandle } from "./localFilesProvider";
+import { MAX_TEXT_PREVIEW_BYTES, projectLocalFile, readTextPreview, supportedPreview, validateLocalSignature, writeToHandle } from "./localFilesProvider";
 
 describe("Local Files provider", () => {
   it("projects truthful metadata and distinguishes writable handles", () => {
@@ -32,5 +32,11 @@ describe("Local Files provider", () => {
     const handle = { queryPermission: async () => "granted", createWritable: async () => ({ write: async (value: Blob | string) => { contents = typeof value === "string" ? value : await value.text(); }, close: async () => undefined }), getFile: async () => new File([contents], "note.txt", { type: "text/plain", lastModified: 123 }) } as never;
     await writeToHandle(handle, "updated", file);
     expect(contents).toBe("updated");
+  });
+
+  it("rejects parser-dependent files with invalid bounded signatures", async () => {
+    const pdf = new File(["not a pdf"], "sample.pdf", { type: "application/pdf" });
+    const projection = projectLocalFile(pdf, "FILE_INPUT");
+    expect(await validateLocalSignature(pdf, { capabilityId: projection.viewerId! } as never)).toBe("INVALID");
   });
 });

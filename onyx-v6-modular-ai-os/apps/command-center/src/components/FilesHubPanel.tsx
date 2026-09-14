@@ -29,6 +29,7 @@ function LocalFileWorkspace() {
     setText("");
     setDirty(false); setOutputMimeType(undefined);
     if (!selection) { setPreviewState("NOT_REQUESTED"); return; }
+    if (selection.projection.validationState === "INVALID") { setPreviewState("FAILED"); return; }
     if (["image-viewer", "audio-player", "video-player", "pdf-viewer"].includes(selection.projection.viewerId ?? "")) { setPreviewUrl(createPreviewUrl(selection.file)); setPreviewState("AVAILABLE"); return; }
     void readTextPreview(selection.file).then((result) => { setText(result.text ?? ""); setPreviewState(result.state); });
   }, [selection?.projection.selectionId]);
