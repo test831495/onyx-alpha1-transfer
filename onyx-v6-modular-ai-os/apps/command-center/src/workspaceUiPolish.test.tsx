@@ -81,6 +81,16 @@ describe("Track A Workspace UI Polish", () => {
       expect(stylesSource).toMatch(
         /#panel-workspace \[aria-labelledby="microsoft-files-heading"\] > div:first-child > button\s*\{[^}]*white-space:\s*nowrap/s,
       );
+      expect(stylesSource).toMatch(
+        /#panel-workspace\s*\{[^}]*max-height:\s*100%;[^}]*overflow-x:\s*hidden;[^}]*overflow-y:\s*auto;[^}]*overscroll-behavior:\s*contain/s,
+      );
+      expect(stylesSource).toMatch(
+        /#panel-workspace \.workspace-files-content\s*\{[^}]*overflow-x:\s*hidden !important;[^}]*overflow-y:\s*auto !important/s,
+      );
+      expect(stylesSource).toMatch(
+        /#panel-workspace \.workspace-diagnostic-trace\s*\{[^}]*max-height:\s*12rem;[^}]*overflow-x:\s*hidden;[^}]*overflow-y:\s*auto/s,
+      );
+      expect(microsoftFilesSource).toContain('className="workspace-diagnostic-trace"');
       expect(microsoftFilesSource).toContain("Run bounded OneDrive read/write test");
       expect(microsoftFilesSource).toContain("Run bounded SharePoint read/write test");
       expect(microsoftFilesSource).not.toContain("compactActionStyle");

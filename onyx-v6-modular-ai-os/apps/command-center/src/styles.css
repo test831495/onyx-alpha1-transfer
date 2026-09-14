@@ -538,7 +538,12 @@ html,body,#root{height:100%;min-height:100%;overflow:hidden!important}.phase0-fo
   gap: 0.9rem;
   max-width: 100%;
   box-sizing: border-box;
-  overflow: hidden;
+  min-height: 0;
+  max-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 #panel-workspace article {
@@ -550,7 +555,26 @@ html,body,#root{height:100%;min-height:100%;overflow:hidden!important}.phase0-fo
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
+}
+
+#panel-workspace .workspace-files-content {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 0;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+#panel-workspace .workspace-diagnostic-trace {
+  max-width: 100%;
+  max-height: 12rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 #panel-workspace article > div,
