@@ -30,6 +30,7 @@ export interface LocalSelectedFileProjection {
   readonly permissionState: LocalPermissionState;
   readonly previewState: LocalPreviewState;
   readonly validationState: LocalValidationState;
+  readonly viewerId?: string;
 }
 export interface FileSourceProjection { readonly sourceId: FileSourceId; readonly displayName: string; readonly providerFamily: string; readonly availability: FileSourceAvailability; readonly connection: FileSourceConnectionState; readonly capabilities: readonly FileSourceCapability[]; readonly diagnostic?: FileProviderDiagnostic; }
 export interface FilesHubSnapshot { readonly availability: "AVAILABLE"; readonly sources: readonly FileSourceProjection[]; }
