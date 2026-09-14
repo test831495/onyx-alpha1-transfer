@@ -1,4 +1,14 @@
 export type FileProviderId = "microsoft" | "google";
+export type FileSourceId = "local" | "microsoft-onedrive" | "microsoft-sharepoint" | "google-drive" | (string & {});
+export type FileSourceAvailability = "AVAILABLE" | "CONNECTED" | "DISCONNECTED" | "CONNECT_REQUIRED" | "PERMISSION_REQUIRED" | "NOT_APPLICABLE" | "NOT_SUPPORTED" | "DEGRADED" | "ERROR";
+export type FileSourceConnectionState = "CONNECTED" | "DISCONNECTED" | "CONNECT_REQUIRED" | "NOT_APPLICABLE";
+export type FileSourceOperation = "BROWSE" | "READ_METADATA" | "READ_CONTENT" | "CREATE" | "UPDATE" | "MOVE" | "RENAME" | "DELETE" | "SEARCH";
+export type FileProviderDiagnostic = { readonly sourceId: FileSourceId; readonly providerFamily: string; readonly operation: FileSourceOperation; readonly state: FileSourceAvailability; readonly reasonCode?: string; readonly freshness: "LIVE" | "STALE" | "NOT_AVAILABLE"; readonly retryEligible: boolean; readonly userActionRequired: boolean; };
+export type FileSourceCapability = { readonly operation: FileSourceOperation; readonly enabled: boolean; };
+export type FileProviderAction = "OPEN" | "CONNECT" | "RECONNECT" | "REFRESH" | "CLEAR";
+export interface FileSourceProjection { readonly sourceId: FileSourceId; readonly displayName: string; readonly providerFamily: string; readonly availability: FileSourceAvailability; readonly connection: FileSourceConnectionState; readonly capabilities: readonly FileSourceCapability[]; readonly diagnostic?: FileProviderDiagnostic; }
+export interface FilesHubSnapshot { readonly availability: "AVAILABLE"; readonly sources: readonly FileSourceProjection[]; }
+export interface LocalFileCapabilityProjection { readonly filePicker: "LOCAL_FILE_PICKER_SUPPORTED" | "LOCAL_FILE_ACCESS_NOT_SUPPORTED" | "LOCAL_PERMISSION_REQUIRED" | "LOCAL_PERMISSION_GRANTED" | "LOCAL_PERMISSION_DENIED" | "LOCAL_SELECTION_CANCELLED"; readonly directoryPicker: "LOCAL_DIRECTORY_PICKER_SUPPORTED" | "LOCAL_FILE_ACCESS_NOT_SUPPORTED" | "LOCAL_PERMISSION_REQUIRED" | "LOCAL_PERMISSION_GRANTED" | "LOCAL_PERMISSION_DENIED" | "LOCAL_SELECTION_CANCELLED"; }
 export type FileAccountKind = "PERSONAL_MICROSOFT_ACCOUNT" | "ORGANIZATIONAL_MICROSOFT_ACCOUNT" | "GUEST_MICROSOFT_ACCOUNT" | "UNKNOWN_MICROSOFT_ACCOUNT";
 export type FileCapability = "MICROSOFT_ONEDRIVE_READ" | "MICROSOFT_ONEDRIVE_WRITE" | "MICROSOFT_SHAREPOINT_READ" | "MICROSOFT_SHAREPOINT_WRITE";
 export type FileItemKind = "FILE" | "FOLDER";
