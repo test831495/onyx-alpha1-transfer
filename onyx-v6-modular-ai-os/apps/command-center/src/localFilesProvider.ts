@@ -1,6 +1,6 @@
 import type { LocalFileCapabilityProjection, LocalPermissionState, LocalPreviewState, LocalSelectedFileProjection, LocalSelectionMechanism } from "@onyx/workspace-contracts";
 import { convertersFor } from "./localFileConverters";
-import { classifyLocalFileName, type LocalFileViewerRegistration } from "./localFileRegistries";
+import { classifyLocalFileName, LocalFileViewerRegistry, type LocalFileViewerRegistration } from "./localFileRegistries";
 
 export const MAX_TEXT_PREVIEW_BYTES = 1_000_000;
 export const MAX_DIRECTORY_ITEMS = 100;
@@ -42,7 +42,7 @@ export async function validateLocalSignature(file: File, viewer?: LocalFileViewe
 
 export async function selectLocalFile(): Promise<LocalSelection | undefined> {
   const browser = browserWindow(); if (!browser?.showOpenFilePicker) return undefined;
-  try { const handle = (await browser.showOpenFilePicker({ multiple: false }))[0]; if (!handle) return undefined; const file = await handle.getFile(); const projection = projectLocalFile(file, "FILE_SYSTEM_HANDLE", handle); const viewer = projection.viewerId ? (await import("./localFileRegistries")).LocalFileViewerRegistry.find((entry) => entry.capabilityId === projection.viewerId) : undefined; return { file, handle, projection: { ...projection, validationState: await validateLocalSignature(file, viewer) } }; }
+  try { const handle = (await browser.showOpenFilePicker({ multiple: false }))[0]; if (!handle) return undefined; const file = await handle.getFile(); const projection = projectLocalFile(file, "FILE_SYSTEM_HANDLE", handle); const viewer = projection.viewerId ? LocalFileViewerRegistry.find((entry) => entry.capabilityId === projection.viewerId) : undefined; return { file, handle, projection: { ...projection, validationState: await validateLocalSignature(file, viewer) } }; }
   catch (error) { if (error instanceof DOMException && error.name === "AbortError") return undefined; throw error; }
 }
 
@@ -50,7 +50,7 @@ export async function selectLocalFileFallback(): Promise<LocalSelection | undefi
   if (typeof document === "undefined") return undefined;
   return new Promise((resolve, reject) => {
     const input = document.createElement("input"); input.type = "file"; input.accept = "*/*";
-    input.onchange = () => { const file = input.files?.[0]; if (!file) { resolve(undefined); return; } const projection = projectLocalFile(file, "FILE_INPUT"); void (async () => { const viewer = projection.viewerId ? (await import("./localFileRegistries")).LocalFileViewerRegistry.find((entry) => entry.capabilityId === projection.viewerId) : undefined; resolve({ file, projection: { ...projection, validationState: await validateLocalSignature(file, viewer) } }); })(); };
+    input.onchange = () => { const file = input.files?.[0]; if (!file) { resolve(undefined); return; } const projection = projectLocalFile(file, "FILE_INPUT"); void (async () => { const viewer = projection.viewerId ? LocalFileViewerRegistry.find((entry) => entry.capabilityId === projection.viewerId) : undefined; resolve({ file, projection: { ...projection, validationState: await validateLocalSignature(file, viewer) } }); })(); };
     input.onerror = () => reject(new Error("Local file selection failed.")); input.click();
   });
 }
