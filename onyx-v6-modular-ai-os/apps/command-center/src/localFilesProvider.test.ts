@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { convertersFor } from "./localFileConverters";
-import { MAX_TEXT_PREVIEW_BYTES, projectLocalFile, readTextPreview, supportedPreview, validateLocalSignature, writeToHandle } from "./localFilesProvider";
+import { MAX_DIRECTORY_ITEMS, MAX_TEXT_PREVIEW_BYTES, projectLocalFile, readLocalDirectory, readTextPreview, supportedPreview, validateLocalSignature, writeToHandle } from "./localFilesProvider";
 
 describe("Local Files provider", () => {
   it("projects truthful metadata and distinguishes writable handles", () => {
@@ -38,5 +38,14 @@ describe("Local Files provider", () => {
     const pdf = new File(["not a pdf"], "sample.pdf", { type: "application/pdf" });
     const projection = projectLocalFile(pdf, "FILE_INPUT");
     expect(await validateLocalSignature(pdf, { capabilityId: projection.viewerId! } as never)).toBe("INVALID");
+  });
+
+  it("lists only immediate authorized children with bounded folder-first ordering", async () => {
+    const entries = Array.from({ length: MAX_DIRECTORY_ITEMS + 2 }, (_, index) => ({ name: `file-${index}.txt`, kind: "file" as const, getFile: async () => new File([String(index)], `file-${index}.txt`, { type: "text/plain" }) }));
+    const directory = { name: "root", values: async function* () { yield { name: "child", kind: "directory" as const }; yield* entries; } };
+    const result = await readLocalDirectory(directory);
+    expect(result.items.length).toBe(MAX_DIRECTORY_ITEMS);
+    expect(result.items[0]?.kind).toBe("directory");
+    expect(result.stack).toEqual([]);
   });
 });

@@ -27,4 +27,14 @@ describe("Files Hub", () => {
     expect(onMicrosoftAction).not.toHaveBeenCalled();
     expect(onGoogleAction).not.toHaveBeenCalled();
   });
+
+  it("renders the compact provider lifecycle toolbar for every source", () => {
+    const html = renderToStaticMarkup(<FilesHubPanel sources={sources} />);
+    expect(html.match(/aria-label="Back /g)?.length).toBe(4);
+    expect(html.match(/aria-label="Maximise /g)?.length).toBe(4);
+    expect(html.match(/aria-label="Minimise /g)?.length).toBe(4);
+    expect(html.match(/aria-label="Restore /g)?.length).toBe(4);
+    expect(html.match(/aria-label="Resize /g)?.length).toBe(4);
+    expect(html).toContain("min-width:0");
+  });
 });
