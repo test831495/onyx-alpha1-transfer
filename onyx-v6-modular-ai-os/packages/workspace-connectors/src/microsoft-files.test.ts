@@ -43,6 +43,10 @@ describe("Microsoft Files metadata reads", () => {
     const result = await new MicrosoftFilesAdapter({ accessToken: token, fetch, accountKind: "PERSONAL_MICROSOFT_ACCOUNT" }).getOneDrive();
     expect(result.drive).toMatchObject({ driveId: "drive-1", driveType: "PERSONAL", accountKind: "PERSONAL_MICROSOFT_ACCOUNT" });
     expect(token).toHaveBeenCalledWith(["Files.ReadWrite"]);
+    const [requestUrl, requestInit] = fetch.mock.calls[0] ?? [];
+    expect(String(requestUrl)).toBe("https://graph.microsoft.com/v1.0/me/drive");
+    expect(requestInit).toMatchObject({ method: "GET" });
+    expect(new Headers(requestInit?.headers).get("authorization")).toBe("Bearer opaque-test-token");
   });
 
   it("emits an ordered privacy-safe trace through Graph response mapping", async () => {
@@ -53,12 +57,21 @@ describe("Microsoft Files metadata reads", () => {
     expect(traces.map((trace) => trace.stage)).toEqual(expect.arrayContaining([
       "FILES_ACTION_RECEIVED",
       "FILES_ACCOUNT_CLASSIFICATION_SUCCEEDED",
+      "FILES_REQUEST_CONSTRUCTION_STARTED",
+      "FILES_REQUEST_CONSTRUCTION_SUCCEEDED",
       "FILES_TOKEN_REQUEST_STARTED",
       "FILES_TOKEN_REQUEST_SUCCEEDED",
       "FILES_SCOPE_VALIDATION_SUCCEEDED",
-      "FILES_FETCH_DISPATCH_STARTED",
-      "FILES_FETCH_DISPATCH_RETURNED",
-      "FILES_GRAPH_RESPONSE_RECEIVED",
+      "FILES_AUTHORIZATION_HEADER_STARTED",
+      "FILES_AUTHORIZATION_HEADER_SUCCEEDED",
+      "FILES_FETCH_INVOCATION_STARTED",
+      "FILES_FETCH_INVOCATION_RETURNED_RESPONSE",
+      "FILES_HTTP_RESPONSE_RECEIVED",
+      "FILES_HTTP_RESPONSE_SUCCESS",
+      "FILES_RESPONSE_BODY_READ_STARTED",
+      "FILES_RESPONSE_BODY_READ_SUCCEEDED",
+      "FILES_RESPONSE_PARSE_STARTED",
+      "FILES_RESPONSE_PARSE_SUCCEEDED",
       "FILES_RESULT_MAPPING_SUCCEEDED",
     ]));
     expect(traces.some((trace) => trace.stage === "FILES_ACTION_COMPLETED")).toBe(false);
@@ -66,7 +79,7 @@ describe("Microsoft Files metadata reads", () => {
     const serialized = JSON.stringify(traces);
     expect(serialized).not.toContain("opaque-test-token");
     expect(serialized).not.toContain("Authorization");
-    const allowedKeys = new Set(["schemaVersion", "correlationId", "action", "stage", "accountKind", "requestedScopeClass", "returnedScopeClass", "tokenPresent", "tokenSourceClass", "interactionRequired", "adapterAvailable", "fetchReached", "httpStatus", "reasonCode", "errorNameClass", "retryAttempted", "finalReasonCode", "buildIdentity", "sequence"]);
+    const allowedKeys = new Set(["schemaVersion", "correlationId", "action", "stage", "accountKind", "requestedScopeClass", "returnedScopeClass", "tokenPresent", "tokenSourceClass", "interactionRequired", "adapterAvailable", "fetchReached", "httpStatus", "reasonCode", "errorNameClass", "retryAttempted", "finalReasonCode", "authorizationHeaderPresent", "buildIdentity", "sequence"]);
     expect(traces.every((trace) => Object.keys(trace).every((key) => allowedKeys.has(key)))).toBe(true);
     expect(traces.some((trace) => trace.stage === "FILES_ACTION_COMPLETED")).toBe(true);
     expect(traces.map((trace) => trace.sequence)).toEqual([...traces].map((trace) => trace.sequence).sort((a, b) => a - b));
@@ -153,6 +166,47 @@ describe("Microsoft Files metadata reads", () => {
     await expect(adapter(fetch).getOneDrive()).rejects.toMatchObject({ diagnostic: { httpStatus: 403, finalReasonCode: "MICROSOFT_FILES_HTTP_403" } });
   });
 
+  it("distinguishes sync invocation failures, async fetch rejections, Graph HTTP and parsing failures", async () => {
+    await expect(adapter(vi.fn(() => { throw new TypeError("network unavailable"); })).getOneDrive()).rejects.toMatchObject({
+      diagnostic: { finalReasonCode: "FETCH_IMPLEMENTATION_INVOCATION_FAILED" },
+    });
+
+    const http401 = adapter(vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: { code: "Unauthorized" } }), { status: 401 })));
+    await expect(http401.getOneDrive()).rejects.toMatchObject({ diagnostic: { finalReasonCode: "MICROSOFT_FILES_HTTP_401" } });
+
+    const notJson = adapter(vi.fn().mockResolvedValue(new Response("plain text", { status: 200, headers: { "content-type": "text/plain" } })));
+    await expect(notJson.getOneDrive()).rejects.toMatchObject({ diagnostic: { finalReasonCode: "MICROSOFT_FILES_NON_JSON_RESPONSE" } });
+
+    const malformed = adapter(vi.fn().mockResolvedValue(new Response("{not-json", { status: 200, headers: { "content-type": "application/json" } })));
+    await expect(malformed.getOneDrive()).rejects.toMatchObject({ diagnostic: { finalReasonCode: "MICROSOFT_FILES_MALFORMED_RESPONSE" } });
+
+    const mixedCaseJson = adapter(vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: "drive-1", driveType: "business" }), { status: 200, headers: { "content-type": "Application/JSON; charset=utf-8" } })));
+    await expect(mixedCaseJson.getOneDrive()).resolves.toMatchObject({ drive: { driveId: "drive-1" } });
+  });
+
+  it("fails closed when the fetch implementation is missing or not callable", async () => {
+    const originalFetch = globalThis.fetch;
+    try {
+      // @ts-expect-error test harness intentionally removes the runtime fetch for this guardrail.
+      globalThis.fetch = undefined;
+      const missing = new MicrosoftFilesAdapter({ accessToken: token, accountKind: "ORGANIZATIONAL_MICROSOFT_ACCOUNT" });
+      await expect(missing.getOneDrive()).rejects.toMatchObject({ diagnostic: { finalReasonCode: "FETCH_IMPLEMENTATION_ABSENT" } });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+
+    const notCallable = new MicrosoftFilesAdapter({ accessToken: token, fetch: {} as typeof globalThis.fetch, accountKind: "ORGANIZATIONAL_MICROSOFT_ACCOUNT" });
+    await expect(notCallable.getOneDrive()).rejects.toMatchObject({ diagnostic: { finalReasonCode: "FETCH_IMPLEMENTATION_NOT_CALLABLE" } });
+  });
+
+  it("rejects invalid request URLs and headers before fetch dispatch", async () => {
+    const invalidUrl = new MicrosoftFilesAdapter({ accessToken: token, fetch: vi.fn(), accountKind: "ORGANIZATIONAL_MICROSOFT_ACCOUNT" });
+    await expect((invalidUrl as any).request("not-a-url", {}, "ONEDRIVE_DRIVE")).rejects.toMatchObject({ diagnostic: { finalReasonCode: "MICROSOFT_FILES_REQUEST_CONSTRUCTION_FAILED" } });
+
+    const invalidHeader = new MicrosoftFilesAdapter({ accessToken: token, fetch: vi.fn(), accountKind: "ORGANIZATIONAL_MICROSOFT_ACCOUNT" });
+    await expect((invalidHeader as any).request("https://graph.microsoft.com/v1.0/me/drive", { headers: { Authorization: "Bearer bad-token" } }, "ONEDRIVE_DRIVE")).rejects.toMatchObject({ diagnostic: { finalReasonCode: "MICROSOFT_FILES_AUTHORIZATION_HEADER_FAILED" } });
+  });
+
   it("classifies SharePoint site, library, item, and OneDrive drive 404s separately", async () => {
     const site = adapter(vi.fn().mockResolvedValue(response({}, 404)));
     await expect(site.resolveSharePoint({ hostname: "tenant.sharepoint.com", sitePath: "/sites/example" })).rejects.toMatchObject({ diagnostic: { finalReasonCode: "MICROSOFT_SHAREPOINT_SITE_NOT_FOUND" } });
@@ -167,10 +221,10 @@ describe("Microsoft Files metadata reads", () => {
     await expect(adapter(vi.fn().mockResolvedValue(response({}, 404))).getOneDrive()).rejects.toMatchObject({ diagnostic: { finalReasonCode: "MICROSOFT_ONEDRIVE_NOT_PROVISIONED" } });
   });
 
-  it("preserves a bounded fetch-dispatch failure instead of collapsing it to unknown", async () => {
+  it("preserves the precise fetch rejection instead of collapsing it to a generic dispatch failure", async () => {
     const fetch = vi.fn().mockRejectedValue(new TypeError("network unavailable"));
     await expect(adapter(fetch).getOneDrive()).rejects.toMatchObject({
-      diagnostic: { finalReasonCode: "MICROSOFT_FILES_FETCH_DISPATCH_FAILED", stage: "FAILED" },
+      diagnostic: { finalReasonCode: "MICROSOFT_FILES_FETCH_REJECTED", stage: "FAILED" },
     });
   });
 

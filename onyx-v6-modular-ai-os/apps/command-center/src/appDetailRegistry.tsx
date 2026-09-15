@@ -8,6 +8,8 @@ import { AutomationDashboard } from "./components/AutomationDashboard";
 import { SettingsCenter } from "./components/SettingsCenter";
 import { ProviderHealthDashboard } from "./components/ProviderHealthDashboard";
 import { MicrosoftFilesPanel } from "./components/MicrosoftFilesPanel";
+import { FilesHubPanel } from "./components/FilesHubPanel";
+import { FILE_SOURCE_REGISTRY } from "./filesSourceRegistry";
 import { getMicrosoftFilesAccountKind, getMicrosoftFilesTrace, loadMicrosoftOneDriveRoot, loadMicrosoftSharePointFolder, reconnectMicrosoftFiles, resolveMicrosoftSharePoint, runBoundedMicrosoftOneDriveTest, runBoundedMicrosoftSharePointTest, subscribeMicrosoftFilesTrace } from "./workspaceController";
 import type { CalendarEventRecord, CalendarRangeKind } from "@onyx/calendar-intelligence";
 import type { MicrosoftCalendarReadDiagnostic } from "@onyx/workspace-connectors";
@@ -51,6 +53,7 @@ export const DetailDataContext = React.createContext<{
   calendarDiagnostic?: MicrosoftCalendarReadDiagnostic;
   filesRuntimeTrace?: readonly import("@onyx/workspace-contracts").FileRuntimeTrace[];
   onFilesTraceClear?: () => void;
+  onGoogleProviderAction?: (action: "connect" | "reconnect" | "refresh") => void;
 }>({});
 
 // Real detail components wrapped to match the required signature
@@ -98,8 +101,22 @@ const FilesDetail: React.FC<{ appId: ShellAppId }> = () => {
   useEffect(() => subscribeMicrosoftFilesTrace(() => setFilesTrace(getMicrosoftFilesTrace())), []);
   const snapshot = data.workspaceSnapshot;
   const provider = snapshot?.providers?.find((entry: any) => entry.provider === "microsoft");
-  const available = provider?.state === "connected" && provider.capabilities.some((capability: any) => capability.id === "files" && capability.enabled);
-  return <MicrosoftFilesPanel available={available} onRead={async (continuation) => (await loadMicrosoftOneDriveRoot(continuation)).listing} onWriteTest={runBoundedMicrosoftOneDriveTest} onReconnectFiles={reconnectMicrosoftFiles} runtimeTrace={filesTrace} onTraceClear={data.onFilesTraceClear} sharePointAccountKind={getMicrosoftFilesAccountKind()} sharePointAvailable={Boolean(provider?.capabilities?.some((capability: any) => capability.id === "sharepoint" && capability.enabled))} onResolveSharePoint={resolveMicrosoftSharePoint} onReadSharePoint={loadMicrosoftSharePointFolder} onWriteSharePointTest={runBoundedMicrosoftSharePointTest} />;
+  const google = snapshot?.providers?.find((entry: any) => entry.provider === "google");
+  const microsoftConnected = provider?.state === "connected";
+  const filesEnabled = Boolean(provider?.capabilities?.some((capability: any) => capability.id === "files" && capability.enabled));
+  const sharePointEnabled = Boolean(provider?.capabilities?.some((capability: any) => capability.id === "sharepoint" && capability.enabled));
+  const sourceStatus = (connected: boolean, enabled: boolean, error: boolean = false) => error ? "ERROR" as const : connected && enabled ? "CONNECTED" as const : "CONNECT_REQUIRED" as const;
+  const googleConnected = google?.state === "connected" || google?.state === "connected-partial";
+  const googleFilesEnabled = Boolean(google?.capabilities?.some((capability: any) => capability.id === "files" && capability.enabled));
+  const sources = FILE_SOURCE_REGISTRY.map((registration) => {
+    if (registration.sourceId === "local") return { ...registration, availability: "AVAILABLE" as const, connection: "CONNECTED" as const, capabilities: registration.operations.map((operation) => ({ operation, enabled: true })) };
+    if (registration.sourceId === "microsoft-onedrive") { const availability = sourceStatus(microsoftConnected, filesEnabled, provider?.state === "error"); return { ...registration, availability, connection: microsoftConnected ? "CONNECTED" as const : "CONNECT_REQUIRED" as const, capabilities: registration.operations.map((operation) => ({ operation, enabled: filesEnabled })), diagnostic: provider?.diagnostic ? { sourceId: registration.sourceId, providerFamily: registration.providerFamily, operation: "BROWSE" as const, state: availability, freshness: "LIVE" as const, retryEligible: provider?.state === "error", userActionRequired: !filesEnabled } : undefined }; }
+    if (registration.sourceId === "microsoft-sharepoint") return { ...registration, availability: microsoftConnected && getMicrosoftFilesAccountKind() === "PERSONAL_MICROSOFT_ACCOUNT" ? "NOT_APPLICABLE" as const : sourceStatus(microsoftConnected, sharePointEnabled), connection: microsoftConnected ? "CONNECTED" as const : "CONNECT_REQUIRED" as const, capabilities: registration.operations.map((operation) => ({ operation, enabled: sharePointEnabled })) };
+    const availability = sourceStatus(googleConnected, googleFilesEnabled, google?.state === "error");
+    return { ...registration, availability, connection: googleConnected ? "CONNECTED" as const : "CONNECT_REQUIRED" as const, capabilities: registration.operations.map((operation) => ({ operation, enabled: googleFilesEnabled })) };
+  });
+  const microsoftFilesBody = <MicrosoftFilesPanel available={microsoftConnected && filesEnabled} onRead={async (continuation) => (await loadMicrosoftOneDriveRoot(continuation)).listing} onWriteTest={runBoundedMicrosoftOneDriveTest} onReconnectFiles={reconnectMicrosoftFiles} runtimeTrace={filesTrace} onTraceClear={data.onFilesTraceClear} sharePointAccountKind={getMicrosoftFilesAccountKind()} sharePointAvailable={microsoftConnected && sharePointEnabled} onResolveSharePoint={resolveMicrosoftSharePoint} onReadSharePoint={loadMicrosoftSharePointFolder} onWriteSharePointTest={runBoundedMicrosoftSharePointTest} />;
+  return <FilesHubPanel sources={sources} providerBodies={{ "microsoft-onedrive": microsoftFilesBody }} onMicrosoftAction={(action) => { if (action === "CONNECT") void data.onWorkspaceConnect?.(); else if (action === "RECONNECT") void reconnectMicrosoftFiles(); else void loadMicrosoftOneDriveRoot().catch(() => undefined); }} onGoogleAction={(action) => data.onGoogleProviderAction?.(action === "OPEN" ? "refresh" : action === "CONNECT" ? "connect" : "refresh")} />;
 };
 
 const MailDetail: React.FC<{ appId: ShellAppId }> = () => {

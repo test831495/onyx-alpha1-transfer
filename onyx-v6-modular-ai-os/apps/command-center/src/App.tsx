@@ -1573,6 +1573,17 @@ export function App() {
                     mailConnected: workspace.providers.some((provider) => provider.provider === "microsoft" && provider.state === "connected"),
                     filesRuntimeTrace: getMicrosoftFilesTrace(),
                     onFilesTraceClear: clearMicrosoftFilesTrace,
+                    onGoogleProviderAction: async (action) => {
+                      setWorkspaceBusy(true);
+                      try {
+                        await runGoogleWorkspaceAction(action);
+                        if (action === "refresh") await refreshWorkspace();
+                      } catch (error) {
+                        showError(error instanceof Error ? error.message : "Google Drive action was unavailable.");
+                      } finally {
+                        setWorkspaceBusy(false);
+                      }
+                    },
                     mailBusy,
                     mailMessages,
                     mailReasonCode,
@@ -1681,6 +1692,7 @@ export function App() {
                       appId={detailAppId}
                       appTitle={detailSpec.label}
                       state="ready"
+                      hidden={activeWorkspace.minimizedAppIds.includes(detailAppId)}
                       onClose={() => dispatchShell({ type: "CLOSE_DETAILS" })}
                       onBack={() => dispatchShell({ type: "CLOSE_DETAILS" })}
                       onMinimize={() => dispatchShell({ type: "MINIMIZE_APP", appId: detailAppId })}
