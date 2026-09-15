@@ -401,7 +401,7 @@ export function shellReducer(state: ShellState, intent: ShellIntent): ShellState
           ? active.minimizedAppIds
           : [...active.minimizedAppIds, appId],
         selectedAppId: active.selectedAppId === appId ? null : active.selectedAppId,
-        detailAppId: active.detailAppId === appId ? null : active.detailAppId,
+        detailAppId: active.detailAppId === appId && appId !== "files" ? null : active.detailAppId,
       };
       return applyCharacterWorkspace(state, next);
     }

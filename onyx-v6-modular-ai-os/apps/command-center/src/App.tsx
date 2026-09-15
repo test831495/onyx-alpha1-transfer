@@ -1692,6 +1692,7 @@ export function App() {
                       appId={detailAppId}
                       appTitle={detailSpec.label}
                       state="ready"
+                      hidden={activeWorkspace.minimizedAppIds.includes(detailAppId)}
                       onClose={() => dispatchShell({ type: "CLOSE_DETAILS" })}
                       onBack={() => dispatchShell({ type: "CLOSE_DETAILS" })}
                       onMinimize={() => dispatchShell({ type: "MINIMIZE_APP", appId: detailAppId })}

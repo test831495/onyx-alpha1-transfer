@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { convertersFor } from "./localFileConverters";
-import { MAX_DIRECTORY_ITEMS, MAX_TEXT_PREVIEW_BYTES, projectLocalFile, readLocalDirectory, readTextPreview, supportedPreview, validateLocalSignature, writeToHandle } from "./localFilesProvider";
+import { MAX_DIRECTORY_ITEMS, MAX_TEXT_PREVIEW_BYTES, buildFallbackDirectorySelection, detectLocalFileCapabilities, projectLocalFile, readLocalDirectory, readTextPreview, selectLocalFileFromInput, supportedPreview, validateLocalSignature, writeToHandle } from "./localFilesProvider";
 
 describe("Local Files provider", () => {
   it("projects truthful metadata and distinguishes writable handles", () => {
@@ -11,6 +11,44 @@ describe("Local Files provider", () => {
     expect(fallback).toMatchObject({ sourceId: "local", extension: ".txt", size: 5, mimeType: "text/plain", originalSaveCapability: false, saveAsCapability: true, editCapability: true });
     expect(writable.originalSaveCapability).toBe(true);
     expect(JSON.stringify(fallback)).not.toContain("hello");
+  });
+
+  it("keeps a fallback File as a first-class selection with empty MIME support", async () => {
+    const file = new File(["hello"], "note.txt", { type: "" });
+    const selection = await selectLocalFileFromInput(file);
+    expect(selection.projection.selectionMechanism).toBe("FILE_INPUT");
+    expect(selection.projection.mimeType).toBe("application/octet-stream");
+    expect(selection.projection.originalSaveCapability).toBe(false);
+    expect(selection.projection.saveAsCapability).toBe(true);
+    expect(selection.file).toBe(file);
+  });
+
+  it("distinguishes handle and input capabilities instead of disabling all mobile folders", () => {
+    const input = { type: "file", webkitdirectory: true } as unknown as HTMLInputElement;
+    const capabilities = detectLocalFileCapabilities({
+      showOpenFilePicker: undefined,
+      showDirectoryPicker: undefined,
+      createFileInput: () => input,
+    });
+    expect(capabilities.filePicker).toBe("FILE_INPUT_SUPPORTED");
+    expect(capabilities.directoryPicker).toBe("DIRECTORY_INPUT_SUPPORTED");
+  });
+
+  it("reconstructs bounded nested fallback folders without absolute paths", () => {
+    const files = [
+      new File(["root"], "readme.txt", { type: "text/plain" }),
+      new File(["nested"], "deep.txt", { type: "text/plain" }),
+      new File(["deeper"], "leaf.txt", { type: "text/plain" }),
+    ];
+    Object.defineProperties(files[0], { webkitRelativePath: { value: "project/readme.txt" } });
+    Object.defineProperties(files[1], { webkitRelativePath: { value: "project/one/deep.txt" } });
+    Object.defineProperties(files[2], { webkitRelativePath: { value: "project/one/two/leaf.txt" } });
+    const root = buildFallbackDirectorySelection(files);
+    expect(root.name).toBe("project");
+    expect(root.items.map((item) => item.name)).toEqual(["one", "readme.txt"]);
+    expect(root.items[0]?.fallbackNodeId).toBeDefined();
+    expect(root.items[0]?.kind).toBe("directory");
+    expect(root.items.some((item) => item.name.includes("/") || item.name.includes("\\"))).toBe(false);
   });
 
   it("bounds text preview and does not guess binary content", async () => {

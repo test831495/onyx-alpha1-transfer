@@ -22,7 +22,10 @@ export interface LocalSelectedFileProjection {
   readonly selectionMechanism: LocalSelectionMechanism;
   readonly readCapability: boolean;
   readonly originalSaveCapability: boolean;
+  readonly originalSaveStatus: "ORIGINAL_SAVE_SUPPORTED" | "ORIGINAL_SAVE_UNAVAILABLE_USE_SAVE_AS";
   readonly saveAsCapability: boolean;
+  readonly saveAsStatus: "SAVE_AS_SUPPORTED";
+  readonly downloadCopyStatus: "DOWNLOAD_COPY_SUPPORTED";
   readonly previewCapability: boolean;
   readonly editCapability: boolean;
   readonly conversionCapabilities: readonly string[];
@@ -38,7 +41,7 @@ export type FilesProviderPanelAction = "BACK" | "MAXIMISE" | "MINIMISE" | "RESTO
 export interface FilesProviderPanelLayout { readonly panelId: FilesProviderPanelId; readonly mode: FilesProviderPanelMode; readonly normalWidth: number; readonly normalHeight: number; readonly minWidth: number; readonly maxWidth: number; readonly minHeight: number; readonly maxHeight: number; readonly currentNavigationDepth: number; readonly canGoBack: boolean; readonly activeViewerIdentity?: string; readonly focusedControl?: string; readonly resizeSupport: "POINTER_KEYBOARD" | "PRESET_ONLY" | "UNAVAILABLE"; }
 export interface FileSourceProjection { readonly sourceId: FileSourceId; readonly displayName: string; readonly providerFamily: string; readonly availability: FileSourceAvailability; readonly connection: FileSourceConnectionState; readonly capabilities: readonly FileSourceCapability[]; readonly diagnostic?: FileProviderDiagnostic; }
 export interface FilesHubSnapshot { readonly availability: "AVAILABLE"; readonly sources: readonly FileSourceProjection[]; }
-export interface LocalFileCapabilityProjection { readonly filePicker: "LOCAL_FILE_PICKER_SUPPORTED" | "LOCAL_FILE_ACCESS_NOT_SUPPORTED" | "LOCAL_PERMISSION_REQUIRED" | "LOCAL_PERMISSION_GRANTED" | "LOCAL_PERMISSION_DENIED" | "LOCAL_SELECTION_CANCELLED"; readonly directoryPicker: "LOCAL_DIRECTORY_PICKER_SUPPORTED" | "LOCAL_FILE_ACCESS_NOT_SUPPORTED" | "LOCAL_PERMISSION_REQUIRED" | "LOCAL_PERMISSION_GRANTED" | "LOCAL_PERMISSION_DENIED" | "LOCAL_SELECTION_CANCELLED"; }
+export interface LocalFileCapabilityProjection { readonly filePicker: "HANDLE_FILE_PICKER_SUPPORTED" | "FILE_INPUT_SUPPORTED" | "LOCAL_FILE_PICKER_SUPPORTED" | "LOCAL_FILE_ACCESS_NOT_SUPPORTED" | "LOCAL_PERMISSION_REQUIRED" | "LOCAL_PERMISSION_GRANTED" | "LOCAL_PERMISSION_DENIED" | "LOCAL_SELECTION_CANCELLED"; readonly directoryPicker: "HANDLE_DIRECTORY_PICKER_SUPPORTED" | "DIRECTORY_INPUT_SUPPORTED" | "DIRECTORY_SELECTION_UNSUPPORTED" | "LOCAL_DIRECTORY_PICKER_SUPPORTED" | "LOCAL_FILE_ACCESS_NOT_SUPPORTED" | "LOCAL_PERMISSION_REQUIRED" | "LOCAL_PERMISSION_GRANTED" | "LOCAL_PERMISSION_DENIED" | "LOCAL_SELECTION_CANCELLED"; }
 export type FileAccountKind = "PERSONAL_MICROSOFT_ACCOUNT" | "ORGANIZATIONAL_MICROSOFT_ACCOUNT" | "GUEST_MICROSOFT_ACCOUNT" | "UNKNOWN_MICROSOFT_ACCOUNT";
 export type FileCapability = "MICROSOFT_ONEDRIVE_READ" | "MICROSOFT_ONEDRIVE_WRITE" | "MICROSOFT_SHAREPOINT_READ" | "MICROSOFT_SHAREPOINT_WRITE";
 export type FileItemKind = "FILE" | "FOLDER";

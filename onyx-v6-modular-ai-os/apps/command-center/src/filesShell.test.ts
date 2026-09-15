@@ -23,6 +23,10 @@ describe("Files shell integration", () => {
     expect(getActiveWorkspace(state).minimizedAppIds).not.toContain("files");
     state = shellReducer(state, { type: "OPEN_DETAILS", appId: "files" });
     expect(getActiveWorkspace(state).detailAppId).toBe("files");
+    state = shellReducer(state, { type: "MINIMIZE_APP", appId: "files" });
+    expect(getActiveWorkspace(state).detailAppId).toBe("files");
+    state = shellReducer(state, { type: "RESTORE_APP", appId: "files" });
+    expect(getActiveWorkspace(state).detailAppId).toBe("files");
     expect(getAppDetail("files")?.supportsDetails).toBe(true);
     state = shellReducer(state, { type: "CLOSE_APP", appId: "files" });
     expect(getActiveWorkspace(state).openAppIds).not.toContain("files");

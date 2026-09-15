@@ -12,6 +12,7 @@ interface DetailShellProps {
   state?: "loading" | "empty" | "error" | "not-connected" | "ready";
   errorMessage?: string;
   initialBounds?: { x: number; y: number; width: number; height: number };
+  hidden?: boolean;
 }
 
 const getStateMessage = (
@@ -42,6 +43,7 @@ export const DetailShell: React.FC<DetailShellProps> = ({
   state = "ready",
   errorMessage,
   initialBounds = { x: 120, y: 96, width: 720, height: 560 },
+  hidden = false,
 }) => {
   const [bounds, setBounds] = useState(initialBounds);
   const [maximized, setMaximized] = useState(false);
@@ -106,7 +108,7 @@ export const DetailShell: React.FC<DetailShellProps> = ({
       role="dialog"
       aria-modal="false"
       aria-labelledby={`${appId}-detail-title`}
-      style={maximized ? undefined : { left: bounds.x, top: bounds.y, width: bounds.width, height: bounds.height }}
+      style={{ ...(maximized ? {} : { left: bounds.x, top: bounds.y, width: bounds.width, height: bounds.height }), display: hidden ? "none" : undefined }}
       tabIndex={-1}
     >
       <div className="detail-shell__header glass-surface" onPointerDown={(event) => {
