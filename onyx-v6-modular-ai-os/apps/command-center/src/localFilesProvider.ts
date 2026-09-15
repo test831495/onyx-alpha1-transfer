@@ -6,10 +6,11 @@ export const MAX_TEXT_PREVIEW_BYTES = 1_000_000;
 export const MAX_DIRECTORY_ITEMS = 100;
 type WritableFileHandle = FileSystemFileHandle & { createWritable?: () => Promise<{ write: (data: Blob | string) => Promise<void>; close: () => Promise<void> }>; queryPermission?: (descriptor?: { mode?: "read" | "readwrite" }) => Promise<PermissionState>; requestPermission?: (descriptor?: { mode?: "read" | "readwrite" }) => Promise<PermissionState> };
 export type LocalSelection = { readonly projection: LocalSelectedFileProjection; readonly file: File; readonly handle?: WritableFileHandle };
+export type LocalDirectoryStackEntry = { readonly name: string; readonly handle: LocalDirectoryHandle };
 type LocalDirectoryEntry = { readonly name: string; readonly kind: "file" | "directory"; getFile?: () => Promise<File>; getDirectoryHandle?: () => Promise<LocalDirectoryHandle> };
 type LocalDirectoryHandle = { readonly name: string; values: () => AsyncIterable<LocalDirectoryEntry>; getDirectoryHandle?: (name: string) => Promise<LocalDirectoryHandle>; getFileHandle?: (name: string) => Promise<WritableFileHandle> };
-export type LocalDirectoryItem = { readonly name: string; readonly kind: "file" | "directory"; readonly size?: number; readonly modifiedAt?: number; readonly mimeType?: string; readonly handle: LocalDirectoryEntry; readonly parent: LocalDirectoryHandle };
-export type LocalDirectorySelection = { readonly name: string; readonly handle: LocalDirectoryHandle; readonly items: readonly LocalDirectoryItem[]; readonly stack: readonly string[]; readonly parents: readonly LocalDirectoryHandle[] };
+export type LocalDirectoryItem = { readonly name: string; readonly kind: "file" | "directory"; readonly size?: number; readonly modifiedAt?: number; readonly mimeType?: string; readonly directoryHandle?: LocalDirectoryHandle; readonly fileHandle?: WritableFileHandle; readonly parent: LocalDirectoryHandle };
+export type LocalDirectorySelection = { readonly name: string; readonly handle: LocalDirectoryHandle; readonly items: readonly LocalDirectoryItem[]; readonly stack: readonly LocalDirectoryStackEntry[]; readonly parents: readonly LocalDirectoryHandle[] };
 type FilePickerWindow = Window & { showOpenFilePicker?: (options?: { multiple?: boolean }) => Promise<WritableFileHandle[]>; showSaveFilePicker?: (options?: { suggestedName?: string; types?: readonly { description: string; accept: Record<string, readonly string[]> }[] }) => Promise<WritableFileHandle>; showDirectoryPicker?: () => Promise<LocalDirectoryHandle> };
 
 const browserWindow = (): FilePickerWindow | undefined => typeof window === "undefined" ? undefined : window as FilePickerWindow;
@@ -57,21 +58,27 @@ export async function selectLocalFileFallback(): Promise<LocalSelection | undefi
   });
 }
 
-export async function readLocalDirectory(handle: LocalDirectoryHandle, stack: readonly string[] = [], parents: readonly LocalDirectoryHandle[] = []): Promise<LocalDirectorySelection> {
+export async function readLocalDirectory(handle: LocalDirectoryHandle, stack: readonly LocalDirectoryStackEntry[] = [], parents: readonly LocalDirectoryHandle[] = []): Promise<LocalDirectorySelection> {
   const items: LocalDirectoryItem[] = [];
   for await (const entry of handle.values()) {
     if (items.length >= MAX_DIRECTORY_ITEMS) break;
-    if (entry.kind === "file" && entry.getFile) { const file = await entry.getFile(); items.push({ name: file.name, kind: "file", size: file.size, modifiedAt: file.lastModified, mimeType: file.type || undefined, handle: entry, parent: handle }); }
-    else items.push({ name: entry.name, kind: "directory", handle: entry, parent: handle });
+    if (entry.kind === "file" && entry.getFile) {
+      const file = await entry.getFile();
+      const fileHandle = handle.getFileHandle ? await handle.getFileHandle(file.name).catch(() => undefined) : undefined;
+      items.push({ name: file.name, kind: "file", size: file.size, modifiedAt: file.lastModified, mimeType: file.type || undefined, fileHandle, parent: handle });
+    } else {
+      const directoryHandle = handle.getDirectoryHandle ? await handle.getDirectoryHandle(entry.name).catch(() => undefined) : undefined;
+      items.push({ name: entry.name, kind: "directory", directoryHandle, parent: handle });
+    }
   }
   items.sort((left, right) => Number(right.kind === "directory") - Number(left.kind === "directory") || left.name.localeCompare(right.name));
   return { name: handle.name, handle, items, stack, parents };
 }
 
 export async function selectLocalDirectoryFile(item: LocalDirectoryItem): Promise<LocalSelection | undefined> {
-  if (item.kind !== "file" || !item.handle.getFile) return undefined;
-  const file = await item.handle.getFile();
-  const handle = item.parent.getFileHandle ? await item.parent.getFileHandle(item.name) : undefined;
+  if (item.kind !== "file") return undefined;
+  const handle = item.fileHandle ?? (item.parent.getFileHandle ? await item.parent.getFileHandle(item.name).catch(() => undefined) : undefined);
+  const file = handle ? await handle.getFile() : new File([], item.name, { type: item.mimeType ?? "application/octet-stream" });
   const projection = projectLocalFile(file, "FILE_SYSTEM_HANDLE", handle);
   const viewer = projection.viewerId ? LocalFileViewerRegistry.find((entry) => entry.capabilityId === projection.viewerId) : undefined;
   return { file, handle, projection: { ...projection, validationState: await validateLocalSignature(file, viewer) } };

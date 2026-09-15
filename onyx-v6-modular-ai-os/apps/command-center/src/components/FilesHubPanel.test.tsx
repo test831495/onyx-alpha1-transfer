@@ -37,4 +37,22 @@ describe("Files Hub", () => {
     expect(html.match(/aria-label="Resize /g)?.length).toBe(4);
     expect(html).toContain("min-width:0");
   });
+
+  it("keeps provider identity distinct while retaining the shared Files Hub shell", () => {
+    const html = renderToStaticMarkup(<FilesHubPanel sources={sources} />);
+    expect(html).toContain('data-provider-family="local"');
+    expect(html).toContain('data-provider-family="microsoft"');
+    expect(html).toContain('data-provider-family="google"');
+    expect(html).toContain('data-provider-label="Local Files"');
+    expect(html).toContain('data-provider-label="Microsoft"');
+    expect(html).toContain('data-provider-label="Google"');
+    expect(html).toContain("files-provider-subpanel");
+  });
+
+  it("keeps the deep-navigation status copy in the Local Files panel contract", () => {
+    const html = renderToStaticMarkup(<FilesHubPanel sources={sources} />);
+    expect(html).toContain("Open a folder to continue browsing.");
+    expect(html).toContain("ONYX/NOVA does not scan subfolders automatically.");
+    expect(html).not.toContain("No recursive scan was performed");
+  });
 });
