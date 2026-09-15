@@ -254,7 +254,7 @@ export class MicrosoftFilesAdapter {
     this.trace("FILES_FETCH_INVOCATION_STARTED", { fetchReached: false });
     let invocationResult: unknown;
     let response: Response;
-    try { invocationResult = fetchImplementation.call(globalThis, parsed, { ...init, headers: headerInit }); }
+    try { invocationResult = fetchImplementation.call(globalThis, parsed, { ...init, method: init.method ?? "GET", headers: headerInit }); }
     catch (error) {
       const reason = "FETCH_IMPLEMENTATION_INVOCATION_FAILED" as const;
       this.trace("FILES_FETCH_INVOCATION_FAILED", { fetchReached: false, errorNameClass: error instanceof TypeError ? "TYPE_ERROR" : "UNKNOWN", reasonCode: reason, finalReasonCode: reason });
@@ -290,7 +290,8 @@ export class MicrosoftFilesAdapter {
       this.trace("FILES_RESPONSE_BODY_READ_STARTED");
       try {
         const contentType = response.headers.get("content-type") ?? "";
-        if (!contentType || (!contentType.includes("application/json") && !contentType.includes("+json"))) {
+        const normalizedContentType = contentType.toLowerCase();
+        if (!normalizedContentType || (!normalizedContentType.includes("application/json") && !normalizedContentType.includes("+json"))) {
           const reason = "MICROSOFT_FILES_NON_JSON_RESPONSE" as const;
           this.trace("FILES_RESPONSE_BODY_READ_FAILED", { reasonCode: reason, finalReasonCode: reason });
           throw new MicrosoftFilesError(this.diagnostic(target.startsWith("SHAREPOINT") ? "MICROSOFT_SHAREPOINT_READ" : "MICROSOFT_ONEDRIVE_READ", "graphResponse", "FAILED", reason, target === "SHAREPOINT_SITE" ? "SHAREPOINT_SITE" : target === "SHAREPOINT_ITEM" || target === "SHAREPOINT_LIBRARY" ? "SHAREPOINT_LIBRARY" : "ONEDRIVE"));

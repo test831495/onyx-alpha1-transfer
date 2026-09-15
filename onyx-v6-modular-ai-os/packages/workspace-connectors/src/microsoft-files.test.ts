@@ -43,6 +43,10 @@ describe("Microsoft Files metadata reads", () => {
     const result = await new MicrosoftFilesAdapter({ accessToken: token, fetch, accountKind: "PERSONAL_MICROSOFT_ACCOUNT" }).getOneDrive();
     expect(result.drive).toMatchObject({ driveId: "drive-1", driveType: "PERSONAL", accountKind: "PERSONAL_MICROSOFT_ACCOUNT" });
     expect(token).toHaveBeenCalledWith(["Files.ReadWrite"]);
+    const [requestUrl, requestInit] = fetch.mock.calls[0] ?? [];
+    expect(String(requestUrl)).toBe("https://graph.microsoft.com/v1.0/me/drive");
+    expect(requestInit).toMatchObject({ method: "GET" });
+    expect(new Headers(requestInit?.headers).get("authorization")).toBe("Bearer opaque-test-token");
   });
 
   it("emits an ordered privacy-safe trace through Graph response mapping", async () => {
@@ -175,6 +179,9 @@ describe("Microsoft Files metadata reads", () => {
 
     const malformed = adapter(vi.fn().mockResolvedValue(new Response("{not-json", { status: 200, headers: { "content-type": "application/json" } })));
     await expect(malformed.getOneDrive()).rejects.toMatchObject({ diagnostic: { finalReasonCode: "MICROSOFT_FILES_MALFORMED_RESPONSE" } });
+
+    const mixedCaseJson = adapter(vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: "drive-1", driveType: "business" }), { status: 200, headers: { "content-type": "Application/JSON; charset=utf-8" } })));
+    await expect(mixedCaseJson.getOneDrive()).resolves.toMatchObject({ drive: { driveId: "drive-1" } });
   });
 
   it("fails closed when the fetch implementation is missing or not callable", async () => {

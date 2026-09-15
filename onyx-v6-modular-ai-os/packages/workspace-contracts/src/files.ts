@@ -7,6 +7,9 @@ export type FileProviderDiagnostic = { readonly sourceId: FileSourceId; readonly
 export type FileSourceCapability = { readonly operation: FileSourceOperation; readonly enabled: boolean; };
 export type FileProviderAction = "OPEN" | "CONNECT" | "RECONNECT" | "REFRESH" | "CLEAR";
 export type LocalSelectionMechanism = "FILE_SYSTEM_HANDLE" | "FILE_INPUT" | "DRAG_AND_DROP";
+export type FilesFutureActionId = "CREATE_NOTE_FROM_FILE" | "SUMMARISE_FILE" | "ANALYSE_FILE" | "EXTRACT_ACTIONS" | "EXTRACT_DECISIONS" | "COMPARE_FILES" | "ASK_ABOUT_FILE";
+export interface FilesFutureActionDescriptor { readonly actionId: FilesFutureActionId; readonly status: "FUTURE_CAPABILITY"; readonly enabled: false; readonly execution: "NON_OPERATIONAL"; readonly requiresConfirmation: true; readonly referenceMode: "REFERENCE_ONLY"; readonly copyAuthorised: false; }
+export const FILES_FUTURE_ACTIONS: readonly FilesFutureActionDescriptor[] = (["CREATE_NOTE_FROM_FILE", "SUMMARISE_FILE", "ANALYSE_FILE", "EXTRACT_ACTIONS", "EXTRACT_DECISIONS", "COMPARE_FILES", "ASK_ABOUT_FILE"] as const).map((actionId) => ({ actionId, status: "FUTURE_CAPABILITY", enabled: false, execution: "NON_OPERATIONAL", requiresConfirmation: true, referenceMode: "REFERENCE_ONLY", copyAuthorised: false }));
 export type LocalPermissionState = "UNKNOWN" | "GRANTED" | "PROMPT_REQUIRED" | "DENIED";
 export type LocalPreviewState = "NOT_REQUESTED" | "AVAILABLE" | "UNSUPPORTED" | "UNAVAILABLE" | "TOO_LARGE" | "FAILED";
 export type LocalValidationState = "VALID" | "INVALID" | "NOT_VALIDATED";

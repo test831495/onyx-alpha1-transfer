@@ -6,7 +6,7 @@ export const MAX_TEXT_PREVIEW_BYTES = 1_000_000;
 export const MAX_DIRECTORY_ITEMS = 100;
 type WritableFileHandle = FileSystemFileHandle & { createWritable?: () => Promise<{ write: (data: Blob | string) => Promise<void>; close: () => Promise<void> }>; queryPermission?: (descriptor?: { mode?: "read" | "readwrite" }) => Promise<PermissionState>; requestPermission?: (descriptor?: { mode?: "read" | "readwrite" }) => Promise<PermissionState> };
 export type LocalSelection = { readonly projection: LocalSelectedFileProjection; readonly file: File; readonly handle?: WritableFileHandle };
-export type LocalDirectoryStackEntry = { readonly name: string; readonly handle?: LocalDirectoryHandle };
+export type LocalDirectoryStackEntry = { readonly name: string; readonly handle?: LocalDirectoryHandle; readonly nodeId?: string };
 type LocalDirectoryEntry = { readonly name: string; readonly kind: "file" | "directory"; getFile?: () => Promise<File>; getDirectoryHandle?: () => Promise<LocalDirectoryHandle> };
 type LocalDirectoryHandle = { readonly name: string; values: () => AsyncIterable<LocalDirectoryEntry>; getDirectoryHandle?: (name: string) => Promise<LocalDirectoryHandle>; getFileHandle?: (name: string) => Promise<WritableFileHandle> };
 export type FallbackDirectoryNode = { readonly nodeId: string; readonly name: string; readonly kind: "file" | "directory"; readonly parentId?: string; readonly relativePath: readonly string[]; readonly file?: File; readonly children: readonly string[] };
@@ -31,6 +31,7 @@ export function detectLocalFileCapabilities(probe?: CapabilityProbe): LocalFileC
   const directoryInputSupported = Boolean(directoryInput && "webkitdirectory" in directoryInput);
   return { filePicker: source?.showOpenFilePicker ? "HANDLE_FILE_PICKER_SUPPORTED" : fileInput ? "FILE_INPUT_SUPPORTED" : "LOCAL_FILE_ACCESS_NOT_SUPPORTED", directoryPicker: source?.showDirectoryPicker ? "HANDLE_DIRECTORY_PICKER_SUPPORTED" : directoryInputSupported ? "DIRECTORY_INPUT_SUPPORTED" : "DIRECTORY_SELECTION_UNSUPPORTED" };
 }
+export function captureInputFiles(input: Pick<HTMLInputElement, "files">): File[] { return Array.from(input.files ?? []); }
 export function supportedPreview(mimeType: string, extension: string): boolean { return isImage(mimeType) || isText(mimeType, extension); }
 export function supportedEditor(mimeType: string, extension: string): boolean { return isText(mimeType, extension); }
 export function conversionCapabilities(mimeType: string): readonly string[] { return convertersFor(mimeType).map((converter) => converter.destinationMimeType); }

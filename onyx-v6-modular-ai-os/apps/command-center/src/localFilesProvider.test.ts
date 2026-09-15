@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { convertersFor } from "./localFileConverters";
-import { MAX_DIRECTORY_ITEMS, MAX_TEXT_PREVIEW_BYTES, buildFallbackDirectorySelection, detectLocalFileCapabilities, projectLocalFile, readLocalDirectory, readTextPreview, selectLocalFileFromInput, supportedPreview, validateLocalSignature, writeToHandle } from "./localFilesProvider";
+import { MAX_DIRECTORY_ITEMS, MAX_TEXT_PREVIEW_BYTES, buildFallbackDirectorySelection, captureInputFiles, detectLocalFileCapabilities, projectLocalFile, readLocalDirectory, readTextPreview, selectLocalFileFromInput, supportedPreview, validateLocalSignature, writeToHandle } from "./localFilesProvider";
 
 describe("Local Files provider", () => {
   it("projects truthful metadata and distinguishes writable handles", () => {
@@ -21,6 +21,12 @@ describe("Local Files provider", () => {
     expect(selection.projection.originalSaveCapability).toBe(false);
     expect(selection.projection.saveAsCapability).toBe(true);
     expect(selection.file).toBe(file);
+  });
+
+  it("captures FileList entries before the input is cleared", () => {
+    const file = new File(["hello"], "note.txt", { type: "text/plain" });
+    const captured = captureInputFiles({ files: { 0: file, length: 1, item: (index: number) => index === 0 ? file : null } as unknown as FileList });
+    expect(captured).toEqual([file]);
   });
 
   it("distinguishes handle and input capabilities instead of disabling all mobile folders", () => {
