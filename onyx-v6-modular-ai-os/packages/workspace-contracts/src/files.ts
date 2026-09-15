@@ -32,6 +32,10 @@ export interface LocalSelectedFileProjection {
   readonly validationState: LocalValidationState;
   readonly viewerId?: string;
 }
+export type FilesProviderPanelId = "local-files" | "microsoft-onedrive" | "microsoft-sharepoint" | "google-drive";
+export type FilesProviderPanelMode = "NORMAL" | "MAXIMISED" | "MINIMISED";
+export type FilesProviderPanelAction = "BACK" | "MAXIMISE" | "MINIMISE" | "RESTORE" | "RESIZE";
+export interface FilesProviderPanelLayout { readonly panelId: FilesProviderPanelId; readonly mode: FilesProviderPanelMode; readonly normalWidth: number; readonly normalHeight: number; readonly minWidth: number; readonly maxWidth: number; readonly minHeight: number; readonly maxHeight: number; readonly currentNavigationDepth: number; readonly canGoBack: boolean; readonly activeViewerIdentity?: string; readonly focusedControl?: string; readonly resizeSupport: "POINTER_KEYBOARD" | "PRESET_ONLY" | "UNAVAILABLE"; }
 export interface FileSourceProjection { readonly sourceId: FileSourceId; readonly displayName: string; readonly providerFamily: string; readonly availability: FileSourceAvailability; readonly connection: FileSourceConnectionState; readonly capabilities: readonly FileSourceCapability[]; readonly diagnostic?: FileProviderDiagnostic; }
 export interface FilesHubSnapshot { readonly availability: "AVAILABLE"; readonly sources: readonly FileSourceProjection[]; }
 export interface LocalFileCapabilityProjection { readonly filePicker: "LOCAL_FILE_PICKER_SUPPORTED" | "LOCAL_FILE_ACCESS_NOT_SUPPORTED" | "LOCAL_PERMISSION_REQUIRED" | "LOCAL_PERMISSION_GRANTED" | "LOCAL_PERMISSION_DENIED" | "LOCAL_SELECTION_CANCELLED"; readonly directoryPicker: "LOCAL_DIRECTORY_PICKER_SUPPORTED" | "LOCAL_FILE_ACCESS_NOT_SUPPORTED" | "LOCAL_PERMISSION_REQUIRED" | "LOCAL_PERMISSION_GRANTED" | "LOCAL_PERMISSION_DENIED" | "LOCAL_SELECTION_CANCELLED"; }
