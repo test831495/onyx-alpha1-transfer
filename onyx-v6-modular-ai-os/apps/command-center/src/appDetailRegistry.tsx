@@ -230,19 +230,19 @@ export const APP_DETAIL_REGISTRY: AppDetailSpec[] = [
     supportsDetails: true,
   },
   {
-    appId: "notes",
-    label: "Notes",
-    icon: "✎",
-    cardComponent: () => <SimpleCard appId="notes" title="Notes" />,
-    detailComponent: NotesDetail,
-    supportsDetails: true,
-  },
-  {
     appId: "mail",
     label: "Mail",
     icon: "✉",
     cardComponent: () => <SimpleCard appId="mail" title="Mail" />,
     detailComponent: MailDetail,
+    supportsDetails: true,
+  },
+  {
+    appId: "notes",
+    label: "Notes",
+    icon: "✎",
+    cardComponent: () => <SimpleCard appId="notes" title="Notes" />,
+    detailComponent: NotesDetail,
     supportsDetails: true,
   },
   {
