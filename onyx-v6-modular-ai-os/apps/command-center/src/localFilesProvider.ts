@@ -7,8 +7,8 @@ export const MAX_DIRECTORY_ITEMS = 100;
 type WritableFileHandle = FileSystemFileHandle & { createWritable?: () => Promise<{ write: (data: Blob | string) => Promise<void>; close: () => Promise<void> }>; queryPermission?: (descriptor?: { mode?: "read" | "readwrite" }) => Promise<PermissionState>; requestPermission?: (descriptor?: { mode?: "read" | "readwrite" }) => Promise<PermissionState> };
 export type LocalSelection = { readonly projection: LocalSelectedFileProjection; readonly file: File; readonly handle?: WritableFileHandle };
 type LocalDirectoryEntry = { readonly name: string; readonly kind: "file" | "directory"; getFile?: () => Promise<File>; getDirectoryHandle?: () => Promise<LocalDirectoryHandle> };
-type LocalDirectoryHandle = { readonly name: string; values: () => AsyncIterable<LocalDirectoryEntry>; getDirectoryHandle?: (name: string) => Promise<LocalDirectoryHandle> };
-export type LocalDirectoryItem = { readonly name: string; readonly kind: "file" | "directory"; readonly size?: number; readonly modifiedAt?: number; readonly mimeType?: string; readonly handle: LocalDirectoryEntry };
+type LocalDirectoryHandle = { readonly name: string; values: () => AsyncIterable<LocalDirectoryEntry>; getDirectoryHandle?: (name: string) => Promise<LocalDirectoryHandle>; getFileHandle?: (name: string) => Promise<WritableFileHandle> };
+export type LocalDirectoryItem = { readonly name: string; readonly kind: "file" | "directory"; readonly size?: number; readonly modifiedAt?: number; readonly mimeType?: string; readonly handle: LocalDirectoryEntry; readonly parent: LocalDirectoryHandle };
 export type LocalDirectorySelection = { readonly name: string; readonly handle: LocalDirectoryHandle; readonly items: readonly LocalDirectoryItem[]; readonly stack: readonly string[]; readonly parents: readonly LocalDirectoryHandle[] };
 type FilePickerWindow = Window & { showOpenFilePicker?: (options?: { multiple?: boolean }) => Promise<WritableFileHandle[]>; showSaveFilePicker?: (options?: { suggestedName?: string; types?: readonly { description: string; accept: Record<string, readonly string[]> }[] }) => Promise<WritableFileHandle>; showDirectoryPicker?: () => Promise<LocalDirectoryHandle> };
 
@@ -61,8 +61,8 @@ export async function readLocalDirectory(handle: LocalDirectoryHandle, stack: re
   const items: LocalDirectoryItem[] = [];
   for await (const entry of handle.values()) {
     if (items.length >= MAX_DIRECTORY_ITEMS) break;
-    if (entry.kind === "file" && entry.getFile) { const file = await entry.getFile(); items.push({ name: file.name, kind: "file", size: file.size, modifiedAt: file.lastModified, mimeType: file.type || undefined, handle: entry }); }
-    else items.push({ name: entry.name, kind: "directory", handle: entry });
+    if (entry.kind === "file" && entry.getFile) { const file = await entry.getFile(); items.push({ name: file.name, kind: "file", size: file.size, modifiedAt: file.lastModified, mimeType: file.type || undefined, handle: entry, parent: handle }); }
+    else items.push({ name: entry.name, kind: "directory", handle: entry, parent: handle });
   }
   items.sort((left, right) => Number(right.kind === "directory") - Number(left.kind === "directory") || left.name.localeCompare(right.name));
   return { name: handle.name, handle, items, stack, parents };
@@ -71,7 +71,7 @@ export async function readLocalDirectory(handle: LocalDirectoryHandle, stack: re
 export async function selectLocalDirectoryFile(item: LocalDirectoryItem): Promise<LocalSelection | undefined> {
   if (item.kind !== "file" || !item.handle.getFile) return undefined;
   const file = await item.handle.getFile();
-  const handle = item.handle as unknown as WritableFileHandle;
+  const handle = item.parent.getFileHandle ? await item.parent.getFileHandle(item.name) : undefined;
   const projection = projectLocalFile(file, "FILE_SYSTEM_HANDLE", handle);
   const viewer = projection.viewerId ? LocalFileViewerRegistry.find((entry) => entry.capabilityId === projection.viewerId) : undefined;
   return { file, handle, projection: { ...projection, validationState: await validateLocalSignature(file, viewer) } };
