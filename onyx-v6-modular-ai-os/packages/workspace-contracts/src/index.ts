@@ -6,3 +6,4 @@ export interface WorkspaceCapability { id: WorkspaceCapabilityId; label: string;
 export interface WorkspaceProviderSnapshot { provider: WorkspaceProviderId; label: string; state: WorkspaceConnectionState; profile?: WorkspaceProfile; capabilities: readonly WorkspaceCapability[]; diagnostic: string; }
 export interface WorkspaceSnapshot { providers: readonly WorkspaceProviderSnapshot[]; activeProvider?: WorkspaceProviderId; updatedAt: number; }
 export * from "./files";
+export * from "./notes";

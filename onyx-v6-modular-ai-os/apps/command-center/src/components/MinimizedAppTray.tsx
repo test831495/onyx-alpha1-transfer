@@ -27,6 +27,7 @@ export const MinimizedAppTray: React.FC<MinimizedAppTrayProps> = ({
       home: "🏠",
       workspace: "▣",
       files: "▤",
+      notes: "✎",
       automation: "◎",
       settings: "⚙",
       health: "♥",

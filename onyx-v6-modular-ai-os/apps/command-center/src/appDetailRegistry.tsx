@@ -9,6 +9,7 @@ import { SettingsCenter } from "./components/SettingsCenter";
 import { ProviderHealthDashboard } from "./components/ProviderHealthDashboard";
 import { MicrosoftFilesPanel } from "./components/MicrosoftFilesPanel";
 import { FilesHubPanel } from "./components/FilesHubPanel";
+import { NotesPanel } from "./components/NotesPanel";
 import { FILE_SOURCE_REGISTRY } from "./filesSourceRegistry";
 import { getMicrosoftFilesAccountKind, getMicrosoftFilesTrace, loadMicrosoftOneDriveRoot, loadMicrosoftSharePointFolder, reconnectMicrosoftFiles, resolveMicrosoftSharePoint, runBoundedMicrosoftOneDriveTest, runBoundedMicrosoftSharePointTest, subscribeMicrosoftFilesTrace } from "./workspaceController";
 import type { CalendarEventRecord, CalendarRangeKind } from "@onyx/calendar-intelligence";
@@ -119,6 +120,8 @@ const FilesDetail: React.FC<{ appId: ShellAppId }> = () => {
   return <FilesHubPanel sources={sources} providerBodies={{ "microsoft-onedrive": microsoftFilesBody }} onMicrosoftAction={(action) => { if (action === "CONNECT") void data.onWorkspaceConnect?.(); else if (action === "RECONNECT") void reconnectMicrosoftFiles(); else void loadMicrosoftOneDriveRoot().catch(() => undefined); }} onGoogleAction={(action) => data.onGoogleProviderAction?.(action === "OPEN" ? "refresh" : action === "CONNECT" ? "connect" : "refresh")} />;
 };
 
+const NotesDetail: React.FC<{ appId: ShellAppId }> = () => <NotesPanel />;
+
 const MailDetail: React.FC<{ appId: ShellAppId }> = () => {
   const data = useContext(DetailDataContext);
   return <MailPanel connected={data.mailConnected ?? false} busy={data.mailBusy ?? false} messages={data.mailMessages ?? []} reasonCode={data.mailReasonCode} runtimeTrace={data.mailRuntimeTrace} diagnosticsEnabled={data.mailDiagnosticsEnabled ?? false} onConnect={data.onMailConnect ?? (() => {})} onRefresh={data.onMailRefresh ?? (() => {})} onTraceClear={data.onMailTraceClear ?? (() => {})} />;
@@ -224,6 +227,14 @@ export const APP_DETAIL_REGISTRY: AppDetailSpec[] = [
     icon: "▤",
     cardComponent: () => <SimpleCard appId="files" title="Files" />,
     detailComponent: FilesDetail,
+    supportsDetails: true,
+  },
+  {
+    appId: "notes",
+    label: "Notes",
+    icon: "✎",
+    cardComponent: () => <SimpleCard appId="notes" title="Notes" />,
+    detailComponent: NotesDetail,
     supportsDetails: true,
   },
   {

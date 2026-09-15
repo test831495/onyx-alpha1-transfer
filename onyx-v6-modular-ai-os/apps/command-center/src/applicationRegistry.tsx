@@ -3,6 +3,7 @@ import { AutomationDashboard } from "./components/AutomationDashboard";
 import { MailPanel } from "./components/MailPanel";
 import { WorkspacePanel } from "./components/WorkspacePanel";
 import { MicrosoftFilesPanel } from "./components/MicrosoftFilesPanel";
+import { NotesPanel } from "./components/NotesPanel";
 import { loadMicrosoftOneDriveRoot, runBoundedMicrosoftOneDriveTest } from "./workspaceController";
 
 export type AppRegistryEntry = {
@@ -101,12 +102,25 @@ export const APP_REGISTRY: AppRegistryEntry[] = [
     compactSummary: "Provider-neutral files shell; Microsoft OneDrive and SharePoint are available when connected.",
   },
   {
+    appId: "notes",
+    friendlyLabel: "Notes",
+    accessibleLabel: "Notes",
+    component: <NotesPanel />,
+    detailComponent: <NotesPanel />,
+    launcherOrder: 6,
+    icon: "✎",
+    supportsMinimize: true,
+    supportsClose: true,
+    supportsDetails: true,
+    compactSummary: "Offline-first notes with local search, date history, pinning, archive, and file references.",
+  },
+  {
     appId: "mail",
     friendlyLabel: "Mail",
     accessibleLabel: "Outlook Mail",
     component: <MailPanel connected={false} busy={false} messages={[]} onConnect={() => undefined} onRefresh={() => undefined} />,
     detailComponent: <MailPanel connected={false} busy={false} messages={[]} onConnect={() => undefined} onRefresh={() => undefined} />,
-    launcherOrder: 6,
+    launcherOrder: 7,
     icon: "✉",
     supportsMinimize: true,
     supportsClose: true,
@@ -119,7 +133,7 @@ export const APP_REGISTRY: AppRegistryEntry[] = [
     accessibleLabel: "Calendar",
     component: <div aria-label="Calendar panel">Calendar</div>,
     detailComponent: <div aria-label="Calendar details">Calendar details</div>,
-    launcherOrder: 7,
+    launcherOrder: 8,
     icon: "◫",
     supportsMinimize: true,
     supportsClose: true,
@@ -132,7 +146,7 @@ export const APP_REGISTRY: AppRegistryEntry[] = [
     accessibleLabel: "Automation",
     component: <AutomationDashboard />,
     detailComponent: <AutomationDashboard />,
-    launcherOrder: 8,
+    launcherOrder: 9,
     icon: "◎",
     supportsMinimize: true,
     supportsClose: true,
@@ -145,7 +159,7 @@ export const APP_REGISTRY: AppRegistryEntry[] = [
     accessibleLabel: "Settings",
     component: <div aria-label="Settings panel">Settings</div>,
     detailComponent: <div aria-label="Settings details">Settings details</div>,
-    launcherOrder: 9,
+    launcherOrder: 10,
     icon: "⚙",
     supportsMinimize: true,
     supportsClose: true,
@@ -158,7 +172,7 @@ export const APP_REGISTRY: AppRegistryEntry[] = [
     accessibleLabel: "Health",
     component: <div aria-label="Health panel">Health</div>,
     detailComponent: <div aria-label="Health details">Health details</div>,
-    launcherOrder: 10,
+    launcherOrder: 11,
     icon: "♥",
     supportsMinimize: true,
     supportsClose: true,
