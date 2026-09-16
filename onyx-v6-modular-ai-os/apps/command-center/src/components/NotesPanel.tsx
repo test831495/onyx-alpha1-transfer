@@ -5,6 +5,7 @@ import { selectLocalFile } from "../localFilesProvider";
 import { DEFAULT_CATEGORY_GROUPS, DEFAULT_TAGS, CREATE_NEW_CATEGORY_VALUE } from "../noteDefaults";
 import { VoiceNoteAudioRepository } from "../voiceNoteAudioRepository";
 import { VoiceNoteRecordingRuntime, VoiceNoteRecordingError } from "../voiceNoteRecordingRuntime";
+import { deleteVoiceNoteAudioAndMetadata } from "../voiceNotePersistenceService";
 
 const NAV_ITEMS: readonly { id: NoteDateBucket | "PINNED"; label: string }[] = [
   { id: "PINNED", label: "Pinned" },
@@ -85,8 +86,7 @@ function formatDuration(milliseconds: number) {
   return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
-function VoiceNoteSection({ accountScope, repository, selected, refresh }: { readonly accountScope: string; readonly repository: ReturnType<typeof notesRepository.forAccount>; readonly selected?: Note; readonly refresh: () => void }) {
-  const audioRepository = useRef(new VoiceNoteAudioRepository()).current;
+function VoiceNoteSection({ accountScope, repository, selected, refresh, audioRepository }: { readonly accountScope: string; readonly repository: ReturnType<typeof notesRepository.forAccount>; readonly selected?: Note; readonly refresh: () => void; readonly audioRepository: VoiceNoteAudioRepository }) {
   const runtime = useRef<VoiceNoteRecordingRuntime | undefined>(undefined);
   const audio = useRef<HTMLAudioElement | undefined>(undefined);
   const [state, setState] = useState("IDLE");
@@ -157,6 +157,7 @@ function tagSuggestions(notes: readonly Note[]): readonly string[] {
 
 export function NotesPanel({ accountScope = "local-default" }: { readonly accountScope?: string }) {
   const repository = notesRepository.forAccount(accountScope);
+  const audioRepository = useRef(new VoiceNoteAudioRepository()).current;
   const [ui, setUi] = useState<NotesUiState>(() => readUiState(accountScope));
   const [notes, setNotes] = useState<readonly Note[]>(() => repository.getNotes({ includeArchived: true }));
   const [draft, setDraft] = useState<Pick<Note, "title" | "content"> | null>(null);
@@ -235,7 +236,7 @@ export function NotesPanel({ accountScope = "local-default" }: { readonly accoun
         </select>
       </div>
 
-      <VoiceNoteSection accountScope={accountScope} repository={repository} selected={selected} refresh={refresh} />
+      <VoiceNoteSection accountScope={accountScope} repository={repository} selected={selected} refresh={refresh} audioRepository={audioRepository} />
 
       <div className="notes-layout">
         <nav aria-label="Notes navigation" className="notes-nav">
@@ -395,7 +396,7 @@ export function NotesPanel({ accountScope = "local-default" }: { readonly accoun
                   <>
                     <button type="button" onClick={() => { selected.pinned ? repository.unpinNote(selected.noteId) : repository.pinNote(selected.noteId); refresh(); }}>{selected.pinned ? "Unpin" : "Pin"}</button>
                     <button type="button" onClick={() => { saveDraft(); selected.archived ? repository.restoreNote(selected.noteId) : repository.archiveNote(selected.noteId); refresh(); }}>{selected.archived ? "Restore" : "Archive"}</button>
-                    <button type="button" onClick={() => { repository.deleteNote(selected.noteId); updateUi({ selectedId: undefined }); setDraft(null); refresh(); }}>Delete</button>
+                    <button type="button" onClick={() => { void (selected.type === "VOICE_NOTE" ? deleteVoiceNoteAudioAndMetadata({ accountScopeId: accountScope, noteId: selected.noteId, notesRepository: repository, audioRepository }) : Promise.resolve(repository.deleteNote(selected.noteId))).then(() => { updateUi({ selectedId: undefined }); setDraft(null); refresh(); }); }}>Delete</button>
                   </>
                 )}
               </div>
