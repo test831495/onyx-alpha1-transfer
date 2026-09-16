@@ -52,4 +52,36 @@ describe("LocalNotesRepository", () => {
     expect(noteDateBucket("2026-09-01T08:00:00.000Z", reference)).toBe("THIS_MONTH");
     expect(noteDateBucket("2026-07-01T08:00:00.000Z", reference)).toBe("THIS_YEAR");
   });
+  it("isolates notes and history by account scope", () => {
+    const shared = storage();
+    const accountA = new LocalNotesRepository(shared, "account-a");
+    const accountB = new LocalNotesRepository(shared, "account-b");
+    const note = accountA.createNote({ title: "Private A" });
+    accountA.recordSearch("private");
+    expect(accountB.getNotes()).toEqual([]);
+    expect(accountB.getRecentSearches()).toEqual([]);
+    expect(accountA.getNote(note.noteId)?.title).toBe("Private A");
+  });
+  it("rejects malformed canonical data and rebuilds a corrupted index", () => {
+    const shared = storage();
+    shared.setItem("onyx.notes.repository.v1", "null");
+    shared.setItem("onyx.notes.index.v1", JSON.stringify([{ noteId: "bad" }]));
+    const repository = new LocalNotesRepository(shared);
+    expect(repository.getNotes()).toEqual([]);
+    const note = repository.createNote({ title: "Recovered" });
+    shared.setItem("onyx.notes.index.v1", "{}");
+    const reloaded = new LocalNotesRepository(shared);
+    expect(reloaded.searchNotes("Recovered")[0]?.noteId).toBe(note.noteId);
+  });
+  it("keeps archive retrieval exclusive and restores notes out of Archive", () => {
+    const repository = new LocalNotesRepository(storage());
+    const active = repository.createNote({ title: "Active" });
+    const archived = repository.createNote({ title: "Archived" });
+    repository.archiveNote(archived.noteId);
+    expect(repository.getNotes({ bucket: "ARCHIVE" }).map((note) => note.noteId)).toEqual([archived.noteId]);
+    expect(repository.searchNotes("Archived", { bucket: "ARCHIVE" }).map((note) => note.noteId)).toEqual([archived.noteId]);
+    expect(repository.getNotes()).toEqual([active]);
+    repository.restoreNote(archived.noteId);
+    expect(repository.getNotes({ bucket: "ARCHIVE" })).toEqual([]);
+  });
 });

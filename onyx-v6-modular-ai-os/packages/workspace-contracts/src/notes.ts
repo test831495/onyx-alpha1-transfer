@@ -40,4 +40,4 @@ export type NoteDateBucket = "TODAY" | "YESTERDAY" | "THIS_WEEK" | "THIS_MONTH" 
 
 export type NotesFutureCapabilityId = "SUMMARIZE" | "GENERATE_TAGS" | "EXTRACT_ACTIONS" | "EXTRACT_DECISIONS" | "ASK_NOTES";
 export interface NotesFutureCapability { readonly capabilityId: NotesFutureCapabilityId; readonly status: "DISABLED" | "FUTURE_CAPABILITY"; readonly enabled: false; }
-export const NOTES_FUTURE_CAPABILITIES: readonly NotesFutureCapability[] = (["SUMMARIZE", "GENERATE_TAGS", "EXTRACT_ACTIONS", "EXTRACT_DECISIONS", "ASK_NOTES"] as const).map((capabilityId) => ({ capabilityId, status: "FUTURE_CAPABILITY", enabled: false }));
+export const NOTES_FUTURE_CAPABILITIES: readonly NotesFutureCapability[] = Object.freeze((["SUMMARIZE", "GENERATE_TAGS", "EXTRACT_ACTIONS", "EXTRACT_DECISIONS", "ASK_NOTES"] as const).map((capabilityId) => Object.freeze({ capabilityId, status: "FUTURE_CAPABILITY" as const, enabled: false as const })));

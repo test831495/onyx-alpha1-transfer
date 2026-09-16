@@ -120,7 +120,11 @@ const FilesDetail: React.FC<{ appId: ShellAppId }> = () => {
   return <FilesHubPanel sources={sources} providerBodies={{ "microsoft-onedrive": microsoftFilesBody }} onMicrosoftAction={(action) => { if (action === "CONNECT") void data.onWorkspaceConnect?.(); else if (action === "RECONNECT") void reconnectMicrosoftFiles(); else void loadMicrosoftOneDriveRoot().catch(() => undefined); }} onGoogleAction={(action) => data.onGoogleProviderAction?.(action === "OPEN" ? "refresh" : action === "CONNECT" ? "connect" : "refresh")} />;
 };
 
-const NotesDetail: React.FC<{ appId: ShellAppId }> = () => <NotesPanel />;
+const NotesDetail: React.FC<{ appId: ShellAppId }> = () => {
+  const data = useContext(DetailDataContext);
+  const microsoft = data.workspaceSnapshot?.providers?.find((provider: any) => provider.provider === "microsoft");
+  return <NotesPanel accountScope={microsoft?.profile?.accountId ?? "local-default"} />;
+};
 
 const MailDetail: React.FC<{ appId: ShellAppId }> = () => {
   const data = useContext(DetailDataContext);
