@@ -13,6 +13,7 @@ export type ShellAppId =
   | "news"
   | "workspace"
   | "files"
+  | "notes"
   | "mail"
   | "calendar"
   | "automation"
@@ -349,7 +350,7 @@ export function shellReducer(state: ShellState, intent: ShellIntent): ShellState
             ...active,
             minimizedAppIds: active.minimizedAppIds.filter((id) => id !== appId),
             selectedAppId: appId,
-            detailAppId: null,
+            detailAppId: appId === "notes" ? appId : null,
           };
           return applyCharacterWorkspace(state, next);
         } else {
@@ -357,7 +358,7 @@ export function shellReducer(state: ShellState, intent: ShellIntent): ShellState
           const next: CharacterWorkspaceState = {
             ...active,
             selectedAppId: appId,
-            detailAppId: null,
+            detailAppId: appId === "notes" ? appId : null,
           };
           return applyCharacterWorkspace(state, next);
         }
@@ -369,7 +370,7 @@ export function shellReducer(state: ShellState, intent: ShellIntent): ShellState
         openAppIds: [...active.openAppIds, appId],
         minimizedAppIds: active.minimizedAppIds.filter((id) => id !== appId),
         selectedAppId: appId,
-        detailAppId: null,
+        detailAppId: appId === "notes" ? appId : null,
         cardPresentationByAppId: new Map(active.cardPresentationByAppId).set(appId, {
           ...automaticCardCoordinatesForIndex(active.openAppIds.length),
           zIndex: 6,
@@ -415,6 +416,7 @@ export function shellReducer(state: ShellState, intent: ShellIntent): ShellState
         ...active,
         minimizedAppIds: active.minimizedAppIds.filter((id) => id !== appId),
         selectedAppId: appId,
+        detailAppId: appId === "notes" ? appId : active.detailAppId,
       };
       return applyCharacterWorkspace(state, next);
     }
@@ -562,6 +564,8 @@ const SHELL_APP_ALIASES: Record<string, ShellAppId> = {
   outlook: "mail",
   files: "files",
   file: "files",
+  notes: "notes",
+  note: "notes",
   calendar: "calendar",
   automation: "automation",
   automations: "automation",
@@ -592,6 +596,7 @@ export function resolveShellIntent(raw: string): ShellIntent | null {
     return { type: "SET_PRESENCE_MODE", mode: "ONYX_AND_NOVA" };
   }
   if (text === "files" || text === "file") return { type: "OPEN_APP", appId: "files" };
+  if (text === "notes" || text === "note") return { type: "OPEN_APP", appId: "notes" };
 
   const detailsMatch = text.match(/^(open|show)\s+(.+)\s+details$/);
   if (detailsMatch) {

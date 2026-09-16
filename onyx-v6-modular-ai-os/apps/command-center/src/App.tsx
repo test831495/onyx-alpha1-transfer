@@ -112,6 +112,7 @@ const names: Record<string, string> = {
   messages: "Messages",
   settings: "Settings",
   files: "Files",
+  notes: "Notes",
   calendar: "Calendar",
   weather: "Weather",
   "system-health": "System Health",
@@ -145,6 +146,7 @@ const SHELL_APP_LABELS: Record<ShellAppId, string> = {
   news: "News",
   workspace: "Workspace",
   files: "Files",
+  notes: "Notes",
   mail: "Mail",
   calendar: "Calendar",
   automation: "Automation",
@@ -1301,6 +1303,13 @@ export function App() {
             {canOpenDetails && <button type="button" className="app-card-action" onClick={() => dispatchShell({ type: "OPEN_DETAILS", appId: "mail" })}>Open Details</button>}
           </>
         );
+      case "notes":
+        return (
+          <>
+            <div className="app-card-summary"><strong>Notes</strong><span>Local-first notes and knowledge repository.</span></div>
+            {canOpenDetails && <button type="button" className="app-card-action" onClick={() => dispatchShell({ type: "OPEN_DETAILS", appId: "notes" })}>Open Details</button>}
+          </>
+        );
       case "settings":
         return (
           <>
@@ -1748,6 +1757,7 @@ export function App() {
             <button onClick={() => openShellApp("news")}>News</button>
             <button onClick={() => openShellApp("workspace")}>Workspace</button>
             <button onClick={() => openShellApp("files")}>Files</button>
+            <button onClick={() => openShellApp("notes")}>Notes</button>
             <button onClick={() => openShellApp("mail")}>Mail</button>
             <button onClick={() => openShellApp("calendar")}>Calendar</button>
             <button onClick={() => openShellApp("automation")}>Automation</button>

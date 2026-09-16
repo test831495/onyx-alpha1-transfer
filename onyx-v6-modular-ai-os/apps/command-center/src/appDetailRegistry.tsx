@@ -9,6 +9,7 @@ import { SettingsCenter } from "./components/SettingsCenter";
 import { ProviderHealthDashboard } from "./components/ProviderHealthDashboard";
 import { MicrosoftFilesPanel } from "./components/MicrosoftFilesPanel";
 import { FilesHubPanel } from "./components/FilesHubPanel";
+import { NotesPanel } from "./components/NotesPanel";
 import { FILE_SOURCE_REGISTRY } from "./filesSourceRegistry";
 import { getMicrosoftFilesAccountKind, getMicrosoftFilesTrace, loadMicrosoftOneDriveRoot, loadMicrosoftSharePointFolder, reconnectMicrosoftFiles, resolveMicrosoftSharePoint, runBoundedMicrosoftOneDriveTest, runBoundedMicrosoftSharePointTest, subscribeMicrosoftFilesTrace } from "./workspaceController";
 import type { CalendarEventRecord, CalendarRangeKind } from "@onyx/calendar-intelligence";
@@ -117,6 +118,12 @@ const FilesDetail: React.FC<{ appId: ShellAppId }> = () => {
   });
   const microsoftFilesBody = <MicrosoftFilesPanel available={microsoftConnected && filesEnabled} onRead={async (continuation) => (await loadMicrosoftOneDriveRoot(continuation)).listing} onWriteTest={runBoundedMicrosoftOneDriveTest} onReconnectFiles={reconnectMicrosoftFiles} runtimeTrace={filesTrace} onTraceClear={data.onFilesTraceClear} sharePointAccountKind={getMicrosoftFilesAccountKind()} sharePointAvailable={microsoftConnected && sharePointEnabled} onResolveSharePoint={resolveMicrosoftSharePoint} onReadSharePoint={loadMicrosoftSharePointFolder} onWriteSharePointTest={runBoundedMicrosoftSharePointTest} />;
   return <FilesHubPanel sources={sources} providerBodies={{ "microsoft-onedrive": microsoftFilesBody }} onMicrosoftAction={(action) => { if (action === "CONNECT") void data.onWorkspaceConnect?.(); else if (action === "RECONNECT") void reconnectMicrosoftFiles(); else void loadMicrosoftOneDriveRoot().catch(() => undefined); }} onGoogleAction={(action) => data.onGoogleProviderAction?.(action === "OPEN" ? "refresh" : action === "CONNECT" ? "connect" : "refresh")} />;
+};
+
+const NotesDetail: React.FC<{ appId: ShellAppId }> = () => {
+  const data = useContext(DetailDataContext);
+  const microsoft = data.workspaceSnapshot?.providers?.find((provider: any) => provider.provider === "microsoft");
+  return <NotesPanel accountScope={microsoft?.profile?.accountId ?? "local-default"} />;
 };
 
 const MailDetail: React.FC<{ appId: ShellAppId }> = () => {
@@ -232,6 +239,14 @@ export const APP_DETAIL_REGISTRY: AppDetailSpec[] = [
     icon: "✉",
     cardComponent: () => <SimpleCard appId="mail" title="Mail" />,
     detailComponent: MailDetail,
+    supportsDetails: true,
+  },
+  {
+    appId: "notes",
+    label: "Notes",
+    icon: "✎",
+    cardComponent: () => <SimpleCard appId="notes" title="Notes" />,
+    detailComponent: NotesDetail,
     supportsDetails: true,
   },
   {
