@@ -61,7 +61,9 @@ export class VoiceNoteAudioRepository {
   }
 
   private scopedId(accountScopeId: string, audioReferenceId: string) {
-    return `${encodeURIComponent(accountScopeId)}:${audioReferenceId}`;
+    const encodedAccountId = encodeURIComponent(accountScopeId ?? "");
+    const encodedAudioReferenceId = encodeURIComponent(audioReferenceId ?? "");
+    return `${encodedAccountId}\u0000${encodedAudioReferenceId}`;
   }
 
   async putAudio(input: Omit<VoiceNoteAudioRecord, "deletedAt">): Promise<void> {

@@ -19,19 +19,43 @@ export type VoiceNoteContractMetadata = Note["futureFields"] & {
   readonly recordingErrorCode?: VoiceNoteRecordingErrorCode;
 };
 
+const VALID_RECORDING_STATUSES = new Set(["RECORDING", "PAUSED", "SAVED", "FAILED", "CANCELLED", "DELETED"]);
+
+function isFinitePositiveInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && Number.isInteger(value) && value > 0;
+}
+
 export function isValidVoiceNoteMetadata(value: Partial<Note> | undefined): value is Note & { futureFields: VoiceNoteContractMetadata } {
-  if (!value || typeof value !== "object") return false;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   if (value.type !== "VOICE_NOTE" && value.type !== "VOICE_NOTE_PLACEHOLDER") return false;
+  if (typeof value.noteId !== "string" || value.noteId.length === 0) return false;
+  if (typeof value.title !== "string" || value.title.length === 0) return false;
+  if (typeof value.content !== "string") return false;
+  if (typeof value.createdAt !== "string" || Number.isNaN(Date.parse(value.createdAt))) return false;
+  if (typeof value.updatedAt !== "string" || Number.isNaN(Date.parse(value.updatedAt))) return false;
+  if (typeof value.version !== "number" || !Number.isInteger(value.version) || value.version < 1) return false;
+  if (!Array.isArray(value.tags)) return false;
+  if (value.fileReferences !== undefined && !Array.isArray(value.fileReferences)) return false;
+
   const future = value.futureFields as VoiceNoteFutureFields | undefined;
-  if (!future || typeof future !== "object") return false;
+  if (!future || typeof future !== "object" || Array.isArray(future)) return false;
   if (typeof future.audioReferenceId !== "string" || future.audioReferenceId.length === 0) return false;
   if (typeof future.durationMilliseconds !== "number" || !Number.isFinite(future.durationMilliseconds) || future.durationMilliseconds <= 0) return false;
-  if (typeof future.recordedMediaType !== "string" || future.recordedMediaType.length === 0) return false;
-  if (typeof future.byteLength !== "number" || !Number.isFinite(future.byteLength) || future.byteLength <= 0) return false;
+  if (typeof future.recordedMediaType !== "string" || future.recordedMediaType.trim().length === 0) return false;
+  if (!isFinitePositiveInteger(future.byteLength)) return false;
   if (typeof future.recordingCreatedAt !== "string" || Number.isNaN(Date.parse(future.recordingCreatedAt))) return false;
-  if (!Object.values({ RECORDING: "RECORDING", PAUSED: "PAUSED", SAVED: "SAVED", FAILED: "FAILED", CANCELLED: "CANCELLED", DELETED: "DELETED" }).includes(future.recordingStatus ?? "")) return false;
+  if (future.recordingStatus === undefined || !VALID_RECORDING_STATUSES.has(future.recordingStatus)) return false;
   if (future.transcriptStatus !== undefined && future.transcriptStatus !== "NOT_REQUESTED") return false;
   if (future.aiSummaryStatus !== undefined && future.aiSummaryStatus !== "DISABLED") return false;
+  if (future.recordingErrorCode !== undefined && !Object.values({
+    MICROPHONE_NOT_FOUND: "MICROPHONE_NOT_FOUND",
+    PERMISSION_DENIED: "PERMISSION_DENIED",
+    MEDIA_CAPTURE_FAILED: "MEDIA_CAPTURE_FAILED",
+    STORAGE_WRITE_FAILED: "STORAGE_WRITE_FAILED",
+    UNSUPPORTED_FORMAT: "UNSUPPORTED_FORMAT",
+    DECODE_FAILED: "DECODE_FAILED",
+    UNKNOWN_ERROR: "UNKNOWN_ERROR",
+  }).includes(future.recordingErrorCode)) return false;
   return true;
 }
 

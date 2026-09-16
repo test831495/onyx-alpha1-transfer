@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import type { Note } from "@onyx/workspace-contracts";
+import type { Note, VoiceNoteRecordingErrorCode } from "@onyx/workspace-contracts";
 
 import { LocalNotesRepository } from "./notesRepository";
 import { isValidVoiceNoteMetadata, NOTE_TYPE_VOICE_NOTE, NOTE_RECORDING_STATUS, NOTE_TRANSCRIPT_STATUS, NOTE_RECORDING_ERROR_CODES } from "./voiceNoteContracts";
@@ -154,6 +154,95 @@ describe("Voice Note Phase A contracts and storage", () => {
     expect(await repo.deleteAudio("account-a", "audio-1")).toBe(true);
     expect(await repo.hasAudio("account-a", "audio-1")).toBe(false);
     await repo.close();
+  });
+
+  it("rejects malformed voice-note metadata and unsafe future values", () => {
+    const malformed: Partial<Note> = {
+      noteId: "note-1",
+      title: "Bad metadata",
+      content: "",
+      tags: [],
+      source: "LOCAL",
+      type: NOTE_TYPE_VOICE_NOTE,
+      version: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      pinned: false,
+      archived: false,
+      fileReferences: [],
+      futureFields: {
+        audioReferenceId: "audio-1",
+        durationMilliseconds: 0,
+        recordedMediaType: "audio/webm",
+        byteLength: -5,
+        recordingCreatedAt: "not-a-date",
+        recordingStatus: NOTE_RECORDING_STATUS.SAVED,
+        recordingErrorCode: "NOT_A_REAL_ERROR" as VoiceNoteRecordingErrorCode,
+      },
+    };
+
+    expect(isValidVoiceNoteMetadata(malformed)).toBe(false);
+    expect(isValidVoiceNoteMetadata({
+      ...malformed,
+      futureFields: {
+        ...malformed.futureFields,
+        transcriptStatus: undefined,
+        recordingStatus: NOTE_RECORDING_STATUS.SAVED,
+        durationMilliseconds: 1000,
+        byteLength: 10,
+        recordingCreatedAt: new Date().toISOString(),
+        recordingErrorCode: undefined,
+      },
+    })).toBe(true);
+  });
+
+  it("reads and writes audio only in the requested account scope and retries collided IDs safely", async () => {
+    const repo = new LocalNotesRepository(makeStorage());
+    const audioRepository = new VoiceNoteAudioRepository({ databaseName: "onyx.voice-notes.audio.test", storeName: "voice_note_audio" });
+    await audioRepository.open();
+
+    const blob = makeBlob("collision-safe");
+    const sequence = ["shared-id", "shared-id", "unique-id"];
+    await audioRepository.putAudio({
+      accountScopeId: "account-a",
+      audioReferenceId: "shared-id",
+      noteId: "existing-note",
+      audio: blob,
+      mediaType: blob.type,
+      byteLength: blob.size,
+      createdAt: new Date().toISOString(),
+    });
+
+    const saved = await saveVoiceNoteAudioAndMetadata({
+      accountScopeId: "account-a",
+      noteDraft: {
+        title: "Scoped voice note",
+        tags: ["scoped"],
+        category: "Research",
+        content: "",
+        source: "LOCAL",
+        fileReferences: [],
+        audio: blob,
+        mediaType: blob.type,
+        byteLength: blob.size,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        durationMilliseconds: 2500,
+        recordingCreatedAt: new Date().toISOString(),
+        recordingStatus: NOTE_RECORDING_STATUS.SAVED,
+        transcriptStatus: NOTE_TRANSCRIPT_STATUS.NOT_REQUESTED,
+      },
+      notesRepository: repo,
+      audioRepository,
+      idFactory: () => sequence.shift() ?? "unique-id",
+    });
+
+    expect(saved.audioReferenceId).toBe("unique-id");
+    expect(await audioRepository.hasAudio("account-a", "unique-id")).toBe(true);
+    expect(await audioRepository.hasAudio("account-b", "unique-id")).toBe(false);
+    expect(await audioRepository.getAudio("account-b", "unique-id")).toBeUndefined();
+
+    await audioRepository.close();
   });
 
   it("atomic save persists metadata and audio together, and rollbacks metadata failure cleanly", async () => {

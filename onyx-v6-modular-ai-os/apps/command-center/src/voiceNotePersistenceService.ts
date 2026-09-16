@@ -26,6 +26,8 @@ export interface VoiceNoteSaveRequest {
   };
   readonly notesRepository: LocalNotesRepository;
   readonly audioRepository: VoiceNoteAudioRepository;
+  readonly idFactory?: () => string;
+  readonly maxCollisionRetries?: number;
 }
 
 export interface VoiceNoteDeleteRequest {
@@ -35,12 +37,74 @@ export interface VoiceNoteDeleteRequest {
   readonly audioRepository: VoiceNoteAudioRepository;
 }
 
-export async function saveVoiceNoteAudioAndMetadata({ accountScopeId, noteDraft, notesRepository, audioRepository }: VoiceNoteSaveRequest): Promise<{ note: Note; audioReferenceId: string; deleted: boolean }> {
+function createAudioReferenceIdFactory(idFactory?: () => string): () => string {
+  const fallback = () => {
+    if (typeof globalThis.crypto !== "undefined" && typeof globalThis.crypto.randomUUID === "function") {
+      return `voice-note-${globalThis.crypto.randomUUID()}`;
+    }
+    return `voice-note-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  };
+  return idFactory ?? fallback;
+}
+
+async function generateUniqueAudioReferenceId({
+  accountScopeId,
+  audioRepository,
+  idFactory,
+  maxCollisionRetries = 8,
+}: {
+  accountScopeId: string;
+  audioRepository: VoiceNoteAudioRepository;
+  idFactory: () => string;
+  maxCollisionRetries: number;
+}): Promise<string> {
+  if (!accountScopeId || accountScopeId.trim().length === 0) {
+    throw new Error("VOICE_NOTE_ACCOUNT_SCOPE_REQUIRED");
+  }
+
+  let attempts = 0;
+  while (attempts < maxCollisionRetries) {
+    const candidate = idFactory();
+    if (!candidate || candidate.trim().length === 0) {
+      attempts += 1;
+      continue;
+    }
+    const exists = await audioRepository.hasAudio(accountScopeId, candidate);
+    if (!exists) return candidate;
+    attempts += 1;
+  }
+
+  throw new Error("VOICE_NOTE_AUDIO_REFERENCE_COLLISION");
+}
+
+export async function saveVoiceNoteAudioAndMetadata({ accountScopeId, noteDraft, notesRepository, audioRepository, idFactory, maxCollisionRetries = 8 }: VoiceNoteSaveRequest): Promise<{ note: Note; audioReferenceId: string; deleted: boolean }> {
+  if (!accountScopeId || accountScopeId.trim().length === 0) {
+    throw new Error("VOICE_NOTE_ACCOUNT_SCOPE_REQUIRED");
+  }
+  if (!(noteDraft.audio instanceof Blob)) {
+    throw new Error("VOICE_NOTE_AUDIO_REQUIRED");
+  }
+  if (!Number.isFinite(noteDraft.durationMilliseconds) || noteDraft.durationMilliseconds <= 0) {
+    throw new Error("VOICE_NOTE_DURATION_REQUIRED");
+  }
+  if (!Number.isFinite(noteDraft.byteLength ?? noteDraft.audio.size) || (noteDraft.byteLength ?? noteDraft.audio.size) <= 0) {
+    throw new Error("VOICE_NOTE_BYTE_LENGTH_REQUIRED");
+  }
+  if (!noteDraft.title || !noteDraft.title.trim()) {
+    throw new Error("VOICE_NOTE_TITLE_REQUIRED");
+  }
+
   const audio = noteDraft.audio;
-  const mediaType = noteDraft.mediaType ?? (audio.type || "audio/webm");
+  const mediaType = (noteDraft.mediaType ?? audio.type ?? "audio/webm").trim();
   const byteLength = noteDraft.byteLength ?? audio.size;
   const recordingCreatedAt = noteDraft.recordingCreatedAt ?? new Date().toISOString();
-  const audioReferenceId = `voice-note-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const idFactoryFn = createAudioReferenceIdFactory(idFactory);
+  const audioReferenceId = await generateUniqueAudioReferenceId({
+    accountScopeId,
+    audioRepository,
+    idFactory: idFactoryFn,
+    maxCollisionRetries,
+  });
 
   try {
     await audioRepository.putAudio({
@@ -86,6 +150,7 @@ export async function saveVoiceNoteAudioAndMetadata({ accountScopeId, noteDraft,
       return { note, audioReferenceId, deleted: false };
     } catch (error) {
       await audioRepository.deleteAudio(accountScopeId, audioReferenceId).catch(() => undefined);
+      notesRepository.getNotes().some((entry) => entry.futureFields.audioReferenceId === audioReferenceId && notesRepository.deleteNote(entry.noteId));
       throw error;
     }
   } catch (error) {
@@ -94,15 +159,18 @@ export async function saveVoiceNoteAudioAndMetadata({ accountScopeId, noteDraft,
 }
 
 export async function deleteVoiceNoteAudioAndMetadata({ accountScopeId, noteId, notesRepository, audioRepository }: VoiceNoteDeleteRequest): Promise<{ deleted: boolean; noteId: string }> {
+  if (!accountScopeId || accountScopeId.trim().length === 0) {
+    throw new Error("VOICE_NOTE_ACCOUNT_SCOPE_REQUIRED");
+  }
+
   const note = notesRepository.getNote(noteId);
   if (!note) return { deleted: false, noteId };
+  if (note.type !== NOTE_TYPE_VOICE_NOTE) return { deleted: false, noteId };
 
   const audioReferenceId = String(note.futureFields.audioReferenceId ?? "");
-  if (audioReferenceId) {
-    const deleted = await audioRepository.deleteAudio(accountScopeId, audioReferenceId);
-    if (!deleted) {
-      return { deleted: false, noteId };
-    }
+  const audioDeleted = audioReferenceId ? await audioRepository.deleteAudio(accountScopeId, audioReferenceId) : true;
+  if (!audioDeleted && audioReferenceId) {
+    return { deleted: false, noteId };
   }
 
   notesRepository.deleteNote(noteId);
