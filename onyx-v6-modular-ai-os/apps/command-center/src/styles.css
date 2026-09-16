@@ -28,8 +28,8 @@
 .notes-filter-group[open] summary::before{transform:rotate(90deg)}
 .notes-filter-group>*:not(summary){margin-top:.5rem}
 .notes-nav-buttons{display:grid;gap:.2rem}
-.notes-checkbox-row{display:flex;align-items:center;justify-content:space-between;gap:.6rem;width:100%;padding:.2rem 0}
-.notes-checkbox-row input{width:auto;flex:0 0 auto}
+label.notes-checkbox-row{display:flex;align-items:center;justify-content:space-between;gap:.6rem;width:100%;padding:.2rem 0}
+label.notes-checkbox-row input{width:auto;flex:0 0 auto}
 .notes-date-range{display:grid;gap:.3rem}
 @media(max-width:900px){.notes-layout{grid-template-columns:minmax(9rem,12rem) minmax(0,1fr)}.notes-editor{grid-column:1/-1}.notes-editor textarea{min-height:11rem}}
 @media(max-width:600px){.notes-panel{padding:.75rem}.notes-header{display:grid}.notes-layout{grid-template-columns:1fr}.notes-nav{border-right:0;border-bottom:1px solid #326352;padding:0 0 .7rem;grid-template-columns:1fr}.notes-nav label{grid-column:1/-1}.notes-list{max-height:15rem;overflow:auto}.notes-editor{grid-column:auto}.notes-header button{width:100%}}
