@@ -350,7 +350,7 @@ export function shellReducer(state: ShellState, intent: ShellIntent): ShellState
             ...active,
             minimizedAppIds: active.minimizedAppIds.filter((id) => id !== appId),
             selectedAppId: appId,
-            detailAppId: null,
+            detailAppId: appId === "notes" ? appId : null,
           };
           return applyCharacterWorkspace(state, next);
         } else {
@@ -358,7 +358,7 @@ export function shellReducer(state: ShellState, intent: ShellIntent): ShellState
           const next: CharacterWorkspaceState = {
             ...active,
             selectedAppId: appId,
-            detailAppId: null,
+            detailAppId: appId === "notes" ? appId : null,
           };
           return applyCharacterWorkspace(state, next);
         }
@@ -370,7 +370,7 @@ export function shellReducer(state: ShellState, intent: ShellIntent): ShellState
         openAppIds: [...active.openAppIds, appId],
         minimizedAppIds: active.minimizedAppIds.filter((id) => id !== appId),
         selectedAppId: appId,
-        detailAppId: null,
+        detailAppId: appId === "notes" ? appId : null,
         cardPresentationByAppId: new Map(active.cardPresentationByAppId).set(appId, {
           ...automaticCardCoordinatesForIndex(active.openAppIds.length),
           zIndex: 6,
@@ -416,6 +416,7 @@ export function shellReducer(state: ShellState, intent: ShellIntent): ShellState
         ...active,
         minimizedAppIds: active.minimizedAppIds.filter((id) => id !== appId),
         selectedAppId: appId,
+        detailAppId: appId === "notes" ? appId : active.detailAppId,
       };
       return applyCharacterWorkspace(state, next);
     }

@@ -1303,6 +1303,13 @@ export function App() {
             {canOpenDetails && <button type="button" className="app-card-action" onClick={() => dispatchShell({ type: "OPEN_DETAILS", appId: "mail" })}>Open Details</button>}
           </>
         );
+      case "notes":
+        return (
+          <>
+            <div className="app-card-summary"><strong>Notes</strong><span>Local-first notes and knowledge repository.</span></div>
+            {canOpenDetails && <button type="button" className="app-card-action" onClick={() => dispatchShell({ type: "OPEN_DETAILS", appId: "notes" })}>Open Details</button>}
+          </>
+        );
       case "settings":
         return (
           <>
