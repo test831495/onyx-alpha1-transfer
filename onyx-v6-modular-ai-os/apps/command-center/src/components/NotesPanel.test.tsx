@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import "@testing-library/jest-dom/vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NotesPanel } from "./NotesPanel";
 
 function storage() {
@@ -94,5 +94,37 @@ describe("NotesPanel merge-readiness polish", () => {
     fireEvent.change(screen.getByLabelText("Add suggested tag"), { target: { value: "todo" } });
     fireEvent.click(screen.getByRole("button", { name: "+ New Note" }));
     expect(screen.getByLabelText("Note category")).toHaveValue("");
+  });
+
+  it("renders Voice Note controls without requesting microphone permission on startup", () => {
+    render(<NotesPanel />);
+    expect(screen.getByRole("heading", { name: "Voice Notes" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Record" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Pause" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Resume" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Stop" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+    expect(screen.queryByText("Review Ready")).not.toBeInTheDocument();
+  });
+
+  it("shows the review action surface after a runtime stop", async () => {
+    const track = { readyState: "live", stop: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn() } as unknown as MediaStreamTrack;
+    const stream = { getAudioTracks: () => [track], getTracks: () => [track] } as unknown as MediaStream;
+    const recorder = { mimeType: "audio/webm", state: "inactive", start: vi.fn(), stop: vi.fn(), pause: vi.fn(), resume: vi.fn(), ondataavailable: undefined as ((event: BlobEvent) => void) | undefined, onerror: undefined as (() => void) | undefined, onstop: undefined as (() => void) | undefined };
+    vi.stubGlobal("MediaRecorder", vi.fn(() => recorder));
+    vi.stubGlobal("navigator", { mediaDevices: { getUserMedia: vi.fn().mockResolvedValue(stream) } });
+    vi.stubGlobal("isSecureContext", true);
+    render(<NotesPanel />);
+    fireEvent.click(screen.getByRole("button", { name: "Record" }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(screen.getByRole("button", { name: "Pause" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Stop" }));
+    recorder.ondataavailable?.({ data: new Blob(["voice"], { type: "audio/webm" }) } as BlobEvent);
+    recorder.onstop?.();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(screen.getByText("Review Ready")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Discard" })).toBeInTheDocument();
+    vi.unstubAllGlobals();
   });
 });
