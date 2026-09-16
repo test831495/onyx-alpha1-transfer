@@ -19,6 +19,7 @@ export function NotesPanel({ accountScope = "local-default" }: { readonly accoun
   const [referenceDraft, setReferenceDraft] = useState({ fileId: "", displayName: "", provider: "local", fileType: "" });
   const [recentSearches, setRecentSearches] = useState<readonly string[]>(() => repository.getRecentSearches());
   const refresh = () => setNotes(repository.getNotes({ includeArchived: true }));
+  useEffect(() => { setUi(readUiState(accountScope)); setNotes(repository.getNotes({ includeArchived: true })); setRecentSearches(repository.getRecentSearches()); setDraft(null); }, [accountScope]);
   useEffect(() => { try { localStorage.setItem(notesUiStateKey(accountScope), JSON.stringify(ui)); } catch { /* optional UI cache */ } }, [accountScope, ui]);
   const options = { includeArchived: ui.includeArchived || ui.filter === "ARCHIVE", pinned: ui.pinned || ui.filter === "PINNED" ? true : undefined, hasFileReferences: ui.hasFileReferences ? true : undefined, recent: ui.recent ? true : undefined, bucket: ui.filter === "PINNED" ? undefined : ui.filter, category: ui.category || undefined, tag: ui.tag || undefined, sort: ui.sort };
   const results = ui.query.trim() ? repository.searchNotesDetailed(ui.query, options) : repository.getNotes(options).map((note) => ({ note, snippet: `${note.title}\n${note.content}`.trim().slice(0, 180), fileReferenceCount: note.fileReferences.length }));
