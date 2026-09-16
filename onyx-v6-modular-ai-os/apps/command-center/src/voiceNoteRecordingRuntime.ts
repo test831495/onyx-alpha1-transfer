@@ -191,6 +191,8 @@ export class VoiceNoteRecordingRuntime {
   private elapsed = 0;
   private sessionId?: string;
   private sequence = 0;
+  private readonly trackEndedHandler = () => this.handleTrackEnded();
+  private readonly visibilityHandler = () => { if (globalThis.document?.visibilityState === "hidden" && (this.state === "RECORDING" || this.state === "PAUSED")) this.handleTrackEnded("VISIBILITY_INTERRUPTION"); };
 
   constructor(options: VoiceNoteRuntimeOptions) { this.options = options; this.now = options.now ?? (() => performance.now()); this.ownership = options.ownership ?? new VoiceNoteOwnershipGuard(); }
   get elapsedMilliseconds() { return this.state === "RECORDING" ? Math.max(0, this.now() - this.startedAt - this.pausedTotal) : this.elapsed; }
@@ -203,15 +205,18 @@ export class VoiceNoteRecordingRuntime {
     this.ownership.acquire(); this.state = transitionVoiceNoteState(this.state, "START"); this.sessionId = `voice-session-${++this.sequence}`;
     try {
       const stream = await (this.options.mediaDevices ?? globalThis.navigator.mediaDevices).getUserMedia({ audio: true, video: false });
-      if (!this.sessionId || stream.getAudioTracks().every((track) => track.readyState !== "live")) throw new VoiceNoteRecordingError("MICROPHONE_NOT_READABLE");
+      if (!this.sessionId) { stream.getTracks().forEach((track) => track.stop()); throw new VoiceNoteRecordingError("RECORDING_ABORTED"); }
+      if (stream.getAudioTracks().every((track) => track.readyState !== "live")) throw new VoiceNoteRecordingError("MICROPHONE_NOT_READABLE");
       this.stream = stream;
+      stream.getAudioTracks().forEach((track) => track.addEventListener("ended", this.trackEndedHandler));
+      globalThis.document?.addEventListener("visibilitychange", this.visibilityHandler);
       const factory = this.options.mediaRecorderFactory ?? ((value: MediaStream, recorderOptions?: MediaRecorderOptions) => new MediaRecorder(value, recorderOptions));
       const adapter = new BrowserVoiceNoteRecorderAdapter(stream, negotiateVoiceNoteFormat(this.options.mediaRecorderTypeSupported), factory);
       this.recorder = adapter; adapter.onData((data) => this.acceptChunk(data)); adapter.onError(() => this.fail("UNKNOWN_RECORDING_FAILURE")); adapter.onStop(() => this.finalize());
       this.startedAt = this.now(); this.elapsed = 0; adapter.start(); this.state = transitionVoiceNoteState(this.state, "PERMISSION_GRANTED");
-    } catch (error) { this.fail(normalizeError(error)); throw error; }
+    } catch (error) { if (this.state !== "CANCELLED") this.fail(normalizeError(error)); throw error; }
   }
-  private acceptChunk(data: Blob) { if (this.state !== "RECORDING" && this.state !== "PAUSED" && this.state !== "STOPPING") return; if (!data.size) return; const maxBytes = this.options.maxBytes ?? 25 * 1024 * 1024; const maxChunks = this.options.maxChunks ?? 1000; if (this.chunks.length >= maxChunks || this.chunks.reduce((sum, chunk) => sum + chunk.size, 0) + data.size > maxBytes) { this.fail("RECORDING_TOO_LARGE"); return; } this.chunks.push(data); }
+  private acceptChunk(data: Blob) { if (this.state !== "RECORDING" && this.state !== "PAUSED" && this.state !== "STOPPING") return; if (!data.size) return; const maxBytes = this.options.maxBytes ?? 25 * 1024 * 1024; const maxChunks = this.options.maxChunks ?? 1000; if (this.elapsedMilliseconds >= (this.options.maxDurationMilliseconds ?? 60 * 60 * 1000)) { this.fail("RECORDING_TOO_LONG"); return; } if (this.chunks.length >= maxChunks || this.chunks.reduce((sum, chunk) => sum + chunk.size, 0) + data.size > maxBytes) { this.fail("RECORDING_TOO_LARGE"); return; } this.chunks.push(data); }
   pause() { if (this.state !== "RECORDING" || !this.recorder?.supportsPause) throw new VoiceNoteRecordingError("INVALID_TRANSITION", "PAUSE"); this.recorder.pause(); this.pausedAt = this.now(); this.elapsed = this.elapsedMilliseconds; this.state = transitionVoiceNoteState(this.state, "PAUSE"); }
   resume() { if (this.state !== "PAUSED" || !this.recorder?.supportsPause) throw new VoiceNoteRecordingError("INVALID_TRANSITION", "RESUME"); this.recorder.resume(); this.pausedTotal += this.now() - (this.pausedAt ?? this.now()); this.pausedAt = undefined; this.state = transitionVoiceNoteState(this.state, "RESUME"); }
   async stop() {
@@ -226,12 +231,13 @@ export class VoiceNoteRecordingRuntime {
   }
   private finalize() { if (this.state !== "STOPPING") return; const audio = new Blob(this.chunks, { type: this.recorder?.mimeType ?? "audio/webm" }); if (!audio.size) { this.fail("RECORDING_EMPTY"); return; } this.elapsed = this.elapsedMilliseconds; this.reviewDraft = { recordingSessionId: this.sessionId ?? "", accountScopeId: this.options.accountScopeId, audio, actualMediaType: audio.type, byteLength: audio.size, durationMilliseconds: this.elapsed, interrupted: this.interrupted, interruptionReason: this.interruptionReason, suggestedTitle: "Voice note", transcriptStatus: "NOT_REQUESTED", category: this.options.category, tags: this.options.tags ?? [], fileReferences: this.options.fileReferences ?? [] }; this.releaseResources(false); this.state = transitionVoiceNoteState(this.state, "FINALIZED"); }
   async save() { if (this.state !== "REVIEW_READY" || !this.reviewDraft || !this.options.notesRepository || !this.options.audioRepository) throw new VoiceNoteRecordingError("REVIEW_READY_REQUIRED"); this.state = transitionVoiceNoteState(this.state, "SAVE"); try { await saveVoiceNoteAudioAndMetadata({ accountScopeId: this.options.accountScopeId, notesRepository: this.options.notesRepository, audioRepository: this.options.audioRepository, noteDraft: { title: this.reviewDraft.suggestedTitle, category: this.reviewDraft.category, tags: this.reviewDraft.tags, fileReferences: this.reviewDraft.fileReferences, audio: this.reviewDraft.audio, mediaType: this.reviewDraft.actualMediaType, byteLength: this.reviewDraft.byteLength, durationMilliseconds: this.reviewDraft.durationMilliseconds, transcriptStatus: "NOT_REQUESTED" } }); this.chunks = []; this.reviewDraft = undefined; this.state = transitionVoiceNoteState(this.state, "SAVED"); } catch (error) { this.errorCode = normalizeError(error); this.state = "REVIEW_READY"; throw error; } }
-  cancel() { if (!["REQUESTING_PERMISSION", "RECORDING", "PAUSED", "STOPPING", "REVIEW_READY", "SAVING"].includes(this.state)) return; this.releaseResources(true); this.reviewDraft = undefined; this.state = transitionVoiceNoteState(this.state, "CANCEL"); }
+  cancel() { if (!["REQUESTING_PERMISSION", "RECORDING", "PAUSED", "STOPPING", "REVIEW_READY", "SAVING"].includes(this.state)) return; this.sessionId = undefined; this.releaseResources(true); this.reviewDraft = undefined; this.state = transitionVoiceNoteState(this.state, "CANCEL"); }
   discard() { if (this.state !== "REVIEW_READY") throw new VoiceNoteRecordingError("INVALID_TRANSITION", "DISCARD"); this.reviewDraft = undefined; this.chunks = []; this.state = transitionVoiceNoteState(this.state, "DISCARD"); }
   handleTrackEnded(reason = "TRACK_ENDED") { this.interrupted = true; this.interruptionReason = reason; this.fail("TRACK_ENDED"); }
+  handleAccountSwitch() { this.cancel(); }
   dispose() { this.releaseResources(true); this.reviewDraft = undefined; this.state = "IDLE"; }
   private fail(code: VoiceNoteErrorCode) { this.errorCode = code; this.interrupted = code === "TRACK_ENDED"; this.releaseResources(true); if (this.state !== "FAILED") this.state = "FAILED"; }
-  private releaseResources(clearChunks: boolean) { this.recorder?.dispose(); this.stream?.getTracks().forEach((track) => track.stop()); this.recorder = undefined; this.stream = undefined; this.ownership.release(); if (clearChunks) this.chunks = []; }
+  private releaseResources(clearChunks: boolean) { this.recorder?.dispose(); this.stream?.getAudioTracks().forEach((track) => { track.removeEventListener("ended", this.trackEndedHandler); track.stop(); }); globalThis.document?.removeEventListener("visibilitychange", this.visibilityHandler); this.recorder = undefined; this.stream = undefined; this.ownership.release(); if (clearChunks) this.chunks = []; }
 }
 
 export async function discardSavedVoiceNote(request: { accountScopeId: string; noteId: string; notesRepository: LocalNotesRepository; audioRepository: VoiceNoteAudioRepository }) { return deleteVoiceNoteAudioAndMetadata(request); }
