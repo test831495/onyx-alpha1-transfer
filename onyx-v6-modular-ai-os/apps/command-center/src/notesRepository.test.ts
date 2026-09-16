@@ -84,4 +84,19 @@ describe("LocalNotesRepository", () => {
     repository.restoreNote(archived.noteId);
     expect(repository.getNotes({ bucket: "ARCHIVE" })).toEqual([]);
   });
+  it("supports bounded tag indexing and explicit historical date ranges", () => {
+    const repository = new LocalNotesRepository(storage());
+    const fixtures = [
+      ["2020-09-15T12:00:00.000Z", "September 2020"],
+      ["2023-02-15T12:00:00.000Z", "February 2023"],
+      ["2024-06-15T12:00:00.000Z", "June 2024"],
+    ] as const;
+    const seeded = fixtures.map(([updatedAt, title]) => ({ noteId: `note-${title}`, title, content: "history", createdAt: updatedAt, updatedAt, pinned: false, archived: false, tags: ["architecture"], source: "LOCAL", type: "TEXT_NOTE", version: 1, futureFields: {}, fileReferences: [] }));
+    const store = storage();
+    store.setItem("onyx.notes.repository.v1", JSON.stringify(seeded));
+    const dated = new LocalNotesRepository(store);
+    expect(dated.searchNotes("#architecture", { dateFrom: "2020-09-01", dateTo: "2020-09-30T23:59:59.999Z" })[0]?.title).toBe("September 2020");
+    expect(dated.getNotes({ dateFrom: "2023-01-01", dateTo: "2023-12-31T23:59:59.999Z" })[0]?.title).toBe("February 2023");
+    expect(dated.getNotes({ dateFrom: "2024-01-01", dateTo: "2024-12-31T23:59:59.999Z" })[0]?.title).toBe("June 2024");
+  });
 });
