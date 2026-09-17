@@ -326,7 +326,21 @@ describe("Voice Note Phase B independent acceptance", () => {
     expect(session.runtime.state).toBe("REVIEW_READY");
     failFirstWrite = false;
     await session.runtime.save();
-    expect(session.runtime.state).toBe("SAVED");
+    expect(session.runtime.state).toBe("IDLE");
     expect(session.runtime.reviewDraft).toBeUndefined();
+  });
+
+  it("resets to IDLE after a successful save so a new recording can start immediately", async () => {
+    const note = { noteId: "reset-note", title: "Voice note", content: "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), pinned: false, archived: false, tags: [], source: "LOCAL", type: "VOICE_NOTE", version: 1, futureFields: {}, fileReferences: [] };
+    const notes = { createNote: vi.fn(() => note), getNotes: vi.fn(() => []), deleteNote: vi.fn() } as unknown as LocalNotesRepository;
+    const audio = { hasAudio: vi.fn(async () => false), putAudio: vi.fn(async () => undefined), deleteAudio: vi.fn(async () => true) } as unknown as VoiceNoteAudioRepository;
+    const getUserMedia = vi.fn(() => Promise.resolve({ getAudioTracks: () => [makeTrack()], getTracks: () => [makeTrack()] } as unknown as MediaStream));
+    const session = makeRuntime({ notesRepository: notes, audioRepository: audio, mediaDevices: { getUserMedia }, now: (() => { let tick = 0; return () => ++tick * 100; })() });
+    await startAndStop(session.runtime, session.recorder);
+    await session.runtime.save();
+    expect(session.runtime.state).toBe("IDLE");
+    expect(session.runtime.reviewDraft).toBeUndefined();
+    await session.runtime.start();
+    expect(session.runtime.state).toBe("RECORDING");
   });
 });
