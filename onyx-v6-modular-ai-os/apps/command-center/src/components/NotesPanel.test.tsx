@@ -19,8 +19,9 @@ function storage() {
 describe("NotesPanel merge-readiness polish", () => {
   beforeEach(() => {
     Object.defineProperty(window, "localStorage", { value: storage(), configurable: true });
+    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockReturnValue("probably");
   });
-  afterEach(() => { document.body.innerHTML = ""; });
+  afterEach(() => { vi.restoreAllMocks(); document.body.innerHTML = ""; });
 
   it("offers curated default categories grouped for selection", () => {
     render(<NotesPanel />);

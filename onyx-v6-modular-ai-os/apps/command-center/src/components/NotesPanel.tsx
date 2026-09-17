@@ -97,6 +97,25 @@ function playbackErrorMessage(code?: string): string {
   return "";
 }
 
+function recordingErrorMessage(code?: string): string {
+  if (code === "FORMAT_UNSUPPORTED") return "No compatible local audio format is available on this device.";
+  if (code === "RECORDER_OUTPUT_FORMAT_CONFLICT") return "The browser returned inconsistent audio format information. Nothing was saved.";
+  if (code === "RECORDER_OUTPUT_FORMAT_UNKNOWN") return "The browser did not report a usable audio format. Nothing was saved.";
+  return code ?? "Recording could not be started.";
+}
+
+function browserCanPlayType(mimeType: string): "probably" | "maybe" | "" | undefined {
+  if (typeof document === "undefined") return undefined;
+  const audio = document.createElement("audio");
+  if (typeof audio.canPlayType !== "function") return undefined;
+  const result = audio.canPlayType(mimeType);
+  return result === "probably" || result === "maybe" ? result : "";
+}
+
+function browserIsTypeSupported(mimeType: string): boolean {
+  return globalThis.MediaRecorder.isTypeSupported(mimeType);
+}
+
 function VoiceNoteSection({ accountScope, repository, selected, refresh, audioRepository }: { readonly accountScope: string; readonly repository: ReturnType<typeof notesRepository.forAccount>; readonly selected?: Note; readonly refresh: () => void; readonly audioRepository: VoiceNoteAudioRepository }) {
   const runtime = useRef<VoiceNoteRecordingRuntime | undefined>(undefined);
   const playbackController = useRef<VoiceNotePlaybackController | undefined>(undefined);
@@ -106,14 +125,15 @@ function VoiceNoteSection({ accountScope, repository, selected, refresh, audioRe
   const [playback, setPlayback] = useState<VoiceNotePlaybackProjection>({ state: "IDLE", current: 0, duration: 0 });
   const voiceNotes = repository.getNotes({ includeArchived: false }).filter((note) => note.type === "VOICE_NOTE");
 
-  if (!runtime.current) runtime.current = new VoiceNoteRecordingRuntime({ accountScopeId: accountScope, notesRepository: repository, audioRepository });
+  const mediaRecorderTypeSupported = typeof globalThis.MediaRecorder !== "undefined" && typeof globalThis.MediaRecorder.isTypeSupported === "function" ? browserIsTypeSupported : undefined;
+  if (!runtime.current) runtime.current = new VoiceNoteRecordingRuntime({ accountScopeId: accountScope, notesRepository: repository, audioRepository, mediaRecorderTypeSupported, mediaCanPlayType: browserCanPlayType });
   if (!playbackController.current) playbackController.current = new VoiceNotePlaybackController({ accountScopeId: accountScope, audioRepository });
   useEffect(() => {
     runtime.current?.dispose();
-    runtime.current = new VoiceNoteRecordingRuntime({ accountScopeId: accountScope, notesRepository: repository, audioRepository });
-    const timer = window.setInterval(() => { if (runtime.current) { setState(runtime.current.state); setElapsed(runtime.current.elapsedMilliseconds); } }, 100);
+    runtime.current = new VoiceNoteRecordingRuntime({ accountScopeId: accountScope, notesRepository: repository, audioRepository, mediaRecorderTypeSupported, mediaCanPlayType: browserCanPlayType });
+    const timer = typeof window === "undefined" ? undefined : window.setInterval(() => { if (typeof window !== "undefined" && runtime.current) { setState(runtime.current.state); setElapsed(runtime.current.elapsedMilliseconds); } }, 100);
     const unsubscribe = playbackController.current?.subscribe((projection) => { setPlayback(projection); if (projection.errorCode) setError(playbackErrorMessage(projection.errorCode)); });
-    return () => { window.clearInterval(timer); runtime.current?.dispose(); playbackController.current?.dispose(); unsubscribe?.(); };
+    return () => { if (timer !== undefined && typeof window !== "undefined") window.clearInterval(timer); runtime.current?.dispose(); playbackController.current?.dispose(); unsubscribe?.(); };
   }, [accountScope]);
   useEffect(() => {
     if (selected && selected.type !== "VOICE_NOTE") playbackController.current?.dispose();
@@ -122,7 +142,7 @@ function VoiceNoteSection({ accountScope, repository, selected, refresh, audioRe
     if (playback.noteId && !voiceNotes.some((note) => note.noteId === playback.noteId)) playbackController.current?.dispose();
   }, [playback.noteId, voiceNotes.length]);
 
-  const start = async () => { setError(""); playbackController.current?.pause(); try { await runtime.current?.start(); setState(runtime.current?.state ?? "IDLE"); } catch (value) { setError(value instanceof VoiceNoteRecordingError ? value.code : "UNKNOWN_RECORDING_FAILURE"); setState(runtime.current?.state ?? "FAILED"); } };
+  const start = async () => { setError(""); playbackController.current?.pause(); try { await runtime.current?.start(); setState(runtime.current?.state ?? "IDLE"); } catch (value) { setError(recordingErrorMessage(value instanceof VoiceNoteRecordingError ? value.code : "UNKNOWN_RECORDING_FAILURE")); setState(runtime.current?.state ?? "FAILED"); } };
   const stop = async () => { setError(""); try { await runtime.current?.stop(); setState(runtime.current?.state ?? "STOPPING"); } catch (value) { setError(value instanceof VoiceNoteRecordingError ? value.code : "UNKNOWN_RECORDING_FAILURE"); } };
   const save = async () => { try { await runtime.current?.save(); setState(runtime.current?.state ?? "SAVED"); refresh(); } catch (value) { setError(value instanceof VoiceNoteRecordingError ? value.code : "AUDIO_SAVE_FAILED"); setState(runtime.current?.state ?? "REVIEW_READY"); } };
   const discard = () => { runtime.current?.discard(); setState(runtime.current?.state ?? "IDLE"); };
@@ -138,7 +158,7 @@ function VoiceNoteSection({ accountScope, repository, selected, refresh, audioRe
   return <section className="voice-note-section" aria-labelledby="voice-notes-heading">
     <div className="voice-note-heading"><div><p className="notes-kicker">Track A audio</p><h3 id="voice-notes-heading">Voice Notes</h3><p>Record locally, review before saving, and keep the original audio.</p></div><span className="voice-note-state">{state}</span></div>
     <div className="voice-note-controls">
-      <button type="button" onClick={() => void start()} disabled={state !== "IDLE" && state !== "SAVED" && state !== "CANCELLED" && state !== "FAILED"}>Record</button>
+      <button type="button" onClick={() => void start()} disabled={(runtime.current?.formatResolution?.selected === undefined && runtime.current?.formatResolution !== undefined) || (state !== "IDLE" && state !== "SAVED" && state !== "CANCELLED" && state !== "FAILED")}>Record</button>
       <button type="button" onClick={() => { runtime.current?.pause(); setState(runtime.current?.state ?? state); }} disabled={state !== "RECORDING"}>Pause</button>
       <button type="button" onClick={() => { runtime.current?.resume(); setState(runtime.current?.state ?? state); }} disabled={state !== "PAUSED"}>Resume</button>
       <button type="button" onClick={() => void stop()} disabled={!(["RECORDING", "PAUSED"].includes(state))}>Stop</button>

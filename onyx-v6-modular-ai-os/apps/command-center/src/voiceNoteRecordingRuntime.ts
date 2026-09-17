@@ -3,6 +3,7 @@ import type { NoteFileReference } from "@onyx/workspace-contracts";
 import { deleteVoiceNoteAudioAndMetadata, saveVoiceNoteAudioAndMetadata } from "./voiceNotePersistenceService";
 import type { LocalNotesRepository } from "./notesRepository";
 import type { VoiceNoteAudioRepository } from "./voiceNoteAudioRepository";
+import { resolveAuthoritativeVoiceNoteMediaType, resolveVoiceNoteFormat, type VoiceNotePlaybackSupport } from "./voiceNoteFormatCompatibility";
 
 export const VOICE_NOTE_ERROR_CODES = [
   "SECURE_CONTEXT_REQUIRED", "MEDIA_DEVICES_UNAVAILABLE", "MEDIA_RECORDER_UNAVAILABLE",
@@ -10,7 +11,7 @@ export const VOICE_NOTE_ERROR_CODES = [
   "MICROPHONE_NOT_READABLE", "MICROPHONE_IN_USE_BY_OTHER_CAPABILITY", "RECORDING_ABORTED",
   "TRACK_ENDED", "FORMAT_UNSUPPORTED", "RECORDING_EMPTY", "RECORDING_TOO_LARGE",
   "RECORDING_TOO_LONG", "STORAGE_UNAVAILABLE", "STORAGE_QUOTA_EXCEEDED", "AUDIO_SAVE_FAILED",
-  "METADATA_SAVE_FAILED", "UNKNOWN_RECORDING_FAILURE",
+  "METADATA_SAVE_FAILED", "RECORDER_OUTPUT_FORMAT_UNKNOWN", "RECORDER_OUTPUT_FORMAT_CONFLICT", "UNKNOWN_RECORDING_FAILURE",
 ] as const;
 
 export type VoiceNoteErrorCode = typeof VOICE_NOTE_ERROR_CODES[number];
@@ -35,6 +36,7 @@ export interface VoiceNoteCapabilityFacts {
   readonly mediaRecorderAvailable: boolean;
   readonly storageAvailable: boolean;
   readonly isTypeSupported?: (mimeType: string) => boolean;
+  readonly canPlayType?: (mimeType: string) => VoiceNotePlaybackSupport;
   readonly pauseSupported?: boolean;
   readonly resumeSupported?: boolean;
 }
@@ -125,7 +127,7 @@ class BrowserVoiceNoteRecorderAdapter implements VoiceNoteRecorderAdapter {
   private readonly recorder: MediaRecorder;
   constructor(stream: MediaStream, mimeType?: string, factory: (stream: MediaStream, options?: MediaRecorderOptions) => MediaRecorder = (value, options) => new MediaRecorder(value, options)) {
     this.recorder = factory(stream, mimeType ? { mimeType } : undefined);
-    this.mimeType = this.recorder.mimeType || mimeType || "audio/webm";
+    this.mimeType = this.recorder.mimeType || mimeType || "";
     this.supportsPause = typeof this.recorder.pause === "function" && typeof this.recorder.resume === "function";
   }
   start() { this.recorder.start(); }
@@ -145,6 +147,7 @@ export interface VoiceNoteRuntimeOptions {
   readonly mediaDevices?: Pick<MediaDevices, "getUserMedia">;
   readonly mediaRecorderFactory?: (stream: MediaStream, options?: MediaRecorderOptions) => MediaRecorder;
   readonly mediaRecorderTypeSupported?: (mimeType: string) => boolean;
+  readonly mediaCanPlayType?: (mimeType: string) => VoiceNotePlaybackSupport | undefined;
   readonly now?: () => number;
   readonly maxDurationMilliseconds?: number;
   readonly maxBytes?: number;
@@ -185,6 +188,7 @@ export class VoiceNoteRecordingRuntime {
   private stream?: MediaStream;
   private recorder?: VoiceNoteRecorderAdapter;
   private chunks: Blob[] = [];
+  private chunkTypes: string[] = [];
   private startedAt = 0;
   private pausedAt?: number;
   private pausedTotal = 0;
@@ -195,11 +199,18 @@ export class VoiceNoteRecordingRuntime {
   private readonly visibilityHandler = () => { if (globalThis.document?.visibilityState === "hidden" && (this.state === "RECORDING" || this.state === "PAUSED")) this.handleTrackEnded("VISIBILITY_INTERRUPTION"); };
 
   constructor(options: VoiceNoteRuntimeOptions) { this.options = options; this.now = options.now ?? (() => performance.now()); this.ownership = options.ownership ?? new VoiceNoteOwnershipGuard(); }
+  get formatResolution() {
+    const recorderSupport = this.options.mediaRecorderTypeSupported ?? (typeof globalThis.MediaRecorder !== "undefined" && typeof globalThis.MediaRecorder.isTypeSupported === "function" ? (mimeType: string) => globalThis.MediaRecorder.isTypeSupported(mimeType) : undefined);
+    if (!recorderSupport || !this.options.mediaCanPlayType) return undefined;
+    return resolveVoiceNoteFormat({ isTypeSupported: recorderSupport, canPlayType: this.options.mediaCanPlayType });
+  }
   get elapsedMilliseconds() { return this.state === "RECORDING" ? Math.max(0, this.now() - this.startedAt - this.pausedTotal) : this.elapsed; }
   get projection() { return projectVoiceNoteRuntime({ state: this.state, canPause: this.recorder?.supportsPause ?? false, elapsedMilliseconds: this.elapsedMilliseconds, capabilityLimitation: this.capability.reason, errorCode: this.errorCode, interrupted: this.interrupted, interruptionReason: this.interruptionReason }); }
   private get capability() { return createVoiceNoteCapability({ isSecureContext: this.options.isSecureContext ?? globalThis.isSecureContext, mediaDevices: this.options.mediaDevices ?? globalThis.navigator?.mediaDevices, mediaRecorderAvailable: Boolean(this.options.mediaRecorderFactory ?? globalThis.MediaRecorder), storageAvailable: this.options.storageAvailable ?? true, isTypeSupported: this.options.mediaRecorderTypeSupported }); }
   async start() {
     if (this.state !== "IDLE") throw new VoiceNoteRecordingError("INVALID_TRANSITION", "START");
+    this.chunks = [];
+    this.chunkTypes = [];
     const capability = this.capability;
     if (capability.outcome === "REVIEW_ONLY" || capability.outcome === "STORAGE_UNAVAILABLE" || capability.outcome === "RECORDING_UNAVAILABLE") throw new VoiceNoteRecordingError(capability.reason ?? "UNKNOWN_RECORDING_FAILURE");
     this.ownership.acquire(); this.state = transitionVoiceNoteState(this.state, "START"); this.sessionId = `voice-session-${++this.sequence}`;
@@ -211,7 +222,16 @@ export class VoiceNoteRecordingRuntime {
       stream.getAudioTracks().forEach((track) => track.addEventListener("ended", this.trackEndedHandler));
       globalThis.document?.addEventListener("visibilitychange", this.visibilityHandler);
       const factory = this.options.mediaRecorderFactory ?? ((value: MediaStream, recorderOptions?: MediaRecorderOptions) => new MediaRecorder(value, recorderOptions));
-      const adapter = new BrowserVoiceNoteRecorderAdapter(stream, negotiateVoiceNoteFormat(this.options.mediaRecorderTypeSupported), factory);
+      const selectedFormat = this.formatResolution?.selected ?? negotiateVoiceNoteFormat(this.options.mediaRecorderTypeSupported);
+      if (this.formatResolution && !selectedFormat) {
+        throw new VoiceNoteRecordingError("FORMAT_UNSUPPORTED");
+      }
+      const adapter = new BrowserVoiceNoteRecorderAdapter(stream, selectedFormat, factory);
+      const actualPlaybackSupport = this.options.mediaCanPlayType?.(adapter.mimeType);
+      if (this.options.mediaCanPlayType && actualPlaybackSupport === "") {
+        adapter.dispose();
+        throw new VoiceNoteRecordingError("FORMAT_UNSUPPORTED");
+      }
       this.recorder = adapter; adapter.onData((data) => this.acceptChunk(data)); adapter.onError(() => this.fail("UNKNOWN_RECORDING_FAILURE")); adapter.onStop(() => this.finalize());
       this.startedAt = this.now(); this.elapsed = 0; adapter.start(); this.state = transitionVoiceNoteState(this.state, "PERMISSION_GRANTED");
     } catch (error) {
@@ -221,7 +241,7 @@ export class VoiceNoteRecordingRuntime {
       throw error instanceof VoiceNoteRecordingError ? error : new VoiceNoteRecordingError(code);
     }
   }
-  private acceptChunk(data: Blob) { if (this.state !== "RECORDING" && this.state !== "PAUSED" && this.state !== "STOPPING") return; if (!data.size) return; const maxBytes = this.options.maxBytes ?? 25 * 1024 * 1024; const maxChunks = this.options.maxChunks ?? 1000; if (this.elapsedMilliseconds >= (this.options.maxDurationMilliseconds ?? 60 * 60 * 1000)) { this.stopForLimit("RECORDING_TOO_LONG"); return; } if (this.chunks.length >= maxChunks || this.chunks.reduce((sum, chunk) => sum + chunk.size, 0) + data.size > maxBytes) { this.stopForLimit("RECORDING_TOO_LARGE"); return; } this.chunks.push(data); }
+  private acceptChunk(data: Blob) { if (this.state !== "RECORDING" && this.state !== "PAUSED" && this.state !== "STOPPING") return; if (!data.size) return; const maxBytes = this.options.maxBytes ?? 25 * 1024 * 1024; const maxChunks = this.options.maxChunks ?? 1000; if (this.elapsedMilliseconds >= (this.options.maxDurationMilliseconds ?? 60 * 60 * 1000)) { this.stopForLimit("RECORDING_TOO_LONG"); return; } if (this.chunks.length >= maxChunks || this.chunks.reduce((sum, chunk) => sum + chunk.size, 0) + data.size > maxBytes) { this.stopForLimit("RECORDING_TOO_LARGE"); return; } this.chunks.push(data); if (data.type.trim()) this.chunkTypes.push(data.type.trim()); }
   private stopForLimit(code: "RECORDING_TOO_LARGE" | "RECORDING_TOO_LONG") { this.errorCode = code; this.elapsed = this.elapsedMilliseconds; if (this.state === "RECORDING" || this.state === "PAUSED") { this.state = "STOPPING"; this.recorder?.stop(); } }
   pause() { if (this.state !== "RECORDING" || !this.recorder?.supportsPause) throw new VoiceNoteRecordingError("INVALID_TRANSITION", "PAUSE"); this.recorder.pause(); this.pausedAt = this.now(); this.elapsed = this.elapsedMilliseconds; this.state = transitionVoiceNoteState(this.state, "PAUSE"); }
   resume() { if (this.state !== "PAUSED" || !this.recorder?.supportsPause) throw new VoiceNoteRecordingError("INVALID_TRANSITION", "RESUME"); this.recorder.resume(); this.pausedTotal += this.now() - (this.pausedAt ?? this.now()); this.pausedAt = undefined; this.state = transitionVoiceNoteState(this.state, "RESUME"); }
@@ -235,15 +255,15 @@ export class VoiceNoteRecordingRuntime {
       this.recorder?.stop();
     });
   }
-  private finalize() { if (this.state !== "STOPPING") return; const audio = new Blob(this.chunks, { type: this.recorder?.mimeType ?? "audio/webm" }); if (!audio.size) { this.fail("RECORDING_EMPTY"); return; } this.elapsed = this.elapsedMilliseconds; this.reviewDraft = { recordingSessionId: this.sessionId ?? "", accountScopeId: this.options.accountScopeId, audio, actualMediaType: audio.type, byteLength: audio.size, durationMilliseconds: this.elapsed, interrupted: this.interrupted, interruptionReason: this.interruptionReason, suggestedTitle: "Voice note", transcriptStatus: "NOT_REQUESTED", category: this.options.category, tags: this.options.tags ?? [], fileReferences: this.options.fileReferences ?? [] }; this.releaseResources(false); this.state = transitionVoiceNoteState(this.state, "FINALIZED"); }
+  private finalize() { if (this.state !== "STOPPING") return; let authoritativeMediaType = ""; try { authoritativeMediaType = resolveAuthoritativeVoiceNoteMediaType({ recorderType: this.recorder?.mimeType, chunkTypes: this.chunkTypes }); } catch { this.fail("RECORDER_OUTPUT_FORMAT_CONFLICT"); return; } if (!authoritativeMediaType) { this.fail("RECORDER_OUTPUT_FORMAT_UNKNOWN"); return; } const audio = new Blob(this.chunks, { type: authoritativeMediaType }); if (!audio.size) { this.fail("RECORDING_EMPTY"); return; } this.elapsed = this.elapsedMilliseconds; this.reviewDraft = { recordingSessionId: this.sessionId ?? "", accountScopeId: this.options.accountScopeId, audio, actualMediaType: audio.type, byteLength: audio.size, durationMilliseconds: this.elapsed, interrupted: this.interrupted, interruptionReason: this.interruptionReason, suggestedTitle: "Voice note", transcriptStatus: "NOT_REQUESTED", category: this.options.category, tags: this.options.tags ?? [], fileReferences: this.options.fileReferences ?? [] }; this.chunkTypes = []; this.releaseResources(false); this.state = transitionVoiceNoteState(this.state, "FINALIZED"); }
   async save() { if (this.state !== "REVIEW_READY" || !this.reviewDraft || !this.options.notesRepository || !this.options.audioRepository) throw new VoiceNoteRecordingError("REVIEW_READY_REQUIRED"); this.state = transitionVoiceNoteState(this.state, "SAVE"); try { await saveVoiceNoteAudioAndMetadata({ accountScopeId: this.options.accountScopeId, notesRepository: this.options.notesRepository, audioRepository: this.options.audioRepository, noteDraft: { title: this.reviewDraft.suggestedTitle, category: this.reviewDraft.category, tags: this.reviewDraft.tags, fileReferences: this.reviewDraft.fileReferences, audio: this.reviewDraft.audio, mediaType: this.reviewDraft.actualMediaType, byteLength: this.reviewDraft.byteLength, durationMilliseconds: this.reviewDraft.durationMilliseconds, transcriptStatus: "NOT_REQUESTED" } }); this.chunks = []; this.reviewDraft = undefined; this.state = transitionVoiceNoteState(this.state, "SAVED"); } catch (error) { this.errorCode = normalizeError(error); this.state = "REVIEW_READY"; throw error; } }
   cancel() { if (!["REQUESTING_PERMISSION", "RECORDING", "PAUSED", "STOPPING", "REVIEW_READY", "SAVING"].includes(this.state)) return; this.sessionId = undefined; this.releaseResources(true); this.reviewDraft = undefined; this.state = transitionVoiceNoteState(this.state, "CANCEL"); }
-  discard() { if (this.state !== "REVIEW_READY") throw new VoiceNoteRecordingError("INVALID_TRANSITION", "DISCARD"); this.reviewDraft = undefined; this.chunks = []; this.state = transitionVoiceNoteState(this.state, "DISCARD"); }
+  discard() { if (this.state !== "REVIEW_READY") throw new VoiceNoteRecordingError("INVALID_TRANSITION", "DISCARD"); this.reviewDraft = undefined; this.chunks = []; this.chunkTypes = []; this.state = transitionVoiceNoteState(this.state, "DISCARD"); }
   handleTrackEnded(reason = "TRACK_ENDED") { this.interrupted = true; this.interruptionReason = reason; this.fail("TRACK_ENDED"); }
   handleAccountSwitch() { this.cancel(); }
   dispose() { this.releaseResources(true); this.reviewDraft = undefined; this.state = "IDLE"; }
   private fail(code: VoiceNoteErrorCode) { this.errorCode = code; this.interrupted = code === "TRACK_ENDED"; this.releaseResources(true); if (this.state !== "FAILED") this.state = "FAILED"; }
-  private releaseResources(clearChunks: boolean) { this.recorder?.dispose(); this.stream?.getAudioTracks().forEach((track) => { track.removeEventListener("ended", this.trackEndedHandler); track.stop(); }); globalThis.document?.removeEventListener("visibilitychange", this.visibilityHandler); this.recorder = undefined; this.stream = undefined; this.ownership.release(); if (clearChunks) this.chunks = []; }
+  private releaseResources(clearChunks: boolean) { this.recorder?.dispose(); this.stream?.getAudioTracks().forEach((track) => { track.removeEventListener("ended", this.trackEndedHandler); track.stop(); }); globalThis.document?.removeEventListener("visibilitychange", this.visibilityHandler); this.recorder = undefined; this.stream = undefined; this.ownership.release(); if (clearChunks) { this.chunks = []; this.chunkTypes = []; } }
 }
 
 export async function discardSavedVoiceNote(request: { accountScopeId: string; noteId: string; notesRepository: LocalNotesRepository; audioRepository: VoiceNoteAudioRepository }) { return deleteVoiceNoteAudioAndMetadata(request); }

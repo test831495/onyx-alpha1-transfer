@@ -91,6 +91,22 @@ describe("VoiceNotePlaybackController", () => {
     expect(controller.getProjection()).toMatchObject({ state: "FAILED", errorCode: "PLAYBACK_NOT_ALLOWED" });
   });
 
+  it("rejects a definitively unsupported persisted format before creating an object URL", async () => {
+    const audio = makeAudio();
+    const createObjectURL = vi.fn();
+    const controller = new VoiceNotePlaybackController({
+      accountScopeId: "account-a",
+      audioRepository: { getAudio: vi.fn().mockResolvedValue(new Blob(["audio"], { type: "audio/webm;codecs=opus" })) } as unknown as VoiceNoteAudioRepository,
+      createAudio: () => audio as unknown as HTMLAudioElement,
+      canPlayType: (type) => type === "audio/mp4" ? "probably" : "",
+      urlApi: { createObjectURL, revokeObjectURL: vi.fn() },
+    });
+
+    const note = { ...makeNote(), futureFields: { ...makeNote().futureFields, recordedMediaType: "audio/webm;codecs=opus" } };
+    await expect(controller.play(note)).rejects.toMatchObject({ code: "PLAYBACK_FORMAT_UNSUPPORTED" });
+    expect(createObjectURL).not.toHaveBeenCalled();
+  });
+
   it("projects metadata, timeupdate, seek, restart, ended, and cleanup", async () => {
     const audio = makeAudio();
     const listeners = new Map<string, EventListener>();

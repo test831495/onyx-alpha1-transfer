@@ -41,7 +41,7 @@ function makeRecorder(mimeType = "audio/webm;codecs=opus") {
   return recorder;
 }
 
-function makeRuntime(options: { now?: () => number; recorder?: ReturnType<typeof makeRecorder>; track?: ReturnType<typeof makeTrack>; mediaDevices?: Pick<MediaDevices, "getUserMedia">; ownership?: VoiceNoteOwnershipGuard; maxDurationMilliseconds?: number; maxBytes?: number; maxChunks?: number; notesRepository?: LocalNotesRepository; audioRepository?: VoiceNoteAudioRepository } = {}) {
+function makeRuntime(options: { now?: () => number; recorder?: ReturnType<typeof makeRecorder>; track?: ReturnType<typeof makeTrack>; mediaDevices?: Pick<MediaDevices, "getUserMedia">; mediaCanPlayType?: (mimeType: string) => "probably" | "maybe" | "" | undefined; ownership?: VoiceNoteOwnershipGuard; maxDurationMilliseconds?: number; maxBytes?: number; maxChunks?: number; notesRepository?: LocalNotesRepository; audioRepository?: VoiceNoteAudioRepository } = {}) {
   const track = options.track ?? makeTrack();
   const stream = { getAudioTracks: () => [track], getTracks: () => [track] } as unknown as MediaStream;
   const recorder = options.recorder ?? makeRecorder();
@@ -52,6 +52,7 @@ function makeRuntime(options: { now?: () => number; recorder?: ReturnType<typeof
     mediaDevices: { getUserMedia },
     mediaRecorderFactory: () => recorder as unknown as MediaRecorder,
     mediaRecorderTypeSupported: () => true,
+    mediaCanPlayType: options.mediaCanPlayType,
     now: options.now ?? (() => 0),
     ownership: options.ownership,
     maxDurationMilliseconds: options.maxDurationMilliseconds,
@@ -87,6 +88,20 @@ describe("Voice Note Phase B independent acceptance", () => {
     expect(negotiateVoiceNoteFormat((value) => value === "audio/mp4")).toBe("audio/mp4");
     expect(negotiateVoiceNoteFormat(() => false)).toBeUndefined();
     expect(negotiateVoiceNoteFormat()).toBeUndefined();
+  });
+
+  it("selects a mutually compatible format and retains the recorder output type", async () => {
+    const session = makeRuntime({ recorder: makeRecorder("audio/mp4"), mediaCanPlayType: (type) => type === "audio/mp4" ? "probably" : "" });
+    await startAndStop(session.runtime, session.recorder);
+    expect(session.runtime.reviewDraft?.actualMediaType).toBe("audio/mp4");
+    expect(session.runtime.reviewDraft?.audio.type).toBe("audio/mp4");
+  });
+
+  it("fails before recording when no explicit candidate is mutually supported", async () => {
+    const session = makeRuntime({ mediaCanPlayType: () => "" });
+    await expect(session.runtime.start()).rejects.toMatchObject({ code: "FORMAT_UNSUPPORTED" });
+    expect(session.runtime.state).toBe("FAILED");
+    expect(session.track.stop).toHaveBeenCalled();
   });
 
   it("requests audio only after explicit Start and normalizes permission failures", async () => {
@@ -185,6 +200,15 @@ describe("Voice Note Phase B independent acceptance", () => {
     empty.recorder.emitStop();
     await emptyStopping;
     expect(empty.runtime.errorCode).toBe("RECORDING_EMPTY");
+
+    const conflict = makeRuntime({ recorder: makeRecorder("audio/mp4") });
+    await conflict.runtime.start();
+    conflict.recorder.emitChunk("first", "audio/mp4");
+    const conflictingStop = conflict.runtime.stop();
+    conflict.recorder.emitChunk("second", "audio/webm");
+    conflict.recorder.emitStop();
+    await conflictingStop;
+    expect(conflict.runtime.errorCode).toBe("RECORDER_OUTPUT_FORMAT_CONFLICT");
   });
 
   it("accepts data that arrives after the recorder stop event", async () => {

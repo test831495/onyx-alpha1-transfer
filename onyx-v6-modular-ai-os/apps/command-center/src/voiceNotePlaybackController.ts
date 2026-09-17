@@ -1,8 +1,9 @@
 import type { Note } from "@onyx/workspace-contracts";
 import type { VoiceNoteAudioRepository } from "./voiceNoteAudioRepository";
+import { playbackSupportFor, type VoiceNotePlaybackSupport } from "./voiceNoteFormatCompatibility";
 
 export type VoiceNotePlaybackState = "IDLE" | "LOADING" | "READY" | "PLAYING" | "PAUSED" | "SEEKING" | "ENDED" | "FAILED";
-export type VoiceNotePlaybackErrorCode = "AUDIO_NOT_FOUND" | "AUDIO_LOAD_FAILED" | "PLAYBACK_NOT_ALLOWED" | "PLAYBACK_FORMAT_UNSUPPORTED" | "PLAYBACK_ABORTED" | "INVALID_SEEK_TARGET" | "PLAYBACK_FAILED";
+export type VoiceNotePlaybackErrorCode = "AUDIO_NOT_FOUND" | "AUDIO_LOAD_FAILED" | "AUDIO_FORMAT_METADATA_MISMATCH" | "PLAYBACK_NOT_ALLOWED" | "PLAYBACK_FORMAT_UNSUPPORTED" | "PLAYBACK_ABORTED" | "INVALID_SEEK_TARGET" | "PLAYBACK_FAILED";
 
 export interface VoiceNotePlaybackProjection {
   readonly state: VoiceNotePlaybackState;
@@ -28,6 +29,7 @@ type PlaybackOptions = {
   readonly audioRepository: Pick<VoiceNoteAudioRepository, "getAudio">;
   readonly createAudio?: () => HTMLAudioElement;
   readonly urlApi?: UrlApi;
+  readonly canPlayType?: (mimeType: string) => VoiceNotePlaybackSupport | undefined;
   readonly onChange?: (projection: VoiceNotePlaybackProjection) => void;
 };
 
@@ -45,6 +47,7 @@ export class VoiceNotePlaybackController {
   private readonly audioRepository: Pick<VoiceNoteAudioRepository, "getAudio">;
   private readonly createAudio: () => HTMLAudioElement;
   private readonly urlApi: UrlApi;
+  private readonly canPlayType?: (mimeType: string) => VoiceNotePlaybackSupport | undefined;
   private readonly onChange?: (projection: VoiceNotePlaybackProjection) => void;
   private readonly subscribers = new Set<(projection: VoiceNotePlaybackProjection) => void>();
   private readonly audio: HTMLAudioElement;
@@ -60,6 +63,7 @@ export class VoiceNotePlaybackController {
     this.urlApi = options.urlApi ?? URL;
     this.onChange = options.onChange;
     this.audio = this.createAudio();
+    this.canPlayType = options.canPlayType ?? (typeof this.audio.canPlayType === "function" ? (mimeType) => playbackSupportFor(this.audio, mimeType) : undefined);
     this.audio.autoplay = false;
     this.audio.preload = "metadata";
     this.bindEvents();
@@ -156,6 +160,17 @@ export class VoiceNotePlaybackController {
     if (!(blob instanceof Blob) || blob.size === 0) {
       this.fail("AUDIO_NOT_FOUND", note.noteId);
       throw new VoiceNotePlaybackError("AUDIO_NOT_FOUND");
+    }
+    const noteMediaType = typeof note.futureFields.recordedMediaType === "string" ? note.futureFields.recordedMediaType.trim() : "";
+    const blobMediaType = blob.type.trim();
+    if (noteMediaType && blobMediaType && noteMediaType !== blobMediaType) {
+      this.fail("AUDIO_FORMAT_METADATA_MISMATCH", note.noteId);
+      throw new VoiceNotePlaybackError("AUDIO_FORMAT_METADATA_MISMATCH");
+    }
+    const playbackSupport = this.canPlayType?.(blobMediaType);
+    if (playbackSupport === "") {
+      this.fail("PLAYBACK_FORMAT_UNSUPPORTED", note.noteId);
+      throw new VoiceNotePlaybackError("PLAYBACK_FORMAT_UNSUPPORTED");
     }
     if (typeof this.urlApi.createObjectURL !== "function") {
       this.fail("AUDIO_LOAD_FAILED", note.noteId);

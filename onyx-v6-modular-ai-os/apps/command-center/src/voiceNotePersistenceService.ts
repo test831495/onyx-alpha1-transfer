@@ -95,7 +95,12 @@ export async function saveVoiceNoteAudioAndMetadata({ accountScopeId, noteDraft,
   }
 
   const audio = noteDraft.audio;
-  const mediaType = (noteDraft.mediaType ?? audio.type ?? "audio/webm").trim();
+  const blobMediaType = audio.type.trim();
+  const requestedMediaType = (noteDraft.mediaType ?? "").trim();
+  if (requestedMediaType && blobMediaType && requestedMediaType !== blobMediaType) {
+    throw new Error("AUDIO_FORMAT_METADATA_MISMATCH");
+  }
+  const mediaType = blobMediaType || requestedMediaType;
   const byteLength = noteDraft.byteLength ?? audio.size;
   const recordingCreatedAt = noteDraft.recordingCreatedAt ?? new Date().toISOString();
   const idFactoryFn = createAudioReferenceIdFactory(idFactory);
