@@ -38,6 +38,10 @@ function clean(value: string | undefined): string {
   return value?.trim() ?? "";
 }
 
+function containerOf(value: string): string {
+  return value.toLowerCase().split(";", 1)[0]?.trim() ?? "";
+}
+
 export function resolveVoiceNoteFormat(probe: VoiceNoteFormatProbe): VoiceNoteFormatResolution {
   const candidates = VOICE_NOTE_FORMAT_CANDIDATES.map((mimeType) => {
     const recordable = probe.isTypeSupported?.(mimeType) === true;
@@ -54,11 +58,11 @@ export function resolveAuthoritativeVoiceNoteMediaType(evidence: VoiceNoteMediaT
   const recorderType = clean(evidence.recorderType);
   const chunkTypes = evidence.chunkTypes.map(clean).filter(Boolean);
   const distinctChunkTypes = [...new Set(chunkTypes)];
-  if (distinctChunkTypes.length > 1) throw new Error("RECORDER_OUTPUT_FORMAT_CONFLICT");
+  if (distinctChunkTypes.length > 1 && new Set(distinctChunkTypes.map(containerOf)).size > 1) throw new Error("RECORDER_OUTPUT_FORMAT_CONFLICT");
   const chunkType = distinctChunkTypes[0] ?? "";
   const finalBlobType = clean(evidence.finalBlobType);
-  if (recorderType && chunkType && recorderType !== chunkType) throw new Error("RECORDER_OUTPUT_FORMAT_CONFLICT");
-  if (recorderType && finalBlobType && recorderType !== finalBlobType) throw new Error("RECORDER_OUTPUT_FORMAT_CONFLICT");
-  if (chunkType && finalBlobType && chunkType !== finalBlobType) throw new Error("RECORDER_OUTPUT_FORMAT_CONFLICT");
+  if (recorderType && chunkType && containerOf(recorderType) !== containerOf(chunkType)) throw new Error("RECORDER_OUTPUT_FORMAT_CONFLICT");
+  if (recorderType && finalBlobType && containerOf(recorderType) !== containerOf(finalBlobType)) throw new Error("RECORDER_OUTPUT_FORMAT_CONFLICT");
+  if (chunkType && finalBlobType && containerOf(chunkType) !== containerOf(finalBlobType)) throw new Error("RECORDER_OUTPUT_FORMAT_CONFLICT");
   return recorderType || chunkType || finalBlobType;
 }

@@ -209,6 +209,15 @@ describe("Voice Note Phase B independent acceptance", () => {
     conflict.recorder.emitStop();
     await conflictingStop;
     expect(conflict.runtime.errorCode).toBe("RECORDER_OUTPUT_FORMAT_CONFLICT");
+
+    const browserVariant = makeRuntime({ recorder: makeRecorder("audio/webm;codecs=opus") });
+    await browserVariant.runtime.start();
+    browserVariant.recorder.emitChunk("audio", "audio/webm");
+    const browserVariantStop = browserVariant.runtime.stop();
+    browserVariant.recorder.emitStop();
+    await browserVariantStop;
+    expect(browserVariant.runtime.state).toBe("REVIEW_READY");
+    expect(browserVariant.runtime.reviewDraft?.actualMediaType).toBe("audio/webm;codecs=opus");
   });
 
   it("accepts data that arrives after the recorder stop event", async () => {
@@ -220,6 +229,17 @@ describe("Voice Note Phase B independent acceptance", () => {
     await stopping;
     expect(session.runtime.state).toBe("REVIEW_READY");
     expect(session.runtime.reviewDraft?.byteLength).toBe(10);
+  });
+
+  it("waits for delayed final data after the stop event", async () => {
+    const session = makeRuntime();
+    await session.runtime.start();
+    const stopping = session.runtime.stop();
+    session.recorder.emitStop();
+    setTimeout(() => session.recorder.emitChunk("delayed-final"), 10);
+    await stopping;
+    expect(session.runtime.state).toBe("REVIEW_READY");
+    expect(session.runtime.reviewDraft?.byteLength).toBe(13);
   });
 
   it("rejects stale chunks, handles track and recorder interruption, and cleans up repeatedly", async () => {

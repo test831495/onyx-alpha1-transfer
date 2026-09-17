@@ -195,6 +195,12 @@ export class VoiceNoteRecordingRuntime {
   private elapsed = 0;
   private sessionId?: string;
   private sequence = 0;
+  private stopEventObserved = false;
+  private finalDataObserved = false;
+  private finalizationCompleted = false;
+  private stopCompletion?: Promise<void>;
+  private resolveStopCompletion?: () => void;
+  private finalizationFallback?: ReturnType<typeof setTimeout>;
   private readonly trackEndedHandler = () => this.handleTrackEnded();
   private readonly visibilityHandler = () => { if (globalThis.document?.visibilityState === "hidden" && (this.state === "RECORDING" || this.state === "PAUSED")) this.handleTrackEnded("VISIBILITY_INTERRUPTION"); };
 
@@ -235,7 +241,7 @@ export class VoiceNoteRecordingRuntime {
       throw error instanceof VoiceNoteRecordingError ? error : new VoiceNoteRecordingError(code);
     }
   }
-  private acceptChunk(data: Blob) { if (this.state !== "RECORDING" && this.state !== "PAUSED" && this.state !== "STOPPING") return; if (!data.size) return; const maxBytes = this.options.maxBytes ?? 25 * 1024 * 1024; const maxChunks = this.options.maxChunks ?? 1000; if (this.elapsedMilliseconds >= (this.options.maxDurationMilliseconds ?? 60 * 60 * 1000)) { this.stopForLimit("RECORDING_TOO_LONG"); return; } if (this.chunks.length >= maxChunks || this.chunks.reduce((sum, chunk) => sum + chunk.size, 0) + data.size > maxBytes) { this.stopForLimit("RECORDING_TOO_LARGE"); return; } this.chunks.push(data); if (data.type.trim()) this.chunkTypes.push(data.type.trim()); }
+  private acceptChunk(data: Blob) { if (this.state !== "RECORDING" && this.state !== "PAUSED" && this.state !== "STOPPING") return; if (!data.size) return; const maxBytes = this.options.maxBytes ?? 25 * 1024 * 1024; const maxChunks = this.options.maxChunks ?? 1000; if (this.elapsedMilliseconds >= (this.options.maxDurationMilliseconds ?? 60 * 60 * 1000)) { this.stopForLimit("RECORDING_TOO_LONG"); return; } if (this.chunks.length >= maxChunks || this.chunks.reduce((sum, chunk) => sum + chunk.size, 0) + data.size > maxBytes) { this.stopForLimit("RECORDING_TOO_LARGE"); return; } this.chunks.push(data); if (data.type.trim()) this.chunkTypes.push(data.type.trim()); if (this.state === "STOPPING") { this.finalDataObserved = true; this.completeFinalizationIfReady(); } }
   private stopForLimit(code: "RECORDING_TOO_LARGE" | "RECORDING_TOO_LONG") { this.errorCode = code; this.elapsed = this.elapsedMilliseconds; if (this.state === "RECORDING" || this.state === "PAUSED") { this.state = "STOPPING"; this.recorder?.stop(); } }
   pause() { if (this.state !== "RECORDING" || !this.recorder?.supportsPause) throw new VoiceNoteRecordingError("INVALID_TRANSITION", "PAUSE"); this.recorder.pause(); this.pausedAt = this.now(); this.elapsed = this.elapsedMilliseconds; this.state = transitionVoiceNoteState(this.state, "PAUSE"); }
   resume() { if (this.state !== "PAUSED" || !this.recorder?.supportsPause) throw new VoiceNoteRecordingError("INVALID_TRANSITION", "RESUME"); this.recorder.resume(); this.pausedTotal += this.now() - (this.pausedAt ?? this.now()); this.pausedAt = undefined; this.state = transitionVoiceNoteState(this.state, "RESUME"); }
@@ -244,11 +250,16 @@ export class VoiceNoteRecordingRuntime {
     this.elapsed = this.elapsedMilliseconds;
     this.state = transitionVoiceNoteState(this.state, "STOP");
     if (!this.recorder) { this.finalize(); return; }
-    await new Promise<void>((resolve) => {
-      this.recorder?.onStop(() => { queueMicrotask(() => { this.finalize(); resolve(); }); });
-      this.recorder?.stop();
-    });
+    this.stopEventObserved = false;
+    this.finalDataObserved = this.chunks.length > 0;
+    this.finalizationCompleted = false;
+    this.stopCompletion = new Promise<void>((resolve) => { this.resolveStopCompletion = resolve; });
+    this.recorder.onStop(() => { this.stopEventObserved = true; this.completeFinalizationIfReady(); });
+    this.finalizationFallback = setTimeout(() => { this.stopEventObserved = true; this.completeFinalizationIfReady(true); }, 500);
+    this.recorder.stop();
+    await this.stopCompletion;
   }
+  private completeFinalizationIfReady(force = false) { if (this.finalizationCompleted || !this.stopEventObserved || (!this.finalDataObserved && !force)) return; this.finalizationCompleted = true; if (this.finalizationFallback) clearTimeout(this.finalizationFallback); this.finalize(); this.resolveStopCompletion?.(); this.resolveStopCompletion = undefined; this.stopCompletion = undefined; }
   private finalize() { if (this.state !== "STOPPING") return; let authoritativeMediaType = ""; try { authoritativeMediaType = resolveAuthoritativeVoiceNoteMediaType({ recorderType: this.recorder?.mimeType, chunkTypes: this.chunkTypes }); } catch { this.fail("RECORDER_OUTPUT_FORMAT_CONFLICT"); return; } if (!authoritativeMediaType) { this.fail("RECORDER_OUTPUT_FORMAT_UNKNOWN"); return; } const audio = new Blob(this.chunks, { type: authoritativeMediaType }); if (!audio.size) { this.fail("RECORDING_EMPTY"); return; } this.elapsed = this.elapsedMilliseconds; this.reviewDraft = { recordingSessionId: this.sessionId ?? "", accountScopeId: this.options.accountScopeId, audio, actualMediaType: audio.type, byteLength: audio.size, durationMilliseconds: this.elapsed, interrupted: this.interrupted, interruptionReason: this.interruptionReason, suggestedTitle: "Voice note", transcriptStatus: "NOT_REQUESTED", category: this.options.category, tags: this.options.tags ?? [], fileReferences: this.options.fileReferences ?? [] }; this.chunkTypes = []; this.releaseResources(false); this.state = transitionVoiceNoteState(this.state, "FINALIZED"); }
   async save() { if (this.state !== "REVIEW_READY" || !this.reviewDraft || !this.options.notesRepository || !this.options.audioRepository) throw new VoiceNoteRecordingError("REVIEW_READY_REQUIRED"); this.state = transitionVoiceNoteState(this.state, "SAVE"); try { await saveVoiceNoteAudioAndMetadata({ accountScopeId: this.options.accountScopeId, notesRepository: this.options.notesRepository, audioRepository: this.options.audioRepository, noteDraft: { title: this.reviewDraft.suggestedTitle, category: this.reviewDraft.category, tags: this.reviewDraft.tags, fileReferences: this.reviewDraft.fileReferences, audio: this.reviewDraft.audio, mediaType: this.reviewDraft.actualMediaType, byteLength: this.reviewDraft.byteLength, durationMilliseconds: this.reviewDraft.durationMilliseconds, transcriptStatus: "NOT_REQUESTED" } }); this.chunks = []; this.reviewDraft = undefined; this.state = transitionVoiceNoteState(this.state, "SAVED"); } catch (error) { this.errorCode = normalizeError(error); this.state = "REVIEW_READY"; throw error; } }
   cancel() { if (!["REQUESTING_PERMISSION", "RECORDING", "PAUSED", "STOPPING", "REVIEW_READY", "SAVING"].includes(this.state)) return; this.sessionId = undefined; this.releaseResources(true); this.reviewDraft = undefined; this.state = transitionVoiceNoteState(this.state, "CANCEL"); }

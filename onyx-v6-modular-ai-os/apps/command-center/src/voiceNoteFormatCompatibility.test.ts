@@ -31,6 +31,7 @@ describe("Voice Note format compatibility", () => {
 
   it("uses actual recorder and consistent chunk evidence as authoritative type", () => {
     expect(resolveAuthoritativeVoiceNoteMediaType({ recorderType: "audio/mp4", chunkTypes: ["audio/mp4", "audio/mp4"], finalBlobType: "audio/mp4" })).toBe("audio/mp4");
+    expect(resolveAuthoritativeVoiceNoteMediaType({ recorderType: "audio/webm;codecs=opus", chunkTypes: ["audio/webm", "audio/webm"], finalBlobType: "" })).toBe("audio/webm;codecs=opus");
     expect(() => resolveAuthoritativeVoiceNoteMediaType({ recorderType: "audio/mp4", chunkTypes: ["audio/mp4", "audio/webm"], finalBlobType: "audio/mp4" })).toThrow("RECORDER_OUTPUT_FORMAT_CONFLICT");
   });
 
