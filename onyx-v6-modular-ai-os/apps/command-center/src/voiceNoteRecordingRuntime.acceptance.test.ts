@@ -330,17 +330,60 @@ describe("Voice Note Phase B independent acceptance", () => {
     expect(session.runtime.reviewDraft).toBeUndefined();
   });
 
-  it("resets to IDLE after a successful save so a new recording can start immediately", async () => {
-    const note = { noteId: "reset-note", title: "Voice note", content: "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), pinned: false, archived: false, tags: [], source: "LOCAL", type: "VOICE_NOTE", version: 1, futureFields: {}, fileReferences: [] };
-    const notes = { createNote: vi.fn(() => note), getNotes: vi.fn(() => []), deleteNote: vi.fn() } as unknown as LocalNotesRepository;
-    const audio = { hasAudio: vi.fn(async () => false), putAudio: vi.fn(async () => undefined), deleteAudio: vi.fn(async () => true) } as unknown as VoiceNoteAudioRepository;
+  it("completes three consecutive Record-Stop-Save cycles on one runtime instance with no INVALID_TRANSITION and no overwritten records", async () => {
+    const notes: Array<Record<string, unknown>> = [];
+    const audioRecords = new Map<string, { audio: Blob; mediaType: string; byteLength: number; noteId: string }>();
+    let noteSequence = 0;
+    const notesRepository = {
+      createNote: vi.fn((input: { title: string; content?: string; tags?: readonly string[]; category?: string; futureFields?: Record<string, unknown>; fileReferences?: readonly unknown[] }) => {
+        noteSequence += 1;
+        const note = { noteId: `note-${noteSequence}`, title: input.title, content: input.content ?? "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), pinned: false, archived: false, tags: input.tags ?? [], category: input.category, source: "LOCAL", type: "VOICE_NOTE", version: 1, futureFields: input.futureFields ?? {}, fileReferences: input.fileReferences ?? [] };
+        notes.push(note);
+        return note;
+      }),
+      getNotes: vi.fn(() => notes),
+      deleteNote: vi.fn((noteId: string) => { const index = notes.findIndex((entry) => entry.noteId === noteId); if (index >= 0) notes.splice(index, 1); return true; }),
+    } as unknown as LocalNotesRepository;
+    const audioRepository = {
+      hasAudio: vi.fn(async (_scope: string, referenceId: string) => audioRecords.has(referenceId)),
+      putAudio: vi.fn(async (request: { audioReferenceId: string; noteId: string; audio: Blob; mediaType: string; byteLength: number }) => { audioRecords.set(request.audioReferenceId, { audio: request.audio, mediaType: request.mediaType, byteLength: request.byteLength, noteId: request.noteId }); }),
+      deleteAudio: vi.fn(async () => true),
+    } as unknown as VoiceNoteAudioRepository;
     const getUserMedia = vi.fn(() => Promise.resolve({ getAudioTracks: () => [makeTrack()], getTracks: () => [makeTrack()] } as unknown as MediaStream));
-    const session = makeRuntime({ notesRepository: notes, audioRepository: audio, mediaDevices: { getUserMedia }, now: (() => { let tick = 0; return () => ++tick * 100; })() });
-    await startAndStop(session.runtime, session.recorder);
-    await session.runtime.save();
-    expect(session.runtime.state).toBe("IDLE");
-    expect(session.runtime.reviewDraft).toBeUndefined();
+    let tick = 0;
+    const session = makeRuntime({ notesRepository, audioRepository, mediaDevices: { getUserMedia }, now: () => (tick += 100) });
+
+    const runCycle = async (payload: string, expectedNoteCount: number) => {
+      await session.runtime.start();
+      expect(session.runtime.state).toBe("RECORDING");
+      session.recorder.emitChunk(payload);
+      const stopping = session.runtime.stop();
+      session.recorder.emitStop();
+      await stopping;
+      expect(session.runtime.state).toBe("REVIEW_READY");
+      await session.runtime.save();
+      expect(session.runtime.state).toBe("IDLE");
+      expect(session.runtime.reviewDraft).toBeUndefined();
+      expect(notes).toHaveLength(expectedNoteCount);
+    };
+
+    await runCycle("audio-1", 1);
+    await runCycle("audio-2", 2);
+    await runCycle("audio-3", 3);
+
+    const noteIds = notes.map((entry) => entry.noteId as string);
+    expect(new Set(noteIds).size).toBe(3);
+    const audioReferenceIds = notes.map((entry) => String((entry.futureFields as Record<string, unknown>).audioReferenceId));
+    expect(new Set(audioReferenceIds).size).toBe(3);
+    expect(audioRecords.size).toBe(3);
+    const persistedTexts = await Promise.all(audioReferenceIds.map(async (id) => audioRecords.get(id)!.audio.text()));
+    expect(persistedTexts.sort()).toEqual(["audio-1", "audio-2", "audio-3"]);
+
     await session.runtime.start();
     expect(session.runtime.state).toBe("RECORDING");
+    session.runtime.cancel();
+    expect(session.runtime.state).toBe("CANCELLED");
+    expect(notes).toHaveLength(3);
+    expect(audioRecords.size).toBe(3);
   });
 });
