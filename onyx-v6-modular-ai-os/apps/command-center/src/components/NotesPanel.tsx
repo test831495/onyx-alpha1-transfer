@@ -6,6 +6,7 @@ import { DEFAULT_CATEGORY_GROUPS, DEFAULT_TAGS, CREATE_NEW_CATEGORY_VALUE } from
 import { VoiceNoteAudioRepository } from "../voiceNoteAudioRepository";
 import { VoiceNoteRecordingRuntime, VoiceNoteRecordingError } from "../voiceNoteRecordingRuntime";
 import { deleteVoiceNoteAudioAndMetadata } from "../voiceNotePersistenceService";
+import { VoiceNotePlaybackController, VoiceNotePlaybackError, type VoiceNotePlaybackProjection } from "../voiceNotePlaybackController";
 
 const NAV_ITEMS: readonly { id: NoteDateBucket | "PINNED"; label: string }[] = [
   { id: "PINNED", label: "Pinned" },
@@ -86,42 +87,51 @@ function formatDuration(milliseconds: number) {
   return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
+function playbackErrorMessage(code?: string): string {
+  if (code === "AUDIO_NOT_FOUND") return "Saved audio could not be found.";
+  if (code === "PLAYBACK_NOT_ALLOWED") return "Playback was blocked by the browser. Press Play to try again.";
+  if (code === "PLAYBACK_FORMAT_UNSUPPORTED") return "This device does not support the saved audio format.";
+  if (code === "PLAYBACK_ABORTED") return "Audio loading was interrupted.";
+  if (code === "INVALID_SEEK_TARGET") return "That playback position is not available yet.";
+  if (code) return "Saved audio could not be loaded.";
+  return "";
+}
+
 function VoiceNoteSection({ accountScope, repository, selected, refresh, audioRepository }: { readonly accountScope: string; readonly repository: ReturnType<typeof notesRepository.forAccount>; readonly selected?: Note; readonly refresh: () => void; readonly audioRepository: VoiceNoteAudioRepository }) {
   const runtime = useRef<VoiceNoteRecordingRuntime | undefined>(undefined);
-  const audio = useRef<HTMLAudioElement | undefined>(undefined);
+  const playbackController = useRef<VoiceNotePlaybackController | undefined>(undefined);
   const [state, setState] = useState("IDLE");
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState("");
-  const [playback, setPlayback] = useState({ playing: false, current: 0, duration: 0 });
+  const [playback, setPlayback] = useState<VoiceNotePlaybackProjection>({ state: "IDLE", current: 0, duration: 0 });
   const voiceNotes = repository.getNotes({ includeArchived: false }).filter((note) => note.type === "VOICE_NOTE");
 
   if (!runtime.current) runtime.current = new VoiceNoteRecordingRuntime({ accountScopeId: accountScope, notesRepository: repository, audioRepository });
+  if (!playbackController.current) playbackController.current = new VoiceNotePlaybackController({ accountScopeId: accountScope, audioRepository });
   useEffect(() => {
     runtime.current?.dispose();
     runtime.current = new VoiceNoteRecordingRuntime({ accountScopeId: accountScope, notesRepository: repository, audioRepository });
     const timer = window.setInterval(() => { if (runtime.current) { setState(runtime.current.state); setElapsed(runtime.current.elapsedMilliseconds); } }, 100);
-    return () => { window.clearInterval(timer); runtime.current?.dispose(); if (audio.current?.src) URL.revokeObjectURL(audio.current.src); };
+    const unsubscribe = playbackController.current?.subscribe((projection) => { setPlayback(projection); if (projection.errorCode) setError(playbackErrorMessage(projection.errorCode)); });
+    return () => { window.clearInterval(timer); runtime.current?.dispose(); playbackController.current?.dispose(); unsubscribe?.(); };
   }, [accountScope]);
+  useEffect(() => {
+    if (selected && selected.type !== "VOICE_NOTE") playbackController.current?.dispose();
+  }, [selected?.noteId, selected?.type]);
+  useEffect(() => {
+    if (playback.noteId && !voiceNotes.some((note) => note.noteId === playback.noteId)) playbackController.current?.dispose();
+  }, [playback.noteId, voiceNotes.length]);
 
-  const start = async () => { setError(""); try { await runtime.current?.start(); setState(runtime.current?.state ?? "IDLE"); } catch (value) { setError(value instanceof VoiceNoteRecordingError ? value.code : "UNKNOWN_RECORDING_FAILURE"); setState(runtime.current?.state ?? "FAILED"); } };
+  const start = async () => { setError(""); playbackController.current?.pause(); try { await runtime.current?.start(); setState(runtime.current?.state ?? "IDLE"); } catch (value) { setError(value instanceof VoiceNoteRecordingError ? value.code : "UNKNOWN_RECORDING_FAILURE"); setState(runtime.current?.state ?? "FAILED"); } };
   const stop = async () => { setError(""); try { await runtime.current?.stop(); setState(runtime.current?.state ?? "STOPPING"); } catch (value) { setError(value instanceof VoiceNoteRecordingError ? value.code : "UNKNOWN_RECORDING_FAILURE"); } };
   const save = async () => { try { await runtime.current?.save(); setState(runtime.current?.state ?? "SAVED"); refresh(); } catch (value) { setError(value instanceof VoiceNoteRecordingError ? value.code : "AUDIO_SAVE_FAILED"); setState(runtime.current?.state ?? "REVIEW_READY"); } };
   const discard = () => { runtime.current?.discard(); setState(runtime.current?.state ?? "IDLE"); };
   const loadPlayback = async (note: Note) => {
-    const reference = String(note.futureFields.audioReferenceId ?? "");
-    const blob = reference ? await audioRepository.getAudio(accountScope, reference) : undefined;
-    if (!blob) { setError("AUDIO_UNAVAILABLE"); return; }
-    if (!audio.current) audio.current = new Audio();
-    if (audio.current.src) URL.revokeObjectURL(audio.current.src);
-    audio.current.src = URL.createObjectURL(blob);
-    audio.current.ontimeupdate = () => setPlayback((current) => ({ ...current, current: audio.current?.currentTime ?? 0 }));
-    audio.current.onloadedmetadata = () => setPlayback((current) => ({ ...current, duration: audio.current?.duration ?? 0 }));
-    audio.current.onended = () => setPlayback((current) => ({ ...current, playing: false }));
-    await audio.current.play();
-    setPlayback((current) => ({ ...current, playing: true }));
+    setError("");
+    try { await playbackController.current?.play(note); } catch (value) { setError(playbackErrorMessage(value instanceof VoiceNotePlaybackError ? value.code : playbackController.current?.getProjection().errorCode)); }
   };
-  const togglePlayback = async (note: Note) => { if (audio.current?.src && playback.playing) { audio.current.pause(); setPlayback((current) => ({ ...current, playing: false })); } else await loadPlayback(note); };
-  const restartPlayback = async (note: Note) => { if (!audio.current?.src) await loadPlayback(note); if (audio.current) { audio.current.currentTime = 0; await audio.current.play(); setPlayback((current) => ({ ...current, playing: true, current: 0 })); } };
+  const togglePlayback = async (note: Note) => { if (playback.state === "PLAYING") playbackController.current?.pause(); else await loadPlayback(note); };
+  const restartPlayback = async (note: Note) => { if (playback.noteId !== note.noteId) await loadPlayback(note); try { await playbackController.current?.restart(); } catch (value) { setError(playbackErrorMessage(value instanceof VoiceNotePlaybackError ? value.code : playback.errorCode)); } };
   const review = runtime.current?.reviewDraft;
   const active = ["REQUESTING_PERMISSION", "RECORDING", "PAUSED", "STOPPING", "SAVING"].includes(state);
 
@@ -137,7 +147,7 @@ function VoiceNoteSection({ accountScope, repository, selected, refresh, audioRe
     {active || state === "RECORDING" || state === "PAUSED" ? <div className="voice-note-status" aria-live="polite"><span>Elapsed {formatDuration(elapsed)}</span><span>Microphone {state === "RECORDING" || state === "PAUSED" ? "active" : "pending"}</span><span>Format {runtime.current?.reviewDraft?.actualMediaType ?? "browser negotiated"}</span><span>Interrupted {runtime.current?.interrupted ? "yes" : "no"}</span></div> : null}
     {review && state === "REVIEW_READY" ? <div className="voice-note-review" aria-label="Voice Note review"><strong>Review Ready</strong><span>Duration {formatDuration(review.durationMilliseconds)}</span><span>Size {review.byteLength} bytes</span><span>Media {review.actualMediaType}</span><span>Interrupted {review.interrupted ? "yes" : "no"}</span><div><button type="button" onClick={() => void save()}>Save</button><button type="button" onClick={discard}>Discard</button></div></div> : null}
     {error ? <p className="voice-note-error" role="alert">{error}</p> : null}
-    <div className="voice-note-list" aria-label="Saved Voice Notes">{voiceNotes.map((note) => <div className="voice-note-saved" key={note.noteId}><div><strong>{note.title}</strong><span className="voice-note-badge">Voice Note</span><small>{new Date(note.updatedAt).toLocaleString()} · {note.category ?? "Uncategorised"} · {note.tags.length ? `#${note.tags.join(" #")}` : "No tags"} · {formatDuration(Number(note.futureFields.durationMilliseconds ?? 0))}</small></div><div className="voice-note-playback"><button type="button" onClick={() => void togglePlayback(note)}>{playback.playing ? "Pause" : "Play"}</button><button type="button" onClick={() => void restartPlayback(note)}>Restart</button><input aria-label={`Seek ${note.title}`} type="range" min="0" max={playback.duration || Number(note.futureFields.durationMilliseconds ?? 0) / 1000} step="0.1" value={playback.current} onChange={(event) => { if (audio.current) audio.current.currentTime = Number(event.target.value); setPlayback((current) => ({ ...current, current: Number(event.target.value) })); }} /></div></div>)}</div>
+    <div className="voice-note-list" aria-label="Saved Voice Notes">{voiceNotes.map((note) => { const activeNote = playback.noteId === note.noteId; const duration = activeNote ? playback.duration : 0; const current = activeNote ? playback.current : 0; const loading = activeNote && playback.state === "LOADING"; return <div className="voice-note-saved" key={note.noteId}><div><strong>{note.title}</strong><span className="voice-note-badge">Voice Note</span><small>{new Date(note.updatedAt).toLocaleString()} · {note.category ?? "Uncategorised"} · {note.tags.length ? `#${note.tags.join(" #")}` : "No tags"} · {formatDuration(Number(note.futureFields.durationMilliseconds ?? 0))}</small></div><div className="voice-note-playback"><button type="button" aria-label={`${activeNote && playback.state === "PLAYING" ? "Pause" : activeNote && playback.state === "ENDED" ? "Replay" : "Play"} ${note.title}`} onClick={() => void togglePlayback(note)}>{activeNote && playback.state === "PLAYING" ? "Pause" : activeNote && playback.state === "ENDED" ? "Replay" : loading ? "Loading" : "Play"}</button><button type="button" aria-label={`Restart ${note.title}`} onClick={() => void restartPlayback(note)}>Restart</button><input aria-label={`Seek ${note.title}`} type="range" min="0" max={duration} step="0.1" value={current} disabled={!activeNote || duration <= 0} title={duration > 0 ? "Seek playback" : "Playback duration is loading"} onChange={(event) => { try { playbackController.current?.seek(Number(event.target.value)); } catch (value) { setError(playbackErrorMessage(value instanceof VoiceNotePlaybackError ? value.code : playback.errorCode)); } }} /><span aria-label={`Elapsed ${formatDuration(current * 1000)} of ${formatDuration(duration * 1000)}`}>{formatDuration(current * 1000)} / {formatDuration(duration * 1000)}</span></div></div>; })}</div>
   </section>;
 }
 
@@ -236,7 +246,7 @@ export function NotesPanel({ accountScope = "local-default" }: { readonly accoun
         </select>
       </div>
 
-      <VoiceNoteSection accountScope={accountScope} repository={repository} selected={selected} refresh={refresh} audioRepository={audioRepository} />
+      <VoiceNoteSection key={accountScope} accountScope={accountScope} repository={repository} selected={selected} refresh={refresh} audioRepository={audioRepository} />
 
       <div className="notes-layout">
         <nav aria-label="Notes navigation" className="notes-nav">
