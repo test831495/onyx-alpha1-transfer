@@ -70,6 +70,7 @@ export class VoiceNotePlaybackController {
   }
 
   async play(note: Note): Promise<void> {
+    this.bindEvents();
     if (note.type !== "VOICE_NOTE") throw new VoiceNotePlaybackError("AUDIO_NOT_FOUND");
     const audioReferenceId = note.futureFields.audioReferenceId;
     if (typeof audioReferenceId !== "string" || audioReferenceId.length === 0) {
