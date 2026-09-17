@@ -69,3 +69,66 @@ export function createVoiceNoteFileReference(fileId: string, provider: string, d
     referencedAt: new Date().toISOString(),
   };
 }
+
+export const MAX_VOICE_NOTE_TITLE_LENGTH = 200;
+
+export function normalizeVoiceNoteTitle(value: string): string {
+  return value.trim().slice(0, MAX_VOICE_NOTE_TITLE_LENGTH);
+}
+
+export function defaultVoiceNoteTitle(date: Date): string {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `Voice note ${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+export function defaultTrimmedVoiceNoteTitle(sourceTitle: string): string {
+  return `${sourceTitle} - Trimmed`;
+}
+
+/** Derived-clip metadata carried in a trimmed Voice Note's futureFields (V1 non-destructive trim). */
+export interface VoiceNoteClipFutureFields {
+  readonly sourceNoteId: string;
+  readonly sourceAudioReferenceId: string;
+  readonly trimStartMilliseconds: number;
+  readonly trimEndMilliseconds: number;
+  readonly originalDurationMilliseconds: number;
+  readonly derivedFromVoiceNote: true;
+}
+
+export const MIN_VOICE_NOTE_CLIP_DURATION_MILLISECONDS = 250;
+
+export interface TrimRangeInput {
+  readonly trimStartMilliseconds: number;
+  readonly trimEndMilliseconds: number;
+  readonly durationMilliseconds: number;
+}
+
+export function isValidTrimRange(input: TrimRangeInput): boolean {
+  const { trimStartMilliseconds: start, trimEndMilliseconds: end, durationMilliseconds: duration } = input;
+  if (![start, end, duration].every((value) => Number.isFinite(value))) return false;
+  if (start < 0 || end > duration || start >= end) return false;
+  return end - start >= MIN_VOICE_NOTE_CLIP_DURATION_MILLISECONDS;
+}
+
+export function isValidVoiceNoteClipMetadata(value: Partial<VoiceNoteClipFutureFields> | undefined): value is VoiceNoteClipFutureFields {
+  if (!value || typeof value !== "object") return false;
+  if (typeof value.sourceNoteId !== "string" || value.sourceNoteId.length === 0) return false;
+  if (typeof value.sourceAudioReferenceId !== "string" || value.sourceAudioReferenceId.length === 0) return false;
+  if (typeof value.originalDurationMilliseconds !== "number" || !Number.isFinite(value.originalDurationMilliseconds)) return false;
+  if (typeof value.trimStartMilliseconds !== "number" || typeof value.trimEndMilliseconds !== "number") return false;
+  if (!isValidTrimRange({ trimStartMilliseconds: value.trimStartMilliseconds, trimEndMilliseconds: value.trimEndMilliseconds, durationMilliseconds: value.originalDurationMilliseconds })) return false;
+  return value.derivedFromVoiceNote === true;
+}
+
+const FRIENDLY_MEDIA_LABELS: readonly { readonly test: RegExp; readonly label: string }[] = [
+  { test: /^audio\/webm/i, label: "WebM (Opus)" },
+  { test: /^audio\/mp4/i, label: "MP4 Audio" },
+  { test: /^audio\/ogg/i, label: "Ogg (Opus)" },
+];
+
+/** Presentation-only label; the exact MIME is never altered and remains available via title/tooltip. */
+export function friendlyVoiceNoteMediaLabel(mediaType: string | undefined): string {
+  const trimmed = (mediaType ?? "").trim();
+  if (!trimmed) return "Browser-selected audio";
+  return FRIENDLY_MEDIA_LABELS.find((entry) => entry.test.test(trimmed))?.label ?? trimmed;
+}
