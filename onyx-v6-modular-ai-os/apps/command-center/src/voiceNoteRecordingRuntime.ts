@@ -222,16 +222,10 @@ export class VoiceNoteRecordingRuntime {
       stream.getAudioTracks().forEach((track) => track.addEventListener("ended", this.trackEndedHandler));
       globalThis.document?.addEventListener("visibilitychange", this.visibilityHandler);
       const factory = this.options.mediaRecorderFactory ?? ((value: MediaStream, recorderOptions?: MediaRecorderOptions) => new MediaRecorder(value, recorderOptions));
-      const selectedFormat = this.formatResolution?.selected ?? negotiateVoiceNoteFormat(this.options.mediaRecorderTypeSupported);
-      if (this.formatResolution && !selectedFormat) {
-        throw new VoiceNoteRecordingError("FORMAT_UNSUPPORTED");
-      }
+      // Playback capability is advisory during capture. The recorder's actual
+      // output remains authoritative and playback validates it after saving.
+      const selectedFormat = negotiateVoiceNoteFormat(this.options.mediaRecorderTypeSupported);
       const adapter = new BrowserVoiceNoteRecorderAdapter(stream, selectedFormat, factory);
-      const actualPlaybackSupport = this.options.mediaCanPlayType?.(adapter.mimeType);
-      if (this.options.mediaCanPlayType && actualPlaybackSupport === "") {
-        adapter.dispose();
-        throw new VoiceNoteRecordingError("FORMAT_UNSUPPORTED");
-      }
       this.recorder = adapter; adapter.onData((data) => this.acceptChunk(data)); adapter.onError(() => this.fail("UNKNOWN_RECORDING_FAILURE")); adapter.onStop(() => this.finalize());
       this.startedAt = this.now(); this.elapsed = 0; adapter.start(); this.state = transitionVoiceNoteState(this.state, "PERMISSION_GRANTED");
     } catch (error) {

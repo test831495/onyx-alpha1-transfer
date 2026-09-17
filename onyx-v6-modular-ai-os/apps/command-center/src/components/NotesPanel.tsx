@@ -158,7 +158,7 @@ function VoiceNoteSection({ accountScope, repository, selected, refresh, audioRe
   return <section className="voice-note-section" aria-labelledby="voice-notes-heading">
     <div className="voice-note-heading"><div><p className="notes-kicker">Track A audio</p><h3 id="voice-notes-heading">Voice Notes</h3><p>Record locally, review before saving, and keep the original audio.</p></div><span className="voice-note-state">{state}</span></div>
     <div className="voice-note-controls">
-      <button type="button" onClick={() => void start()} disabled={(runtime.current?.formatResolution?.selected === undefined && runtime.current?.formatResolution !== undefined) || (state !== "IDLE" && state !== "SAVED" && state !== "CANCELLED" && state !== "FAILED")}>Record</button>
+      <button type="button" onClick={() => void start()} disabled={state !== "IDLE" && state !== "SAVED" && state !== "CANCELLED" && state !== "FAILED"}>Record</button>
       <button type="button" onClick={() => { runtime.current?.pause(); setState(runtime.current?.state ?? state); }} disabled={state !== "RECORDING"}>Pause</button>
       <button type="button" onClick={() => { runtime.current?.resume(); setState(runtime.current?.state ?? state); }} disabled={state !== "PAUSED"}>Resume</button>
       <button type="button" onClick={() => void stop()} disabled={!(["RECORDING", "PAUSED"].includes(state))}>Stop</button>

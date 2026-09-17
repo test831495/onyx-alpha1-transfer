@@ -97,11 +97,11 @@ describe("Voice Note Phase B independent acceptance", () => {
     expect(session.runtime.reviewDraft?.audio.type).toBe("audio/mp4");
   });
 
-  it("fails before recording when no explicit candidate is mutually supported", async () => {
+  it("allows recording when playback capability is empty and preserves the actual recorder type", async () => {
     const session = makeRuntime({ mediaCanPlayType: () => "" });
-    await expect(session.runtime.start()).rejects.toMatchObject({ code: "FORMAT_UNSUPPORTED" });
-    expect(session.runtime.state).toBe("FAILED");
-    expect(session.track.stop).toHaveBeenCalled();
+    await startAndStop(session.runtime, session.recorder, "recordable");
+    expect(session.runtime.state).toBe("REVIEW_READY");
+    expect(session.runtime.reviewDraft?.actualMediaType).toBe("audio/webm;codecs=opus");
   });
 
   it("requests audio only after explicit Start and normalizes permission failures", async () => {
