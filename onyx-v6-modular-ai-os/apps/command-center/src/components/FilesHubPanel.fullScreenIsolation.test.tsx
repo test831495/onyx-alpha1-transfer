@@ -3,6 +3,8 @@ import "@testing-library/jest-dom/vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { FilesHubPanel } from "./FilesHubPanel";
+import { projectLocalFile } from "../localFilesProvider";
+import { notesRepository } from "../notesRepository";
 
 const sources = [
   { sourceId: "local" as const, displayName: "Local Files", providerFamily: "local", availability: "AVAILABLE" as const, connection: "CONNECTED" as const, capabilities: [{ operation: "BROWSE" as const, enabled: true }] },
@@ -51,5 +53,24 @@ describe("FULL_SCREEN_PROVIDER_STACK_ISOLATION", () => {
 
     expect(screen.getByText("SharePoint")).toBeVisible();
     expect(screen.getByText("Google Drive")).toBeVisible();
+  });
+
+  it("shows account-scoped related Notes for a reselected local file without copying its content", async () => {
+    const accountScope = "files-notes-reference-test";
+    const file = new File(["private file content"], "roadmap.txt", { type: "text/plain", lastModified: 123 });
+    const projection = projectLocalFile(file, "FILE_INPUT");
+    notesRepository.forAccount(accountScope).createNote({
+      title: "Roadmap decisions",
+      fileReferences: [{ referenceId: "ref-roadmap", fileId: projection.selectionId, provider: "local", displayName: file.name, fileType: file.type, referencedAt: new Date().toISOString() }],
+    });
+
+    render(<FilesHubPanel sources={sources} accountScope={accountScope} />);
+    const fileInput = document.querySelector('input[type="file"]:not([multiple])') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    const related = await screen.findByLabelText("Related Notes");
+    expect(within(related).getByText("Roadmap decisions")).toBeVisible();
+    expect(within(related).getByText(/reference this file/)).toBeVisible();
+    expect(related.textContent).not.toContain("private file content");
   });
 });

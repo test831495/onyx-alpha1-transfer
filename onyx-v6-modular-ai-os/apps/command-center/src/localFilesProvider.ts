@@ -19,6 +19,7 @@ const browserWindow = (): FilePickerWindow | undefined => typeof window === "und
 const extensionOf = (name: string): string => name.includes(".") ? `.${name.split(".").pop()?.toLowerCase() ?? ""}` : "";
 const imageMimes = new Set(["image/png", "image/jpeg", "image/webp", "image/gif", "image/bmp"]);
 const textMimes = new Set(["text/plain", "text/markdown", "application/json", "text/csv", "text/html", "application/xml", "text/xml"]);
+const stableLocalSelectionId = (file: File) => `local:${encodeURIComponent(file.name)}:${file.size}:${file.lastModified || 0}:${encodeURIComponent(file.type || "application/octet-stream")}`;
 const isImage = (mimeType: string): boolean => imageMimes.has(mimeType);
 const isText = (mimeType: string, extension: string): boolean => textMimes.has(mimeType) || [".txt", ".md", ".json", ".csv", ".html", ".xml"].includes(extension);
 
@@ -41,7 +42,7 @@ export function permissionStateFor(handle?: WritableFileHandle): LocalPermission
 export function projectLocalFile(file: File, mechanism: LocalSelectionMechanism, handle?: WritableFileHandle): LocalSelectedFileProjection {
   const { extension, viewer } = classifyLocalFileName(file.name, file.type || "application/octet-stream"); const mimeType = file.type || "application/octet-stream";
   const originalSaveCapability = Boolean(handle?.createWritable);
-  return { sourceId: "local", selectionId: crypto.randomUUID(), name: file.name, extension, mimeType, size: file.size, lastModified: file.lastModified || undefined, itemKind: "FILE", selectionMechanism: mechanism, readCapability: true, originalSaveCapability, originalSaveStatus: originalSaveCapability ? "ORIGINAL_SAVE_SUPPORTED" : "ORIGINAL_SAVE_UNAVAILABLE_USE_SAVE_AS", saveAsCapability: true, saveAsStatus: "SAVE_AS_SUPPORTED", downloadCopyStatus: "DOWNLOAD_COPY_SUPPORTED", previewCapability: supportedPreview(mimeType, extension) || viewer?.previewSupport === "LIMITED", editCapability: supportedEditor(mimeType, extension), conversionCapabilities: conversionCapabilities(mimeType), dirty: false, permissionState: permissionStateFor(handle), previewState: "NOT_REQUESTED", validationState: "NOT_VALIDATED", viewerId: viewer?.capabilityId };
+  return { sourceId: "local", selectionId: stableLocalSelectionId(file), name: file.name, extension, mimeType, size: file.size, lastModified: file.lastModified || undefined, itemKind: "FILE", selectionMechanism: mechanism, readCapability: true, originalSaveCapability, originalSaveStatus: originalSaveCapability ? "ORIGINAL_SAVE_SUPPORTED" : "ORIGINAL_SAVE_UNAVAILABLE_USE_SAVE_AS", saveAsCapability: true, saveAsStatus: "SAVE_AS_SUPPORTED", downloadCopyStatus: "DOWNLOAD_COPY_SUPPORTED", previewCapability: supportedPreview(mimeType, extension) || viewer?.previewSupport === "LIMITED", editCapability: supportedEditor(mimeType, extension), conversionCapabilities: conversionCapabilities(mimeType), dirty: false, permissionState: permissionStateFor(handle), previewState: "NOT_REQUESTED", validationState: "NOT_VALIDATED", viewerId: viewer?.capabilityId };
 }
 
 export async function validateLocalSignature(file: File, viewer?: LocalFileViewerRegistration): Promise<"VALID" | "INVALID" | "NOT_VALIDATED"> {

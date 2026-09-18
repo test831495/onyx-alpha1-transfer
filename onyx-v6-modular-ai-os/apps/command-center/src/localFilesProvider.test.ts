@@ -8,6 +8,8 @@ describe("Local Files provider", () => {
     const fallback = projectLocalFile(file, "FILE_INPUT");
     const handle = { createWritable: async () => ({ write: async () => undefined, close: async () => undefined }) } as never;
     const writable = projectLocalFile(file, "FILE_SYSTEM_HANDLE", handle);
+    expect(projectLocalFile(file, "FILE_INPUT").selectionId).toBe(fallback.selectionId);
+    expect(fallback.selectionId).toContain("local:");
     expect(fallback).toMatchObject({ sourceId: "local", extension: ".txt", size: 5, mimeType: "text/plain", originalSaveCapability: false, saveAsCapability: true, editCapability: true });
     expect(writable.originalSaveCapability).toBe(true);
     expect(JSON.stringify(fallback)).not.toContain("hello");
