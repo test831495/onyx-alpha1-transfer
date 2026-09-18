@@ -22,6 +22,20 @@ describe("LocalNotesRepository", () => {
     expect(repository.searchNotes("roadmap.pdf")[0]?.noteId).toBe(note.noteId);
     expect(repository.getNote(note.noteId)?.fileReferences[0]?.fileId).toBe("file-1");
   });
+  it("finds account-scoped Notes referencing a provider-neutral file and persists reference removal across reload", () => {
+    const shared = storage();
+    const accountA = new LocalNotesRepository(shared, "account-a");
+    const accountB = new LocalNotesRepository(shared, "account-b");
+    const reference = { referenceId: "ref-1", fileId: "file-1", provider: "local", displayName: "roadmap.pdf", fileType: "application/pdf", referencedAt: new Date().toISOString() };
+    const note = accountA.createNote({ title: "Roadmap decisions", fileReferences: [reference] });
+    accountB.createNote({ title: "Other account", fileReferences: [reference] });
+    expect(accountA.getNotesReferencingFile("file-1", "local").map((entry) => entry.noteId)).toEqual([note.noteId]);
+    expect(accountA.searchNotes("roadmap.pdf").map((entry) => entry.noteId)).toEqual([note.noteId]);
+    const reloaded = new LocalNotesRepository(shared, "account-a");
+    expect(reloaded.getNotesReferencingFile("file-1", "local")).toHaveLength(1);
+    reloaded.updateNote(note.noteId, { fileReferences: [] });
+    expect(new LocalNotesRepository(shared, "account-a").getNotesReferencingFile("file-1", "local")).toEqual([]);
+  });
   it("supports phrase, tag, category, combined filters, sorting, and snippets", () => {
     const repository = new LocalNotesRepository(storage());
     const first = repository.createNote({ title: "Mobile review", content: "mobile file selection works", tags: ["architecture"], category: "Research" });
