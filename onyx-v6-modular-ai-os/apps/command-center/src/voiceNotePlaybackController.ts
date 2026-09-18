@@ -55,6 +55,7 @@ export class VoiceNotePlaybackController {
   private objectUrl?: string;
   private loadToken = 0;
   private bound = false;
+  private clipBounds?: { readonly startSeconds: number; readonly endSeconds: number };
 
   constructor(options: PlaybackOptions) {
     this.accountScopeId = options.accountScopeId;
@@ -73,7 +74,12 @@ export class VoiceNotePlaybackController {
     return this.projection;
   }
 
-  async play(note: Note): Promise<void> {
+  /**
+   * `bounds` (in milliseconds) restricts playback to a sub-range of the loaded audio without
+   * mutating the source Blob. Pass explicit bounds for a live Trim preview, or omit them to let
+   * a derived clip Note's own trim metadata (futureFields) drive the range automatically.
+   */
+  async play(note: Note, bounds?: { readonly startMilliseconds: number; readonly endMilliseconds: number }): Promise<void> {
     this.bindEvents();
     if (note.type !== "VOICE_NOTE") throw new VoiceNotePlaybackError("AUDIO_NOT_FOUND");
     const audioReferenceId = note.futureFields.audioReferenceId;
@@ -82,11 +88,19 @@ export class VoiceNotePlaybackController {
       throw new VoiceNotePlaybackError("AUDIO_NOT_FOUND");
     }
 
+    const resolvedBounds = bounds ?? this.deriveClipBoundsFromNote(note);
+    const nextClipBounds = resolvedBounds ? { startSeconds: resolvedBounds.startMilliseconds / 1000, endSeconds: resolvedBounds.endMilliseconds / 1000 } : undefined;
+
     if (this.projection.noteId !== note.noteId || !this.objectUrl) {
+      this.clipBounds = nextClipBounds;
       await this.load(note, audioReferenceId);
-    } else if (this.projection.state === "ENDED") {
-      this.audio.currentTime = 0;
-      this.updateCurrent(0);
+    } else {
+      this.clipBounds = nextClipBounds;
+      const start = this.clipBounds?.startSeconds ?? 0;
+      if (this.projection.state === "ENDED" || this.audio.currentTime < start) {
+        this.audio.currentTime = start;
+        this.updateCurrent(start);
+      }
     }
 
     try {
@@ -108,8 +122,9 @@ export class VoiceNotePlaybackController {
     if (!this.objectUrl) return;
     const wasPlaying = this.projection.state === "PLAYING";
     try {
-      this.audio.currentTime = 0;
-      this.updateCurrent(0);
+      const target = this.clipBounds?.startSeconds ?? 0;
+      this.audio.currentTime = target;
+      this.updateCurrent(target);
       if (this.projection.state === "ENDED") this.setProjection({ state: "READY" });
       if (wasPlaying) await this.playCurrentSource();
     } catch {
@@ -117,12 +132,14 @@ export class VoiceNotePlaybackController {
     }
   }
 
+  /** `value` is relative to the active clip (0 = clip start) when clip bounds are set. */
   seek(value: number): void {
     if (!Number.isFinite(value) || !Number.isFinite(this.projection.duration) || this.projection.duration <= 0) {
       this.fail("INVALID_SEEK_TARGET");
       throw new VoiceNotePlaybackError("INVALID_SEEK_TARGET");
     }
-    const target = Math.min(this.projection.duration, Math.max(0, value));
+    const clamped = Math.min(this.projection.duration, Math.max(0, value));
+    const target = (this.clipBounds?.startSeconds ?? 0) + clamped;
     this.setProjection({ state: "SEEKING" });
     this.audio.currentTime = target;
     this.updateCurrent(target);
@@ -142,6 +159,7 @@ export class VoiceNotePlaybackController {
     this.audio.src = "";
     this.audio.load();
     this.revokeObjectUrl();
+    this.clipBounds = undefined;
     this.setProjection(initialProjection);
   }
 
@@ -219,23 +237,42 @@ export class VoiceNotePlaybackController {
   }
 
   private readonly handleLoadedMetadata = () => {
-    const duration = this.audio.duration;
-    this.setProjection({ duration: Number.isFinite(duration) && duration >= 0 ? duration : 0, state: this.projection.state === "LOADING" ? "READY" : this.projection.state });
+    const rawDuration = this.audio.duration;
+    const duration = this.clipBounds ? Math.max(0, this.clipBounds.endSeconds - this.clipBounds.startSeconds) : (Number.isFinite(rawDuration) && rawDuration >= 0 ? rawDuration : 0);
+    this.setProjection({ duration, state: this.projection.state === "LOADING" ? "READY" : this.projection.state });
+    if (this.clipBounds && this.audio.currentTime < this.clipBounds.startSeconds) this.audio.currentTime = this.clipBounds.startSeconds;
   };
   private readonly handlePlaying = () => this.setProjection({ state: "PLAYING" });
   private readonly handlePause = () => { if (this.projection.state === "PLAYING" || this.projection.state === "SEEKING") this.setProjection({ state: "PAUSED" }); };
-  private readonly handleTimeUpdate = () => this.updateCurrent(this.audio.currentTime);
+  private readonly handleTimeUpdate = () => {
+    if (this.clipBounds && this.audio.currentTime >= this.clipBounds.endSeconds) {
+      this.audio.pause();
+      this.audio.currentTime = this.clipBounds.endSeconds;
+      this.updateCurrent(this.clipBounds.endSeconds);
+      this.setProjection({ state: "ENDED" });
+      return;
+    }
+    this.updateCurrent(this.audio.currentTime);
+  };
   private readonly handleSeeking = () => this.setProjection({ state: "SEEKING" });
   private readonly handleSeeked = () => this.setProjection({ state: this.audio.paused ? "PAUSED" : "PLAYING" });
   private readonly handleEnded = () => { const current = this.projection.duration; this.setProjection({ state: "ENDED", current }); };
   private readonly handleMediaError = () => this.fail(this.audio.error?.code === 4 ? "PLAYBACK_FORMAT_UNSUPPORTED" : "AUDIO_LOAD_FAILED");
   private readonly handleAbort = () => this.fail("PLAYBACK_ABORTED");
 
-  private updateCurrent(value: number): void {
-    if (!Number.isFinite(value)) return;
+  private updateCurrent(rawAudioTime: number): void {
+    if (!Number.isFinite(rawAudioTime)) return;
+    const relative = this.clipBounds ? rawAudioTime - this.clipBounds.startSeconds : rawAudioTime;
     const duration = this.projection.duration;
-    const current = duration > 0 ? Math.min(duration, Math.max(0, value)) : Math.max(0, value);
+    const current = duration > 0 ? Math.min(duration, Math.max(0, relative)) : Math.max(0, relative);
     this.setProjection({ current });
+  }
+
+  private deriveClipBoundsFromNote(note: Note): { readonly startMilliseconds: number; readonly endMilliseconds: number } | undefined {
+    const start = note.futureFields.trimStartMilliseconds;
+    const end = note.futureFields.trimEndMilliseconds;
+    if (typeof start !== "number" || typeof end !== "number" || !Number.isFinite(start) || !Number.isFinite(end) || end <= start) return undefined;
+    return { startMilliseconds: start, endMilliseconds: end };
   }
 
   private setProjection(change: Partial<VoiceNotePlaybackProjection>): void {

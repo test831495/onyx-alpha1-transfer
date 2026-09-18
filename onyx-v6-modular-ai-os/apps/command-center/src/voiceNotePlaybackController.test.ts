@@ -137,4 +137,58 @@ describe("VoiceNotePlaybackController", () => {
     expect(audio.pause).toHaveBeenCalled();
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:voice-note");
   });
+
+  it("plays a derived clip note within trim boundaries: relative current/duration, restart to clip start, stop at clip end", async () => {
+    const audio = makeAudio();
+    const listeners = new Map<string, EventListener>();
+    audio.addEventListener.mockImplementation((name: string, listener: EventListener) => listeners.set(name, listener));
+    const controller = new VoiceNotePlaybackController({
+      accountScopeId: "account-a",
+      audioRepository: { getAudio: vi.fn().mockResolvedValue(new Blob(["audio"], { type: "audio/webm" })) } as unknown as VoiceNoteAudioRepository,
+      createAudio: () => audio as unknown as HTMLAudioElement,
+      urlApi: { createObjectURL: vi.fn().mockReturnValue("blob:voice-note"), revokeObjectURL: vi.fn() },
+    });
+
+    const derivedNote = { ...makeNote(), futureFields: { ...makeNote().futureFields, durationMilliseconds: 10000, trimStartMilliseconds: 5000, trimEndMilliseconds: 15000 } };
+    await controller.play(derivedNote);
+    audio.duration = 20;
+    listeners.get("loadedmetadata")?.(new Event("loadedmetadata"));
+    expect(controller.getProjection().duration).toBe(10);
+    expect(audio.currentTime).toBe(5);
+
+    audio.currentTime = 9;
+    listeners.get("timeupdate")?.(new Event("timeupdate"));
+    expect(controller.getProjection().current).toBe(4);
+
+    controller.seek(4);
+    expect(audio.currentTime).toBe(9);
+    expect(controller.getProjection().current).toBe(4);
+
+    controller.restart();
+    expect(audio.currentTime).toBe(5);
+    expect(controller.getProjection().current).toBe(0);
+
+    audio.currentTime = 15;
+    listeners.get("timeupdate")?.(new Event("timeupdate"));
+    expect(audio.pause).toHaveBeenCalled();
+    expect(controller.getProjection()).toMatchObject({ state: "ENDED", current: 10 });
+  });
+
+  it("plays live Trim preview bounds passed explicitly, independent of the source note's own metadata", async () => {
+    const audio = makeAudio();
+    const listeners = new Map<string, EventListener>();
+    audio.addEventListener.mockImplementation((name: string, listener: EventListener) => listeners.set(name, listener));
+    const controller = new VoiceNotePlaybackController({
+      accountScopeId: "account-a",
+      audioRepository: { getAudio: vi.fn().mockResolvedValue(new Blob(["audio"], { type: "audio/webm" })) } as unknown as VoiceNoteAudioRepository,
+      createAudio: () => audio as unknown as HTMLAudioElement,
+      urlApi: { createObjectURL: vi.fn().mockReturnValue("blob:voice-note"), revokeObjectURL: vi.fn() },
+    });
+
+    await controller.play(makeNote(), { startMilliseconds: 1000, endMilliseconds: 3000 });
+    audio.duration = 4;
+    listeners.get("loadedmetadata")?.(new Event("loadedmetadata"));
+    expect(controller.getProjection().duration).toBe(2);
+    expect(audio.currentTime).toBe(1);
+  });
 });

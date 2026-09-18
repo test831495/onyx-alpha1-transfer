@@ -7,6 +7,10 @@ import { VoiceNoteAudioRepository } from "../voiceNoteAudioRepository";
 import { VoiceNoteRecordingRuntime, VoiceNoteRecordingError } from "../voiceNoteRecordingRuntime";
 import { deleteVoiceNoteAudioAndMetadata } from "../voiceNotePersistenceService";
 import { VoiceNotePlaybackController, VoiceNotePlaybackError, type VoiceNotePlaybackProjection } from "../voiceNotePlaybackController";
+import { defaultTrimmedVoiceNoteTitle, friendlyVoiceNoteMediaLabel, isValidTrimRange, normalizeVoiceNoteTitle } from "../voiceNoteContracts";
+import { saveTrimmedVoiceNoteClip } from "../voiceNoteTrimService";
+import { resolveVoiceNoteExportFilename, sanitizeVoiceNoteExportFilenameBase } from "../voiceNoteExportFilename";
+import { buildVoiceNoteClipDefinition, canShareVoiceNote, listVoiceNoteExportDestinations, saveVoiceNoteToDevice, shareVoiceNote, type VoiceNoteExportDestinationStatus } from "../voiceNoteExportService";
 
 const NAV_ITEMS: readonly { id: NoteDateBucket | "PINNED"; label: string }[] = [
   { id: "PINNED", label: "Pinned" },
@@ -104,6 +108,25 @@ function recordingErrorMessage(code?: string): string {
   return code ?? "Recording could not be started.";
 }
 
+function destinationStatusLabel(status: VoiceNoteExportDestinationStatus): string {
+  if (status === "AVAILABLE") return "Available";
+  if (status === "SIGN_IN_REQUIRED") return "Sign-in required";
+  if (status === "READ_ONLY") return "Read-only";
+  if (status === "NOT_CONFIGURED") return "Not configured";
+  if (status === "COMING_LATER") return "Coming later";
+  return "Unavailable on this device";
+}
+
+function exportErrorMessage(code: string): string {
+  if (code === "AUDIO_NOT_FOUND") return "The saved audio could not be found.";
+  if (code === "PERMISSION_DENIED") return "Permission to save the file was denied.";
+  if (code === "UNSUPPORTED") return "This action is not supported on this device.";
+  if (code === "WRITE_FAILED") return "The file could not be written.";
+  if (code === "BLOCKED") return "Sharing was blocked.";
+  if (code === "SHARE_FAILED") return "Sharing failed.";
+  return "The export could not be completed.";
+}
+
 function browserCanPlayType(mimeType: string): "probably" | "maybe" | "" | undefined {
   if (typeof document === "undefined") return undefined;
   const audio = document.createElement("audio");
@@ -124,6 +147,19 @@ function VoiceNoteSection({ accountScope, repository, selected, refresh, audioRe
   const [error, setError] = useState("");
   const [playbackError, setPlaybackError] = useState("");
   const [playback, setPlayback] = useState<VoiceNotePlaybackProjection>({ state: "IDLE", current: 0, duration: 0 });
+  const [reviewTitle, setReviewTitle] = useState("");
+  const [renamingNoteId, setRenamingNoteId] = useState<string | undefined>(undefined);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [trimNoteId, setTrimNoteId] = useState<string | undefined>(undefined);
+  const [trimStartMs, setTrimStartMs] = useState(0);
+  const [trimEndMs, setTrimEndMs] = useState(0);
+  const [trimTitle, setTrimTitle] = useState("");
+  const [trimError, setTrimError] = useState("");
+  const [exportNoteId, setExportNoteId] = useState<string | undefined>(undefined);
+  const [exportFilename, setExportFilename] = useState("");
+  const [exportSource, setExportSource] = useState<"ORIGINAL" | "CLIP_DEFINITION">("ORIGINAL");
+  const [exportStatus, setExportStatus] = useState("");
+  const [exportError, setExportError] = useState("");
   const voiceNotes = repository.getNotes({ includeArchived: false }).filter((note) => note.type === "VOICE_NOTE");
 
   const mediaRecorderTypeSupported = typeof globalThis.MediaRecorder !== "undefined" && typeof globalThis.MediaRecorder.isTypeSupported === "function" ? browserIsTypeSupported : undefined;
@@ -142,10 +178,18 @@ function VoiceNoteSection({ accountScope, repository, selected, refresh, audioRe
   useEffect(() => {
     if (playback.noteId && !voiceNotes.some((note) => note.noteId === playback.noteId)) playbackController.current?.dispose();
   }, [playback.noteId, voiceNotes.length]);
+  useEffect(() => {
+    if (state === "REVIEW_READY" && runtime.current?.reviewDraft) setReviewTitle(runtime.current.reviewDraft.suggestedTitle);
+  }, [state]);
 
   const start = async () => { setError(""); playbackController.current?.pause(); try { await runtime.current?.start(); setState(runtime.current?.state ?? "IDLE"); } catch (value) { setError(recordingErrorMessage(value instanceof VoiceNoteRecordingError ? value.code : "UNKNOWN_RECORDING_FAILURE")); setState(runtime.current?.state ?? "FAILED"); } };
   const stop = async () => { setError(""); try { await runtime.current?.stop(); setState(runtime.current?.state ?? "STOPPING"); } catch (value) { setError(value instanceof VoiceNoteRecordingError ? value.code : "UNKNOWN_RECORDING_FAILURE"); } };
-  const save = async () => { try { await runtime.current?.save(); setState(runtime.current?.state ?? "SAVED"); refresh(); } catch (value) { setError(value instanceof VoiceNoteRecordingError ? value.code : "AUDIO_SAVE_FAILED"); setState(runtime.current?.state ?? "REVIEW_READY"); } };
+  const save = async () => {
+    const trimmedTitle = reviewTitle.trim();
+    if (!trimmedTitle) { setError("VOICE_NOTE_TITLE_REQUIRED"); return; }
+    try { runtime.current?.setReviewTitle(trimmedTitle); await runtime.current?.save(); setState(runtime.current?.state ?? "SAVED"); refresh(); }
+    catch (value) { setError(value instanceof VoiceNoteRecordingError ? value.code : "AUDIO_SAVE_FAILED"); setState(runtime.current?.state ?? "REVIEW_READY"); }
+  };
   const discard = () => { runtime.current?.discard(); setState(runtime.current?.state ?? "IDLE"); };
   const loadPlayback = async (note: Note) => {
     setPlaybackError("");
@@ -156,6 +200,80 @@ function VoiceNoteSection({ accountScope, repository, selected, refresh, audioRe
   const review = runtime.current?.reviewDraft;
   const active = ["REQUESTING_PERMISSION", "RECORDING", "PAUSED", "STOPPING", "SAVING"].includes(state);
 
+  const beginRename = (note: Note) => { setRenamingNoteId(note.noteId); setRenameDraft(note.title); };
+  const cancelRename = () => { setRenamingNoteId(undefined); setRenameDraft(""); };
+  const commitRename = (note: Note) => { const trimmed = normalizeVoiceNoteTitle(renameDraft); if (!trimmed) return; repository.updateNote(note.noteId, { title: trimmed }); setRenamingNoteId(undefined); setRenameDraft(""); refresh(); };
+
+  const trimSourceNote = voiceNotes.find((note) => note.noteId === trimNoteId);
+  const beginTrim = (note: Note) => { playbackController.current?.pause(); setTrimNoteId(note.noteId); setTrimStartMs(0); setTrimEndMs(Number(note.futureFields.durationMilliseconds ?? 0)); setTrimTitle(defaultTrimmedVoiceNoteTitle(note.title)); setTrimError(""); };
+  const cancelTrim = () => { playbackController.current?.pause(); setTrimNoteId(undefined); setTrimError(""); };
+  const resetTrim = () => { if (!trimSourceNote) return; playbackController.current?.pause(); setTrimStartMs(0); setTrimEndMs(Number(trimSourceNote.futureFields.durationMilliseconds ?? 0)); };
+  const previewTrim = async () => { if (!trimSourceNote) return; setTrimError(""); try { await playbackController.current?.play(trimSourceNote, { startMilliseconds: trimStartMs, endMilliseconds: trimEndMs }); } catch (value) { setTrimError(value instanceof VoiceNotePlaybackError ? value.code : "AUDIO_LOAD_FAILED"); } };
+  const stopTrimPreview = () => playbackController.current?.pause();
+  const saveAsTrimmed = async () => {
+    if (!trimSourceNote) return;
+    const title = trimTitle.trim();
+    if (!title) { setTrimError("VOICE_NOTE_TITLE_REQUIRED"); return; }
+    const durationMilliseconds = Number(trimSourceNote.futureFields.durationMilliseconds ?? 0);
+    if (!isValidTrimRange({ trimStartMilliseconds: trimStartMs, trimEndMilliseconds: trimEndMs, durationMilliseconds })) { setTrimError("INVALID_TRIM_RANGE"); return; }
+    try {
+      await saveTrimmedVoiceNoteClip({ accountScopeId: accountScope, sourceNote: trimSourceNote, title, trimStartMilliseconds: trimStartMs, trimEndMilliseconds: trimEndMs, notesRepository: repository, audioRepository });
+      playbackController.current?.pause();
+      setTrimNoteId(undefined);
+      refresh();
+    } catch (value) { setTrimError(value instanceof Error ? value.message : "SAVE_AS_FAILED"); }
+  };
+
+  const exportSourceNote = voiceNotes.find((note) => note.noteId === exportNoteId);
+  const exportNoteIsDerived = exportSourceNote?.futureFields.derivedFromVoiceNote === true;
+  const beginExport = (note: Note) => {
+    setExportNoteId(note.noteId);
+    setExportFilename(resolveVoiceNoteExportFilename(note.title, String(note.futureFields.recordedMediaType ?? "")));
+    setExportSource("ORIGINAL");
+    setExportStatus("");
+    setExportError("");
+  };
+  const closeExport = () => { setExportNoteId(undefined); setExportStatus(""); setExportError(""); };
+  const resolveExportPayload = async (): Promise<{ blob: Blob; filename: string; mediaType: string } | undefined> => {
+    if (!exportSourceNote) return undefined;
+    if (exportSource === "CLIP_DEFINITION") {
+      const source = repository.getNote(String(exportSourceNote.futureFields.sourceNoteId ?? ""));
+      const definition = buildVoiceNoteClipDefinition(exportSourceNote, source, new Date().toISOString());
+      if (!definition) return undefined;
+      return { blob: new Blob([JSON.stringify(definition, null, 2)], { type: "application/json" }), filename: `${sanitizeVoiceNoteExportFilenameBase(exportSourceNote.title)}.json`, mediaType: "application/json" };
+    }
+    const audio = await audioRepository.getAudio(accountScope, String(exportSourceNote.futureFields.audioReferenceId ?? ""));
+    if (!(audio instanceof Blob) || audio.size === 0) return undefined;
+    const mediaType = String(exportSourceNote.futureFields.recordedMediaType ?? audio.type);
+    return { blob: audio, filename: exportFilename.trim() || resolveVoiceNoteExportFilename(exportSourceNote.title, mediaType), mediaType };
+  };
+  const runDeviceExport = async () => {
+    setExportError(""); setExportStatus("");
+    const payload = await resolveExportPayload();
+    if (!payload) { setExportError("AUDIO_NOT_FOUND"); return; }
+    const outcome = await saveVoiceNoteToDevice(payload.blob, payload.filename);
+    if (outcome === "SUCCESS") setExportStatus(`Saved ${payload.filename} to your device.`);
+    else if (outcome === "CANCELLED") setExportStatus("Export cancelled.");
+    else setExportError(outcome);
+  };
+  const runShareExport = async () => {
+    setExportError(""); setExportStatus("");
+    const payload = await resolveExportPayload();
+    if (!payload) { setExportError("AUDIO_NOT_FOUND"); return; }
+    const outcome = await shareVoiceNote(payload.blob, payload.filename, payload.mediaType);
+    if (outcome === "SUCCESS_OR_HANDOFF_STARTED") setExportStatus("Share sheet opened.");
+    else if (outcome === "CANCELLED") setExportStatus("Share cancelled.");
+    else setExportError(outcome);
+  };
+  const exportDestinations = listVoiceNoteExportDestinations({
+    deviceSaveSupported: typeof document !== "undefined",
+    shareSupported: canShareVoiceNote(String(exportSourceNote?.futureFields.recordedMediaType ?? "")),
+  });
+  const runExportDestination = (destinationId: string) => {
+    if (destinationId === "device") void runDeviceExport();
+    else if (destinationId === "share") void runShareExport();
+  };
+
   return <section className="voice-note-section" aria-labelledby="voice-notes-heading">
     <div className="voice-note-heading"><div><p className="notes-kicker">Track A audio</p><h3 id="voice-notes-heading">Voice Notes</h3><p>Record locally, review before saving, and keep the original audio.</p></div><span className="voice-note-state">{state}</span></div>
     <div className="voice-note-controls">
@@ -165,10 +283,102 @@ function VoiceNoteSection({ accountScope, repository, selected, refresh, audioRe
       <button type="button" onClick={() => void stop()} disabled={!(["RECORDING", "PAUSED"].includes(state))}>Stop</button>
       <button type="button" onClick={() => { runtime.current?.cancel(); setState(runtime.current?.state ?? "CANCELLED"); }} disabled={!active}>Cancel</button>
     </div>
-    {active || state === "RECORDING" || state === "PAUSED" ? <div className="voice-note-status" aria-live="polite"><span>Elapsed {formatDuration(elapsed)}</span><span>Microphone {state === "RECORDING" || state === "PAUSED" ? "active" : "pending"}</span><span>Format {runtime.current?.reviewDraft?.actualMediaType ?? "browser negotiated"}</span><span>Interrupted {runtime.current?.interrupted ? "yes" : "no"}</span></div> : null}
-    {review && state === "REVIEW_READY" ? <div className="voice-note-review" aria-label="Voice Note review"><strong>Review Ready</strong><span>Duration {formatDuration(review.durationMilliseconds)}</span><span>Size {review.byteLength} bytes</span><span>Media {review.actualMediaType}</span><span>Interrupted {review.interrupted ? "yes" : "no"}</span><div><button type="button" onClick={() => void save()}>Save</button><button type="button" onClick={discard}>Discard</button></div></div> : null}
+    {active || state === "RECORDING" || state === "PAUSED" ? <div className="voice-note-status" aria-live="polite"><span>Elapsed {formatDuration(elapsed)}</span><span>Microphone {state === "RECORDING" || state === "PAUSED" ? "active" : "pending"}</span><span title={runtime.current?.reviewDraft?.actualMediaType ?? ""}>Format {friendlyVoiceNoteMediaLabel(runtime.current?.reviewDraft?.actualMediaType)}</span><span>Interrupted {runtime.current?.interrupted ? "yes" : "no"}</span></div> : null}
+    {review && state === "REVIEW_READY" ? <div className="voice-note-review" aria-label="Voice Note review"><strong>Review Ready</strong><label className="voice-note-title-field">Title<input aria-label="Voice note title" value={reviewTitle} maxLength={200} onChange={(event) => setReviewTitle(event.target.value)} /></label><span>Duration {formatDuration(review.durationMilliseconds)}</span><span>Size {review.byteLength} bytes</span><span title={review.actualMediaType}>Media {friendlyVoiceNoteMediaLabel(review.actualMediaType)}</span><span>Interrupted {review.interrupted ? "yes" : "no"}</span><p className="voice-note-save-explainer">Saved in ONYX Notes on this account/device — not automatically copied to Downloads or a cloud drive.</p><div><button type="button" onClick={() => void save()} disabled={!reviewTitle.trim()}>Save to Notes</button><button type="button" onClick={discard}>Discard</button></div></div> : null}
     {error ? <p className="voice-note-error" role="alert">{error}</p> : null}
-    <div className="voice-note-list" aria-label="Saved Voice Notes">{voiceNotes.map((note) => { const activeNote = playback.noteId === note.noteId; const duration = activeNote ? playback.duration : 0; const current = activeNote ? playback.current : 0; const loading = activeNote && playback.state === "LOADING"; return <div className="voice-note-saved" key={note.noteId}><div><strong>{note.title}</strong><span className="voice-note-badge">Voice Note</span><small>{new Date(note.updatedAt).toLocaleString()} · {note.category ?? "Uncategorised"} · {note.tags.length ? `#${note.tags.join(" #")}` : "No tags"} · {formatDuration(Number(note.futureFields.durationMilliseconds ?? 0))}</small></div><div className="voice-note-playback"><button type="button" aria-label={`${activeNote && playback.state === "PLAYING" ? "Pause" : activeNote && playback.state === "ENDED" ? "Replay" : "Play"} ${note.title}`} onClick={() => void togglePlayback(note)}>{activeNote && playback.state === "PLAYING" ? "Pause" : activeNote && playback.state === "ENDED" ? "Replay" : loading ? "Loading" : "Play"}</button><button type="button" aria-label={`Restart ${note.title}`} onClick={() => void restartPlayback(note)}>Restart</button><input aria-label={`Seek ${note.title}`} type="range" min="0" max={duration} step="0.1" value={current} disabled={!activeNote || duration <= 0} title={duration > 0 ? "Seek playback" : "Playback duration is loading"} onChange={(event) => { try { playbackController.current?.seek(Number(event.target.value)); } catch (value) { setPlaybackError(playbackErrorMessage(value instanceof VoiceNotePlaybackError ? value.code : playback.errorCode)); } }} /><span aria-label={`Elapsed ${formatDuration(current * 1000)} of ${formatDuration(duration * 1000)}`}>{formatDuration(current * 1000)} / {formatDuration(duration * 1000)}</span>{activeNote && playbackError ? <span className="voice-note-error" role="alert">{playbackError}</span> : null}</div></div>; })}</div>
+    <div className="voice-note-list" aria-label="Saved Voice Notes">{voiceNotes.map((note) => {
+      const activeNote = playback.noteId === note.noteId;
+      const duration = activeNote ? playback.duration : 0;
+      const current = activeNote ? playback.current : 0;
+      const loading = activeNote && playback.state === "LOADING";
+      const isRenaming = renamingNoteId === note.noteId;
+      const isDerived = note.futureFields.derivedFromVoiceNote === true;
+      return <div className="voice-note-saved" key={note.noteId}>
+        <div className="voice-note-saved-meta">
+          <strong>{note.title}</strong>
+          <span className="voice-note-badge">Voice Note</span>
+          {isDerived ? <span className="voice-note-badge voice-note-derived-badge">Trimmed clip</span> : null}
+          <small>{new Date(note.updatedAt).toLocaleString()} · {note.category ?? "Uncategorised"} · {note.tags.length ? `#${note.tags.join(" #")}` : "No tags"} · {formatDuration(Number(note.futureFields.durationMilliseconds ?? 0))}</small>
+        </div>
+        <div className="voice-note-playback">
+          <button type="button" aria-label={`${activeNote && playback.state === "PLAYING" ? "Pause" : activeNote && playback.state === "ENDED" ? "Replay" : "Play"} ${note.title}`} onClick={() => void togglePlayback(note)}>{activeNote && playback.state === "PLAYING" ? "Pause" : activeNote && playback.state === "ENDED" ? "Replay" : loading ? "Loading" : "Play"}</button>
+          <button type="button" aria-label={`Restart ${note.title}`} onClick={() => void restartPlayback(note)}>Restart</button>
+          <input aria-label={`Seek ${note.title}`} type="range" min="0" max={duration} step="0.1" value={current} disabled={!activeNote || duration <= 0} title={duration > 0 ? "Seek playback" : "Playback duration is loading"} onChange={(event) => { try { playbackController.current?.seek(Number(event.target.value)); } catch (value) { setPlaybackError(playbackErrorMessage(value instanceof VoiceNotePlaybackError ? value.code : playback.errorCode)); } }} />
+          <span aria-label={`Elapsed ${formatDuration(current * 1000)} of ${formatDuration(duration * 1000)}`}>{formatDuration(current * 1000)} / {formatDuration(duration * 1000)}</span>
+          {activeNote && playbackError ? <span className="voice-note-error" role="alert">{playbackError}</span> : null}
+        </div>
+        <div className="voice-note-actions">
+          {isRenaming ? (
+            <div className="voice-note-rename">
+              <input aria-label={`Rename ${note.title}`} value={renameDraft} maxLength={200} autoFocus onChange={(event) => setRenameDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") commitRename(note); if (event.key === "Escape") cancelRename(); }} />
+              <button type="button" onClick={() => commitRename(note)} disabled={!renameDraft.trim()}>Save Rename</button>
+              <button type="button" onClick={cancelRename}>Cancel Rename</button>
+            </div>
+          ) : (
+            <button type="button" className="voice-note-action-button" aria-label={`Rename ${note.title}`} onClick={() => beginRename(note)}>Rename</button>
+          )}
+          {!isDerived ? <button type="button" className="voice-note-action-button" aria-label={`Trim ${note.title}`} onClick={() => beginTrim(note)}>Trim</button> : null}
+          <button type="button" className="voice-note-action-button" aria-label={`Export ${note.title}`} onClick={() => beginExport(note)}>Export / Save As</button>
+        </div>
+      </div>;
+    })}</div>
+    {trimSourceNote ? (
+      <div className="voice-note-trim" aria-label={`Trim ${trimSourceNote.title}`}>
+        <strong>Trim &quot;{trimSourceNote.title}&quot;</strong>
+        <span>Original duration {formatDuration(Number(trimSourceNote.futureFields.durationMilliseconds ?? 0))}</span>
+        <label>Trim start (seconds)<input aria-label="Trim start" type="number" min={0} step={0.1} value={(trimStartMs / 1000).toFixed(1)} onChange={(event) => setTrimStartMs(Math.max(0, Math.round(Number(event.target.value) * 1000)))} /></label>
+        <label>Trim end (seconds)<input aria-label="Trim end" type="number" min={0} step={0.1} value={(trimEndMs / 1000).toFixed(1)} onChange={(event) => setTrimEndMs(Math.max(0, Math.round(Number(event.target.value) * 1000)))} /></label>
+        <span>Selected clip {formatDuration(Math.max(0, trimEndMs - trimStartMs))}</span>
+        <label>New title<input aria-label="Trimmed voice note title" value={trimTitle} maxLength={200} onChange={(event) => setTrimTitle(event.target.value)} /></label>
+        <div>
+          <button type="button" onClick={() => void previewTrim()}>Preview Trim</button>
+          <button type="button" onClick={stopTrimPreview}>Stop Preview</button>
+          <button type="button" onClick={resetTrim}>Reset Trim</button>
+          <button type="button" onClick={cancelTrim}>Cancel</button>
+          <button type="button" onClick={() => void saveAsTrimmed()} disabled={!trimTitle.trim()}>Save As New Voice Note</button>
+        </div>
+        {trimError ? <p className="voice-note-error" role="alert">{trimError}</p> : null}
+      </div>
+    ) : null}
+    {exportSourceNote ? (
+      <div className="voice-note-export" aria-label={`Export options for ${exportSourceNote.title}`}>
+        <strong>Export &quot;{exportSourceNote.title}&quot;</strong>
+        <p className="voice-note-export-explainer">Saved in ONYX Notes on this account/device (IndexedDB). Exporting creates a separate file copy — it is not automatically copied to your device&apos;s Downloads folder or a cloud drive.</p>
+        {exportNoteIsDerived ? (
+          <fieldset className="voice-note-export-source">
+            <legend>Source</legend>
+            <label><input type="radio" name="voice-note-export-source" checked={exportSource === "ORIGINAL"} onChange={() => setExportSource("ORIGINAL")} /> Export Original Audio (full recording)</label>
+            <label><input type="radio" name="voice-note-export-source" checked={exportSource === "CLIP_DEFINITION"} onChange={() => setExportSource("CLIP_DEFINITION")} /> Export Clip Definition (trim metadata only)</label>
+            <label className="voice-note-export-disabled-option"><input type="radio" disabled /> Export Trimmed Audio File <small>Physical trimmed-file export requires audio rendering/transcoding and is not included in local-first V1.</small></label>
+          </fieldset>
+        ) : null}
+        {exportSource === "ORIGINAL" ? <label>Filename<input aria-label="Export filename" value={exportFilename} maxLength={160} onChange={(event) => setExportFilename(event.target.value)} /></label> : null}
+        <div className="voice-note-export-destinations">
+          {exportDestinations.filter((destination) => destination.group === "EXPORT_FILE").map((destination) => (
+            <button key={destination.id} type="button" disabled={destination.status !== "AVAILABLE"} title={destination.reason} onClick={() => runExportDestination(destination.id)}>
+              {destination.label}{destination.status !== "AVAILABLE" ? ` (${destinationStatusLabel(destination.status)})` : ""}
+            </button>
+          ))}
+        </div>
+        <p className="voice-note-export-section-label">Connected storage</p>
+        <div className="voice-note-export-destinations">
+          {exportDestinations.filter((destination) => destination.group === "CONNECTED_STORAGE").map((destination) => (
+            <button key={destination.id} type="button" disabled title={destination.reason}>{destination.label} ({destinationStatusLabel(destination.status)})</button>
+          ))}
+        </div>
+        <details className="voice-note-export-other">
+          <summary>Other destinations</summary>
+          <div className="voice-note-export-destinations">
+            {exportDestinations.filter((destination) => destination.group === "OTHER").map((destination) => (
+              <button key={destination.id} type="button" disabled title={destination.reason}>{destination.label} ({destinationStatusLabel(destination.status)})</button>
+            ))}
+          </div>
+        </details>
+        {exportStatus ? <p className="voice-note-export-status" role="status">{exportStatus}</p> : null}
+        {exportError ? <p className="voice-note-error" role="alert">{exportErrorMessage(exportError)}</p> : null}
+        <div><button type="button" onClick={closeExport}>Close</button></div>
+      </div>
+    ) : null}
   </section>;
 }
 
