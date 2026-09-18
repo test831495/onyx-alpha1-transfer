@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { convertersFor } from "./localFileConverters";
-import { MAX_DIRECTORY_ITEMS, MAX_TEXT_PREVIEW_BYTES, buildFallbackDirectorySelection, captureInputFiles, detectLocalFileCapabilities, projectLocalFile, readLocalDirectory, readTextPreview, selectLocalFileFromInput, supportedPreview, validateLocalSignature, writeToHandle } from "./localFilesProvider";
+import { MAX_DIRECTORY_ITEMS, MAX_TEXT_PREVIEW_BYTES, buildFallbackDirectorySelection, captureInputFiles, detectLocalFileCapabilities, projectLocalFile, readLocalDirectory, readTextPreview, resolveLocalFileIdentity, selectLocalFileFromInput, supportedPreview, validateLocalSignature, writeToHandle } from "./localFilesProvider";
 
 describe("Local Files provider", () => {
   it("projects truthful metadata and distinguishes writable handles", () => {
@@ -13,6 +13,46 @@ describe("Local Files provider", () => {
     expect(fallback).toMatchObject({ sourceId: "local", extension: ".txt", size: 5, mimeType: "text/plain", originalSaveCapability: false, saveAsCapability: true, editCapability: true });
     expect(writable.originalSaveCapability).toBe(true);
     expect(JSON.stringify(fallback)).not.toContain("hello");
+  });
+
+  it("models the local file identity as a versioned, provider-neutral, metadata-only fingerprint with residual collision risk", () => {
+    const file = new File(["hello"], "note.txt", { type: "text/plain", lastModified: 123 });
+    const duplicate = new File(["world"], "note.txt", { type: "text/plain", lastModified: 123 });
+    const renamed = new File(["hello"], "other.txt", { type: "text/plain", lastModified: 123 });
+    const resized = new File(["hello!"], "note.txt", { type: "text/plain", lastModified: 123 });
+    const touched = new File(["hello"], "note.txt", { type: "text/plain", lastModified: 456 });
+    const retyped = new File(["hello"], "note.txt", { type: "text/markdown", lastModified: 123 });
+
+    const identity = resolveLocalFileIdentity(file);
+    expect(identity).toMatchObject({ identityVersion: 1, identityStrength: "METADATA_FINGERPRINT", sourceProvider: "local", collisionPossible: true });
+    expect(identity.fileId).not.toContain("hello");
+
+    // Same facts produce the same ID; each independently changed fact produces a different ID.
+    expect(resolveLocalFileIdentity(new File(["hello"], "note.txt", { type: "text/plain", lastModified: 123 })).fileId).toBe(identity.fileId);
+    expect(resolveLocalFileIdentity(renamed).fileId).not.toBe(identity.fileId);
+    expect(resolveLocalFileIdentity(resized).fileId).not.toBe(identity.fileId);
+    expect(resolveLocalFileIdentity(touched).fileId).not.toBe(identity.fileId);
+    expect(resolveLocalFileIdentity(retyped).fileId).not.toBe(identity.fileId);
+
+    // Residual, documented collision: distinct files with identical metadata share an ID absent a stronger fact.
+    expect(resolveLocalFileIdentity(duplicate).fileId).toBe(identity.fileId);
+  });
+
+  it("prefers a directory-relative identity over the metadata fingerprint when the browser supplies one", () => {
+    const nested = new File(["content"], "note.txt", { type: "text/plain", lastModified: 123 });
+    Object.defineProperty(nested, "webkitRelativePath", { value: "project/notes/note.txt" });
+    const sibling = new File(["content"], "note.txt", { type: "text/plain", lastModified: 123 });
+    Object.defineProperty(sibling, "webkitRelativePath", { value: "project/archive/note.txt" });
+    const plain = new File(["content"], "note.txt", { type: "text/plain", lastModified: 123 });
+
+    const nestedIdentity = resolveLocalFileIdentity(nested);
+    const siblingIdentity = resolveLocalFileIdentity(sibling);
+    expect(nestedIdentity.identityStrength).toBe("DIRECTORY_RELATIVE");
+    expect(nestedIdentity.collisionPossible).toBe(false);
+    // Metadata-identical files in different folders no longer collide once a relative path is available.
+    expect(nestedIdentity.fileId).not.toBe(siblingIdentity.fileId);
+    // A plain File selection (no relative path) still resolves to the pre-existing metadata fingerprint format.
+    expect(resolveLocalFileIdentity(plain).fileId).toBe(resolveLocalFileIdentity(new File(["content"], "note.txt", { type: "text/plain", lastModified: 123 })).fileId);
   });
 
   it("keeps a fallback File as a first-class selection with empty MIME support", async () => {
