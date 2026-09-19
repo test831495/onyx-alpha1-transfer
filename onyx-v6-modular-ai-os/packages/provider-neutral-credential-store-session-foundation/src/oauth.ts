@@ -19,6 +19,15 @@ export type PendingOAuthTransaction = PendingOAuthBinding & {
   readonly consumedAt?: string;
 };
 
+export class OAuthPendingBindingMismatch extends Error {
+  readonly code = "OAUTH_PENDING_BINDING_MISMATCH" as const;
+
+  constructor() {
+    super("OAuth transaction binding mismatch");
+    this.name = "OAuthPendingBindingMismatch";
+  }
+}
+
 const digest = (state: string): string => createHash("sha256").update(state).digest("base64url");
 
 export class InMemoryOAuthPendingStore {
@@ -44,7 +53,7 @@ export class InMemoryOAuthPendingStore {
   consume(state: string, binding: PendingOAuthBinding, key: CredentialEncryptionKey): string {
     const transaction = [...this.transactions.values()].find((candidate) => candidate.stateDigest === digest(state));
     if (!transaction || transaction.consumedAt || new Date(transaction.expiresAt).getTime() <= Date.now()) throw new Error("OAuth transaction unavailable");
-    if (JSON.stringify({ ...transaction, stateDigest: undefined, encryptedPkceVerifier: undefined }) !== JSON.stringify({ ...binding, transactionId: transaction.transactionId, stateDigest: undefined, encryptedPkceVerifier: undefined, createdAt: transaction.createdAt, expiresAt: transaction.expiresAt, consumedAt: undefined })) throw new Error("OAuth transaction binding mismatch");
+    if (JSON.stringify({ ...transaction, stateDigest: undefined, encryptedPkceVerifier: undefined }) !== JSON.stringify({ ...binding, transactionId: transaction.transactionId, stateDigest: undefined, encryptedPkceVerifier: undefined, createdAt: transaction.createdAt, expiresAt: transaction.expiresAt, consumedAt: undefined })) throw new OAuthPendingBindingMismatch();
     const consumed = { ...transaction, consumedAt: new Date().toISOString() };
     this.transactions.set(transaction.transactionId, consumed);
     return decryptCredential(transaction.encryptedPkceVerifier, { recordId: transaction.transactionId, canonicalAccountRef: binding.canonicalAccountRef, providerId: binding.providerId, connectorAccountRef: binding.sessionRef, credentialType: "oauth-pkce-verifier", purpose: binding.purpose, capabilityFingerprint: binding.capabilityFingerprint, recordVersion: 0 }, key);

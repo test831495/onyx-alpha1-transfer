@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { canonicalizeGoogleCapabilities, createGoogleCalendarHandler, createGoogleCallbackHandler, createGoogleDisconnectHandler, createGoogleDriveHandler, createGoogleGmailHandler, createGoogleInitiateHandler, createGoogleStatusHandler, fingerprintForCapabilities, resolveGoogleCredentialBinding } from "./handlers";
+import { OAuthPendingBindingMismatch } from "@onyx/provider-neutral-credential-store-session-foundation";
 import type { GoogleServerRuntime } from "./index";
 
 const runtime = { policy: { credentialOperationsEnabled: false } } as GoogleServerRuntime;
@@ -10,6 +11,7 @@ const scopes = {
   "files.metadata.read": "https://www.googleapis.com/auth/drive.metadata.readonly",
 } as const;
 const allGrantSets = Array.from({ length: 1 << capabilities.length }, (_, mask) => capabilities.filter((_, index) => (mask & (1 << index)) !== 0)).filter((grantSet) => grantSet.length > 0);
+const mismatchError = () => new OAuthPendingBindingMismatch();
 
 const activeRuntime = (records: Record<string, unknown>, capturedBindings: Array<Record<string, unknown>> = []) => ({
   policy: { credentialOperationsEnabled: true },
@@ -39,7 +41,7 @@ const callbackRuntime = (grantedCapabilities: readonly (typeof capabilities[numb
   const mutable = active as any;
   mutable.oauthPendingStore = {
     consume: async (_state: string, candidate: Record<string, unknown>) => {
-      if (candidate.capabilityFingerprint !== expectedFingerprint) throw new Error("OAuth transaction binding mismatch");
+      if (candidate.capabilityFingerprint !== expectedFingerprint) throw mismatchError();
       return "verifier";
     },
   };
@@ -140,7 +142,7 @@ describe("Google Function route boundaries", () => {
     const active = activeRuntime({}, []);
     const mutableActive = active as any;
     mutableActive.oauthPendingStore = { consume: async (_state: string, binding: Record<string, unknown>) => {
-      if (binding.capabilityFingerprint !== "mail.messages.read") throw new Error("OAuth transaction binding mismatch");
+      if (binding.capabilityFingerprint !== "mail.messages.read") throw mismatchError();
       return "verifier";
     } } as never;
     mutableActive.oauth = { exchangeCode: async () => ({ accessToken: "access", refreshToken: "refresh", expiresInSeconds: 300, grantedScopes: ["https://www.googleapis.com/auth/gmail.readonly"] }) } as never;
@@ -149,6 +151,55 @@ describe("Google Function route boundaries", () => {
     expect(response.statusCode).toBe(302);
     expect(persistedBinding?.capabilityFingerprint).toBe("mail.messages.read");
     expect(persistedBinding?.canonicalAccountRef).toBe("account-one");
+  });
+
+  it("retries only an explicit pending-binding mismatch and keeps attempts bounded", async () => {
+    const attempts: string[] = [];
+    const active = activeRuntime({}, []);
+    const mutable = active as any;
+    mutable.oauthPendingStore = {
+      consume: async (_state: string, candidate: Record<string, unknown>) => {
+        attempts.push(String(candidate.capabilityFingerprint));
+        if (attempts.length < 2) throw mismatchError();
+        return "verifier";
+      },
+    };
+    mutable.oauth = { exchangeCode: async () => ({ accessToken: "access", refreshToken: "refresh", expiresInSeconds: 300, grantedScopes: [scopes["mail.messages.read"]] }) };
+    mutable.credentialStore.create = async () => undefined;
+    const response = await createGoogleCallbackHandler(active)({ httpMethod: "GET", queryStringParameters: { state: "state", code: "code" } });
+    expect(response.statusCode).toBe(302);
+    expect(attempts).toHaveLength(2);
+    expect(new Set(attempts).size).toBe(2);
+  });
+
+  it.each([
+    ["OAuth transaction unavailable", new Error("OAuth transaction unavailable")],
+    ["storage failure", new Error("database unavailable")],
+    ["malformed transaction", new Error("malformed transaction")],
+    ["account mismatch", new Error("account mismatch")],
+    ["session mismatch", new Error("session mismatch")],
+    ["unknown failure", new Error("unexpected failure")],
+  ])("fails fast without alternate pending-binding attempts for %s", async (_label, error) => {
+    const attempts: string[] = [];
+    const active = activeRuntime({}, []);
+    const mutable = active as any;
+    mutable.oauthPendingStore = { consume: async (_state: string, candidate: Record<string, unknown>) => { attempts.push(String(candidate.capabilityFingerprint)); throw error; } };
+    const response = await createGoogleCallbackHandler(active)({ httpMethod: "GET", queryStringParameters: { state: "state", code: "code" } });
+    expect(response.statusCode).toBe(302);
+    expect(attempts).toHaveLength(1);
+    expect(response.headers?.location).not.toContain("database unavailable");
+  });
+
+  it("bounds explicit mismatch retries when no compatible pending binding exists", async () => {
+    const attempts: string[] = [];
+    const active = activeRuntime({}, []);
+    const mutable = active as any;
+    mutable.oauthPendingStore = { consume: async (_state: string, candidate: Record<string, unknown>) => { attempts.push(String(candidate.capabilityFingerprint)); throw mismatchError(); } };
+    const response = await createGoogleCallbackHandler(active)({ httpMethod: "GET", queryStringParameters: { state: "state", code: "code" } });
+    expect(response.statusCode).toBe(302);
+    expect(attempts).toHaveLength(7);
+    expect(new Set(attempts).size).toBe(7);
+    expect(response.headers?.location).toBe("https://onyx-alpha0.netlify.app/?google_status=error-safe");
   });
 
   it("covers every grant combination with canonical, order-independent fingerprints", () => {
@@ -173,6 +224,8 @@ describe("Google Function route boundaries", () => {
       expect(persisted).toHaveLength(1);
       expect(persisted[0]).toMatchObject({ canonicalAccountRef: "account-one", capabilityFingerprint: expectedFingerprint });
       expect(persisted[0]!.capabilityFingerprint).not.toContain("write");
+      expect(response.headers?.location).toContain(grantSet.length === capabilities.length ? "google_status=connected" : "google_status=connected-partial");
+      expect(response.headers?.location).not.toContain("connected-empty");
     }
   });
 

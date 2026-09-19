@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { CredentialBinding, CredentialRecord, GatewayRequest } from "@onyx/provider-neutral-credential-store-session-foundation";
+import { OAuthPendingBindingMismatch, type CredentialBinding, type CredentialRecord, type GatewayRequest } from "@onyx/provider-neutral-credential-store-session-foundation";
 import { GOOGLE_CAPABILITIES, GOOGLE_SCOPES, type CalendarQuery, type FileQuery, type MailQuery } from "@onyx/workspace-connectors";
 import { GOOGLE_CAPABILITY_FINGERPRINT, GOOGLE_PROVIDER_ID, GOOGLE_PURPOSE, type GoogleServerRuntime } from "./index";
 
@@ -93,6 +93,7 @@ async function consumePendingOAuth(runtime: GoogleServerRuntime, state: string, 
         redirectUriFingerprint: redirectFingerprint(runtime.config.redirectUri),
       });
     } catch (error) {
+      if (!(error instanceof OAuthPendingBindingMismatch)) throw error;
       lastError = error;
     }
   }
@@ -149,7 +150,7 @@ export function createGoogleCallbackHandler(runtime: GoogleServerRuntime): Googl
       if (!token.refreshToken) throw new Error("Google reauthentication is required.");
       const capabilityFingerprint = fingerprintForCapabilities(capabilities);
       await runtime.credentialStore.create(binding(validation.context.canonicalAccountRef, capabilityFingerprint), token.refreshToken);
-      const status = capabilities.length === GOOGLE_CAPABILITIES.length ? "connected" : capabilities.length ? "connected-partial" : "connected-empty";
+      const status = capabilities.length === GOOGLE_CAPABILITIES.length ? "connected" : "connected-partial";
       return { statusCode: 302, headers: { location: `https://onyx-alpha0.netlify.app/?google_status=${status}` }, body: "" };
     } catch (error) { return { statusCode: 302, headers: { location: "https://onyx-alpha0.netlify.app/?google_status=error-safe" }, body: "" }; }
   };

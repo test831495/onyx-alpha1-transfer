@@ -41,7 +41,7 @@ describe("token broker", () => {
     });
   });
 
-  it("fails closed when refresh rejects and never uses an expired access token", async () => {
+  it("fails closed when refresh rejects and never invokes provider use", async () => {
     const store = new InMemoryCredentialStore();
     const record = store.create(binding, "refresh-token", key);
     const broker = new TokenBroker(store, key);
