@@ -40,4 +40,21 @@ describe("token broker", () => {
       return { value: accessToken, expiresInSeconds: 60 };
     });
   });
+
+  it("fails closed when refresh rejects and never uses an expired access token", async () => {
+    const store = new InMemoryCredentialStore();
+    const record = store.create(binding, "refresh-token", key);
+    const broker = new TokenBroker(store, key);
+    let used = false;
+    let refreshContext: typeof binding | undefined;
+    await expect(broker.withAccessToken({ ...binding, recordId: record.recordId, expectedVersion: 0 }, async (_refreshToken, context) => {
+      refreshContext = context;
+      throw new Error("refresh rejected");
+    }, async () => {
+      used = true;
+      return { value: "unreachable", expiresInSeconds: 60 };
+    })).rejects.toThrow("refresh rejected");
+    expect(used).toBe(false);
+    expect(refreshContext).toMatchObject({ canonicalAccountRef: "account-1", capabilityFingerprint: "cap-1" });
+  });
 });
