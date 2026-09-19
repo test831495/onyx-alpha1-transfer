@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { DatabaseConnection } from "@netlify/database";
 import { decryptCredential, encryptCredential, type CredentialEncryptionKey } from "./crypto.js";
 import { withDatabaseTransaction } from "./database.js";
-import type { PendingOAuthBinding, PendingOAuthTransaction } from "./oauth.js";
+import { OAuthPendingBindingMismatch, type PendingOAuthBinding, type PendingOAuthTransaction } from "./oauth.js";
 
 type Row = Record<string, unknown>;
 type Query = (text: string, values?: readonly unknown[]) => Promise<unknown>;
@@ -111,7 +111,7 @@ export class SqlOAuthPendingStore {
         throw new Error("OAuth transaction unavailable");
       }
       if (transaction.providerId !== binding.providerId || transaction.canonicalAccountRef !== binding.canonicalAccountRef || transaction.sessionRef !== binding.sessionRef || transaction.purpose !== binding.purpose || transaction.capabilityFingerprint !== binding.capabilityFingerprint || transaction.redirectUriFingerprint !== binding.redirectUriFingerprint) {
-        throw new Error("OAuth transaction binding mismatch");
+        throw new OAuthPendingBindingMismatch();
       }
       const verifier = decryptCredential(transaction.encryptedPkceVerifier, {
         recordId: transaction.transactionId,

@@ -12,7 +12,7 @@ import {
   createGoogleRuntimeFromEnvironment,
   createProductionAuthenticationProvider,
 // @ts-ignore
-} from "../../netlify/functions/google-runtime-entry";
+} from "../../../netlify/functions/google-runtime-entry";
 import {
   createEntraExternalIdProductionProvider,
   signSyntheticToken,
@@ -273,7 +273,9 @@ describe("Google server runtime", () => {
     expect(runtime?.authorityFactory).toBeDefined();
     const nowSec = Math.floor(Date.now() / 1000);
     const validProof = signSyntheticToken(syntheticClaims({ iat: nowSec - 10, exp: nowSec + 3600 }));
-    const verified = await runtime?.sessionGateway.validator["authority"].verify(validProof);
+    type RuntimeAuthorityInspection = { readonly validator: { readonly authority: { verify(proof: string): Promise<{ readonly canonicalAccountRef: string }> } } };
+    const inspectedGateway = runtime?.sessionGateway as unknown as RuntimeAuthorityInspection;
+    const verified = await inspectedGateway.validator.authority.verify(validProof);
     expect(verified).toBeDefined();
     expect(verified?.canonicalAccountRef).toContain("account-scope_");
   });
