@@ -1,8 +1,20 @@
 import { describe, expect, it } from "vitest";
+import { MissingDatabaseConnectionError } from "@netlify/database";
 import { classifyCredentialKeyConfiguration, parseCredentialKeyRing } from "./config.js";
-import { classifyDatabaseConfiguration, createDatabaseRuntimePolicy, readDatabaseRuntimeContext } from "./database.js";
+import { classifyDatabaseConfiguration, createConfiguredNetlifyDatabase, createDatabaseRuntimePolicy, readDatabaseRuntimeContext, type NetlifyDatabaseFactory } from "./database.js";
 
 const key = Buffer.alloc(32, 7).toString("base64url");
+const productionEnvironment = { ONYX_RUNTIME_CONTEXT: "production", ONYX_CREDENTIAL_ENCRYPTION_KEY: key, ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION: "v1" };
+const mockDatabase = {} as never;
+
+const createCapturingDatabaseFactory = (implementation: NetlifyDatabaseFactory) => {
+  const calls: Array<{ readonly connectionString?: string } | undefined> = [];
+  const databaseFactory: NetlifyDatabaseFactory = (options) => {
+    calls.push(options);
+    return implementation(options);
+  };
+  return { calls, databaseFactory };
+};
 
 describe("credential configuration and runtime isolation", () => {
   it("requires a strict 32-byte production key and version", () => {
@@ -97,5 +109,53 @@ describe("credential configuration and runtime isolation", () => {
       { ONYX_RUNTIME_CONTEXT: "production", ONYX_CREDENTIAL_ENCRYPTION_KEY: key, ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION: "v1" },
       () => { throw new Error("connection refused"); },
     )).toBe("DATABASE_CONNECTION_INITIALIZATION_FAILED");
+  });
+
+  it("prefers automatic Netlify database metadata before any production fallback", () => {
+    const { calls, databaseFactory } = createCapturingDatabaseFactory(() => mockDatabase);
+    const database = createConfiguredNetlifyDatabase({ ...productionEnvironment, ONYX_DATABASE_CONNECTION_STRING: "synthetic-owner-managed-production-connection-value" }, { databaseFactory });
+    expect(database).toBe(mockDatabase);
+    expect(calls).toEqual([undefined]);
+  });
+
+  it("uses ONYX_DATABASE_CONNECTION_STRING only after MissingDatabaseConnectionError in production", () => {
+    const connectionString = "synthetic-owner-managed-production-connection-value";
+    const { calls, databaseFactory } = createCapturingDatabaseFactory((options) => {
+      if (!options) throw new MissingDatabaseConnectionError();
+      return mockDatabase;
+    });
+    const database = createConfiguredNetlifyDatabase({ ...productionEnvironment, ONYX_DATABASE_CONNECTION_STRING: connectionString }, { databaseFactory });
+    expect(database).toBe(mockDatabase);
+    expect(calls).toEqual([undefined, { connectionString }]);
+  });
+
+  it("fails closed when automatic metadata and the production fallback secret are missing or blank", () => {
+    for (const fallback of [undefined, "", "   "]) {
+      const { calls, databaseFactory } = createCapturingDatabaseFactory(() => { throw new MissingDatabaseConnectionError(); });
+      expect(() => createConfiguredNetlifyDatabase({ ...productionEnvironment, ONYX_DATABASE_CONNECTION_STRING: fallback }, { databaseFactory })).toThrow(MissingDatabaseConnectionError);
+      expect(calls).toEqual([undefined]);
+    }
+  });
+
+  it("does not use the production fallback for generic database construction errors", () => {
+    const genericError = new Error("generic construction failed");
+    const { calls, databaseFactory } = createCapturingDatabaseFactory(() => { throw genericError; });
+    expect(() => createConfiguredNetlifyDatabase({ ...productionEnvironment, ONYX_DATABASE_CONNECTION_STRING: "synthetic-owner-managed-production-connection-value" }, { databaseFactory })).toThrow(genericError);
+    expect(calls).toEqual([undefined]);
+  });
+
+  it("forbids the production fallback outside production while preserving the test-only override", () => {
+    const connectionString = "synthetic-owner-managed-production-connection-value";
+    const previewFactory = createCapturingDatabaseFactory(() => { throw new MissingDatabaseConnectionError(); });
+    expect(() => createConfiguredNetlifyDatabase({ ONYX_RUNTIME_CONTEXT: "deploy-preview", ONYX_DATABASE_CONNECTION_STRING: connectionString }, { databaseFactory: previewFactory.databaseFactory })).toThrow("disabled");
+    expect(previewFactory.calls).toEqual([]);
+
+    const explicitProductionFactory = createCapturingDatabaseFactory(() => mockDatabase);
+    expect(() => createConfiguredNetlifyDatabase(productionEnvironment, { connectionString, testOnly: true, databaseFactory: explicitProductionFactory.databaseFactory })).toThrow("test-only");
+    expect(explicitProductionFactory.calls).toEqual([]);
+
+    const testFactory = createCapturingDatabaseFactory(() => mockDatabase);
+    expect(createConfiguredNetlifyDatabase({ ONYX_RUNTIME_CONTEXT: "test" }, { connectionString, testOnly: true, databaseFactory: testFactory.databaseFactory })).toBe(mockDatabase);
+    expect(testFactory.calls).toEqual([{ connectionString }]);
   });
 });
