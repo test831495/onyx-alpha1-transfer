@@ -63,6 +63,49 @@ export type CanonicalRuntimeClassification =
   | "GOOGLE_RUNTIME_INITIALIZATION_FAILED"
   | "GOOGLE_RUNTIME_READY";
 
+export type GoogleDatabaseInitializationFailureReason =
+  | "NETLIFY_DATABASE_CONNECTION_METADATA_MISSING"
+  | "NETLIFY_DATABASE_CLIENT_INITIALIZATION_FAILED"
+  | "NETLIFY_DATABASE_RUNTIME_UNAVAILABLE"
+  | "GOOGLE_CANONICAL_RUNTIME_DATABASE_FAILURE";
+
+type BoundedDatabaseErrorName = "MissingDatabaseConnectionError" | "Error" | "UnknownError";
+
+type GoogleDatabaseInitializationFailureBoundary = "client-construction" | "runtime-integration" | "canonical-runtime";
+
+const boundedDatabaseErrorName = (error: unknown): BoundedDatabaseErrorName => {
+  if (typeof error === "object" && error !== null && "name" in error && error.name === "MissingDatabaseConnectionError") {
+    return "MissingDatabaseConnectionError";
+  }
+  if (error instanceof Error && error.name === "MissingDatabaseConnectionError") return "MissingDatabaseConnectionError";
+  if (error instanceof Error) return "Error";
+  return "UnknownError";
+};
+
+export const classifyGoogleDatabaseInitializationFailure = (
+  error: unknown,
+  boundary: GoogleDatabaseInitializationFailureBoundary = "client-construction",
+): GoogleDatabaseInitializationFailureReason => {
+  if (boundary === "canonical-runtime") return "GOOGLE_CANONICAL_RUNTIME_DATABASE_FAILURE";
+  if (boundedDatabaseErrorName(error) === "MissingDatabaseConnectionError") {
+    return "NETLIFY_DATABASE_CONNECTION_METADATA_MISSING";
+  }
+  if (boundary === "runtime-integration") return "NETLIFY_DATABASE_RUNTIME_UNAVAILABLE";
+  return "NETLIFY_DATABASE_CLIENT_INITIALIZATION_FAILED";
+};
+
+export const buildGoogleDatabaseInitializationFailureDiagnostic = (
+  error: unknown,
+  boundary: GoogleDatabaseInitializationFailureBoundary = "client-construction",
+): { readonly reasonCode: GoogleDatabaseInitializationFailureReason; readonly errorName: BoundedDatabaseErrorName } => ({
+  reasonCode: classifyGoogleDatabaseInitializationFailure(error, boundary),
+  errorName: boundedDatabaseErrorName(error),
+});
+
+const logGoogleDatabaseInitializationFailure = (_reasonCode: GoogleDatabaseInitializationFailureReason, error: unknown): void => {
+  console.error("[GOOGLE_DATABASE_INIT]", buildGoogleDatabaseInitializationFailureDiagnostic(error));
+};
+
 // Bounded, non-throwing classification. Never logs the issuer, audience, JWKS data, scope salt, or key material.
 export function classifyAuthenticationProviderConfiguration(
   environment: Record<string, string | undefined>,
@@ -323,10 +366,25 @@ export function createGoogleRuntimeFromEnvironment(
     return undefined;
   }
 
+  let keyRing: ReturnType<typeof parseCredentialKeyRing>;
   try {
-    const keyRing = parseCredentialKeyRing(environment, "production");
-    const database = options.database ?? createConfiguredNetlifyDatabase(environment);
+    keyRing = parseCredentialKeyRing(environment, "production");
+  } catch (error) {
+    logGoogleRuntimeInitializationFailure(environment, "CREDENTIAL_KEY_CONFIGURATION_INVALID", error, options);
+    return undefined;
+  }
 
+  let database: DatabaseConnection;
+  try {
+    database = options.database ?? createConfiguredNetlifyDatabase(environment);
+  } catch (error) {
+    const reasonCode = classifyGoogleDatabaseInitializationFailure(error);
+    logGoogleDatabaseInitializationFailure(reasonCode, error);
+    logGoogleRuntimeInitializationFailure(environment, "DATABASE_CONFIGURATION_UNAVAILABLE", undefined, options);
+    return undefined;
+  }
+
+  try {
     return createGoogleServerRuntimeWithCanonicalAuthority({
       database,
       authenticationProvider,
@@ -336,15 +394,6 @@ export function createGoogleRuntimeFromEnvironment(
       environment,
     });
   } catch (error) {
-    if (error instanceof Error && /credential.*key|encoded|required|version/i.test(error.message)) {
-      logGoogleRuntimeInitializationFailure(environment, "CREDENTIAL_KEY_CONFIGURATION_INVALID", error, options);
-      return undefined;
-    }
-    if (error instanceof Error && /database|connection|runtime context|getDatabase/i.test(error.message)) {
-      logGoogleRuntimeInitializationFailure(environment, "DATABASE_CONFIGURATION_UNAVAILABLE", error, options);
-      return undefined;
-    }
-
     logGoogleRuntimeInitializationFailure(environment, "CANONICAL_AUTHORITY_INITIALIZATION_FAILED", error, {
       ...options,
       canonicalRuntimeClassification: classifyCanonicalRuntimeFailure(error),
