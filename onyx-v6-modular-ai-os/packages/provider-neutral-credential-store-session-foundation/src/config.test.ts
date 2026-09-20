@@ -19,6 +19,20 @@ describe("credential configuration and runtime isolation", () => {
     expect(readDatabaseRuntimeContext({})).toBe("unknown");
   });
 
+  it("recognizes production via the explicit ONYX_RUNTIME_CONTEXT override when CONTEXT is unavailable to Functions", () => {
+    // Reproduces production evidence: Netlify Functions runtime does not expose the build-scope CONTEXT variable.
+    expect(readDatabaseRuntimeContext({ ONYX_RUNTIME_CONTEXT: "production" })).toBe("production");
+    expect(readDatabaseRuntimeContext({ ONYX_RUNTIME_CONTEXT: "deploy-preview" })).toBe("deploy-preview");
+    expect(readDatabaseRuntimeContext({ ONYX_RUNTIME_CONTEXT: "branch-deploy" })).toBe("branch-deploy");
+    expect(readDatabaseRuntimeContext({ CONTEXT: undefined, NODE_ENV: "production" })).toBe("unknown");
+  });
+
+  it("prefers ONYX_RUNTIME_CONTEXT over CONTEXT and still rejects unknown/unsupported values", () => {
+    expect(readDatabaseRuntimeContext({ ONYX_RUNTIME_CONTEXT: "production", CONTEXT: "deploy-preview" })).toBe("production");
+    expect(readDatabaseRuntimeContext({ ONYX_RUNTIME_CONTEXT: "bogus" })).toBe("unknown");
+    expect(() => createDatabaseRuntimePolicy(readDatabaseRuntimeContext({}), false)).toThrow("Unknown");
+  });
+
   it("allows explicit connection injection only for test context", () => {
     expect(() => createDatabaseRuntimePolicy("deploy-preview", false, true)).toThrow("connection");
     expect(() => createDatabaseRuntimePolicy("local", false, true)).toThrow("connection");

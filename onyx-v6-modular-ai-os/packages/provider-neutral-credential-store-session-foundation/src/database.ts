@@ -11,7 +11,9 @@ export type DatabaseRuntimePolicy = {
 };
 
 export function readDatabaseRuntimeContext(environment: Record<string, string | undefined>): DatabaseRuntimeContext {
-  switch (environment.CONTEXT) {
+  // Netlify's system `CONTEXT` variable is build-scope only and is not guaranteed to reach
+  // the Functions runtime, so an explicit user-configured override takes precedence when present.
+  switch (environment.ONYX_RUNTIME_CONTEXT ?? environment.CONTEXT) {
     case "production": return "production";
     case "deploy-preview": return "deploy-preview";
     case "branch-deploy": return "branch-deploy";
