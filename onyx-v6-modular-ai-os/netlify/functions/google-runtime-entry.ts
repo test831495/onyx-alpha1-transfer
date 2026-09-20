@@ -109,7 +109,50 @@ export function createGoogleRuntimeFromEnvironment(
       encryptionKey: keyRing.active ?? { version: "production-v1", bytes: new Uint8Array(32) },
       environment,
     });
-  } catch {
+  } 
+  //catch {
+   // return undefined;
+ // }
+//}
+
+
+ catch (error) {
+    console.error("[GOOGLE_RUNTIME_INIT] Runtime initialization failed", {
+      errorName:
+        error instanceof Error ? error.name : "UnknownError",
+      errorMessage:
+        error instanceof Error ? error.message : String(error),
+      stack:
+        error instanceof Error ? error.stack : undefined,
+
+      diagnostics: {
+        hasGoogleClientId: Boolean(environment.ONYX_GOOGLE_CLIENT_ID),
+        hasGoogleClientSecret: Boolean(environment.ONYX_GOOGLE_CLIENT_SECRET),
+        hasGoogleRedirectUri: Boolean(environment.ONYX_GOOGLE_REDIRECT_URI),
+
+        hasAuthIssuer: Boolean(
+          environment.ONYX_AUTH_ISSUER ??
+          environment.ONYX_AUTH_EXPECTED_ISSUER,
+        ),
+
+        hasAuthAudience: Boolean(
+          environment.ONYX_AUTH_AUDIENCE ??
+          environment.ONYX_AUTH_EXPECTED_AUDIENCE,
+        ),
+
+        hasCredentialKey: Boolean(
+          environment.ONYX_CREDENTIAL_ENCRYPTION_KEY,
+        ),
+
+        hasCredentialKeyVersion: Boolean(
+          environment.ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION,
+        ),
+
+        netlifyContext: environment.CONTEXT,
+        nodeEnv: environment.NODE_ENV,
+      },
+    });
+
     return undefined;
   }
 }
