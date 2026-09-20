@@ -22,10 +22,9 @@ import {
   parseCredentialKeyRing,
   readDatabaseRuntimeContext,
   type CredentialKeyClassification,
-  type DatabaseConfigurationClassification,
 } from "@onyx/provider-neutral-credential-store-session-foundation";
 // @ts-ignore
-import type { DatabaseConnection } from "@netlify/database";
+import { getConnectionString, MissingDatabaseConnectionError, type DatabaseConnection } from "@netlify/database";
 import {
   createEntraExternalIdProductionProvider,
   type AuthenticatedRequestContext,
@@ -69,9 +68,15 @@ export type GoogleDatabaseInitializationFailureReason =
   | "NETLIFY_DATABASE_RUNTIME_UNAVAILABLE"
   | "GOOGLE_CANONICAL_RUNTIME_DATABASE_FAILURE";
 
+export type GoogleDatabaseRuntimeMetadataDiagnostic = {
+  readonly hasConnectionString: boolean;
+  readonly connectionStringLength: number;
+};
+
 type BoundedDatabaseErrorName = "MissingDatabaseConnectionError" | "Error" | "UnknownError";
 
 type GoogleDatabaseInitializationFailureBoundary = "client-construction" | "runtime-integration" | "canonical-runtime";
+type DatabaseConfigurationClassification = ReturnType<typeof classifyDatabaseConfiguration>;
 
 const boundedDatabaseErrorName = (error: unknown): BoundedDatabaseErrorName => {
   if (typeof error === "object" && error !== null && "name" in error && error.name === "MissingDatabaseConnectionError") {
@@ -105,6 +110,35 @@ export const buildGoogleDatabaseInitializationFailureDiagnostic = (
 const logGoogleDatabaseInitializationFailure = (_reasonCode: GoogleDatabaseInitializationFailureReason, error: unknown): void => {
   console.error("[GOOGLE_DATABASE_INIT]", buildGoogleDatabaseInitializationFailureDiagnostic(error));
 };
+
+export const buildGoogleDatabaseRuntimeMetadataDiagnostic = (
+  readConnectionString: () => string | undefined = getConnectionString,
+): GoogleDatabaseRuntimeMetadataDiagnostic => {
+  try {
+    const connectionString = readConnectionString();
+    return {
+      hasConnectionString: Boolean(connectionString),
+      connectionStringLength: connectionString?.length ?? 0,
+    };
+  } catch (error) {
+    if (error instanceof MissingDatabaseConnectionError || boundedDatabaseErrorName(error) === "MissingDatabaseConnectionError") {
+      return { hasConnectionString: false, connectionStringLength: 0 };
+    }
+    throw error;
+  }
+};
+
+export const googleDatabaseRuntimeMetadataDiagnosticHandler: GoogleFunctionHandler = async (): Promise<GoogleFunctionResponse> => {
+  const diagnostic = buildGoogleDatabaseRuntimeMetadataDiagnostic();
+  console.error(diagnostic);
+  return {
+    statusCode: 200,
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ status: "LOGGED" }),
+  };
+};
+
+export const handler = googleDatabaseRuntimeMetadataDiagnosticHandler;
 
 // Bounded, non-throwing classification. Never logs the issuer, audience, JWKS data, scope salt, or key material.
 export function classifyAuthenticationProviderConfiguration(
@@ -371,6 +405,10 @@ export function createGoogleRuntimeFromEnvironment(
     keyRing = parseCredentialKeyRing(environment, "production");
   } catch (error) {
     logGoogleRuntimeInitializationFailure(environment, "CREDENTIAL_KEY_CONFIGURATION_INVALID", error, options);
+    return undefined;
+  }
+  if (!keyRing.active) {
+    logGoogleRuntimeInitializationFailure(environment, "CREDENTIAL_KEY_CONFIGURATION_INVALID", undefined, options);
     return undefined;
   }
 

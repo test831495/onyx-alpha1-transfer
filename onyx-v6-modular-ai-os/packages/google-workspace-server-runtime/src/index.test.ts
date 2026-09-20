@@ -11,6 +11,7 @@ import {
 } from "./index";
 import {
   buildGoogleDatabaseInitializationFailureDiagnostic,
+  buildGoogleDatabaseRuntimeMetadataDiagnostic,
   classifyAuthenticationProviderConfiguration,
   classifyGoogleDatabaseInitializationFailure,
   classifyGoogleOAuthConfiguration,
@@ -18,6 +19,7 @@ import {
   createGoogleRuntimeFromEnvironment,
   createProductionAuthenticationProvider,
   getGoogleRuntimePreflight,
+  googleDatabaseRuntimeMetadataDiagnosticHandler,
 // @ts-ignore
 } from "../../../netlify/functions/google-runtime-entry";
 import {
@@ -31,7 +33,7 @@ import {
   SyntheticHmacTokenVerifier,
   type AuthenticationProvider,
 } from "@onyx/account-authentication-server-authority";
-import type { DatabaseConnection } from "@netlify/database";
+import { MissingDatabaseConnectionError, type DatabaseConnection } from "@netlify/database";
 
 const environment = {
   CONTEXT: "test",
@@ -533,6 +535,38 @@ describe("Google server runtime", () => {
     expect(GOOGLE_OAUTH_SCOPES.every((scope) => !/write|modify|full|compose|send/i.test(scope))).toBe(true);
 
     successConsoleSpy.mockRestore();
+  });
+
+  it("logs only bounded database runtime metadata for the temporary diagnostic endpoint", async () => {
+    const connectionString = "postgres://user:password@db.internal.example:5432/onyx";
+    expect(buildGoogleDatabaseRuntimeMetadataDiagnostic(() => connectionString)).toEqual({
+      hasConnectionString: true,
+      connectionStringLength: connectionString.length,
+    });
+    expect(buildGoogleDatabaseRuntimeMetadataDiagnostic(() => undefined)).toEqual({
+      hasConnectionString: false,
+      connectionStringLength: 0,
+    });
+    expect(buildGoogleDatabaseRuntimeMetadataDiagnostic(() => {
+      throw new MissingDatabaseConnectionError();
+    })).toEqual({
+      hasConnectionString: false,
+      connectionStringLength: 0,
+    });
+
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const response = await googleDatabaseRuntimeMetadataDiagnosticHandler({ httpMethod: "GET", headers: {} });
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toEqual({ status: "LOGGED" });
+    expect(consoleSpy).toHaveBeenCalledWith({ hasConnectionString: false, connectionStringLength: 0 });
+
+    const logged = JSON.stringify(consoleSpy.mock.calls);
+    expect(logged).not.toContain(connectionString);
+    expect(response.body).not.toContain(connectionString);
+    expect(logged).not.toContain("postgres://");
+    expect(response.body).not.toContain("postgres://");
+    consoleSpy.mockRestore();
   });
 
   it("A. recognizes production via ONYX_RUNTIME_CONTEXT when CONTEXT is unavailable to the Functions runtime", () => {
