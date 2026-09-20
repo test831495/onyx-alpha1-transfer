@@ -55,6 +55,35 @@ export function createTestNetlifyDatabase(connectionString: string): DatabaseCon
   return createApprovedNetlifyDatabase({ context: "test", hasProductionKey: false, connectionString, testOnly: true });
 }
 
+export type DatabaseConfigurationClassification =
+  | "DATABASE_CONFIGURATION_AVAILABLE"
+  | "DATABASE_CONFIGURATION_UNAVAILABLE"
+  | "DATABASE_CONNECTION_INITIALIZATION_FAILED";
+
+// Bounded, non-throwing classification. Never logs a connection string, hostname, credential, or pool
+// configuration; distinguishes a policy-level gap from an actual connection construction failure.
+export function classifyDatabaseConfiguration(
+  environment: Record<string, string | undefined>,
+  attemptConnection?: () => DatabaseConnection,
+): DatabaseConfigurationClassification {
+  let policy: DatabaseRuntimePolicy;
+  try {
+    const context = readDatabaseRuntimeContext(environment);
+    const keyRing = parseCredentialKeyRing(environment, context);
+    policy = createDatabaseRuntimePolicy(context, keyRing.active !== undefined);
+  } catch {
+    return "DATABASE_CONFIGURATION_UNAVAILABLE";
+  }
+  if (!policy.databaseAccessEnabled) return "DATABASE_CONFIGURATION_UNAVAILABLE";
+  if (!attemptConnection) return "DATABASE_CONFIGURATION_AVAILABLE";
+  try {
+    attemptConnection();
+    return "DATABASE_CONFIGURATION_AVAILABLE";
+  } catch {
+    return "DATABASE_CONNECTION_INITIALIZATION_FAILED";
+  }
+}
+
 export function createConfiguredNetlifyDatabase(environment: Record<string, string | undefined> = process.env, options: Omit<DatabaseRuntimeOptions, "context" | "hasProductionKey"> = {}): DatabaseConnection {
   const context = readDatabaseRuntimeContext(environment);
   const keyRing = parseCredentialKeyRing(environment, context);

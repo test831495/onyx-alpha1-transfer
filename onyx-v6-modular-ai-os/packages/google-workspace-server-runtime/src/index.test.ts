@@ -6,12 +6,16 @@ import {
   createGoogleOAuthTransport,
   createGoogleServerRuntime,
   createGoogleStatusHandler,
+  GOOGLE_OAUTH_SCOPES,
   readGoogleServerConfig,
 } from "./index";
 import {
+  classifyAuthenticationProviderConfiguration,
+  classifyGoogleOAuthConfiguration,
   createGoogleRouteHandler,
   createGoogleRuntimeFromEnvironment,
   createProductionAuthenticationProvider,
+  getGoogleRuntimePreflight,
 // @ts-ignore
 } from "../../../netlify/functions/google-runtime-entry";
 import {
@@ -526,6 +530,73 @@ describe("Google server runtime", () => {
     const runtime = createGoogleRuntimeFromEnvironment(completeEnvironment, { database: createMockDatabase() });
     expect(runtime).toBeDefined();
     expect(runtime?.runtimeKind).toBe("ACTIVE_PRODUCTION_RUNTIME");
+
+    consoleSpy.mockRestore();
+  });
+
+  it("classifies authentication provider configuration for every bounded outcome without logging issuer, audience, JWKS, or scope salt", () => {
+    expect(classifyAuthenticationProviderConfiguration({})).toBe("AUTH_ISSUER_MISSING");
+    expect(classifyAuthenticationProviderConfiguration({ ONYX_AUTH_ISSUER: issuerUrl })).toBe("AUTH_AUDIENCE_MISSING");
+    expect(classifyAuthenticationProviderConfiguration({ ONYX_AUTH_ISSUER: issuerUrl, ONYX_AUTH_AUDIENCE: audienceUri, ONYX_AUTH_JWKS_KEYS: "{not json" })).toBe("AUTH_JWKS_JSON_INVALID");
+    expect(classifyAuthenticationProviderConfiguration({ ONYX_AUTH_ISSUER: issuerUrl, ONYX_AUTH_AUDIENCE: audienceUri, ONYX_AUTH_SCOPE_SALT: "too-short" })).toBe("AUTH_PROVIDER_INITIALIZATION_FAILED");
+    expect(classifyAuthenticationProviderConfiguration({
+      ONYX_AUTH_ISSUER: issuerUrl,
+      ONYX_AUTH_AUDIENCE: audienceUri,
+      ONYX_AUTH_JWKS_KEYS: JSON.stringify([rsaJwk]),
+      ONYX_AUTH_SCOPE_SALT: "onyx-production-scope-salt-v1",
+    })).toBe("AUTH_PROVIDER_AVAILABLE");
+    expect(classifyAuthenticationProviderConfiguration({}, createTestAuthenticationProvider())).toBe("AUTH_PROVIDER_AVAILABLE");
+  });
+
+  it("classifies Google OAuth configuration for every bounded outcome without logging client ID, secret, or redirect URI", () => {
+    expect(classifyGoogleOAuthConfiguration({})).toBe("GOOGLE_CLIENT_ID_MISSING");
+    expect(classifyGoogleOAuthConfiguration({ ONYX_GOOGLE_CLIENT_ID: "id" })).toBe("GOOGLE_CLIENT_SECRET_MISSING");
+    expect(classifyGoogleOAuthConfiguration({ ONYX_GOOGLE_CLIENT_ID: "id", ONYX_GOOGLE_CLIENT_SECRET: "secret" })).toBe("GOOGLE_REDIRECT_URI_MISSING");
+    expect(classifyGoogleOAuthConfiguration({ ONYX_GOOGLE_CLIENT_ID: "id", ONYX_GOOGLE_CLIENT_SECRET: "secret", ONYX_GOOGLE_REDIRECT_URI: "not-a-url" })).toBe("GOOGLE_REDIRECT_URI_INVALID");
+    expect(classifyGoogleOAuthConfiguration({ ONYX_GOOGLE_CLIENT_ID: "id", ONYX_GOOGLE_CLIENT_SECRET: "secret", ONYX_GOOGLE_REDIRECT_URI: "http://insecure.example/callback" })).toBe("GOOGLE_REDIRECT_URI_INVALID");
+    expect(classifyGoogleOAuthConfiguration({ ONYX_GOOGLE_CLIENT_ID: "id", ONYX_GOOGLE_CLIENT_SECRET: "secret", ONYX_GOOGLE_REDIRECT_URI: environment.ONYX_GOOGLE_REDIRECT_URI })).toBe("GOOGLE_OAUTH_CONFIGURATION_AVAILABLE");
+  });
+
+  it("reports a bounded, secret-free preflight result that only reports ready once every prerequisite is satisfied", () => {
+    const incompletePreflight = getGoogleRuntimePreflight({});
+    expect(incompletePreflight.ready).toBe(false);
+    expect(incompletePreflight.runtimeContext).toBe("unknown");
+
+    const completeEnvironment = {
+      ...prodEnvironment,
+      ONYX_AUTH_ISSUER: issuerUrl,
+      ONYX_AUTH_AUDIENCE: audienceUri,
+      ONYX_AUTH_JWKS_KEYS: JSON.stringify([rsaJwk]),
+      ONYX_AUTH_SCOPE_SALT: "onyx-production-scope-salt-v1",
+    };
+    const readyPreflight = getGoogleRuntimePreflight(completeEnvironment);
+    expect(readyPreflight.ready).toBe(true);
+    expect(readyPreflight.reasonCode).toBe("GOOGLE_RUNTIME_READY");
+    expect(readyPreflight.diagnostics.credentialKeyClassification).toBe("CREDENTIAL_KEY_CONFIGURATION_VALID");
+
+    const serialized = JSON.stringify([incompletePreflight, readyPreflight]);
+    expect(serialized).not.toContain(productionKey);
+    expect(serialized).not.toContain("synthetic-client-secret");
+  });
+
+  it("never returns secrets or raw errors to the browser and keeps Google connectors read-only", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const secretEnvironment = { ...prodEnvironment, ONYX_GOOGLE_CLIENT_SECRET: "super-secret-client-secret-value", ONYX_CREDENTIAL_ENCRYPTION_KEY: "super-secret-key-value" };
+
+    const route = createGoogleRouteHandler(createGoogleStatusHandler, secretEnvironment);
+    const response = await route({ httpMethod: "GET", headers: {} });
+    expect(response.statusCode).toBe(503);
+    expect(JSON.parse(response.body)).toEqual({ status: "UNAVAILABLE", message: "Google Workspace is not active in this environment." });
+    expect(response.body).not.toContain("super-secret-client-secret-value");
+    expect(response.body).not.toContain("super-secret-key-value");
+
+    expect(GOOGLE_OAUTH_SCOPES).toEqual([
+      "openid",
+      "https://www.googleapis.com/auth/calendar.events.readonly",
+      "https://www.googleapis.com/auth/gmail.readonly",
+      "https://www.googleapis.com/auth/drive.metadata.readonly",
+    ]);
+    expect(GOOGLE_OAUTH_SCOPES.every((scope) => !/write|modify|full|compose|send/i.test(scope))).toBe(true);
 
     consoleSpy.mockRestore();
   });
