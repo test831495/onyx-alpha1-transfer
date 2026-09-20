@@ -15,6 +15,9 @@ export type MicrosoftTenantPolicyInput = {
   readonly accountKind: MicrosoftAccountKind;
 };
 
+// Authority selectors (not concrete tenant IDs) that MSAL/Entra accept in the authority URL.
+const MICROSOFT_AUTHORITY_SELECTORS = new Set(["common", "organizations", "consumers"]);
+
 // `common`/`organizations`/`consumers` only select the sign-in authority surface; they are
 // never treated as proof that a specific tenant is authorized. Authority selection and
 // tenant eligibility are evaluated independently.
@@ -35,7 +38,7 @@ export function deriveMicrosoftAccountKind(claims: { readonly acct?: unknown; re
   if (claims.isGuest === true) return "GUEST";
   const isOrganizational = acct === 1 || acct === "1" || typeof claims.tid === "string";
   if (isOrganizational) {
-    if (homeTenantId && typeof claims.tid === "string" && claims.tid !== homeTenantId && homeTenantId !== "common") return "GUEST";
+    if (homeTenantId && !MICROSOFT_AUTHORITY_SELECTORS.has(homeTenantId) && typeof claims.tid === "string" && claims.tid !== homeTenantId) return "GUEST";
     return "ORGANIZATIONAL";
   }
   return "UNKNOWN";

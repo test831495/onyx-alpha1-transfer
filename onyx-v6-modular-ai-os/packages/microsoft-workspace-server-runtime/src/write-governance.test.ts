@@ -44,6 +44,10 @@ describe("Microsoft write-execution governance", () => {
     expect(evaluateMicrosoftWriteExecution(baseRequest, { ...baseApproval, expiresAt: "2025-12-31T00:00:00.000Z" })).toEqual({ allowed: false, reason: "APPROVAL_EXPIRED" });
   });
 
+  it("fails closed when the approval expiresAt timestamp is malformed rather than treating it as non-expired", () => {
+    expect(evaluateMicrosoftWriteExecution(baseRequest, { ...baseApproval, expiresAt: "not-a-timestamp" })).toEqual({ allowed: false, reason: "APPROVAL_EXPIRED" });
+  });
+
   it("denies a replayed (already consumed) approval", () => {
     expect(evaluateMicrosoftWriteExecution(baseRequest, { ...baseApproval, consumedAt: "2026-01-01T00:00:00.000Z" })).toEqual({ allowed: false, reason: "APPROVAL_REPLAYED" });
   });

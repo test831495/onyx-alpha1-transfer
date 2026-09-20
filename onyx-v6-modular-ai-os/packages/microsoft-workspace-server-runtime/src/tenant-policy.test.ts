@@ -32,6 +32,12 @@ describe("Microsoft tenant and account policy", () => {
     expect(deriveMicrosoftAccountKind({})).toBe("UNKNOWN");
   });
 
+  it("does not misclassify organizations/consumers authority selectors as a guest tenant", () => {
+    expect(deriveMicrosoftAccountKind({ acct: 1, tid: "tenant-1" }, "organizations")).toBe("ORGANIZATIONAL");
+    expect(deriveMicrosoftAccountKind({ acct: 1, tid: "tenant-1" }, "consumers")).toBe("ORGANIZATIONAL");
+    expect(deriveMicrosoftAccountKind({ acct: 1, tid: "tenant-1" }, "common")).toBe("ORGANIZATIONAL");
+  });
+
   it("restricts SharePoint for personal accounts regardless of scope grant", () => {
     expect(projectMicrosoftSharePointPolicy("PERSONAL", "ELIGIBLE")).toBe("SHAREPOINT_NOT_APPLICABLE_PERSONAL_ACCOUNT");
   });

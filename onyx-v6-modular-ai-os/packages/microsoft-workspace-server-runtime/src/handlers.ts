@@ -160,7 +160,11 @@ export async function disconnectMicrosoftAccount(runtime: MicrosoftServerRuntime
   for (const capability of MICROSOFT_READ_CAPABILITIES) {
     const resolved = await resolveMicrosoftCredentialBinding(runtime, account, tenantId, capability);
     if (resolved && !tombstoned.has(resolved.record.recordId)) {
-      await runtime.credentialStore.delete(resolved.record.recordId, resolved.binding);
+      try {
+        await runtime.credentialStore.delete(resolved.record.recordId, resolved.binding);
+      } catch {
+        throw new Error("Microsoft credential storage is unavailable.");
+      }
       tombstoned.add(resolved.record.recordId);
     }
   }

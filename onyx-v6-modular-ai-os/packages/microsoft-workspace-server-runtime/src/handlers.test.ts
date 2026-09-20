@@ -192,4 +192,15 @@ describe("Microsoft disconnect foundation", () => {
     expect(second.status).toBe("DISCONNECTED");
     expect(second.tombstoned).toEqual([]);
   });
+
+  it("sanitizes a raw storage error thrown by credentialStore.delete instead of propagating it", async () => {
+    const runtime = {
+      policy: { credentialOperationsEnabled: true },
+      credentialStore: {
+        findActive: async (binding: Record<string, unknown>) => ({ ...binding, recordId: "full-record", state: "ACTIVE" }),
+        delete: async () => { throw new Error("connection string password=hunter2 unreachable"); },
+      },
+    } as unknown as MicrosoftServerRuntime;
+    await expect(disconnectMicrosoftAccount(runtime, "account-1", "tenant-1")).rejects.toThrow("Microsoft credential storage is unavailable.");
+  });
 });

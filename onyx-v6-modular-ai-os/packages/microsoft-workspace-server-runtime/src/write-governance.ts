@@ -51,7 +51,8 @@ export function evaluateMicrosoftWriteExecution(request: MicrosoftWriteExecution
   if (!request.policyAvailable) return { allowed: false, reason: "POLICY_UNAVAILABLE" };
   if (!approval) return { allowed: false, reason: "APPROVAL_ABSENT" };
   if (approval.consumedAt) return { allowed: false, reason: "APPROVAL_REPLAYED" };
-  if (new Date(approval.expiresAt).getTime() <= request.now) return { allowed: false, reason: "APPROVAL_EXPIRED" };
+  const expiresAtMs = new Date(approval.expiresAt).getTime();
+  if (Number.isNaN(expiresAtMs) || expiresAtMs <= request.now) return { allowed: false, reason: "APPROVAL_EXPIRED" };
   if (approval.canonicalAccountRef !== request.canonicalAccountRef) return { allowed: false, reason: "APPROVAL_ACCOUNT_MISMATCH" };
   if (approval.tenantId !== request.tenantId) return { allowed: false, reason: "APPROVAL_TENANT_MISMATCH" };
   if (approval.sessionRef !== request.sessionRef) return { allowed: false, reason: "APPROVAL_SESSION_MISMATCH" };
