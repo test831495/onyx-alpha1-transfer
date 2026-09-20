@@ -10,7 +10,9 @@ import {
   readGoogleServerConfig,
 } from "./index";
 import {
+  buildGoogleDatabaseInitializationFailureDiagnostic,
   classifyAuthenticationProviderConfiguration,
+  classifyGoogleDatabaseInitializationFailure,
   classifyGoogleOAuthConfiguration,
   createGoogleRouteHandler,
   createGoogleRuntimeFromEnvironment,
@@ -445,6 +447,92 @@ describe("Google server runtime", () => {
     expect(logged).not.toContain("stack");
 
     consoleSpy.mockRestore();
+  });
+
+  it("classifies Google database initialization failures with closed, secret-safe diagnostics", async () => {
+    const connectionString = "postgres://user:password@db.internal.example:5432/onyx";
+    const credentialKey = "database-test-secret-credential-key";
+    const oauthSecret = "database-test-oauth-secret";
+    const missingDatabaseConnection = new Error("Netlify database metadata unavailable");
+    missingDatabaseConnection.name = "MissingDatabaseConnectionError";
+    const genericConstructionFailure = new Error(`${connectionString} ${credentialKey} ${oauthSecret}`);
+
+    expect(classifyGoogleDatabaseInitializationFailure(missingDatabaseConnection)).toBe("NETLIFY_DATABASE_CONNECTION_METADATA_MISSING");
+    expect(classifyGoogleDatabaseInitializationFailure({ name: "MissingDatabaseConnectionError" })).toBe("NETLIFY_DATABASE_CONNECTION_METADATA_MISSING");
+    expect(classifyGoogleDatabaseInitializationFailure(genericConstructionFailure)).toBe("NETLIFY_DATABASE_CLIENT_INITIALIZATION_FAILED");
+    expect(classifyGoogleDatabaseInitializationFailure(genericConstructionFailure, "runtime-integration")).toBe("NETLIFY_DATABASE_RUNTIME_UNAVAILABLE");
+    expect(classifyGoogleDatabaseInitializationFailure(genericConstructionFailure, "canonical-runtime")).toBe("GOOGLE_CANONICAL_RUNTIME_DATABASE_FAILURE");
+
+    const genericDiagnostic = buildGoogleDatabaseInitializationFailureDiagnostic(genericConstructionFailure);
+    const arbitraryThrownDiagnostic = buildGoogleDatabaseInitializationFailureDiagnostic({ message: connectionString, stack: credentialKey });
+    expect(genericDiagnostic).toEqual({ reasonCode: "NETLIFY_DATABASE_CLIENT_INITIALIZATION_FAILED", errorName: "Error" });
+    expect(arbitraryThrownDiagnostic).toEqual({ reasonCode: "NETLIFY_DATABASE_CLIENT_INITIALIZATION_FAILED", errorName: "UnknownError" });
+    const serializedDiagnostics = JSON.stringify([genericDiagnostic, arbitraryThrownDiagnostic]);
+    expect(serializedDiagnostics).not.toContain(connectionString);
+    expect(serializedDiagnostics).not.toContain(credentialKey);
+    expect(serializedDiagnostics).not.toContain(oauthSecret);
+    expect(serializedDiagnostics).not.toContain("stack");
+    expect(serializedDiagnostics).not.toContain(genericConstructionFailure.message);
+
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const configuredProdEnv = {
+      ...prodEnvironment,
+      ONYX_AUTH_ISSUER: issuerUrl,
+      ONYX_AUTH_AUDIENCE: audienceUri,
+      ONYX_AUTH_JWKS_KEYS: JSON.stringify([rsaJwk]),
+      ONYX_AUTH_SCOPE_SALT: "onyx-production-scope-salt-v1",
+      ONYX_GOOGLE_CLIENT_SECRET: oauthSecret,
+      ONYX_CREDENTIAL_ENCRYPTION_KEY: productionKey,
+    };
+
+    expect(createGoogleRuntimeFromEnvironment(configuredProdEnv)).toBeUndefined();
+    const databaseLog = consoleSpy.mock.calls.find(([tag]) => tag === "[GOOGLE_DATABASE_INIT]");
+    expect(databaseLog).toEqual([
+      "[GOOGLE_DATABASE_INIT]",
+      { reasonCode: "NETLIFY_DATABASE_CONNECTION_METADATA_MISSING", errorName: "MissingDatabaseConnectionError" },
+    ]);
+    const missingDatabaseMessage = missingDatabaseConnection.message;
+    const loggedDatabaseFailure = JSON.stringify(consoleSpy.mock.calls);
+    expect(loggedDatabaseFailure).not.toContain(missingDatabaseMessage);
+    expect(loggedDatabaseFailure).not.toContain("stack");
+    expect(loggedDatabaseFailure).not.toContain(connectionString);
+    expect(loggedDatabaseFailure).not.toContain(credentialKey);
+    expect(loggedDatabaseFailure).not.toContain(oauthSecret);
+    consoleSpy.mockRestore();
+
+    const canonicalConsoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const canonicalFailureRuntime = createGoogleRuntimeFromEnvironment(
+      { ...configuredProdEnv, ONYX_GOOGLE_REDIRECT_URI: "https://onyx-alpha0.netlify.app/.netlify/functions/not-google-callback" },
+      { database: createMockDatabase() },
+    );
+    expect(canonicalFailureRuntime).toBeUndefined();
+    expect(canonicalConsoleSpy.mock.calls.some(([tag]) => tag === "[GOOGLE_DATABASE_INIT]")).toBe(false);
+    expect(canonicalConsoleSpy).toHaveBeenCalledWith(
+      "[GOOGLE_RUNTIME_INIT]",
+      expect.objectContaining({ reasonCode: "CANONICAL_AUTHORITY_INITIALIZATION_FAILED" }),
+    );
+    canonicalConsoleSpy.mockRestore();
+
+    const successConsoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const runtime = createGoogleRuntimeFromEnvironment(configuredProdEnv, { database: createMockDatabase() });
+    expect(runtime).toBeDefined();
+    expect(runtime?.runtimeKind).toBe("ACTIVE_PRODUCTION_RUNTIME");
+    expect(successConsoleSpy).not.toHaveBeenCalled();
+
+    const route = createGoogleRouteHandler(createGoogleStatusHandler, configuredProdEnv);
+    const response = await route({ httpMethod: "GET", headers: {} });
+    expect(response.statusCode).toBe(503);
+    expect(JSON.parse(response.body)).toEqual({ status: "UNAVAILABLE", message: "Google Workspace is not active in this environment." });
+
+    expect(GOOGLE_OAUTH_SCOPES).toEqual([
+      "openid",
+      "https://www.googleapis.com/auth/calendar.events.readonly",
+      "https://www.googleapis.com/auth/gmail.readonly",
+      "https://www.googleapis.com/auth/drive.metadata.readonly",
+    ]);
+    expect(GOOGLE_OAUTH_SCOPES.every((scope) => !/write|modify|full|compose|send/i.test(scope))).toBe(true);
+
+    successConsoleSpy.mockRestore();
   });
 
   it("A. recognizes production via ONYX_RUNTIME_CONTEXT when CONTEXT is unavailable to the Functions runtime", () => {
