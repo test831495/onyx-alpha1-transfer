@@ -86,6 +86,9 @@ export function classifyAuthenticationProviderConfiguration(
 
 // Bounded, non-throwing classification. Never logs client ID, client secret, or redirect URI values. Read-only
 // OAuth scopes (GOOGLE_OAUTH_SCOPES) are validated for presence elsewhere and are never widened by this check.
+const PRODUCTION_GOOGLE_REDIRECT_HOSTNAME = "onyx-alpha0.netlify.app";
+const PRODUCTION_GOOGLE_REDIRECT_PATHNAME = "/.netlify/functions/oauth-google-callback";
+
 export function classifyGoogleOAuthConfiguration(environment: Record<string, string | undefined>): GoogleOAuthConfigurationClassification {
   const clientId = environment.ONYX_GOOGLE_CLIENT_ID;
   const clientSecret = environment.ONYX_GOOGLE_CLIENT_SECRET;
@@ -93,11 +96,23 @@ export function classifyGoogleOAuthConfiguration(environment: Record<string, str
   if (!clientId) return "GOOGLE_CLIENT_ID_MISSING";
   if (!clientSecret) return "GOOGLE_CLIENT_SECRET_MISSING";
   if (!redirectUri) return "GOOGLE_REDIRECT_URI_MISSING";
+  let parsed: URL;
   try {
-    if (new URL(redirectUri).protocol !== "https:") return "GOOGLE_REDIRECT_URI_INVALID";
+    parsed = new URL(redirectUri);
   } catch {
     return "GOOGLE_REDIRECT_URI_INVALID";
   }
+  // Exact-match every component: a suffix, prefix, or partial match on hostname or pathname is never accepted.
+  const isExactProductionCallback =
+    parsed.protocol === "https:" &&
+    parsed.hostname === PRODUCTION_GOOGLE_REDIRECT_HOSTNAME &&
+    parsed.port === "" &&
+    parsed.username === "" &&
+    parsed.password === "" &&
+    parsed.pathname === PRODUCTION_GOOGLE_REDIRECT_PATHNAME &&
+    parsed.search === "" &&
+    parsed.hash === "";
+  if (!isExactProductionCallback) return "GOOGLE_REDIRECT_URI_INVALID";
   return "GOOGLE_OAUTH_CONFIGURATION_AVAILABLE";
 }
 
@@ -147,18 +162,54 @@ const buildGoogleRuntimeDiagnostics = (
 };
 
 // Single safe preflight result: bounded booleans and reason codes only, suitable for protected Function logs
-// or an already authenticated status route. Never returns secrets or raw errors to the browser.
+// or an already authenticated status route. Never returns secrets or raw errors to the browser. reasonCode is
+// always a concrete, non-empty literal (never undefined) so JSON.stringify never silently drops the field.
+export type GoogleRuntimePreflightFailureReason =
+  | "INVALID_RUNTIME_CONTEXT"
+  | Exclude<CredentialKeyClassification, "CREDENTIAL_KEY_CONFIGURATION_VALID">
+  | Exclude<DatabaseConfigurationClassification, "DATABASE_CONFIGURATION_AVAILABLE">
+  | Exclude<AuthenticationProviderClassification, "AUTH_PROVIDER_AVAILABLE">
+  | Exclude<GoogleOAuthConfigurationClassification, "GOOGLE_OAUTH_CONFIGURATION_AVAILABLE">;
+
+type GoogleRuntimeDiagnostics = ReturnType<typeof buildGoogleRuntimeDiagnostics>;
+
+export type GoogleRuntimePreflightResult =
+  | {
+      readonly ready: true;
+      readonly reasonCode: "GOOGLE_RUNTIME_READY";
+      readonly runtimeContext: GoogleRuntimeDiagnostics["runtimeContext"];
+      readonly diagnostics: GoogleRuntimeDiagnostics;
+    }
+  | {
+      readonly ready: false;
+      readonly reasonCode: GoogleRuntimePreflightFailureReason;
+      readonly runtimeContext: GoogleRuntimeDiagnostics["runtimeContext"];
+      readonly diagnostics: GoogleRuntimeDiagnostics;
+    };
+
 export function getGoogleRuntimePreflight(
   environment: Record<string, string | undefined> = process.env,
   options: { authenticationProvider?: AuthenticationProvider; database?: DatabaseConnection } = {},
-) {
+): GoogleRuntimePreflightResult {
   const diagnostics = buildGoogleRuntimeDiagnostics(environment, options);
-  return {
-    ready: diagnostics.prerequisitesSatisfied,
-    reasonCode: diagnostics.prerequisitesSatisfied ? ("GOOGLE_RUNTIME_READY" as const) : undefined,
-    runtimeContext: diagnostics.runtimeContext,
-    diagnostics,
-  };
+  const { runtimeContext } = diagnostics;
+
+  if (runtimeContext !== "production") {
+    return { ready: false, reasonCode: "INVALID_RUNTIME_CONTEXT", runtimeContext, diagnostics };
+  }
+  if (diagnostics.credentialKeyClassification !== "CREDENTIAL_KEY_CONFIGURATION_VALID") {
+    return { ready: false, reasonCode: diagnostics.credentialKeyClassification, runtimeContext, diagnostics };
+  }
+  if (diagnostics.databaseConfigurationClassification !== "DATABASE_CONFIGURATION_AVAILABLE") {
+    return { ready: false, reasonCode: diagnostics.databaseConfigurationClassification, runtimeContext, diagnostics };
+  }
+  if (diagnostics.authenticationProviderClassification !== "AUTH_PROVIDER_AVAILABLE") {
+    return { ready: false, reasonCode: diagnostics.authenticationProviderClassification, runtimeContext, diagnostics };
+  }
+  if (diagnostics.googleOAuthConfigurationClassification !== "GOOGLE_OAUTH_CONFIGURATION_AVAILABLE") {
+    return { ready: false, reasonCode: diagnostics.googleOAuthConfigurationClassification, runtimeContext, diagnostics };
+  }
+  return { ready: true, reasonCode: "GOOGLE_RUNTIME_READY", runtimeContext, diagnostics };
 }
 
 const safeGoogleRuntimeMessage = (reasonCode: GoogleRuntimeInitializationReason): string => {

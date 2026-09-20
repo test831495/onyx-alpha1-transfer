@@ -549,19 +549,94 @@ describe("Google server runtime", () => {
   });
 
   it("classifies Google OAuth configuration for every bounded outcome without logging client ID, secret, or redirect URI", () => {
+    const validRedirectUri = "https://onyx-alpha0.netlify.app/.netlify/functions/oauth-google-callback";
+    const base = { ONYX_GOOGLE_CLIENT_ID: "id", ONYX_GOOGLE_CLIENT_SECRET: "secret" };
+
     expect(classifyGoogleOAuthConfiguration({})).toBe("GOOGLE_CLIENT_ID_MISSING");
     expect(classifyGoogleOAuthConfiguration({ ONYX_GOOGLE_CLIENT_ID: "id" })).toBe("GOOGLE_CLIENT_SECRET_MISSING");
-    expect(classifyGoogleOAuthConfiguration({ ONYX_GOOGLE_CLIENT_ID: "id", ONYX_GOOGLE_CLIENT_SECRET: "secret" })).toBe("GOOGLE_REDIRECT_URI_MISSING");
-    expect(classifyGoogleOAuthConfiguration({ ONYX_GOOGLE_CLIENT_ID: "id", ONYX_GOOGLE_CLIENT_SECRET: "secret", ONYX_GOOGLE_REDIRECT_URI: "not-a-url" })).toBe("GOOGLE_REDIRECT_URI_INVALID");
-    expect(classifyGoogleOAuthConfiguration({ ONYX_GOOGLE_CLIENT_ID: "id", ONYX_GOOGLE_CLIENT_SECRET: "secret", ONYX_GOOGLE_REDIRECT_URI: "http://insecure.example/callback" })).toBe("GOOGLE_REDIRECT_URI_INVALID");
+    expect(classifyGoogleOAuthConfiguration(base)).toBe("GOOGLE_REDIRECT_URI_MISSING");
+    expect(classifyGoogleOAuthConfiguration({ ...base, ONYX_GOOGLE_REDIRECT_URI: "" })).toBe("GOOGLE_REDIRECT_URI_MISSING");
+    // 1. HTTP callback URI.
+    expect(classifyGoogleOAuthConfiguration({ ...base, ONYX_GOOGLE_REDIRECT_URI: "http://onyx-alpha0.netlify.app/.netlify/functions/oauth-google-callback" })).toBe("GOOGLE_REDIRECT_URI_INVALID");
+    // 2. Malformed URI.
+    expect(classifyGoogleOAuthConfiguration({ ...base, ONYX_GOOGLE_REDIRECT_URI: "not-a-url" })).toBe("GOOGLE_REDIRECT_URI_INVALID");
+    // 3. Unexpected hostname.
+    expect(classifyGoogleOAuthConfiguration({ ...base, ONYX_GOOGLE_REDIRECT_URI: "https://attacker.example/.netlify/functions/oauth-google-callback" })).toBe("GOOGLE_REDIRECT_URI_INVALID");
+    // 4. Expected hostname used as a suffix of another hostname.
+    expect(classifyGoogleOAuthConfiguration({ ...base, ONYX_GOOGLE_REDIRECT_URI: "https://evil-onyx-alpha0.netlify.app/.netlify/functions/oauth-google-callback" })).toBe("GOOGLE_REDIRECT_URI_INVALID");
+    expect(classifyGoogleOAuthConfiguration({ ...base, ONYX_GOOGLE_REDIRECT_URI: "https://onyx-alpha0.netlify.app.attacker.example/.netlify/functions/oauth-google-callback" })).toBe("GOOGLE_REDIRECT_URI_INVALID");
+    // 5. Unexpected port.
+    expect(classifyGoogleOAuthConfiguration({ ...base, ONYX_GOOGLE_REDIRECT_URI: "https://onyx-alpha0.netlify.app:8443/.netlify/functions/oauth-google-callback" })).toBe("GOOGLE_REDIRECT_URI_INVALID");
+    // 6. Username or password in URL.
+    expect(classifyGoogleOAuthConfiguration({ ...base, ONYX_GOOGLE_REDIRECT_URI: "https://user@onyx-alpha0.netlify.app/.netlify/functions/oauth-google-callback" })).toBe("GOOGLE_REDIRECT_URI_INVALID");
+    expect(classifyGoogleOAuthConfiguration({ ...base, ONYX_GOOGLE_REDIRECT_URI: "https://user:pass@onyx-alpha0.netlify.app/.netlify/functions/oauth-google-callback" })).toBe("GOOGLE_REDIRECT_URI_INVALID");
+    // 7. Incorrect callback pathname.
+    expect(classifyGoogleOAuthConfiguration({ ...base, ONYX_GOOGLE_REDIRECT_URI: "https://onyx-alpha0.netlify.app/.netlify/functions/oauth-microsoft-callback" })).toBe("GOOGLE_REDIRECT_URI_INVALID");
+    // 8. Additional pathname suffix.
+    expect(classifyGoogleOAuthConfiguration({ ...base, ONYX_GOOGLE_REDIRECT_URI: "https://onyx-alpha0.netlify.app/.netlify/functions/oauth-google-callback/extra" })).toBe("GOOGLE_REDIRECT_URI_INVALID");
+    // 9. Query string.
+    expect(classifyGoogleOAuthConfiguration({ ...base, ONYX_GOOGLE_REDIRECT_URI: `${validRedirectUri}?next=/dashboard` })).toBe("GOOGLE_REDIRECT_URI_INVALID");
+    // 10. Fragment.
+    expect(classifyGoogleOAuthConfiguration({ ...base, ONYX_GOOGLE_REDIRECT_URI: `${validRedirectUri}#fragment` })).toBe("GOOGLE_REDIRECT_URI_INVALID");
+    // 11. Empty redirect URI already covered above (GOOGLE_REDIRECT_URI_MISSING).
+
+    // Positive: exactly the expected production callback destination is accepted.
+    expect(classifyGoogleOAuthConfiguration({ ...base, ONYX_GOOGLE_REDIRECT_URI: validRedirectUri })).toBe("GOOGLE_OAUTH_CONFIGURATION_AVAILABLE");
     expect(classifyGoogleOAuthConfiguration({ ONYX_GOOGLE_CLIENT_ID: "id", ONYX_GOOGLE_CLIENT_SECRET: "secret", ONYX_GOOGLE_REDIRECT_URI: environment.ONYX_GOOGLE_REDIRECT_URI })).toBe("GOOGLE_OAUTH_CONFIGURATION_AVAILABLE");
   });
 
-  it("reports a bounded, secret-free preflight result that only reports ready once every prerequisite is satisfied", () => {
+  it("reports a bounded, secret-free, and deterministic preflight result that only reports ready once every prerequisite is satisfied", () => {
     const incompletePreflight = getGoogleRuntimePreflight({});
     expect(incompletePreflight.ready).toBe(false);
     expect(incompletePreflight.runtimeContext).toBe("unknown");
+    // 1 & 2. Every ready:false result includes a non-empty top-level reasonCode; missing key returns CREDENTIAL_KEY_MISSING once runtime context is production.
+    expect(incompletePreflight.reasonCode).toBeTruthy();
+    expect(incompletePreflight.reasonCode).toBe("INVALID_RUNTIME_CONTEXT");
 
+    const missingKey = getGoogleRuntimePreflight({ ...prodEnvironment, ONYX_CREDENTIAL_ENCRYPTION_KEY: undefined });
+    expect(missingKey.ready).toBe(false);
+    expect(missingKey.reasonCode).toBe("CREDENTIAL_KEY_MISSING");
+
+    // 3. Missing version.
+    const missingVersion = getGoogleRuntimePreflight({ ...prodEnvironment, ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION: undefined });
+    expect(missingVersion.reasonCode).toBe("CREDENTIAL_KEY_VERSION_MISSING");
+
+    // 4. Invalid base64url.
+    const invalidBase64Url = getGoogleRuntimePreflight({ ...prodEnvironment, ONYX_CREDENTIAL_ENCRYPTION_KEY: "not-base64url!!" });
+    expect(invalidBase64Url.reasonCode).toBe("CREDENTIAL_KEY_NOT_STRICT_BASE64URL");
+
+    // 5. Wrong decoded length.
+    const wrongLength = getGoogleRuntimePreflight({ ...prodEnvironment, ONYX_CREDENTIAL_ENCRYPTION_KEY: Buffer.alloc(31).toString("base64url") });
+    expect(wrongLength.reasonCode).toBe("CREDENTIAL_KEY_WRONG_DECODED_LENGTH");
+
+    // 6. Preview key in production.
+    const previewKeyInProduction = getGoogleRuntimePreflight({ ...prodEnvironment, ONYX_CREDENTIAL_PREVIEW_ENCRYPTION_KEY: productionKey });
+    expect(previewKeyInProduction.reasonCode).toBe("PREVIEW_KEY_FORBIDDEN_IN_PRODUCTION");
+
+    // 7. Invalid previous-ring JSON.
+    const invalidPreviousRing = getGoogleRuntimePreflight({ ...prodEnvironment, ONYX_CREDENTIAL_PREVIOUS_KEY_RING: "{not json" });
+    expect(invalidPreviousRing.reasonCode).toBe("PREVIOUS_KEY_RING_INVALID_JSON");
+
+    // 8. Duplicate version.
+    const duplicateVersion = getGoogleRuntimePreflight({ ...prodEnvironment, ONYX_CREDENTIAL_PREVIOUS_KEY_RING: JSON.stringify([{ key: productionKey, version: "v1" }]) });
+    expect(duplicateVersion.reasonCode).toBe("DUPLICATE_KEY_VERSION");
+
+    // 9. Authentication-provider failure returns its exact bounded reason.
+    const missingIssuer = getGoogleRuntimePreflight(prodEnvironment);
+    expect(missingIssuer.reasonCode).toBe("AUTH_ISSUER_MISSING");
+
+    // 10. Google OAuth configuration failure returns its exact bounded reason.
+    const missingRedirectUri = getGoogleRuntimePreflight({
+      ...prodEnvironment,
+      ONYX_GOOGLE_REDIRECT_URI: undefined,
+      ONYX_AUTH_ISSUER: issuerUrl,
+      ONYX_AUTH_AUDIENCE: audienceUri,
+      ONYX_AUTH_JWKS_KEYS: JSON.stringify([rsaJwk]),
+      ONYX_AUTH_SCOPE_SALT: "onyx-production-scope-salt-v1",
+    });
+    expect(missingRedirectUri.reasonCode).toBe("GOOGLE_REDIRECT_URI_MISSING");
+
+    // 11. A valid complete preflight returns ready:true and reasonCode: GOOGLE_RUNTIME_READY.
     const completeEnvironment = {
       ...prodEnvironment,
       ONYX_AUTH_ISSUER: issuerUrl,
@@ -574,9 +649,25 @@ describe("Google server runtime", () => {
     expect(readyPreflight.reasonCode).toBe("GOOGLE_RUNTIME_READY");
     expect(readyPreflight.diagnostics.credentialKeyClassification).toBe("CREDENTIAL_KEY_CONFIGURATION_VALID");
 
-    const serialized = JSON.stringify([incompletePreflight, readyPreflight]);
+    // 12. JSON.stringify(result) always retains reasonCode (never dropped as undefined).
+    for (const result of [incompletePreflight, missingKey, missingVersion, invalidBase64Url, wrongLength, previewKeyInProduction, invalidPreviousRing, duplicateVersion, missingIssuer, missingRedirectUri, readyPreflight]) {
+      expect(JSON.parse(JSON.stringify(result))).toHaveProperty("reasonCode");
+      expect(JSON.parse(JSON.stringify(result)).reasonCode).toBe(result.reasonCode);
+    }
+
+    // 13. The serialized response contains no secret values.
+    const serialized = JSON.stringify([incompletePreflight, missingKey, missingVersion, invalidBase64Url, wrongLength, previewKeyInProduction, invalidPreviousRing, duplicateVersion, missingIssuer, missingRedirectUri, readyPreflight]);
     expect(serialized).not.toContain(productionKey);
     expect(serialized).not.toContain("synthetic-client-secret");
+  });
+
+  it("14. keeps the browser-facing inactive response generic and unchanged regardless of the specific preflight failure reason", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const route = createGoogleRouteHandler(createGoogleStatusHandler, { ...prodEnvironment, ONYX_CREDENTIAL_PREVIOUS_KEY_RING: "{not json" });
+    const response = await route({ httpMethod: "GET", headers: {} });
+    expect(response.statusCode).toBe(503);
+    expect(JSON.parse(response.body)).toEqual({ status: "UNAVAILABLE", message: "Google Workspace is not active in this environment." });
+    consoleSpy.mockRestore();
   });
 
   it("never returns secrets or raw errors to the browser and keeps Google connectors read-only", async () => {

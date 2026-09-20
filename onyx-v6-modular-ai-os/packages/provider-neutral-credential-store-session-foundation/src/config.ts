@@ -76,7 +76,8 @@ export function classifyCredentialKeyConfiguration(environment: Environment): Cr
     for (const entry of entries) {
       if (!entry || typeof entry !== "object") return "PREVIOUS_KEY_RING_INVALID_ENTRY";
       const value = entry as { key?: unknown; version?: unknown };
-      if (typeof value.key !== "string" || typeof value.version !== "string") return "PREVIOUS_KEY_RING_INVALID_ENTRY";
+      // Match parseKey's `!version?.trim()` rejection so a blank or whitespace-only previous version is never classified as valid.
+      if (typeof value.key !== "string" || typeof value.version !== "string" || !value.version.trim()) return "PREVIOUS_KEY_RING_INVALID_ENTRY";
       if (!isValidKeyMaterial(value.key)) return "PREVIOUS_KEY_RING_INVALID_KEY";
       previousVersions.push(value.version);
     }

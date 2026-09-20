@@ -60,6 +60,35 @@ describe("credential configuration and runtime isolation", () => {
     expect(classifyCredentialKeyConfiguration({ ONYX_CREDENTIAL_ENCRYPTION_KEY: key, ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION: "v1", ONYX_CREDENTIAL_PREVIOUS_KEY_RING: JSON.stringify([{ key, version: "v0" }]) })).toBe("CREDENTIAL_KEY_CONFIGURATION_VALID");
   });
 
+  it("rejects a blank, whitespace-only, or non-string previous key-ring version exactly like parseCredentialKeyRing does", () => {
+    const blankVersions = ["", " ", "\t", "\n", "  \t\n  "];
+    for (const version of blankVersions) {
+      const environmentUnderTest = { ONYX_CREDENTIAL_ENCRYPTION_KEY: key, ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION: "v1", ONYX_CREDENTIAL_PREVIOUS_KEY_RING: JSON.stringify([{ key, version }]) };
+      expect(classifyCredentialKeyConfiguration(environmentUnderTest)).toBe("PREVIOUS_KEY_RING_INVALID_ENTRY");
+      expect(() => parseCredentialKeyRing(environmentUnderTest, "production")).toThrow();
+    }
+
+    const missingVersionEnvironment = { ONYX_CREDENTIAL_ENCRYPTION_KEY: key, ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION: "v1", ONYX_CREDENTIAL_PREVIOUS_KEY_RING: JSON.stringify([{ key }]) };
+    expect(classifyCredentialKeyConfiguration(missingVersionEnvironment)).toBe("PREVIOUS_KEY_RING_INVALID_ENTRY");
+    expect(() => parseCredentialKeyRing(missingVersionEnvironment, "production")).toThrow();
+
+    const nonStringVersionEnvironment = { ONYX_CREDENTIAL_ENCRYPTION_KEY: key, ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION: "v1", ONYX_CREDENTIAL_PREVIOUS_KEY_RING: JSON.stringify([{ key, version: 1 }]) };
+    expect(classifyCredentialKeyConfiguration(nonStringVersionEnvironment)).toBe("PREVIOUS_KEY_RING_INVALID_ENTRY");
+    expect(() => parseCredentialKeyRing(nonStringVersionEnvironment, "production")).toThrow();
+
+    // A valid non-empty previous version is still accepted, and duplicate valid versions are still detected.
+    const validPreviousEnvironment = { ONYX_CREDENTIAL_ENCRYPTION_KEY: key, ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION: "v1", ONYX_CREDENTIAL_PREVIOUS_KEY_RING: JSON.stringify([{ key, version: "v0" }]) };
+    expect(classifyCredentialKeyConfiguration(validPreviousEnvironment)).toBe("CREDENTIAL_KEY_CONFIGURATION_VALID");
+    expect(parseCredentialKeyRing(validPreviousEnvironment, "production").previous).toHaveLength(1);
+
+    const duplicatePreviousEnvironment = { ONYX_CREDENTIAL_ENCRYPTION_KEY: key, ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION: "v1", ONYX_CREDENTIAL_PREVIOUS_KEY_RING: JSON.stringify([{ key, version: "v1" }]) };
+    expect(classifyCredentialKeyConfiguration(duplicatePreviousEnvironment)).toBe("DUPLICATE_KEY_VERSION");
+    expect(() => parseCredentialKeyRing(duplicatePreviousEnvironment, "production")).toThrow("unique");
+
+    // The classifier never returns or logs the version value itself.
+    expect(JSON.stringify(blankVersions.map((version) => classifyCredentialKeyConfiguration({ ONYX_CREDENTIAL_ENCRYPTION_KEY: key, ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION: "v1", ONYX_CREDENTIAL_PREVIOUS_KEY_RING: JSON.stringify([{ key, version }]) })))).not.toContain(key);
+  });
+
   it("classifies database configuration readiness without ever logging connection details", () => {
     expect(classifyDatabaseConfiguration({})).toBe("DATABASE_CONFIGURATION_UNAVAILABLE");
     expect(classifyDatabaseConfiguration({ ONYX_RUNTIME_CONTEXT: "production" })).toBe("DATABASE_CONFIGURATION_UNAVAILABLE");
