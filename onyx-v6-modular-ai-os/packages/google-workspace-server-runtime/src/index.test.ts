@@ -442,4 +442,91 @@ describe("Google server runtime", () => {
 
     consoleSpy.mockRestore();
   });
+
+  it("A. recognizes production via ONYX_RUNTIME_CONTEXT when CONTEXT is unavailable to the Functions runtime", () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { CONTEXT: _omit, ...withoutContext } = prodEnvironment as Record<string, string | undefined>;
+    const overrideEnvironment = {
+      ...withoutContext,
+      ONYX_RUNTIME_CONTEXT: "production",
+      ONYX_AUTH_ISSUER: issuerUrl,
+      ONYX_AUTH_AUDIENCE: audienceUri,
+      ONYX_AUTH_JWKS_KEYS: JSON.stringify([rsaJwk]),
+      ONYX_AUTH_SCOPE_SALT: "onyx-production-scope-salt-v1",
+    };
+
+    const runtime = createGoogleRuntimeFromEnvironment(overrideEnvironment, { database: createMockDatabase() });
+    expect(runtime).toBeDefined();
+    expect(runtime?.runtimeKind).toBe("ACTIVE_PRODUCTION_RUNTIME");
+    expect(consoleSpy).not.toHaveBeenCalledWith("[GOOGLE_RUNTIME_INIT]", expect.objectContaining({ reasonCode: "INVALID_RUNTIME_CONTEXT" }));
+
+    consoleSpy.mockRestore();
+  });
+
+  it("B. rejects an unknown runtime context even when every other credential is fully configured", () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { CONTEXT: _omit, ...withoutContext } = prodEnvironment as Record<string, string | undefined>;
+
+    const runtime = createGoogleRuntimeFromEnvironment(withoutContext, { database: createMockDatabase() });
+    expect(runtime).toBeUndefined();
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "[GOOGLE_RUNTIME_INIT]",
+      expect.objectContaining({ reasonCode: "INVALID_RUNTIME_CONTEXT", diagnostics: expect.objectContaining({ runtimeContext: "unknown" }) }),
+    );
+
+    consoleSpy.mockRestore();
+  });
+
+  it("C. detects a correctly configured credential key version", () => {
+    const diagnosticsEnvironment = { ...prodEnvironment, ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION: "v1" };
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    createGoogleRuntimeFromEnvironment(diagnosticsEnvironment);
+
+    const initLog = consoleSpy.mock.calls.find(([tag]) => tag === "[GOOGLE_RUNTIME_INIT]");
+    expect((initLog?.[1] as Record<string, unknown>)?.diagnostics).toMatchObject({ hasCredentialKeyVersion: true });
+
+    consoleSpy.mockRestore();
+  });
+
+  it("D. treats a missing or whitespace-only credential key version as absent and keeps activation rejected", () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    for (const version of [undefined, "", "   "]) {
+      const environmentUnderTest = { ...prodEnvironment, ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION: version };
+      const runtime = createGoogleRuntimeFromEnvironment(environmentUnderTest);
+      expect(runtime).toBeUndefined();
+
+      const initLog = consoleSpy.mock.calls.find(([tag]) => tag === "[GOOGLE_RUNTIME_INIT]");
+      expect((initLog?.[1] as Record<string, unknown>)?.diagnostics).toMatchObject({ hasCredentialKeyVersion: false });
+      consoleSpy.mockClear();
+    }
+
+    consoleSpy.mockRestore();
+  });
+
+  it("E. activates the Google runtime only once runtime context, authentication, and credential key requirements are all satisfied", () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const completeEnvironment = {
+      ...prodEnvironment,
+      ONYX_AUTH_ISSUER: issuerUrl,
+      ONYX_AUTH_AUDIENCE: audienceUri,
+      ONYX_AUTH_JWKS_KEYS: JSON.stringify([rsaJwk]),
+      ONYX_AUTH_SCOPE_SALT: "onyx-production-scope-salt-v1",
+    };
+
+    // Missing runtime context alone blocks activation even though every other requirement is satisfied.
+    const { CONTEXT: _omit, ...missingContext } = completeEnvironment as Record<string, string | undefined>;
+    expect(createGoogleRuntimeFromEnvironment(missingContext, { database: createMockDatabase() })).toBeUndefined();
+
+    // Missing credential key version alone blocks activation even though the runtime context is valid.
+    expect(createGoogleRuntimeFromEnvironment({ ...completeEnvironment, ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION: undefined }, { database: createMockDatabase() })).toBeUndefined();
+
+    // All requirements satisfied together activate the runtime.
+    const runtime = createGoogleRuntimeFromEnvironment(completeEnvironment, { database: createMockDatabase() });
+    expect(runtime).toBeDefined();
+    expect(runtime?.runtimeKind).toBe("ACTIVE_PRODUCTION_RUNTIME");
+
+    consoleSpy.mockRestore();
+  });
 });

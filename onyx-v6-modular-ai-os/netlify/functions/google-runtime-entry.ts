@@ -44,7 +44,8 @@ const buildGoogleRuntimeDiagnostics = (environment: Record<string, string | unde
   hasAuthIssuer: Boolean(environment.ONYX_AUTH_ISSUER ?? environment.ONYX_AUTH_EXPECTED_ISSUER),
   hasAuthAudience: Boolean(environment.ONYX_AUTH_AUDIENCE ?? environment.ONYX_AUTH_EXPECTED_AUDIENCE),
   hasCredentialKey: Boolean(environment.ONYX_CREDENTIAL_ENCRYPTION_KEY),
-  hasCredentialKeyVersion: Boolean(environment.ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION),
+  // Match parseCredentialKeyRing's whitespace-only rejection so diagnostics never report a version as present when validation would reject it.
+  hasCredentialKeyVersion: Boolean(environment.ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION?.trim()),
   runtimeContext: readDatabaseRuntimeContext(environment),
 });
 
