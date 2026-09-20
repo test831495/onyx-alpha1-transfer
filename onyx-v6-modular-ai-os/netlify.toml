@@ -6,17 +6,6 @@
 [functions]
   node_bundler = "esbuild"
 
-# Netlify's system `CONTEXT` variable is build-scope only and is not exposed to Functions
-# at runtime, so ONYX_RUNTIME_CONTEXT is explicitly provided per deploy context instead.
-[context.production.environment]
-  ONYX_RUNTIME_CONTEXT = "production"
-
-[context.deploy-preview.environment]
-  ONYX_RUNTIME_CONTEXT = "deploy-preview"
-
-[context.branch-deploy.environment]
-  ONYX_RUNTIME_CONTEXT = "branch-deploy"
-
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
