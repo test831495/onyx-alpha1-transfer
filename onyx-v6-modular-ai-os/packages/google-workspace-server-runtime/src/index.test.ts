@@ -18,6 +18,7 @@ import {
   createGoogleRuntimeFromEnvironment,
   createProductionAuthenticationProvider,
   getGoogleRuntimePreflight,
+  verifyGoogleDatabaseReadiness,
 // @ts-ignore
 } from "../../../netlify/functions/google-runtime-entry";
 import {
@@ -186,16 +187,16 @@ describe("Google server runtime", () => {
     })).toThrow("Google runtime context denied");
   });
 
-  it("fails closed in production composition without explicitly configured canonical OIDC/JWKS variables", () => {
+  it("fails closed in production composition without explicitly configured canonical OIDC/JWKS variables", async () => {
     // Production Netlify function entrypoint must NOT import or instantiate SyntheticAuthenticationProvider
-    const runtime = createGoogleRuntimeFromEnvironment(prodEnvironment);
+    const runtime = await createGoogleRuntimeFromEnvironment(prodEnvironment);
     expect(runtime).toBeUndefined();
 
     const route = createGoogleRouteHandler(createGoogleStatusHandler, prodEnvironment);
     expect(typeof route).toBe("function");
   });
 
-  it("instantiates canonical EntraExternalIdAuthenticationProvider when production OIDC variables are supplied", () => {
+  it("instantiates canonical EntraExternalIdAuthenticationProvider when production OIDC variables are supplied", async () => {
     const configuredProdEnv = {
       ...prodEnvironment,
       ONYX_AUTH_ISSUER: issuerUrl,
@@ -207,7 +208,7 @@ describe("Google server runtime", () => {
     expect(provider).toBeDefined();
     expect(provider?.describeCapabilities()).toContain("entra-external-id-verification");
 
-    const runtime = createGoogleRuntimeFromEnvironment(configuredProdEnv, { database: createMockDatabase() });
+    const runtime = await createGoogleRuntimeFromEnvironment(configuredProdEnv, { database: createMockDatabase() });
     expect(runtime).toBeDefined();
     expect(runtime?.runtimeKind).toBe("ACTIVE_PRODUCTION_RUNTIME");
   });
@@ -273,7 +274,7 @@ describe("Google server runtime", () => {
   it("creates an active production runtime when authenticationProvider is explicitly injected for test fixtures", async () => {
     const database = createMockDatabase();
     const authenticationProvider = createTestAuthenticationProvider();
-    const runtime = createGoogleRuntimeFromEnvironment(prodEnvironment, { database, authenticationProvider });
+    const runtime = await createGoogleRuntimeFromEnvironment(prodEnvironment, { database, authenticationProvider });
     expect(runtime).toBeDefined();
     expect(runtime?.runtimeKind).toBe("ACTIVE_PRODUCTION_RUNTIME");
 
@@ -364,7 +365,7 @@ describe("Google server runtime", () => {
     expect(body.message).toBe("Google Workspace is not active in this environment.");
   });
 
-  it("logs normalized runtimeContext without raw CONTEXT or NODE_ENV values", () => {
+  it("logs normalized runtimeContext without raw CONTEXT or NODE_ENV values", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const previewEnvironment = {
       ...prodEnvironment,
@@ -374,7 +375,7 @@ describe("Google server runtime", () => {
       ONYX_CREDENTIAL_ENCRYPTION_KEY: "super-secret-key-value",
     };
 
-    createGoogleRuntimeFromEnvironment(previewEnvironment);
+    await createGoogleRuntimeFromEnvironment(previewEnvironment);
 
     const initLog = consoleSpy.mock.calls.find(([tag]) => tag === "[GOOGLE_RUNTIME_INIT]");
     expect(initLog).toBeDefined();
@@ -390,7 +391,7 @@ describe("Google server runtime", () => {
     consoleSpy.mockRestore();
   });
 
-  it("successfully returns the canonical runtime without falling through to a failure log", () => {
+  it("successfully returns the canonical runtime without falling through to a failure log", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const configuredProdEnv = {
       ...prodEnvironment,
@@ -400,7 +401,7 @@ describe("Google server runtime", () => {
       ONYX_AUTH_SCOPE_SALT: "onyx-production-scope-salt-v1",
     };
 
-    const runtime = createGoogleRuntimeFromEnvironment(configuredProdEnv, { database: createMockDatabase() });
+    const runtime = await createGoogleRuntimeFromEnvironment(configuredProdEnv, { database: createMockDatabase() });
     expect(runtime).toBeDefined();
     expect(runtime?.runtimeKind).toBe("ACTIVE_PRODUCTION_RUNTIME");
     expect(consoleSpy).not.toHaveBeenCalledWith(
@@ -411,7 +412,7 @@ describe("Google server runtime", () => {
     consoleSpy.mockRestore();
   });
 
-  it("logs bounded initialization reasons and never emits raw secrets", () => {
+  it("logs bounded initialization reasons and never emits raw secrets", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const secretEnvironment = {
       ...prodEnvironment,
@@ -421,7 +422,7 @@ describe("Google server runtime", () => {
       ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION: "v1",
     };
 
-    const runtime = createGoogleRuntimeFromEnvironment(secretEnvironment);
+    const runtime = await createGoogleRuntimeFromEnvironment(secretEnvironment);
     expect(runtime).toBeUndefined();
     expect(consoleSpy).toHaveBeenCalledWith(
       "[GOOGLE_RUNTIME_INIT]",
@@ -450,7 +451,7 @@ describe("Google server runtime", () => {
   });
 
   it("classifies Google database initialization failures with closed, secret-safe diagnostics", async () => {
-    const connectionString = "postgres://user:password@db.internal.example:5432/onyx";
+    const connectionString = "synthetic-owner-managed-production-connection-value";
     const credentialKey = "database-test-secret-credential-key";
     const oauthSecret = "database-test-oauth-secret";
     const missingDatabaseConnection = new Error("Netlify database metadata unavailable");
@@ -485,7 +486,7 @@ describe("Google server runtime", () => {
       ONYX_CREDENTIAL_ENCRYPTION_KEY: productionKey,
     };
 
-    expect(createGoogleRuntimeFromEnvironment(configuredProdEnv)).toBeUndefined();
+    expect(await createGoogleRuntimeFromEnvironment(configuredProdEnv)).toBeUndefined();
     const databaseLog = consoleSpy.mock.calls.find(([tag]) => tag === "[GOOGLE_DATABASE_INIT]");
     expect(databaseLog).toEqual([
       "[GOOGLE_DATABASE_INIT]",
@@ -501,7 +502,7 @@ describe("Google server runtime", () => {
     consoleSpy.mockRestore();
 
     const canonicalConsoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const canonicalFailureRuntime = createGoogleRuntimeFromEnvironment(
+    const canonicalFailureRuntime = await createGoogleRuntimeFromEnvironment(
       { ...configuredProdEnv, ONYX_GOOGLE_REDIRECT_URI: "https://onyx-alpha0.netlify.app/.netlify/functions/not-google-callback" },
       { database: createMockDatabase() },
     );
@@ -514,10 +515,25 @@ describe("Google server runtime", () => {
     canonicalConsoleSpy.mockRestore();
 
     const successConsoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const runtime = createGoogleRuntimeFromEnvironment(configuredProdEnv, { database: createMockDatabase() });
+    const runtime = await createGoogleRuntimeFromEnvironment(configuredProdEnv, { database: createMockDatabase() });
     expect(runtime).toBeDefined();
     expect(runtime?.runtimeKind).toBe("ACTIVE_PRODUCTION_RUNTIME");
+    expect(await verifyGoogleDatabaseReadiness(createMockDatabase())).toBe("GOOGLE_DATABASE_READY");
+    expect(await verifyGoogleDatabaseReadiness(createMockDatabase(), async () => { throw new Error(`${connectionString} readiness failed`); })).toBe("NETLIFY_DATABASE_READINESS_CHECK_FAILED");
     expect(successConsoleSpy).not.toHaveBeenCalled();
+
+    const readinessConsoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const readinessFailureRuntime = await createGoogleRuntimeFromEnvironment(configuredProdEnv, {
+      database: createMockDatabase(),
+      databaseReadinessCheck: async () => { throw new Error(`${connectionString} readiness failed`); },
+    });
+    expect(readinessFailureRuntime).toBeUndefined();
+    expect(readinessConsoleSpy).toHaveBeenCalledWith(
+      "[GOOGLE_DATABASE_INIT]",
+      { reasonCode: "NETLIFY_DATABASE_READINESS_CHECK_FAILED", errorName: "UnknownError" },
+    );
+    expect(JSON.stringify(readinessConsoleSpy.mock.calls)).not.toContain(connectionString);
+    readinessConsoleSpy.mockRestore();
 
     const route = createGoogleRouteHandler(createGoogleStatusHandler, configuredProdEnv);
     const response = await route({ httpMethod: "GET", headers: {} });
@@ -535,7 +551,7 @@ describe("Google server runtime", () => {
     successConsoleSpy.mockRestore();
   });
 
-  it("A. recognizes production via ONYX_RUNTIME_CONTEXT when CONTEXT is unavailable to the Functions runtime", () => {
+  it("A. recognizes production via ONYX_RUNTIME_CONTEXT when CONTEXT is unavailable to the Functions runtime", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const { CONTEXT: _omit, ...withoutContext } = prodEnvironment as Record<string, string | undefined>;
     const overrideEnvironment = {
@@ -547,7 +563,7 @@ describe("Google server runtime", () => {
       ONYX_AUTH_SCOPE_SALT: "onyx-production-scope-salt-v1",
     };
 
-    const runtime = createGoogleRuntimeFromEnvironment(overrideEnvironment, { database: createMockDatabase() });
+    const runtime = await createGoogleRuntimeFromEnvironment(overrideEnvironment, { database: createMockDatabase() });
     expect(runtime).toBeDefined();
     expect(runtime?.runtimeKind).toBe("ACTIVE_PRODUCTION_RUNTIME");
     expect(consoleSpy).not.toHaveBeenCalledWith("[GOOGLE_RUNTIME_INIT]", expect.objectContaining({ reasonCode: "INVALID_RUNTIME_CONTEXT" }));
@@ -555,11 +571,11 @@ describe("Google server runtime", () => {
     consoleSpy.mockRestore();
   });
 
-  it("B. rejects an unknown runtime context even when every other credential is fully configured", () => {
+  it("B. rejects an unknown runtime context even when every other credential is fully configured", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const { CONTEXT: _omit, ...withoutContext } = prodEnvironment as Record<string, string | undefined>;
 
-    const runtime = createGoogleRuntimeFromEnvironment(withoutContext, { database: createMockDatabase() });
+    const runtime = await createGoogleRuntimeFromEnvironment(withoutContext, { database: createMockDatabase() });
     expect(runtime).toBeUndefined();
     expect(consoleSpy).toHaveBeenCalledWith(
       "[GOOGLE_RUNTIME_INIT]",
@@ -569,11 +585,11 @@ describe("Google server runtime", () => {
     consoleSpy.mockRestore();
   });
 
-  it("C. detects a correctly configured credential key version", () => {
+  it("C. detects a correctly configured credential key version", async () => {
     const diagnosticsEnvironment = { ...prodEnvironment, ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION: "v1" };
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-    createGoogleRuntimeFromEnvironment(diagnosticsEnvironment);
+    await createGoogleRuntimeFromEnvironment(diagnosticsEnvironment);
 
     const initLog = consoleSpy.mock.calls.find(([tag]) => tag === "[GOOGLE_RUNTIME_INIT]");
     expect((initLog?.[1] as Record<string, unknown>)?.diagnostics).toMatchObject({ hasCredentialKeyVersion: true });
@@ -581,12 +597,12 @@ describe("Google server runtime", () => {
     consoleSpy.mockRestore();
   });
 
-  it("D. treats a missing or whitespace-only credential key version as absent and keeps activation rejected", () => {
+  it("D. treats a missing or whitespace-only credential key version as absent and keeps activation rejected", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
     for (const version of [undefined, "", "   "]) {
       const environmentUnderTest = { ...prodEnvironment, ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION: version };
-      const runtime = createGoogleRuntimeFromEnvironment(environmentUnderTest);
+      const runtime = await createGoogleRuntimeFromEnvironment(environmentUnderTest);
       expect(runtime).toBeUndefined();
 
       const initLog = consoleSpy.mock.calls.find(([tag]) => tag === "[GOOGLE_RUNTIME_INIT]");
@@ -597,7 +613,7 @@ describe("Google server runtime", () => {
     consoleSpy.mockRestore();
   });
 
-  it("E. activates the Google runtime only once runtime context, authentication, and credential key requirements are all satisfied", () => {
+  it("E. activates the Google runtime only once runtime context, authentication, and credential key requirements are all satisfied", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const completeEnvironment = {
       ...prodEnvironment,
@@ -609,13 +625,13 @@ describe("Google server runtime", () => {
 
     // Missing runtime context alone blocks activation even though every other requirement is satisfied.
     const { CONTEXT: _omit, ...missingContext } = completeEnvironment as Record<string, string | undefined>;
-    expect(createGoogleRuntimeFromEnvironment(missingContext, { database: createMockDatabase() })).toBeUndefined();
+    expect(await createGoogleRuntimeFromEnvironment(missingContext, { database: createMockDatabase() })).toBeUndefined();
 
     // Missing credential key version alone blocks activation even though the runtime context is valid.
-    expect(createGoogleRuntimeFromEnvironment({ ...completeEnvironment, ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION: undefined }, { database: createMockDatabase() })).toBeUndefined();
+    expect(await createGoogleRuntimeFromEnvironment({ ...completeEnvironment, ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION: undefined }, { database: createMockDatabase() })).toBeUndefined();
 
     // All requirements satisfied together activate the runtime.
-    const runtime = createGoogleRuntimeFromEnvironment(completeEnvironment, { database: createMockDatabase() });
+    const runtime = await createGoogleRuntimeFromEnvironment(completeEnvironment, { database: createMockDatabase() });
     expect(runtime).toBeDefined();
     expect(runtime?.runtimeKind).toBe("ACTIVE_PRODUCTION_RUNTIME");
 

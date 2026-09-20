@@ -23,6 +23,7 @@ import {
   readDatabaseRuntimeContext,
   type CredentialKeyClassification,
   type DatabaseConfigurationClassification,
+  type NetlifyDatabaseFactory,
 } from "@onyx/provider-neutral-credential-store-session-foundation";
 // @ts-ignore
 import type { DatabaseConnection } from "@netlify/database";
@@ -64,9 +65,11 @@ export type CanonicalRuntimeClassification =
   | "GOOGLE_RUNTIME_READY";
 
 export type GoogleDatabaseInitializationFailureReason =
+  | "GOOGLE_DATABASE_READY"
   | "NETLIFY_DATABASE_CONNECTION_METADATA_MISSING"
   | "NETLIFY_DATABASE_CLIENT_INITIALIZATION_FAILED"
   | "NETLIFY_DATABASE_RUNTIME_UNAVAILABLE"
+  | "NETLIFY_DATABASE_READINESS_CHECK_FAILED"
   | "GOOGLE_CANONICAL_RUNTIME_DATABASE_FAILURE";
 
 type BoundedDatabaseErrorName = "MissingDatabaseConnectionError" | "Error" | "UnknownError";
@@ -94,6 +97,8 @@ export const classifyGoogleDatabaseInitializationFailure = (
   return "NETLIFY_DATABASE_CLIENT_INITIALIZATION_FAILED";
 };
 
+export type GoogleDatabaseReadinessCheck = (database: DatabaseConnection) => Promise<void>;
+
 export const buildGoogleDatabaseInitializationFailureDiagnostic = (
   error: unknown,
   boundary: GoogleDatabaseInitializationFailureBoundary = "client-construction",
@@ -102,8 +107,39 @@ export const buildGoogleDatabaseInitializationFailureDiagnostic = (
   errorName: boundedDatabaseErrorName(error),
 });
 
-const logGoogleDatabaseInitializationFailure = (_reasonCode: GoogleDatabaseInitializationFailureReason, error: unknown): void => {
-  console.error("[GOOGLE_DATABASE_INIT]", buildGoogleDatabaseInitializationFailureDiagnostic(error));
+const logGoogleDatabaseInitializationFailure = (reasonCode: GoogleDatabaseInitializationFailureReason, error: unknown): void => {
+  console.error("[GOOGLE_DATABASE_INIT]", {
+    reasonCode,
+    errorName: boundedDatabaseErrorName(error),
+  });
+};
+
+const defaultGoogleDatabaseReadinessCheck: GoogleDatabaseReadinessCheck = async (database) => {
+  const databaseLike = database as DatabaseConnection & {
+    readonly sql?: (strings: TemplateStringsArray, ...values: readonly unknown[]) => Promise<unknown>;
+  };
+  if (typeof databaseLike.sql === "function") {
+    await databaseLike.sql`SELECT 1`;
+    return;
+  }
+  const client = await database.pool.connect();
+  try {
+    await client.query("SELECT 1");
+  } finally {
+    client.release();
+  }
+};
+
+export const verifyGoogleDatabaseReadiness = async (
+  database: DatabaseConnection,
+  readinessCheck: GoogleDatabaseReadinessCheck = defaultGoogleDatabaseReadinessCheck,
+): Promise<GoogleDatabaseInitializationFailureReason> => {
+  try {
+    await readinessCheck(database);
+    return "GOOGLE_DATABASE_READY";
+  } catch {
+    return "NETLIFY_DATABASE_READINESS_CHECK_FAILED";
+  }
 };
 
 // Bounded, non-throwing classification. Never logs the issuer, audience, JWKS data, scope salt, or key material.
@@ -344,13 +380,15 @@ export function defaultOnyxContextMapper(context: AuthenticatedRequestContext): 
   };
 }
 
-export function createGoogleRuntimeFromEnvironment(
+export async function createGoogleRuntimeFromEnvironment(
   environment: Record<string, string | undefined> = process.env,
   options: {
     database?: DatabaseConnection;
     authenticationProvider?: AuthenticationProvider;
+    databaseFactory?: NetlifyDatabaseFactory;
+    databaseReadinessCheck?: GoogleDatabaseReadinessCheck;
   } = {},
-): GoogleServerRuntime | undefined {
+): Promise<GoogleServerRuntime | undefined> {
   const runtimeContext = readDatabaseRuntimeContext(environment);
 
   if (runtimeContext !== "production") {
@@ -373,13 +411,24 @@ export function createGoogleRuntimeFromEnvironment(
     logGoogleRuntimeInitializationFailure(environment, "CREDENTIAL_KEY_CONFIGURATION_INVALID", error, options);
     return undefined;
   }
+  if (!keyRing.active) {
+    logGoogleRuntimeInitializationFailure(environment, "CREDENTIAL_KEY_CONFIGURATION_INVALID", undefined, options);
+    return undefined;
+  }
 
   let database: DatabaseConnection;
   try {
-    database = options.database ?? createConfiguredNetlifyDatabase(environment);
+    database = options.database ?? createConfiguredNetlifyDatabase(environment, { databaseFactory: options.databaseFactory });
   } catch (error) {
     const reasonCode = classifyGoogleDatabaseInitializationFailure(error);
     logGoogleDatabaseInitializationFailure(reasonCode, error);
+    logGoogleRuntimeInitializationFailure(environment, "DATABASE_CONFIGURATION_UNAVAILABLE", undefined, options);
+    return undefined;
+  }
+
+  const readinessReason = await verifyGoogleDatabaseReadiness(database, options.databaseReadinessCheck);
+  if (readinessReason !== "GOOGLE_DATABASE_READY") {
+    logGoogleDatabaseInitializationFailure(readinessReason, undefined);
     logGoogleRuntimeInitializationFailure(environment, "DATABASE_CONFIGURATION_UNAVAILABLE", undefined, options);
     return undefined;
   }
@@ -405,10 +454,12 @@ export function createGoogleRuntimeFromEnvironment(
 export function createGoogleRouteHandler(
   factory: (runtime: GoogleServerRuntime) => GoogleFunctionHandler,
   environment: Record<string, string | undefined> = process.env,
-  options?: { database?: DatabaseConnection; authenticationProvider?: AuthenticationProvider },
+  options?: { database?: DatabaseConnection; authenticationProvider?: AuthenticationProvider; databaseFactory?: NetlifyDatabaseFactory; databaseReadinessCheck?: GoogleDatabaseReadinessCheck },
 ): GoogleFunctionHandler {
-  const runtime = createGoogleRuntimeFromEnvironment(environment, options);
-  return runtime ? factory(runtime) : inactiveGoogleHandler;
+  return async (event) => {
+    const runtime = await createGoogleRuntimeFromEnvironment(environment, options);
+    return runtime ? factory(runtime)(event) : inactiveGoogleHandler(event);
+  };
 }
 
 export const createGoogleRuntimeHandlerFactory = (factory: (runtime: GoogleServerRuntime) => GoogleFunctionHandler) => createGoogleRouteHandler(factory);
