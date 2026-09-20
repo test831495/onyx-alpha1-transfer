@@ -380,7 +380,7 @@ export function createGoogleRuntimeFromEnvironment(
   } catch (error) {
     const reasonCode = classifyGoogleDatabaseInitializationFailure(error);
     logGoogleDatabaseInitializationFailure(reasonCode, error);
-    logGoogleRuntimeInitializationFailure(environment, "DATABASE_CONFIGURATION_UNAVAILABLE", error, options);
+    logGoogleRuntimeInitializationFailure(environment, "DATABASE_CONFIGURATION_UNAVAILABLE", undefined, options);
     return undefined;
   }
 
