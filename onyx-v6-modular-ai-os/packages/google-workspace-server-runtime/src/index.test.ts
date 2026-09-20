@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { generateKeyPairSync, sign } from "node:crypto";
+import * as googleRuntimeModule from "@onyx/google-workspace-server-runtime";
 import {
   createGoogleCsrfHandler,
   createGoogleOAuthTransport,
@@ -355,6 +356,53 @@ describe("Google server runtime", () => {
     const body = JSON.parse(response.body);
     expect(body.status).toBe("UNAVAILABLE");
     expect(body.message).toBe("Google Workspace is not active in this environment.");
+  });
+
+  it("logs normalized runtimeContext without raw CONTEXT or NODE_ENV values", () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const previewEnvironment = {
+      ...prodEnvironment,
+      CONTEXT: "deploy-preview",
+      NODE_ENV: "production",
+      ONYX_GOOGLE_CLIENT_SECRET: "super-secret-client-secret-value",
+      ONYX_CREDENTIAL_ENCRYPTION_KEY: "super-secret-key-value",
+    };
+
+    createGoogleRuntimeFromEnvironment(previewEnvironment);
+
+    const initLog = consoleSpy.mock.calls.find(([tag]) => tag === "[GOOGLE_RUNTIME_INIT]");
+    expect(initLog).toBeDefined();
+    const payload = initLog?.[1] as Record<string, unknown>;
+    expect(payload).toMatchObject({
+      diagnostics: { runtimeContext: "deploy-preview" },
+    });
+    expect(payload).not.toHaveProperty("diagnostics.netlifyContext");
+    expect(payload).not.toHaveProperty("diagnostics.nodeEnv");
+    expect(JSON.stringify(payload)).not.toContain("super-secret-client-secret-value");
+    expect(JSON.stringify(payload)).not.toContain("super-secret-key-value");
+
+    consoleSpy.mockRestore();
+  });
+
+  it("successfully returns the canonical runtime without falling through to a failure log", () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const configuredProdEnv = {
+      ...prodEnvironment,
+      ONYX_AUTH_ISSUER: issuerUrl,
+      ONYX_AUTH_AUDIENCE: audienceUri,
+      ONYX_AUTH_JWKS_KEYS: JSON.stringify([rsaJwk]),
+      ONYX_AUTH_SCOPE_SALT: "onyx-production-scope-salt-v1",
+    };
+
+    const runtime = createGoogleRuntimeFromEnvironment(configuredProdEnv, { database: createMockDatabase() });
+    expect(runtime).toBeDefined();
+    expect(runtime?.runtimeKind).toBe("ACTIVE_PRODUCTION_RUNTIME");
+    expect(consoleSpy).not.toHaveBeenCalledWith(
+      "[GOOGLE_RUNTIME_INIT]",
+      expect.objectContaining({ reasonCode: "CANONICAL_AUTHORITY_INITIALIZATION_FAILED" }),
+    );
+
+    consoleSpy.mockRestore();
   });
 
   it("logs bounded initialization reasons and never emits raw secrets", () => {

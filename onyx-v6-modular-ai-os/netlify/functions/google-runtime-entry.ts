@@ -45,8 +45,7 @@ const buildGoogleRuntimeDiagnostics = (environment: Record<string, string | unde
   hasAuthAudience: Boolean(environment.ONYX_AUTH_AUDIENCE ?? environment.ONYX_AUTH_EXPECTED_AUDIENCE),
   hasCredentialKey: Boolean(environment.ONYX_CREDENTIAL_ENCRYPTION_KEY),
   hasCredentialKeyVersion: Boolean(environment.ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION),
-  netlifyContext: environment.CONTEXT,
-  nodeEnv: environment.NODE_ENV,
+  runtimeContext: readDatabaseRuntimeContext(environment),
 });
 
 const safeGoogleRuntimeMessage = (reasonCode: GoogleRuntimeInitializationReason): string => {
@@ -141,7 +140,9 @@ export function createGoogleRuntimeFromEnvironment(
     authenticationProvider?: AuthenticationProvider;
   } = {},
 ): GoogleServerRuntime | undefined {
-  if (readDatabaseRuntimeContext(environment) !== "production") {
+  const runtimeContext = readDatabaseRuntimeContext(environment);
+
+  if (runtimeContext !== "production") {
     logGoogleRuntimeInitializationFailure(environment, "INVALID_RUNTIME_CONTEXT");
     return undefined;
   }
@@ -157,12 +158,13 @@ export function createGoogleRuntimeFromEnvironment(
   try {
     const keyRing = parseCredentialKeyRing(environment, "production");
     const database = options.database ?? createConfiguredNetlifyDatabase(environment);
+
     return createGoogleServerRuntimeWithCanonicalAuthority({
       database,
       authenticationProvider,
       mapContext: defaultOnyxContextMapper,
-      runtimeContext: "production",
-      encryptionKey: keyRing.active ?? { version: "production-v1", bytes: new Uint8Array(32) },
+      runtimeContext,
+      encryptionKey: keyRing.active,
       environment,
     });
   } catch (error) {
@@ -174,19 +176,8 @@ export function createGoogleRuntimeFromEnvironment(
       logGoogleRuntimeInitializationFailure(environment, "DATABASE_CONFIGURATION_UNAVAILABLE", error);
       return undefined;
     }
-    try {
-      createGoogleServerRuntimeWithCanonicalAuthority({
-        database: options.database ?? createConfiguredNetlifyDatabase(environment),
-        authenticationProvider,
-        mapContext: defaultOnyxContextMapper,
-        runtimeContext: "production",
-        encryptionKey: parseCredentialKeyRing(environment, "production").active ?? { version: "production-v1", bytes: new Uint8Array(32) },
-        environment,
-      });
-      logGoogleRuntimeInitializationFailure(environment, "CANONICAL_AUTHORITY_INITIALIZATION_FAILED");
-    } catch {
-      logGoogleRuntimeInitializationFailure(environment, "CANONICAL_AUTHORITY_INITIALIZATION_FAILED");
-    }
+
+    logGoogleRuntimeInitializationFailure(environment, "CANONICAL_AUTHORITY_INITIALIZATION_FAILED", error);
     return undefined;
   }
 }
