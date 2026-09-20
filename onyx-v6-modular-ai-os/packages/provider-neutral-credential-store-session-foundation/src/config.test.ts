@@ -29,6 +29,8 @@ describe("credential configuration and runtime isolation", () => {
 
   it("prefers ONYX_RUNTIME_CONTEXT over CONTEXT and still rejects unknown/unsupported values", () => {
     expect(readDatabaseRuntimeContext({ ONYX_RUNTIME_CONTEXT: "production", CONTEXT: "deploy-preview" })).toBe("production");
+    expect(readDatabaseRuntimeContext({ ONYX_RUNTIME_CONTEXT: "production", CONTEXT: "bogus" })).toBe("production");
+    expect(readDatabaseRuntimeContext({ ONYX_RUNTIME_CONTEXT: "bogus", CONTEXT: "production" })).toBe("unknown");
     expect(readDatabaseRuntimeContext({ ONYX_RUNTIME_CONTEXT: "bogus" })).toBe("unknown");
     expect(() => createDatabaseRuntimePolicy(readDatabaseRuntimeContext({}), false)).toThrow("Unknown");
   });
