@@ -5,7 +5,7 @@ export * from "./broker.js";
 export * from "./oauth.js";
 export * from "./oauth-sql-store.js";
 export * from "./session.js";
-export { createConfiguredNetlifyDatabase, createDatabaseRuntimePolicy, createTestNetlifyDatabase, readDatabaseRuntimeContext, withDatabaseTransaction } from "./database.js";
+export { classifyDatabaseConfiguration, createConfiguredNetlifyDatabase, createDatabaseRuntimePolicy, createTestNetlifyDatabase, readDatabaseRuntimeContext, withDatabaseTransaction } from "./database.js";
 export * from "./sql-store.js";
 export * from "./session-gateway.js";
 export * from "./session-issuer.js";

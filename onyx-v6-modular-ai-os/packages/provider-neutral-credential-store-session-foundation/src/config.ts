@@ -36,6 +36,58 @@ const parsePrevious = (environment: Environment): CredentialEncryptionKey[] => {
   }
 };
 
+export type CredentialKeyClassification =
+  | "CREDENTIAL_KEY_MISSING"
+  | "CREDENTIAL_KEY_VERSION_MISSING"
+  | "CREDENTIAL_KEY_NOT_STRICT_BASE64URL"
+  | "CREDENTIAL_KEY_WRONG_DECODED_LENGTH"
+  | "PREVIEW_KEY_FORBIDDEN_IN_PRODUCTION"
+  | "PREVIOUS_KEY_RING_INVALID_JSON"
+  | "PREVIOUS_KEY_RING_INVALID_ENTRY"
+  | "PREVIOUS_KEY_RING_INVALID_KEY"
+  | "DUPLICATE_KEY_VERSION"
+  | "CREDENTIAL_KEY_CONFIGURATION_VALID";
+
+const isValidKeyMaterial = (encoded: string): boolean => isStrictBase64Url(encoded) && Buffer.from(encoded, "base64url").length === 32;
+
+// Bounded, non-throwing classification of the production credential key configuration. Never logs the key,
+// version, previous-ring contents, decoded bytes, or any prefix/suffix/length derived from secret material.
+export function classifyCredentialKeyConfiguration(environment: Environment): CredentialKeyClassification {
+  const productionKey = environment.ONYX_CREDENTIAL_ENCRYPTION_KEY;
+  const productionVersion = environment.ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION;
+  const previewKey = environment.ONYX_CREDENTIAL_PREVIEW_ENCRYPTION_KEY;
+
+  if (previewKey) return "PREVIEW_KEY_FORBIDDEN_IN_PRODUCTION";
+  if (!productionKey) return "CREDENTIAL_KEY_MISSING";
+  if (!isStrictBase64Url(productionKey)) return "CREDENTIAL_KEY_NOT_STRICT_BASE64URL";
+  if (Buffer.from(productionKey, "base64url").length !== 32) return "CREDENTIAL_KEY_WRONG_DECODED_LENGTH";
+  if (!productionVersion?.trim()) return "CREDENTIAL_KEY_VERSION_MISSING";
+
+  const raw = environment.ONYX_CREDENTIAL_PREVIOUS_KEY_RING;
+  const previousVersions: string[] = [];
+  if (raw) {
+    let entries: unknown;
+    try {
+      entries = JSON.parse(raw);
+    } catch {
+      return "PREVIOUS_KEY_RING_INVALID_JSON";
+    }
+    if (!Array.isArray(entries)) return "PREVIOUS_KEY_RING_INVALID_ENTRY";
+    for (const entry of entries) {
+      if (!entry || typeof entry !== "object") return "PREVIOUS_KEY_RING_INVALID_ENTRY";
+      const value = entry as { key?: unknown; version?: unknown };
+      // Match parseKey's `!version?.trim()` rejection so a blank or whitespace-only previous version is never classified as valid.
+      if (typeof value.key !== "string" || typeof value.version !== "string" || !value.version.trim()) return "PREVIOUS_KEY_RING_INVALID_ENTRY";
+      if (!isValidKeyMaterial(value.key)) return "PREVIOUS_KEY_RING_INVALID_KEY";
+      previousVersions.push(value.version);
+    }
+  }
+
+  if (new Set([productionVersion, ...previousVersions]).size !== previousVersions.length + 1) return "DUPLICATE_KEY_VERSION";
+
+  return "CREDENTIAL_KEY_CONFIGURATION_VALID";
+}
+
 export function parseCredentialKeyRing(environment: Environment, context: "production" | "deploy-preview" | "branch-deploy" | "local" | "test" | "unknown"): CredentialKeyRing {
   if (context === "unknown") throw new Error("Unknown credential runtime context");
   const productionKey = environment.ONYX_CREDENTIAL_ENCRYPTION_KEY;
