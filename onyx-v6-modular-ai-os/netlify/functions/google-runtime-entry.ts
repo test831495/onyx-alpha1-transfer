@@ -29,6 +29,58 @@ import {
   type TrustedJwk,
 } from "@onyx/account-authentication-server-authority";
 
+export type GoogleRuntimeInitializationReason =
+  | "INVALID_RUNTIME_CONTEXT"
+  | "AUTHENTICATION_PROVIDER_UNAVAILABLE"
+  | "CREDENTIAL_KEY_CONFIGURATION_INVALID"
+  | "DATABASE_CONFIGURATION_UNAVAILABLE"
+  | "CANONICAL_AUTHORITY_INITIALIZATION_FAILED"
+  | "GOOGLE_RUNTIME_INITIALIZATION_FAILED";
+
+const buildGoogleRuntimeDiagnostics = (environment: Record<string, string | undefined>) => ({
+  hasGoogleClientId: Boolean(environment.ONYX_GOOGLE_CLIENT_ID),
+  hasGoogleClientSecret: Boolean(environment.ONYX_GOOGLE_CLIENT_SECRET),
+  hasGoogleRedirectUri: Boolean(environment.ONYX_GOOGLE_REDIRECT_URI),
+  hasAuthIssuer: Boolean(environment.ONYX_AUTH_ISSUER ?? environment.ONYX_AUTH_EXPECTED_ISSUER),
+  hasAuthAudience: Boolean(environment.ONYX_AUTH_AUDIENCE ?? environment.ONYX_AUTH_EXPECTED_AUDIENCE),
+  hasCredentialKey: Boolean(environment.ONYX_CREDENTIAL_ENCRYPTION_KEY),
+  hasCredentialKeyVersion: Boolean(environment.ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION),
+  netlifyContext: environment.CONTEXT,
+  nodeEnv: environment.NODE_ENV,
+});
+
+const safeGoogleRuntimeMessage = (reasonCode: GoogleRuntimeInitializationReason): string => {
+  switch (reasonCode) {
+    case "INVALID_RUNTIME_CONTEXT":
+      return "Google runtime is unavailable outside the production context.";
+    case "AUTHENTICATION_PROVIDER_UNAVAILABLE":
+      return "Google authentication provider configuration is unavailable.";
+    case "CREDENTIAL_KEY_CONFIGURATION_INVALID":
+      return "Google credential key configuration is invalid or missing.";
+    case "DATABASE_CONFIGURATION_UNAVAILABLE":
+      return "Google database configuration is unavailable.";
+    case "CANONICAL_AUTHORITY_INITIALIZATION_FAILED":
+      return "Google canonical authority initialization failed.";
+    case "GOOGLE_RUNTIME_INITIALIZATION_FAILED":
+      return "Google runtime initialization failed.";
+    default:
+      return "Google runtime initialization failed.";
+  }
+};
+
+const logGoogleRuntimeInitializationFailure = (
+  environment: Record<string, string | undefined>,
+  reasonCode: GoogleRuntimeInitializationReason,
+  error?: unknown,
+): void => {
+  console.error("[GOOGLE_RUNTIME_INIT]", {
+    reasonCode,
+    errorName: error instanceof Error ? error.name : "UnknownError",
+    safeMessage: safeGoogleRuntimeMessage(reasonCode),
+    diagnostics: buildGoogleRuntimeDiagnostics(environment),
+  });
+};
+
 export const inactiveGoogleHandler: GoogleFunctionHandler = async (_event: GoogleFunctionEvent): Promise<GoogleFunctionResponse> => ({
   statusCode: 503,
   headers: { "content-type": "application/json" },
@@ -89,12 +141,16 @@ export function createGoogleRuntimeFromEnvironment(
     authenticationProvider?: AuthenticationProvider;
   } = {},
 ): GoogleServerRuntime | undefined {
-  if (readDatabaseRuntimeContext(environment) !== "production") return undefined;
+  if (readDatabaseRuntimeContext(environment) !== "production") {
+    logGoogleRuntimeInitializationFailure(environment, "INVALID_RUNTIME_CONTEXT");
+    return undefined;
+  }
 
   const authenticationProvider =
     options.authenticationProvider ?? createProductionAuthenticationProvider(environment);
 
   if (!authenticationProvider) {
+    logGoogleRuntimeInitializationFailure(environment, "AUTHENTICATION_PROVIDER_UNAVAILABLE");
     return undefined;
   }
 
@@ -109,50 +165,28 @@ export function createGoogleRuntimeFromEnvironment(
       encryptionKey: keyRing.active ?? { version: "production-v1", bytes: new Uint8Array(32) },
       environment,
     });
-  } 
-  //catch {
-   // return undefined;
- // }
-//}
-
-
- catch (error) {
-    console.error("[GOOGLE_RUNTIME_INIT] Runtime initialization failed", {
-      errorName:
-        error instanceof Error ? error.name : "UnknownError",
-      errorMessage:
-        error instanceof Error ? error.message : String(error),
-      stack:
-        error instanceof Error ? error.stack : undefined,
-
-      diagnostics: {
-        hasGoogleClientId: Boolean(environment.ONYX_GOOGLE_CLIENT_ID),
-        hasGoogleClientSecret: Boolean(environment.ONYX_GOOGLE_CLIENT_SECRET),
-        hasGoogleRedirectUri: Boolean(environment.ONYX_GOOGLE_REDIRECT_URI),
-
-        hasAuthIssuer: Boolean(
-          environment.ONYX_AUTH_ISSUER ??
-          environment.ONYX_AUTH_EXPECTED_ISSUER,
-        ),
-
-        hasAuthAudience: Boolean(
-          environment.ONYX_AUTH_AUDIENCE ??
-          environment.ONYX_AUTH_EXPECTED_AUDIENCE,
-        ),
-
-        hasCredentialKey: Boolean(
-          environment.ONYX_CREDENTIAL_ENCRYPTION_KEY,
-        ),
-
-        hasCredentialKeyVersion: Boolean(
-          environment.ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION,
-        ),
-
-        netlifyContext: environment.CONTEXT,
-        nodeEnv: environment.NODE_ENV,
-      },
-    });
-
+  } catch (error) {
+    if (error instanceof Error && /credential.*key|encoded|required|version/i.test(error.message)) {
+      logGoogleRuntimeInitializationFailure(environment, "CREDENTIAL_KEY_CONFIGURATION_INVALID", error);
+      return undefined;
+    }
+    if (error instanceof Error && /database|connection|runtime context|getDatabase/i.test(error.message)) {
+      logGoogleRuntimeInitializationFailure(environment, "DATABASE_CONFIGURATION_UNAVAILABLE", error);
+      return undefined;
+    }
+    try {
+      createGoogleServerRuntimeWithCanonicalAuthority({
+        database: options.database ?? createConfiguredNetlifyDatabase(environment),
+        authenticationProvider,
+        mapContext: defaultOnyxContextMapper,
+        runtimeContext: "production",
+        encryptionKey: parseCredentialKeyRing(environment, "production").active ?? { version: "production-v1", bytes: new Uint8Array(32) },
+        environment,
+      });
+      logGoogleRuntimeInitializationFailure(environment, "CANONICAL_AUTHORITY_INITIALIZATION_FAILED");
+    } catch {
+      logGoogleRuntimeInitializationFailure(environment, "CANONICAL_AUTHORITY_INITIALIZATION_FAILED");
+    }
     return undefined;
   }
 }

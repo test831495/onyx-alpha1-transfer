@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { generateKeyPairSync, sign } from "node:crypto";
 import {
   createGoogleCsrfHandler,
@@ -355,5 +355,43 @@ describe("Google server runtime", () => {
     const body = JSON.parse(response.body);
     expect(body.status).toBe("UNAVAILABLE");
     expect(body.message).toBe("Google Workspace is not active in this environment.");
+  });
+
+  it("logs bounded initialization reasons and never emits raw secrets", () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const secretEnvironment = {
+      ...prodEnvironment,
+      ONYX_GOOGLE_CLIENT_ID: "synthetic-client-id",
+      ONYX_GOOGLE_CLIENT_SECRET: "super-secret-client-secret-value",
+      ONYX_CREDENTIAL_ENCRYPTION_KEY: "super-secret-key-value",
+      ONYX_CREDENTIAL_ENCRYPTION_KEY_VERSION: "v1",
+    };
+
+    const runtime = createGoogleRuntimeFromEnvironment(secretEnvironment);
+    expect(runtime).toBeUndefined();
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "[GOOGLE_RUNTIME_INIT]",
+      expect.objectContaining({
+        reasonCode: "AUTHENTICATION_PROVIDER_UNAVAILABLE",
+        errorName: expect.any(String),
+        safeMessage: expect.any(String),
+        diagnostics: expect.objectContaining({
+          hasGoogleClientId: true,
+          hasGoogleClientSecret: true,
+          hasAuthIssuer: false,
+          hasAuthAudience: false,
+          hasCredentialKey: true,
+          hasCredentialKeyVersion: true,
+        }),
+      }),
+    );
+
+    const logged = JSON.stringify(consoleSpy.mock.calls);
+    expect(logged).not.toContain("super-secret-client-secret-value");
+    expect(logged).not.toContain("super-secret-key-value");
+    expect(logged).not.toContain("synthetic-client-secret");
+    expect(logged).not.toContain("stack");
+
+    consoleSpy.mockRestore();
   });
 });
