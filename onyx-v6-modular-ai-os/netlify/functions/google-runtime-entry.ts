@@ -21,10 +21,12 @@ import {
   createConfiguredNetlifyDatabase,
   parseCredentialKeyRing,
   readDatabaseRuntimeContext,
+  readNetlifyDatabaseRuntimeMetadata,
   type CredentialKeyClassification,
+  type NetlifyDatabaseRuntimeMetadataDiagnostic,
 } from "@onyx/provider-neutral-credential-store-session-foundation";
 // @ts-ignore
-import { getConnectionString, MissingDatabaseConnectionError, type DatabaseConnection } from "@netlify/database";
+import type { DatabaseConnection } from "@netlify/database";
 import {
   createEntraExternalIdProductionProvider,
   type AuthenticatedRequestContext,
@@ -68,10 +70,7 @@ export type GoogleDatabaseInitializationFailureReason =
   | "NETLIFY_DATABASE_RUNTIME_UNAVAILABLE"
   | "GOOGLE_CANONICAL_RUNTIME_DATABASE_FAILURE";
 
-export type GoogleDatabaseRuntimeMetadataDiagnostic = {
-  readonly hasConnectionString: boolean;
-  readonly connectionStringLength: number;
-};
+export type GoogleDatabaseRuntimeMetadataDiagnostic = NetlifyDatabaseRuntimeMetadataDiagnostic;
 
 type BoundedDatabaseErrorName = "MissingDatabaseConnectionError" | "Error" | "UnknownError";
 
@@ -112,21 +111,8 @@ const logGoogleDatabaseInitializationFailure = (_reasonCode: GoogleDatabaseIniti
 };
 
 export const buildGoogleDatabaseRuntimeMetadataDiagnostic = (
-  readConnectionString: () => string | undefined = getConnectionString,
-): GoogleDatabaseRuntimeMetadataDiagnostic => {
-  try {
-    const connectionString = readConnectionString();
-    return {
-      hasConnectionString: Boolean(connectionString),
-      connectionStringLength: connectionString?.length ?? 0,
-    };
-  } catch (error) {
-    if (error instanceof MissingDatabaseConnectionError || boundedDatabaseErrorName(error) === "MissingDatabaseConnectionError") {
-      return { hasConnectionString: false, connectionStringLength: 0 };
-    }
-    throw error;
-  }
-};
+  readConnectionString?: () => string | undefined,
+): GoogleDatabaseRuntimeMetadataDiagnostic => readNetlifyDatabaseRuntimeMetadata(readConnectionString);
 
 export const googleDatabaseRuntimeMetadataDiagnosticHandler: GoogleFunctionHandler = async (): Promise<GoogleFunctionResponse> => {
   const diagnostic = buildGoogleDatabaseRuntimeMetadataDiagnostic();

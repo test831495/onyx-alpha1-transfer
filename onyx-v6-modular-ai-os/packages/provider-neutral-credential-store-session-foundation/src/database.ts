@@ -1,4 +1,4 @@
-import { getDatabase, type DatabaseConnection } from "@netlify/database";
+import { getConnectionString, getDatabase, MissingDatabaseConnectionError, type DatabaseConnection } from "@netlify/database";
 import { parseCredentialKeyRing } from "./config.js";
 
 export type DatabaseRuntimeContext = "production" | "deploy-preview" | "branch-deploy" | "local" | "test" | "unknown";
@@ -9,6 +9,32 @@ export type DatabaseRuntimePolicy = {
   readonly providerCallsEnabled: boolean;
   readonly databaseAccessEnabled: boolean;
 };
+
+export type NetlifyDatabaseRuntimeMetadataDiagnostic = {
+  readonly hasConnectionString: boolean;
+  readonly connectionStringLength: number;
+};
+
+const isMissingDatabaseConnectionError = (error: unknown): boolean =>
+  error instanceof MissingDatabaseConnectionError ||
+  (typeof error === "object" && error !== null && "name" in error && error.name === "MissingDatabaseConnectionError");
+
+export function readNetlifyDatabaseRuntimeMetadata(
+  readConnectionString: () => string | undefined = getConnectionString,
+): NetlifyDatabaseRuntimeMetadataDiagnostic {
+  try {
+    const connectionString = readConnectionString();
+    return {
+      hasConnectionString: Boolean(connectionString),
+      connectionStringLength: connectionString?.length ?? 0,
+    };
+  } catch (error) {
+    if (isMissingDatabaseConnectionError(error)) {
+      return { hasConnectionString: false, connectionStringLength: 0 };
+    }
+    throw error;
+  }
+}
 
 export function readDatabaseRuntimeContext(environment: Record<string, string | undefined>): DatabaseRuntimeContext {
   // Netlify's system `CONTEXT` variable is build-scope only and is not guaranteed to reach
