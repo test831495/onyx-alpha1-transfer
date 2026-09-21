@@ -1,4 +1,4 @@
-import{describe,expect,it}from"vitest";import{connectMicrosoftMail,disconnectedWorkspaceSnapshot,loadMicrosoftMailMessagesWithDiagnostic,resolveMicrosoftRedirectUri}from"./workspaceController";
+import{describe,expect,it,vi}from"vitest";import{authenticatedFunctionFetch,connectMicrosoftMail,disconnectedWorkspaceSnapshot,loadMicrosoftMailMessagesWithDiagnostic,resolveMicrosoftRedirectUri,resolveOnyxServerAuthorityScope,runGoogleWorkspaceActionWithClient}from"./workspaceController";
 import { MicrosoftWorkspaceConnector, resolveRuntimeMicrosoftConfig } from "@onyx/workspace-connectors";
 import { readMicrosoftRuntimeEnv } from "../viteMicrosoftEnvBridge";
 import { readFileSync } from "node:fs";
@@ -138,5 +138,110 @@ describe("Microsoft runtime config factory (production consumer path)", () => {
 
     expect(connector.configured).toBe(false);
     expect(connector.snapshot().state).toBe("unconfigured");
+  });
+});
+
+describe("Google ONYX server session client", () => {
+  const runtimeEnv = { ONYX_AUTH_SCOPE: "api://onyx-server-authority/account.preference.readwrite" };
+
+  it("uses the configured ONYX Server Authority scope without Microsoft Graph profile scopes", async () => {
+    const getAccessToken = vi.fn().mockResolvedValue("onyx-server-token");
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+    await authenticatedFunctionFetch("/.netlify/functions/google-workspace-status", { method: "GET" }, { fetcher, getAccessToken, runtimeEnv });
+
+    expect(getAccessToken).toHaveBeenCalledWith(["api://onyx-server-authority/account.preference.readwrite"], { includeProfileScopes: false });
+    const request = fetcher.mock.calls[0]![1] as RequestInit;
+    expect(request.credentials).toBe("same-origin");
+    expect(new Headers(request.headers).get("authorization")).toBe("Bearer onyx-server-token");
+    expect(JSON.stringify(fetcher.mock.calls)).not.toContain("graph.microsoft.com");
+  });
+
+  it("fails closed when no ONYX Server Authority scope is configured", () => {
+    expect(() => resolveOnyxServerAuthorityScope({ ONYX_AUTH_SCOPE: "" })).toThrow("ONYX Server Authority scope is not configured.");
+  });
+
+  it("gets csrf and initiate with Authorization before redirecting to Google", async () => {
+    const assign = vi.fn();
+    vi.stubGlobal("window", { location: { assign } });
+    const getAccessToken = vi.fn().mockResolvedValue("onyx-server-token");
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ csrfToken: "csrf" }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ authorizationUrl: "https://accounts.google.com/o/oauth2/v2/auth?state=server-state" }), { status: 200 }));
+
+    await runGoogleWorkspaceActionWithClient("connect", { fetcher, getAccessToken, runtimeEnv, randomUUID: () => "idempotency" });
+
+    expect(fetcher).toHaveBeenNthCalledWith(1, "/.netlify/functions/google-csrf", expect.objectContaining({ method: "GET", credentials: "same-origin" }));
+    expect(new Headers((fetcher.mock.calls[0]![1] as RequestInit).headers).get("authorization")).toBe("Bearer onyx-server-token");
+    expect(fetcher).toHaveBeenNthCalledWith(2, "/.netlify/functions/oauth-google-initiate", expect.objectContaining({ method: "POST", credentials: "same-origin" }));
+    const initiate = fetcher.mock.calls[1]![1] as RequestInit;
+    expect(new Headers(initiate.headers).get("authorization")).toBe("Bearer onyx-server-token");
+    expect(new Headers(initiate.headers).get("idempotency-key")).toBe("idempotency");
+    expect(assign).toHaveBeenCalledWith("https://accounts.google.com/o/oauth2/v2/auth?state=server-state");
+    expect(JSON.stringify(fetcher.mock.calls.map(([url]) => url))).not.toContain("onyx-server-token");
+    vi.unstubAllGlobals();
+  });
+
+  it("attempts silent token first, invokes existing sign-in on interaction-required, and retries once", async () => {
+    const getAccessToken = vi.fn()
+      .mockRejectedValueOnce(Object.assign(new Error("interaction required"), { errorCode: "interaction_required" }))
+      .mockResolvedValueOnce("onyx-server-token");
+    const interactiveSignIn = vi.fn().mockResolvedValue(undefined);
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ status: "OK" }), { status: 200 }));
+
+    await authenticatedFunctionFetch("/.netlify/functions/google-workspace-status", { method: "GET" }, { fetcher, getAccessToken, interactiveSignIn, runtimeEnv });
+
+    expect(getAccessToken).toHaveBeenCalledTimes(2);
+    expect(interactiveSignIn).toHaveBeenCalledTimes(1);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("starts ONYX sign-in when no account exists and retries the original request once", async () => {
+    const getAccessToken = vi.fn()
+      .mockRejectedValueOnce(new Error("Microsoft workspace is not connected."))
+      .mockResolvedValueOnce("onyx-server-token");
+    const interactiveSignIn = vi.fn().mockResolvedValue(undefined);
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ status: "OK" }), { status: 200 }));
+
+    await authenticatedFunctionFetch("/.netlify/functions/google-drive", { method: "GET" }, { fetcher, getAccessToken, interactiveSignIn, runtimeEnv });
+
+    expect(interactiveSignIn).toHaveBeenCalledTimes(1);
+    expect(getAccessToken).toHaveBeenCalledTimes(2);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not retry when interactive sign-in is cancelled", async () => {
+    const getAccessToken = vi.fn().mockRejectedValue(new Error("Microsoft workspace is not connected."));
+    const interactiveSignIn = vi.fn().mockRejectedValue(new Error("cancelled"));
+    const fetcher = vi.fn();
+
+    await expect(authenticatedFunctionFetch("/.netlify/functions/google-drive", {}, { fetcher, getAccessToken, interactiveSignIn, runtimeEnv })).rejects.toThrow("Sign-in was cancelled. Google remains disconnected.");
+
+    expect(getAccessToken).toHaveBeenCalledTimes(1);
+    expect(interactiveSignIn).toHaveBeenCalledTimes(1);
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("fails safely for ambiguous cached accounts instead of silently choosing", async () => {
+    const getAccessToken = vi.fn().mockRejectedValue(new Error("Multiple Microsoft accounts are cached; select an account before continuing."));
+    const interactiveSignIn = vi.fn();
+    const fetcher = vi.fn();
+
+    await expect(authenticatedFunctionFetch("/.netlify/functions/google-drive", {}, { fetcher, getAccessToken, interactiveSignIn, runtimeEnv })).rejects.toThrow("Sign in to ONYX before connecting Google.");
+
+    expect(interactiveSignIn).not.toHaveBeenCalled();
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("surfaces invalid server sessions as sign-in state without leaking tokens", async () => {
+    const getAccessToken = vi.fn().mockResolvedValue("onyx-server-token");
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ message: "Session required" }), { status: 400 }));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    await expect(runGoogleWorkspaceActionWithClient("refresh", { fetcher, getAccessToken, runtimeEnv })).rejects.toThrow("Sign in to ONYX before connecting Google.");
+
+    expect(JSON.stringify(fetcher.mock.calls.map(([url]) => url))).not.toContain("onyx-server-token");
+    expect(JSON.stringify(consoleSpy.mock.calls)).not.toContain("onyx-server-token");
+    consoleSpy.mockRestore();
   });
 });
