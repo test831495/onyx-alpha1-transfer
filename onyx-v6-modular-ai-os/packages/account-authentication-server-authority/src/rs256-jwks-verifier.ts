@@ -80,7 +80,16 @@ export class SyntheticRs256JwksVerifier {
     try { header = JSON.parse(headerText) as { alg?: string; kid?: string }; claims = JSON.parse(claimsText) as TokenClaims; } catch { return deny("TOKEN_MALFORMED"); }
     if (header.alg !== "RS256" || !header.kid || header.kid.length > 96) return deny("TOKEN_MALFORMED");
     const jwk = this.configuration.resolver.resolve(header.kid); if (!jwk) return deny("TOKEN_SIGNATURE_INVALID");
-    if (jwk.kty !== "RSA" || jwk.alg !== "RS256" || jwk.use !== "sig" || !jwk.n || !jwk.e) return deny("TOKEN_SIGNATURE_INVALID");
+
+if (
+  jwk.kty !== "RSA" ||
+  (jwk.alg !== undefined && jwk.alg !== "RS256") ||
+  (jwk.use !== undefined && jwk.use !== "sig") ||
+  !jwk.n ||
+  !jwk.e
+) {
+  return deny("TOKEN_SIGNATURE_INVALID");
+}
     try { if (!verify("RSA-SHA256", Buffer.from(`${encodedHeader}.${encodedClaims}`), createPublicKey({ key: jwk, format: "jwk" }), Buffer.from(encodedSignature, "base64url"))) return deny("TOKEN_SIGNATURE_INVALID"); } catch { return deny("TOKEN_SIGNATURE_INVALID"); }
     if (claims.iss !== this.configuration.issuer) return deny("TOKEN_ISSUER_INVALID");
     const audiences = typeof claims.aud === "string" ? [claims.aud] : claims.aud;
