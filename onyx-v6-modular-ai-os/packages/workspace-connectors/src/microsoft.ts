@@ -650,6 +650,47 @@ export class MicrosoftWorkspaceConnector {
     this.diagnostic = "Redirecting to Microsoft sign-in.";
     await this.application.loginRedirect({ scopes: [...MICROSOFT_COMBINED_WORKSPACE_SCOPES], prompt: "select_account" });
   }
+  async authorizeScopesInteractively(scopes: readonly string[]): Promise<void> {
+    if (!this.application) await this.initialize();
+
+    if (!this.application || !this.configured) {
+      throw new Error("Microsoft workspace configuration is incomplete.");
+    }
+
+    const requestedScopes = Array.from(
+      new Set(
+        scopes
+          .map((scope) => scope.trim())
+          .filter((scope) => scope.length > 0),
+      ),
+    );
+
+    if (requestedScopes.length === 0) {
+      throw new Error("ONYX Server Authority scope is not configured.");
+    }
+
+    this.diagnostic = "Opening ONYX sign-in.";
+
+    const result = this.account
+      ? await this.application.acquireTokenPopup({
+          account: this.account,
+          scopes: requestedScopes,
+          prompt: "select_account",
+        })
+      : await this.application.loginPopup({
+          scopes: requestedScopes,
+          prompt: "select_account",
+        });
+
+    if (!result.account) {
+      throw new Error("ONYX sign-in did not return an account.");
+    }
+
+    this.account = result.account;
+    this.application.setActiveAccount(result.account);
+    this.diagnostic = "ONYX sign-in completed.";
+  }
+
   async connectMail(): Promise<void> {
     if (!this.application) await this.initialize();
     if (!this.application || !this.configured) throw new Error("Microsoft workspace configuration is incomplete.");
@@ -681,7 +722,7 @@ export class MicrosoftWorkspaceConnector {
     if (!this.application || !this.account) return;
     await this.application.logoutRedirect({ account: this.account, postLogoutRedirectUri: window.location.origin });
   }
-  async getAccessToken(scopes: readonly string[] | string[]): Promise<string> {
+  async getAccessToken(scopes: readonly string[] | string[], options: { includeProfileScopes?: boolean } = {}): Promise<string> {
     if (!this.application || !this.account) {
       throw new Error(
         "Microsoft workspace is not connected. Connect Microsoft and try again.",
@@ -689,7 +730,7 @@ export class MicrosoftWorkspaceConnector {
     }
 
     const requestedScopes = Array.from(
-      new Set([...profileScopes, ...scopes]),
+      new Set([...(options.includeProfileScopes === false ? [] : profileScopes), ...scopes]),
     );
 
     try {
