@@ -212,8 +212,27 @@ const buildGoogleRuntimeDiagnostics = (
   options: { authenticationProvider?: AuthenticationProvider; database?: DatabaseConnection } = {},
 ) => {
   const credentialKeyClassification: CredentialKeyClassification = classifyCredentialKeyConfiguration(environment);
+
+  console.log(
+  "[GOOGLE_CREDENTIAL_CLASSIFICATION]",
+  credentialKeyClassification,
+);
+
   const databaseConfigurationClassification: DatabaseConfigurationClassification = classifyDatabaseConfiguration(environment);
+
+console.log(
+  "[GOOGLE_DATABASE_CLASSIFICATION]",
+  databaseConfigurationClassification,
+);  
+
   const authenticationProviderClassification = classifyAuthenticationProviderConfiguration(environment, options.authenticationProvider);
+console.log(
+  "[GOOGLE_AUTH_PROVIDER_CLASSIFICATION]",
+  authenticationProviderClassification,
+);
+
+
+
   const googleOAuthConfigurationClassification = classifyGoogleOAuthConfiguration(environment);
   const runtimeContext = readDatabaseRuntimeContext(environment);
 
