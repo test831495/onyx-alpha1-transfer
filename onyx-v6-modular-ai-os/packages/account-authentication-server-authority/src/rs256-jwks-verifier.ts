@@ -12,20 +12,24 @@ export class OidcJwksResolver implements TrustedJwkResolver {
   private lastFetchMs = 0;
   private inFlightFetch?: Promise<void>;
 
-  public constructor(jwks: readonly TrustedJwk[] = [], private readonly jwksUri?: string) {
-    for (const key of jwks) {
-      if (key.kid) this.cache.set(key.kid, key);
+public constructor(
+  jwks: readonly TrustedJwk[] = [],
+  private readonly jwksUri?: string,
+) {
+  for (const key of jwks) {
+    if (key.kid) {
+      this.cache.set(key.kid, key);
     }
   }
 
-  public resolve(kid: string): TrustedJwk | undefined {
-    const existing = this.cache.get(kid);
-    if (existing) return existing;
-    if (this.jwksUri && Date.now() - this.lastFetchMs > 60000) {
-      void this.refresh();
-    }
-    return undefined;
+  if (this.jwksUri) {
+    void this.refresh();
   }
+}
+
+public resolve(kid: string): TrustedJwk | undefined {
+  return this.cache.get(kid);
+}
 
   public async refresh(): Promise<void> {
     if (!this.jwksUri) return;
