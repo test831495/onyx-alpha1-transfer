@@ -4,7 +4,9 @@ export const MODEL_CAPABILITIES = Object.freeze([
 export type ModelCapability = (typeof MODEL_CAPABILITIES)[number];
 export type ConversationModelRequest = Readonly<{
   requestId: string; sessionId: string; turnId: string; utteranceGeneration: number;
+  userText: string;
   language: "ENGLISH" | "HINDI" | "HINGLISH"; selectedSpeaker: "ONYX" | "NOVA";
+  selectionReason: string;
   characterProfileVersion: string; conversationPurpose: string; responseMode: string;
   responseObjectives: readonly string[]; recentTurnSummaries: readonly string[]; currentTopic: string | null;
   supportedClaims: readonly string[]; prohibitedClaims: readonly string[]; truthStatus: string;
@@ -12,7 +14,8 @@ export type ConversationModelRequest = Readonly<{
   followUpPolicy: string; operatingMode: string; privacyClass: "STANDARD" | "SENSITIVE";
   trustedCapabilityFacts: readonly string[]; requestVersion: "B5F-1";
 }>;
-export type ConversationModelResult = Readonly<{ requestId: string; adapterId: string; modelReferenceSafe: string; text: string; spokenText?: string; language: ConversationModelRequest["language"]; finishReason: "STOP" | "LENGTH"; generationReceiptVersion: "B5F-1" }>;
+export type GenerationMode = "MODEL_GENERATED" | "DETERMINISTIC_FALLBACK" | "SAFE_LIMITATION";
+export type ConversationModelResult = Readonly<{ requestId: string; adapterId: string; modelReferenceSafe: string; text: string; spokenText?: string; language: ConversationModelRequest["language"]; finishReason: "STOP" | "LENGTH"; generationReceiptVersion: "B5F-1"; generationMode?: GenerationMode; selectedSpeaker?: ConversationModelRequest["selectedSpeaker"]; selectionReason?: string; providerRequestSucceeded?: boolean; fallbackReason?: string }>;
 export interface ConversationModelAdapter {
   readonly adapterId: string; readonly adapterVersion: string; readonly capabilities: readonly ModelCapability[];
   isAvailable(context: Readonly<{ offline: boolean; localCapabilityAvailable: boolean }>): boolean;

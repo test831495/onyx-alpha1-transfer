@@ -4,9 +4,11 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "noEmit": true
+    "noEmit": true,
+    "allowImportingTsExtensions": true
   },
   "include": [
-    "**/*.ts"
+    "**/*.ts",
+    "**/*.mts"
   ]
 }

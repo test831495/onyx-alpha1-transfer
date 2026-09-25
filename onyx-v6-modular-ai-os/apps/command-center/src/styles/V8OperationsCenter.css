@@ -214,6 +214,96 @@
   box-shadow: 0 0 9px #68dfff;
 }
 
+/* On desktop/tablet this wrapper is transparent to layout: every child keeps its own
+   absolute position exactly as before. Only the max-width:900px rule turns it into
+   the mobile flex stack (header / speaker cards / conversation / input). */
+.v8-mobile-shell {
+  display: contents;
+}
+
+/* Compact mobile speaker cards: hidden on desktop/tablet, shown under the max-width:900px rule below */
+.v8-mobile-speakers {
+  position: absolute;
+  z-index: 9;
+  top: 4.6rem;
+  left: 50%;
+  display: none;
+  gap: 10px;
+  width: min(26rem, calc(100% - 24px));
+  transform: translateX(-50%);
+}
+
+.v8-speaker-card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px 10px;
+  border: 1px solid rgba(100, 215, 247, .24);
+  border-radius: 14px;
+  background: rgba(3, 12, 19, .62);
+  backdrop-filter: blur(10px);
+  opacity: .62;
+  transition: opacity 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.v8-speaker-card.is-active {
+  opacity: 1;
+  border-color: rgba(100, 215, 247, .68);
+  box-shadow: 0 0 18px rgba(88, 220, 255, .28);
+}
+
+.v8-speaker-portrait {
+  width: clamp(88px, 24vw, 120px);
+  height: clamp(88px, 24vw, 120px);
+  border-radius: 18px;
+  object-fit: cover;
+  object-position: center top;
+  border: 1px solid rgba(100, 215, 247, .3);
+  background: rgba(3, 12, 19, .4);
+  filter: saturate(.7) contrast(.94);
+  transition: filter 220ms ease, box-shadow 220ms ease;
+}
+
+.v8-speaker-card.is-active .v8-speaker-portrait {
+  filter: saturate(1.05) contrast(1.06);
+  box-shadow: 0 0 22px rgba(88, 220, 255, .5);
+}
+
+.v8-speaker-name {
+  color: #eefcff;
+  font: 600 .68rem/1.1 "Avenir Next", "Trebuchet MS", sans-serif;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.v8-speaker-state {
+  color: rgba(199, 237, 247, .58);
+  font: 500 .6rem/1.1 "Avenir Next", "Trebuchet MS", sans-serif;
+  text-transform: uppercase;
+}
+
+.v8-speaker-card.is-active .v8-speaker-state {
+  color: var(--v8-cyan);
+}
+
+/* Conversation region: hidden on desktop/tablet, becomes the dominant mobile element below */
+.v8-conversation-region {
+  position: absolute;
+  z-index: 7;
+  display: none;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.v8-conversation-text {
+  margin: 0;
+  color: var(--v8-ice);
+  font: 500 .92rem/1.4 "Avenir Next", "Trebuchet MS", sans-serif;
+  white-space: pre-wrap;
+}
+
 .v8-intent-layer {
   position: absolute;
   z-index: 12;
@@ -296,6 +386,102 @@
   .v8-character-stage .reactor-core { width: clamp(7rem, 16vw, 10rem); }
   .v8-intent-layer { grid-template-columns: 1fr; gap: 8px; width: min(42rem, calc(100% - 30px)); }
   .v8-intent-heading { text-align: center; }
+}
+
+/* Mobile-first redesign: phone portrait/landscape and small tablet trade the full character
+   stage for compact portrait speaker cards, freeing the viewport for the conversation region.
+   The v8-mobile-shell wrapper switches from `display:contents` to a real flex column so the
+   conversation region can grow (flex:1) into whatever space remains above the input. */
+@media (max-width: 900px) {
+  .v8-operations-center {
+    min-height: 100dvh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  .v8-world { display: none; }
+  .v8-character-stage { display: none; }
+
+  .v8-mobile-shell {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    inset: 0;
+    padding: max(10px, env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom)) 12px;
+    gap: 8px;
+  }
+
+  .v8-presence-status {
+    position: static;
+    left: auto;
+    top: auto;
+    width: auto;
+    flex: 0 0 auto;
+    transform: none;
+    gap: 2px;
+  }
+  .v8-presence-status span { font-size: .56rem; }
+  .v8-presence-status strong { font-size: .82rem; }
+
+  .v8-mobile-speakers {
+    display: flex;
+    position: static;
+    left: auto;
+    top: auto;
+    width: 100%;
+    flex: 0 0 auto;
+    transform: none;
+  }
+
+  .v8-council-lane {
+    position: static;
+    left: auto;
+    top: auto;
+    flex: 0 0 auto;
+    justify-content: center;
+    transform: none;
+  }
+
+  .v8-conversation-region {
+    display: block;
+    position: static;
+    flex: 1 1 50vh;
+    min-height: 50vh;
+    max-height: 52vh;
+    overflow-y: auto;
+    padding: 4px 2px;
+    background: rgba(3, 12, 19, .18);
+    border: 1px solid rgba(85, 220, 255, .12);
+    border-radius: 12px;
+  }
+
+  .v8-intent-layer {
+    position: static;
+    left: auto;
+    bottom: auto;
+    grid-template-columns: 1fr;
+    width: 100%;
+    flex: 0 0 auto;
+    transform: none;
+  }
+  .v8-intent-heading { display: none; }
+  .v8-intent-layer .glass-command input { font-size: 16px; }
+}
+
+@media (max-width: 480px) {
+  .v8-speaker-card { padding: 6px 8px; }
+  .v8-conversation-text { font-size: .86rem; }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .v8-mobile-shell { gap: 4px; }
+  .v8-mobile-speakers { flex-direction: row; }
+  .v8-speaker-portrait { width: clamp(88px, 12vw, 100px); height: clamp(88px, 12vw, 100px); }
+  .v8-presence-status span { display: none; }
+  .v8-presence-status strong { font-size: .7rem; }
+}
+
+@media (min-width: 701px) and (max-width: 900px) {
+  .v8-speaker-portrait { width: clamp(112px, 14vw, 144px); height: clamp(112px, 14vw, 144px); }
 }
 
 @media (max-width: 700px) {

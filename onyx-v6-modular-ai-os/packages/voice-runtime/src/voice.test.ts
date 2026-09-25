@@ -1,8 +1,23 @@
-import{describe,expect,it,vi}from"vitest";import{DEFAULT_CHARACTER_BIBLE,GOLDEN_CONVERSATIONS,VoiceManager,createModelRegistry,createModelRouter,createSyntheticVoiceSession,defaultVoicePreferences,defaultVoicePreferencesByAssistant,selectSystemVoice}from"./index";
+import{describe,expect,it,vi}from"vitest";import{DEFAULT_CHARACTER_BIBLE,GOLDEN_CONVERSATIONS,VoiceManager,createModelRegistry,createModelRouter,createSyntheticVoiceSession,defaultVoicePreferences,defaultVoicePreferencesByAssistant,normalizeTextForSpeech,selectSystemVoice}from"./index";
+describe("speech text normalization",()=>{
+ it("removes common Markdown while preserving meaning",()=>{
+  expect(normalizeTextForSpeech("How about a quick **tomato chickpea curry with rice**?")).toBe("How about a quick tomato chickpea curry with rice?");
+  expect(normalizeTextForSpeech("Try __vegetable soup__ with *warm bread*. ")).toBe("Try vegetable soup with warm bread.");
+  expect(normalizeTextForSpeech("[Read the recipe](https://example.com) and ![tomato photo](https://example.com/a.png)")).toBe("Read the recipe and tomato photo");
+  expect(normalizeTextForSpeech("# Heading\n- first item\n2. second item\n> quoted text\n---")).toBe("Heading first item second item quoted text");
+  expect(normalizeTextForSpeech("Use `inline code` and ```\nconst x = 1;\n```.")).toBe("Use inline code and const x = 1;.");
+ });
+ it("preserves meaningful literal symbols and decodes safe entities",()=>{
+  expect(normalizeTextForSpeech("2 * 3 = 6; file_name.txt; 10:30; &amp; &quot;ok&quot;.")).toBe("2 * 3 = 6; file_name.txt; 10:30; & \"ok\".");
+  expect(normalizeTextForSpeech("2 * 3 * 4 = 24")).toBe("2 * 3 * 4 = 24");
+ });
+ it("returns empty text for formatting-only content",()=>{expect(normalizeTextForSpeech("*** --- ``` ```")).toBe("");});
+});
 describe("assistant voice profiles",()=>{
- it("keeps safe system fallback",()=>{expect(defaultVoicePreferences.engine).toBe("system");expect(defaultVoicePreferences.enabled).toBe(true)});
+ it("keeps neural profiles with browser fallback available",()=>{expect(defaultVoicePreferences.engine).toBe("azure");expect(defaultVoicePreferences.enabled).toBe(true)});
  it("gives NOVA a female profile",()=>{expect(defaultVoicePreferencesByAssistant.nova.persona).toBe("female");expect(defaultVoicePreferencesByAssistant.nova.azureVoice).toBe("en-IN-NeerjaNeural")});
  it("gives ONYX a male profile",()=>{expect(defaultVoicePreferencesByAssistant.onyx.persona).toBe("male");expect(defaultVoicePreferencesByAssistant.onyx.azureVoice).toBe("en-IN-PrabhatNeural")});
+ it("assigns distinct explicit character voice profiles",()=>{expect(defaultVoicePreferencesByAssistant.nova.voiceProfileId).toBe("NOVA_AZURE_EN_IN_NEERJA");expect(defaultVoicePreferencesByAssistant.onyx.voiceProfileId).toBe("ONYX_AZURE_EN_IN_PRABHAT");expect(defaultVoicePreferencesByAssistant.nova.voiceProfileId).not.toBe(defaultVoicePreferencesByAssistant.onyx.voiceProfileId)});
  it("keeps profiles independent",()=>{expect(defaultVoicePreferencesByAssistant.nova).not.toBe(defaultVoicePreferencesByAssistant.onyx);expect(defaultVoicePreferencesByAssistant.nova.pitch).not.toBe(defaultVoicePreferencesByAssistant.onyx.pitch)});
   it("does not leak a global speech synthesis stub between tests",()=>{
     vi.stubGlobal("speechSynthesis",{getVoices:()=>[
@@ -18,14 +33,50 @@ describe("assistant voice profiles",()=>{
 });
 
 describe("VoiceManager TTS completion",()=>{
+ it("prefers a configured healthy neural adapter before browser speech",async()=>{
+  let audio: {onended?:()=>void;onerror?:()=>void;play:()=>Promise<void>}|undefined;
+  let synthRequestBody="";
+  vi.stubGlobal("fetch",vi.fn(async(url:string,init?:RequestInit)=>{if(!url.includes("voice-status"))synthRequestBody=String(init?.body);return url.includes("voice-status")?new Response(JSON.stringify({ready:true}),{status:200}):new Response(new Blob(["audio"]),{status:200})}));
+  vi.stubGlobal("Audio",class{onended?:()=>void;onerror?:()=>void;constructor(public source:string){audio=this as unknown as typeof audio;}play=async()=>undefined;pause=()=>undefined;});
+  const manager=new VoiceManager();
+  const pending=manager.speak("How about **warm soup**?",{...defaultVoicePreferencesByAssistant.onyx,engine:"azure"});
+  await new Promise(resolve=>setTimeout(resolve,0));
+  expect(audio).toBeDefined();
+  audio?.onended?.();
+  const result=await pending;
+  expect(result.engine).toBe("azure");
+  expect(result.fallback).toBe(false);
+  expect(synthRequestBody).toContain('"text":"How about warm soup?"');
+  expect(synthRequestBody).not.toContain("**");
+  expect(vi.mocked(fetch).mock.calls.some(([url])=>String(url).includes("voice-status"))).toBe(true);
+  vi.unstubAllGlobals();
+ });
+ it("normalizes browser fallback text and skips empty speech without invoking providers",async()=>{
+  let utterance:SpeechSynthesisUtterance|undefined;
+  const speak=vi.fn();
+  vi.stubGlobal("fetch",vi.fn(async()=>{throw new Error("offline")}));
+  vi.stubGlobal("speechSynthesis",{cancel:vi.fn(),getVoices:vi.fn(()=>[{name:"Female Test Voice",lang:"en-US",default:true}]),speak});
+  vi.stubGlobal("SpeechSynthesisUtterance",class{onend:((event:unknown)=>void)|null=null;onerror:((event:unknown)=>void)|null=null;lang="";rate=1;pitch=1;volume=1;voice=null;constructor(public text:string){utterance=this as unknown as SpeechSynthesisUtterance;}});
+  const manager=new VoiceManager();
+  const skipped=await manager.speak("*** ---",{...defaultVoicePreferences,engine:"system"});
+  expect(skipped.skipped).toBe(true);
+  expect(speak).not.toHaveBeenCalled();
+  const pending=manager.speak("Try **warm bread**.",{...defaultVoicePreferences,engine:"system"});
+  await new Promise(resolve=>setTimeout(resolve,0));
+  expect(utterance?.text).toBe("Try warm bread.");
+  utterance?.onend?.({} as SpeechSynthesisEvent);
+  await pending;
+  expect(speak).toHaveBeenCalledTimes(1);
+  vi.unstubAllGlobals();
+ });
  it("resolves system speech only after the utterance reaches a terminal event",async()=>{
   let utterance:SpeechSynthesisUtterance|undefined;
   vi.stubGlobal("SpeechSynthesisUtterance",class{onend:((event:unknown)=>void)|null=null;onerror:((event:unknown)=>void)|null=null;lang="";rate=1;pitch=1;volume=1;voice=null;constructor(public text:string){utterance=this as unknown as SpeechSynthesisUtterance;}});
   vi.stubGlobal("speechSynthesis",{cancel:vi.fn(),getVoices:vi.fn(()=>[{name:"Female Test Voice",lang:"en-US",default:true}]),speak:vi.fn()});
   const manager=new VoiceManager();
   let resolved=false;
-  const pending=manager.speak("hello",defaultVoicePreferences).then(()=>{resolved=true});
-  await Promise.resolve();
+  const pending=manager.speak("hello",{...defaultVoicePreferences,engine:"system"}).then(()=>{resolved=true});
+  await new Promise(resolve=>setTimeout(resolve,0));
   expect(resolved).toBe(false);
     utterance?.onend?.({} as SpeechSynthesisEvent);
   await pending;
@@ -37,7 +88,7 @@ describe("VoiceManager TTS completion",()=>{
   vi.stubGlobal("SpeechSynthesisUtterance",class{onend:((event:unknown)=>void)|null=null;onerror:((event:unknown)=>void)|null=null;lang="";rate=1;pitch=1;volume=1;voice=null;constructor(public text:string){}});
   vi.stubGlobal("speechSynthesis",{cancel:vi.fn(),getVoices:vi.fn(()=>[{name:"Female Test Voice",lang:"en-US",default:true}]),speak:vi.fn(()=>{throw new Error("blocked")})});
   const manager=new VoiceManager();
-  await expect(manager.speak("hello",defaultVoicePreferences)).rejects.toThrow("blocked");
+  await expect(manager.speak("hello",{...defaultVoicePreferences,engine:"system"})).rejects.toThrow("blocked");
   vi.unstubAllGlobals();
  });
 
@@ -46,8 +97,8 @@ describe("VoiceManager TTS completion",()=>{
   vi.stubGlobal("SpeechSynthesisUtterance",class{onend:((event:unknown)=>void)|null=null;onerror:((event:unknown)=>void)|null=null;lang="";rate=1;pitch=1;volume=1;voice=null;constructor(public text:string){utterance=this as unknown as SpeechSynthesisUtterance;}});
   vi.stubGlobal("speechSynthesis",{cancel:vi.fn(),getVoices:vi.fn(()=>[{name:"Female Test Voice",lang:"en-US",default:true}]),speak:vi.fn()});
   const manager=new VoiceManager();
-  const pending=expect(manager.speak("hello",defaultVoicePreferences)).rejects.toThrow("System voice synthesis failed.");
-  await Promise.resolve();
+  const pending=expect(manager.speak("hello",{...defaultVoicePreferences,engine:"system"})).rejects.toThrow("System voice synthesis failed.");
+  await new Promise(resolve=>setTimeout(resolve,0));
   utterance?.onerror?.({} as SpeechSynthesisErrorEvent);
   await pending;
   vi.unstubAllGlobals();

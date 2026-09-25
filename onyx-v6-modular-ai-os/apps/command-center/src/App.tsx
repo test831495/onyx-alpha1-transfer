@@ -350,6 +350,7 @@ export function App() {
     "idle",
   );
   const [state, setState] = useState<CoreState>("wake-armed");
+  const [activePresenceSpeaker, setActivePresenceSpeaker] = useState<"ONYX" | "NOVA" | null>(null);
   const [caption, setCaption] = useState("NOVA is ready.");
   const [quality, setQuality] = useState<"full" | "balanced" | "low">(
     "balanced",
@@ -463,10 +464,13 @@ export function App() {
   const reset = useCallback(
     (assistant: AssistantMode = modeRef.current) => {
       setState("wake-armed");
+      setActivePresenceSpeaker(null);
       setCaption(`${assistant.toUpperCase()} is ready.`);
     },
     [],
   );
+
+  const voicePreferencesForSpeaker = useCallback((speaker: "ONYX" | "NOVA") => loadVoicePreferences(speaker.toLowerCase() as AssistantMode), []);
 
   // Shell routing must be defined early for use in selectPanel
   const dispatchShell = useCallback((intent: ShellIntent) => {
@@ -1168,17 +1172,48 @@ export function App() {
               suppliedTruthReferences: [],
               offline: false,
               localCapabilityAvailable: true,
+              workspaceSnapshot: workspace,
             });
+            const conversationTurn = commandSequence.current;
+            const selectedVoicePreferences = conversationReceipt.speaker === "ONYX" || conversationReceipt.speaker === "NOVA"
+              ? voicePreferencesForSpeaker(conversationReceipt.speaker)
+              : voicePreferences;
+            setActivePresenceSpeaker(conversationReceipt.speaker === "ONYX" || conversationReceipt.speaker === "NOVA" ? conversationReceipt.speaker : null);
             setState("speaking");
             setCaption(conversationReceipt.text);
             if (conversationReceipt.spokenText.trim()) {
-              void voiceManager.current.speak(conversationReceipt.spokenText, voicePreferences).then((voiceResult) => {
+              try {
+                const voiceResult = await voiceManager.current.speak(conversationReceipt.spokenText, selectedVoicePreferences, {
+                  sessionId: conversationReceipt.sessionId,
+                  turnId: conversationReceipt.turnId,
+                  utteranceGeneration: conversationReceipt.utteranceGeneration,
+                  selectedSpeaker: conversationReceipt.speaker === "ONYX" ? "onyx" : "nova",
+                });
+                if (conversationTurn !== commandSequence.current) return;
                 setVoiceStatus(voiceResult.message ?? `${voiceResult.engine} voice ready.`);
-              }).catch(() => {
-                setVoiceStatus("System voice ready.");
-              });
+                if (followUpSession.current.beginAfterSpeech(true)) {
+                  const restartResult = followUpSession.current.beginListening(
+                    () => {
+                      const started = startFollowUp.current?.() ?? false;
+                      if (started) setState("listening");
+                      return started;
+                    },
+                    () => {
+                      stopFollowUp.current?.();
+                      reset();
+                    },
+                  );
+                  if (restartResult === "TAP_TO_CONTINUE") {
+                    setState("idle");
+                    setCaption("Tap the microphone to continue");
+                  }
+                } else {
+                  reset();
+                }
+              } catch {
+                if (conversationTurn === commandSequence.current) setVoiceStatus("System voice ready.");
+              }
             }
-            timers.current.push(window.setTimeout(() => reset(), source === "VOICE" ? 4200 : 5200));
             return;
           }
           showError(outcome.result.message);
@@ -1206,7 +1241,9 @@ export function App() {
       runConversationalPlan,
       selectPanel,
       showError,
+      workspace,
       voicePreferences,
+      voicePreferencesForSpeaker,
     ],
   );
 
@@ -1488,10 +1525,12 @@ export function App() {
             return (
               <V8OperationsCenter
                 state={mapCoreStateToSemanticState(state)}
+                activeSpeaker={shell.presenceMode === "ONYX_AND_NOVA" ? "COUNCIL" : activePresenceSpeaker ?? "NONE"}
+                caption={caption}
                 characterStage={<HeroCore
                   mode={mode}
                   state={state}
-                  presenceSpeaker={shell.presenceMode === "ONYX_AND_NOVA" ? "COUNCIL" : undefined}
+                  presenceSpeaker={shell.presenceMode === "ONYX_AND_NOVA" ? "COUNCIL" : activePresenceSpeaker ?? undefined}
                   onSwitch={() => activate(mode === "nova" ? "onyx" : "nova")}
                   onAction={dispatchOrbitAction}
                   quality={quality}
@@ -1510,7 +1549,7 @@ export function App() {
               <HeroCore
                 mode={mode}
                 state={state}
-                presenceSpeaker={shell.presenceMode === "ONYX_AND_NOVA" ? "COUNCIL" : undefined}
+                presenceSpeaker={shell.presenceMode === "ONYX_AND_NOVA" ? "COUNCIL" : activePresenceSpeaker ?? undefined}
                 onSwitch={() => activate(mode === "nova" ? "onyx" : "nova")}
                 onAction={dispatchOrbitAction}
                 quality={quality}

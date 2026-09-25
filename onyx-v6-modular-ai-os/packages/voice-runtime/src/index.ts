@@ -4,6 +4,7 @@ export type AssistantVoice="nova"|"onyx";
 export type VoicePersona="female"|"male"|"neutral";
 
 export interface VoicePreferences {
+  voiceProfileId:string;
   enabled:boolean;
   engine:VoiceEngine;
   persona:VoicePersona;
@@ -18,13 +19,31 @@ export interface VoicePreferences {
   privacy:"private"|"standard"|"full";
 }
 export interface VoiceStatus { engine:VoiceEngine; ready:boolean; diagnostic:string; }
+export interface VoicePlaybackBinding { sessionId:string; turnId:string; utteranceGeneration:number; selectedSpeaker:AssistantVoice; }
+export interface VoiceSpeakResult { engine:VoiceEngine; fallback:boolean; skipped?:boolean; message?:string; }
+
+export function normalizeTextForSpeech(input:string):string {
+  let text=input.replace(/\r\n?/g,"\n");
+  text=text.replace(/```[^\n]*\n([\s\S]*?)```/g,"$1").replace(/```/g,"");
+  text=text.replace(/!\[([^\]]*)\]\([^)]*\)/g,"$1").replace(/\[([^\]]+)\]\([^)]*\)/g,"$1");
+  text=text.replace(/https?:\/\/[^\s)]+/gi,"");
+  text=text.replace(/^\s{0,3}#{1,6}\s+/gm,"").replace(/^\s*>\s?/gm,"");
+  text=text.replace(/^\s*(?:[-+*])\s+/gm,"").replace(/^\s*\d+[.)]\s+/gm,"\n");
+  text=text.replace(/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/gm,"");
+  text=text.replace(/`([^`\n]+)`/g,"$1");
+  text=text.replace(/\*\*([^*\n]+)\*\*/g,"$1").replace(/__([^_\n]+)__/g,"$1").replace(/~~([^~\n]+)~~/g,"$1");
+  text=text.replace(/(^|[^\w])\*([^\s*](?:[^*\n]*[^\s*])?)\*(?!\w)/g,"$1$2").replace(/(^|[^\w])_([^\s_](?:[^_\n]*[^\s_])?)_(?!\w)/g,"$1$2");
+  text=text.replace(/&amp;/gi,"&").replace(/&lt;/gi,"<").replace(/&gt;/gi,">").replace(/&quot;/gi,'"').replace(/&#39;/gi,"'");
+  text=text.replace(/[ \t\n]+/g," ").replace(/\s+([,.!?;:])/g,"$1").trim();
+  return /^(?:(?:---|\*{3}|_{3})\s*)+$/.test(text) ? "" : text;
+}
 
 const legacyKey="onyx.voice.preferences";
 const profileKey=(assistant:AssistantVoice)=>`onyx.voice.preferences.${assistant}`;
 
 export const defaultVoicePreferencesByAssistant:Record<AssistantVoice,VoicePreferences>={
-  nova:{enabled:true,engine:"system",persona:"female",azureVoice:"en-IN-NeerjaNeural",language:"en-IN",rate:1,pitch:1.05,volume:.9,detail:"brief",privacy:"standard"},
-  onyx:{enabled:true,engine:"system",persona:"male",azureVoice:"en-IN-PrabhatNeural",language:"en-IN",rate:.98,pitch:.92,volume:.9,detail:"brief",privacy:"standard"},
+  nova:{voiceProfileId:"NOVA_AZURE_EN_IN_NEERJA",enabled:true,engine:"azure",persona:"female",azureVoice:"en-IN-NeerjaNeural",language:"en-IN",rate:1,pitch:1.05,volume:.9,detail:"brief",privacy:"standard"},
+  onyx:{voiceProfileId:"ONYX_AZURE_EN_IN_PRABHAT",enabled:true,engine:"azure",persona:"male",azureVoice:"en-IN-PrabhatNeural",language:"en-IN",rate:.98,pitch:.92,volume:.9,detail:"brief",privacy:"standard"},
 };
 export const defaultVoicePreferences=defaultVoicePreferencesByAssistant.nova;
 
@@ -75,7 +94,9 @@ export const selectSystemVoice=(p:VoicePreferences):SpeechSynthesisVoice|null=>{
 
 export class VoiceManager {
   private audio?:HTMLAudioElement;
-  stop(){if(typeof speechSynthesis!=="undefined")speechSynthesis.cancel();this.audio?.pause();this.audio=undefined;}
+  private audioGeneration=0;
+  private audioCompletion?:{generation:number;resolve:()=>void};
+  stop(){this.audioGeneration+=1;if(typeof speechSynthesis!=="undefined")speechSynthesis.cancel();this.audio?.pause();this.audio=undefined;this.audioCompletion?.resolve();this.audioCompletion=undefined;}
   pause(){if(this.audio)this.audio.pause();else speechSynthesis?.pause();}
   resume(){if(this.audio)void this.audio.play();else speechSynthesis?.resume();}
   async status(engine:VoiceEngine):Promise<VoiceStatus>{
@@ -84,11 +105,22 @@ export class VoiceManager {
     catch{return{engine,ready:false,diagnostic:"Voice backend unavailable."};}
   }
   private async speakSystem(text:string,p:VoicePreferences){if(typeof speechSynthesis==="undefined")return false;this.stop();await waitForSystemVoiceInventory();const selectedVoice=selectSystemVoice(p);if(!selectedVoice)return false;return new Promise<boolean>((resolve,reject)=>{const u=new SpeechSynthesisUtterance(text);let done=false;const finish=(ok:boolean,error?:unknown)=>{if(done)return;done=true;if(ok)resolve(true);else reject(error instanceof Error?error:new Error("System voice synthesis failed."));};u.lang=p.language;u.rate=p.rate;u.pitch=p.pitch;u.volume=p.volume;u.voice=selectedVoice;u.onend=()=>finish(true);u.onerror=(event)=>finish(false,event);try{speechSynthesis.speak(u)}catch(error){finish(false,error)}});}
-  async speak(text:string,p:VoicePreferences):Promise<{engine:VoiceEngine;fallback:boolean;message?:string}>{
+  async speak(text:string,p:VoicePreferences,binding?:VoicePlaybackBinding):Promise<VoiceSpeakResult>{
     if(!p.enabled)return{engine:p.engine,fallback:false};
-    if(p.engine==="system"){const spoken=await this.speakSystem(text,p);return{engine:"system",fallback:!spoken,message:spoken?undefined:"SYSTEM CHARACTER VOICE UNAVAILABLE · TEXT PRESERVED"};}
-    try{const s=await this.status(p.engine);if(!s.ready)throw new Error(s.diagnostic);const r=await fetch("/.netlify/functions/voice-synthesize",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({provider:p.engine,text,voiceId:p.engine==="azure"?p.azureVoice:p.elevenLabsVoice,language:p.language})});if(!r.ok)throw new Error("Premium voice synthesis failed.");this.stop();this.audio=new Audio(URL.createObjectURL(await r.blob()));await this.audio.play();return{engine:p.engine,fallback:false};}
-    catch{try{await this.speakSystem(text,p);}catch{}return{engine:"system",fallback:true,message:"VOICE CONNECTION NOT ACTIVE · USING SYSTEM VOICE"};}
+    const speechText=normalizeTextForSpeech(text);
+    if(!speechText)return{engine:p.engine,fallback:false,skipped:true,message:"TTS skipped: empty speech text"};
+    let effective=p;
+    let neuralDiagnostic="VOICE CONNECTION NOT ACTIVE";
+    if(p.engine==="system"){
+      for(const candidate of ["azure","elevenlabs"] as const){
+        const candidateStatus=await this.status(candidate);
+        neuralDiagnostic=candidateStatus.diagnostic;
+        if(candidateStatus.ready){effective={...p,engine:candidate};break;}
+      }
+    }
+    if(effective.engine==="system"){const spoken=await this.speakSystem(speechText,p);return{engine:"system",fallback:!spoken,message:spoken?undefined:`${neuralDiagnostic} · USING SYSTEM VOICE`};}
+    try{const s=await this.status(effective.engine);neuralDiagnostic=s.diagnostic;if(!s.ready)throw new Error(s.diagnostic);const r=await fetch("/.netlify/functions/voice-synthesize",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({provider:effective.engine,text:speechText,voiceId:effective.engine==="azure"?effective.azureVoice:effective.elevenLabsVoice,voiceProfileId:effective.voiceProfileId,language:effective.language,binding})});if(!r.ok)throw new Error("Premium voice synthesis failed.");this.stop();const generation=this.audioGeneration;this.audio=new Audio(URL.createObjectURL(await r.blob()));const audio=this.audio;await audio.play();await new Promise<void>((resolve,reject)=>{this.audioCompletion={generation,resolve};audio.onended=()=>{if(this.audioGeneration===generation)resolve();};audio.onerror=()=>reject(new Error("Premium voice playback failed."));});return{engine:effective.engine,fallback:false};}
+    catch{try{await this.speakSystem(speechText,p);}catch{}return{engine:"system",fallback:true,message:`${neuralDiagnostic} · USING SYSTEM VOICE`};}
   }
 }
 
