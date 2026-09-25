@@ -1,6 +1,8 @@
 import type { ConversationRequest } from "./conversationContract";
 import { parseConversationalRequest, type ConversationIntentEnvelope } from "./conversationIntentGrammar";
 import { resolveShellIntent } from "./shellState";
+import { ConversationalPurposeResolver, type ConversationPurpose } from "./conversationPurpose";
+import type { DialogueContext } from "./dialogueContext";
 
 export type ConversationClassificationKind = "CANCEL" | "SESSION_CLOSE" | "NAVIGATION" | "DETERMINISTIC" | "REGISTERED_APPLICATION" | "CONNECTOR_REQUEST" | "FOLLOW_UP" | "GENERAL_CONVERSATION" | "CLARIFICATION" | "UNSUPPORTED" | "POLICY_DENIED";
 export type ConversationSideEffect = "NONE" | "NAVIGATION" | "ACTION_DISPATCH" | "DETERMINISTIC_RESPONSE" | "CONNECTOR_REQUEST" | "CLARIFICATION" | "GENERAL_CONVERSATION" | "UNSUPPORTED" | "POLICY_DENIED" | "CANCEL_SESSION";
@@ -16,6 +18,7 @@ export interface ConversationClassification {
   readonly limitationCodes: readonly string[];
   readonly sideEffect: ConversationSideEffect;
   readonly legacyKind: string;
+  readonly purpose: ConversationPurpose;
 }
 
 export const UNIFIED_PRIMARY_INTENT_CLASSES = Object.freeze([
@@ -52,6 +55,7 @@ export type UnifiedConfidenceEvidence =
 export interface UnifiedClassifierOptions {
   readonly latestVoiceGeneration?: number;
   readonly untrustedContent?: boolean;
+  readonly dialogueContext?: DialogueContext;
 }
 
 export interface UnifiedClassificationResult {
@@ -74,28 +78,31 @@ export interface UnifiedClassificationResult {
   readonly sideEffectPerformed: false;
   readonly zeroSideEffect: true;
   readonly nonAuthorizing: true;
+  readonly purpose: ConversationPurpose;
+  readonly contextVersion: DialogueContext["contextVersion"] | "NOT_APPLICABLE";
 }
 
 export function classifyConversationRequest(request: ConversationRequest): ConversationClassification {
   const envelope = parseConversationalRequest(request.rawText);
+  const purpose = new ConversationalPurposeResolver().resolve({ rawText: request.rawText }).purpose;
   if (/(?:ignore|bypass|override|circumvent)[^\n]{0,80}\b(?:rules?|policy|security)\b/i.test(request.normalizedText)) {
-    return result("POLICY_DENIED", "CONVERSATIONAL_GRAMMAR", "POLICY_DENIED", "UNKNOWN", envelope, "POLICY_BYPASS");
+    return result("POLICY_DENIED", "CONVERSATIONAL_GRAMMAR", "POLICY_DENIED", "UNKNOWN", envelope, "POLICY_BYPASS", "NOT_APPLICABLE", undefined, purpose);
   }
-  if (envelope.risk === "R5_PROHIBITED") return result("POLICY_DENIED", "CONVERSATIONAL_GRAMMAR", "POLICY_DENIED", "UNKNOWN", envelope, "POLICY_BYPASS");
-  if (envelope.kind === "CANCEL") return result("CANCEL", "CONVERSATIONAL_GRAMMAR", "CANCEL_SESSION", "UNKNOWN", envelope);
-  if (envelope.intentFamily === "SESSION_CLOSE_INTENT") return result("SESSION_CLOSE", "CONVERSATIONAL_GRAMMAR", "CANCEL_SESSION", "UNKNOWN", envelope);
-  if (envelope.clarificationRequired) return result("CLARIFICATION", "CONVERSATIONAL_GRAMMAR", "CLARIFICATION", "UNKNOWN", envelope);
+  if (envelope.risk === "R5_PROHIBITED") return result("POLICY_DENIED", "CONVERSATIONAL_GRAMMAR", "POLICY_DENIED", "UNKNOWN", envelope, "POLICY_BYPASS", "NOT_APPLICABLE", undefined, purpose);
+  if (envelope.kind === "CANCEL") return result("CANCEL", "CONVERSATIONAL_GRAMMAR", "CANCEL_SESSION", "UNKNOWN", envelope, undefined, "NOT_APPLICABLE", undefined, purpose);
+  if (envelope.intentFamily === "SESSION_CLOSE_INTENT") return result("SESSION_CLOSE", "CONVERSATIONAL_GRAMMAR", "CANCEL_SESSION", "UNKNOWN", envelope, undefined, "NOT_APPLICABLE", undefined, purpose);
+  if (envelope.clarificationRequired) return result("CLARIFICATION", "CONVERSATIONAL_GRAMMAR", "CLARIFICATION", "UNKNOWN", envelope, undefined, "NOT_APPLICABLE", undefined, purpose);
   if (envelope.kind === "FOLLOW_UP_DATE_QUESTION") {
-    if (envelope.unsupportedReason || !envelope.weekday) return result("CLARIFICATION", "CONVERSATIONAL_GRAMMAR", "CLARIFICATION", "UNKNOWN", envelope, "FOLLOW_UP_UNSUPPORTED");
-    return result("FOLLOW_UP", "CONVERSATIONAL_GRAMMAR", "DETERMINISTIC_RESPONSE", "DETERMINISTIC_LOCAL", envelope, undefined, "MISSING_CONTEXT");
+    if (envelope.unsupportedReason || !envelope.weekday) return result("CLARIFICATION", "CONVERSATIONAL_GRAMMAR", "CLARIFICATION", "UNKNOWN", envelope, "FOLLOW_UP_UNSUPPORTED", "NOT_APPLICABLE", undefined, purpose);
+    return result("FOLLOW_UP", "CONVERSATIONAL_GRAMMAR", "DETERMINISTIC_RESPONSE", "DETERMINISTIC_LOCAL", envelope, undefined, "MISSING_CONTEXT", undefined, purpose);
   }
-  if (envelope.kind === "DATE_QUESTION" || envelope.kind === "TIME_QUERY" || envelope.kind === "UI_VISIBLE_QUESTION" || envelope.kind === "CALENDAR_LOCAL_FACT") return result("DETERMINISTIC", "CONVERSATIONAL_GRAMMAR", "DETERMINISTIC_RESPONSE", "DETERMINISTIC_LOCAL", envelope);
-  if (envelope.kind === "CALENDAR_PROVIDER_LIMITATION") return result("CONNECTOR_REQUEST", "CONNECTOR_PROJECTION", "CONNECTOR_REQUEST", "CONNECTOR", envelope, "CONNECTOR_UNAVAILABLE");
-  if (envelope.kind === "NAVIGATION" || envelope.kind === "COMPOSITE_NAVIGATE_AND_FACT") return result("NAVIGATION", "CONVERSATIONAL_GRAMMAR", "NAVIGATION", "DETERMINISTIC_LOCAL", envelope);
+  if (envelope.kind === "DATE_QUESTION" || envelope.kind === "TIME_QUERY" || envelope.kind === "UI_VISIBLE_QUESTION" || envelope.kind === "CALENDAR_LOCAL_FACT") return result("DETERMINISTIC", "CONVERSATIONAL_GRAMMAR", "DETERMINISTIC_RESPONSE", "DETERMINISTIC_LOCAL", envelope, undefined, "NOT_APPLICABLE", undefined, purpose);
+  if (envelope.kind === "CALENDAR_PROVIDER_LIMITATION") return result("CONNECTOR_REQUEST", "CONNECTOR_PROJECTION", "CONNECTOR_REQUEST", "CONNECTOR", envelope, "CONNECTOR_UNAVAILABLE", "NOT_APPLICABLE", undefined, purpose);
+  if (envelope.kind === "NAVIGATION" || envelope.kind === "COMPOSITE_NAVIGATE_AND_FACT") return result("NAVIGATION", "CONVERSATIONAL_GRAMMAR", "NAVIGATION", "DETERMINISTIC_LOCAL", envelope, undefined, "NOT_APPLICABLE", undefined, purpose);
 
   const shell = resolveShellIntent(request.rawText);
   if (shell) return result("REGISTERED_APPLICATION", "SHELL", "NAVIGATION", "DETERMINISTIC_LOCAL", envelope);
-  return result("GENERAL_CONVERSATION", "GENERAL_FALLBACK", "GENERAL_CONVERSATION", "UNKNOWN", envelope);
+  return result("GENERAL_CONVERSATION", "GENERAL_FALLBACK", "GENERAL_CONVERSATION", "UNKNOWN", envelope, undefined, "NOT_APPLICABLE", undefined, purpose);
 }
 
 export function classifyUnifiedConversationRequest(
@@ -103,6 +110,11 @@ export function classifyUnifiedConversationRequest(
   options: UnifiedClassifierOptions = {},
 ): UnifiedClassificationResult {
   const envelope = parseConversationalRequest(request.rawText);
+  const purposeResolution = new ConversationalPurposeResolver().resolve({
+    rawText: request.rawText,
+    hasActiveTopic: options.dialogueContext?.currentTopic !== null && options.dialogueContext?.currentTopic !== undefined,
+    unresolvedClarification: options.dialogueContext?.unresolvedClarification !== null && options.dialogueContext?.unresolvedClarification !== undefined,
+  });
   const languageEvidence = Object.freeze({
     locale: request.locale,
     codeSwitch: hasCodeSwitchEvidence(request.rawText, envelope.kind),
@@ -188,6 +200,18 @@ export function classifyUnifiedConversationRequest(
   } else if (envelope.kind === "NAVIGATION" || resolveShellIntent(request.rawText)) {
     primaryIntentClass = "NAVIGATION_OR_REGISTERED_APPLICATION";
     truthSourceRequirement = "DETERMINISTIC_LOCAL";
+  } else if (purposeResolution.purpose === "FOLLOW_UP") {
+    primaryIntentClass = "FOLLOW_UP";
+    contextRequirement = "SESSION_CONTEXT";
+    proposedNextBoundary = "CLARIFICATION_OR_ABSTENTION";
+  } else if (purposeResolution.purpose === "CORRECTION") {
+    primaryIntentClass = "CORRECTION";
+    contextRequirement = "SESSION_CONTEXT";
+    proposedNextBoundary = "CLARIFICATION_OR_ABSTENTION";
+  } else if (purposeResolution.purpose === "CLARIFICATION_RESPONSE") {
+    primaryIntentClass = "CLARIFICATION_RESPONSE";
+    contextRequirement = "SESSION_CONTEXT";
+    proposedNextBoundary = "CLARIFICATION_OR_ABSTENTION";
   } else if (envelope.kind === "UNSUPPORTED") {
     primaryIntentClass = /\b(?:api|connector|calendar|mail|search|retrieve|open|launch)\b/i.test(request.rawText)
       ? "UNSUPPORTED"
@@ -235,6 +259,8 @@ export function classifyUnifiedConversationRequest(
     sideEffectPerformed: false,
     zeroSideEffect: true,
     nonAuthorizing: true,
+    purpose: purposeResolution.purpose,
+    contextVersion: options.dialogueContext?.contextVersion ?? "NOT_APPLICABLE",
   });
 }
 
@@ -298,6 +324,7 @@ function result(
   limitationCode?: string,
   contextOutcome: ConversationClassification["contextOutcome"] = "NOT_APPLICABLE",
   legacyKind = envelope.kind,
+  purpose: ConversationPurpose = "UNKNOWN",
 ): ConversationClassification {
   return Object.freeze({
     kind,
@@ -309,5 +336,6 @@ function result(
     limitationCodes: Object.freeze(limitationCode ? [limitationCode] : []),
     sideEffect,
     legacyKind,
+    purpose,
   });
 }

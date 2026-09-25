@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import type { AssistantMode, CoreState } from "@onyx/contracts";
+import type { PresenceSpeaker } from "@onyx/operations-center-presence-runtime/PresenceState";
+import { projectCharacterPresence } from "@onyx/operations-center-presence-runtime/ProjectionEngine";
+import { renderPresenceShell } from "@onyx/operations-center-presence-runtime/PresenceShell";
 import {
   type ActivationControl,
   mapCoreStateToSemanticState,
@@ -9,9 +12,10 @@ import {
 import type { NativeQuality, NativeSemanticState } from "../nativeSemanticFallbackActivation";
 import { getOrbitActions, type OrbitActionDefinition } from "../orbitActionRegistry";
 
-export function HeroCore({ mode, state, onSwitch, onAction, lowPower, quality, activationControl = PRIVATE_ALPHA_BUILD_ACTIVATION }: {
+export function HeroCore({ mode, state, onSwitch, onAction, lowPower, quality, activationControl = PRIVATE_ALPHA_BUILD_ACTIVATION, presenceSpeaker }: {
   mode: AssistantMode; state: CoreState | NativeSemanticState; onSwitch: () => void;
   onAction: (action: string) => void; lowPower: boolean; quality: NativeQuality; activationControl?: ActivationControl;
+  presenceSpeaker?: PresenceSpeaker;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => setMenuOpen(false), [mode]);
@@ -30,16 +34,19 @@ export function HeroCore({ mode, state, onSwitch, onAction, lowPower, quality, a
   );
   const presentationState = semantic.enabled ? semantic.state.toLowerCase() : legacyState;
   const label = semantic.enabled ? semantic.state.replace("_", " ") : legacyLabel;
+  const selectedCharacter = mode === "onyx" ? "ONYX" : "NOVA";
+  const activeSpeaker = presenceSpeaker ?? (semantic.state === "IDLE" ? "NONE" : selectedCharacter);
+  const presence = projectCharacterPresence({ speaker: activeSpeaker, state: semantic.state });
 
   return <section className={`hero-core hero-${mode} core-${presentationState} ${semantic.enabled ? `native-fallback-${semantic.state.toLowerCase()}` : "native-fallback-off"} ${menuOpen ? "menu-open" : "menu-closed"} ${lowPower ? "hero-low-power" : ""}`}>
     {menuOpen && <button className="core-dismiss-layer" aria-label="Close core menu" onClick={() => setMenuOpen(false)} />}
     <div className="hero-visual-zone">
-      <div className="portrait-deck" aria-hidden="true">
+      {semantic.enabled ? <div className="living-presence-mount" dangerouslySetInnerHTML={{ __html: renderPresenceShell(presence) }} /> : <div className="portrait-deck" aria-hidden="true">
         <div className="portrait-aura aura-nova"/><div className="portrait-aura aura-onyx"/>
         <img src="/heroes/nova-original.jpeg" alt="" className={`portrait portrait-nova ${mode === "nova" ? "is-active" : "is-inactive"}`} draggable={false}/>
         <img src="/heroes/onyx-original.jpeg" alt="" className={`portrait portrait-onyx ${mode === "onyx" ? "is-active" : "is-inactive"}`} draggable={false}/>
         <div className="portrait-edge-blend"/>
-      </div>
+      </div>}
       <div className={`core-aura core-aura-${mode}`} aria-hidden="true"/>
       <button className="functional-core" onClick={() => setMenuOpen(open => !open)} aria-expanded={menuOpen} aria-label={`${mode.toUpperCase()} actions`}><span>{mode.toUpperCase()}</span><i/><em/></button>
       <div className="state-visual" aria-hidden="true">{Array.from({length:8},(_,i)=><i key={i} style={{"--i":i} as React.CSSProperties}/>)}</div>

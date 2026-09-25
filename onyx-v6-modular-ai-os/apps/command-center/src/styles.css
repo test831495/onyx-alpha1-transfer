@@ -469,6 +469,10 @@ html,body,#root{min-height:100%;height:100%}.phase0-shell{height:100dvh;min-heig
 @media(max-width:760px){.phase0-signoff{padding-left:8px!important;padding-right:8px!important}.functional-scene{display:flex!important;min-height:0!important}.hero-core{height:clamp(440px,55svh,520px)!important;min-height:440px!important}.equal-ring-track{width:188px;height:188px}.equal-action-ring button{width:44px;height:44px;font-size:7.5px;transform:translate(-50%,-50%) rotate(var(--action-angle)) translateY(-94px) rotate(calc(-1*var(--action-angle)))}.hero-status-row{margin-top:20px!important}.functional-footer{width:100%!important;display:grid!important;grid-template-columns:1fr!important;gap:6px!important;margin-bottom:6px!important}.functional-footer nav{order:2;width:100%!important;overflow-x:auto;justify-content:flex-start}.glass-command{order:1;width:100%!important}.module-drawer,.activity-strip{width:100%!important}.stability-controls span{max-width:118px}}
 @media(orientation:landscape) and (max-width:1180px){.bottom-stack{width:100%;justify-items:center}.functional-footer{width:calc(100% - 20px)!important;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr)!important;gap:10px!important}.functional-footer nav,.glass-command{width:100%!important}.activity-strip{width:min(720px,calc(100% - 40px))!important}}
 
+/* TRACK B LIVING OPERATIONS CENTER PRESENCE */
+.living-presence-mount{position:absolute;z-index:1;inset:0;overflow:hidden}.living-presence-mount .presence-shell{width:100%;height:100%;min-height:0;background:transparent}.living-presence-mount .presence-character{height:100%;min-height:0}.living-presence-mount .presence-caption{bottom:2px;flex-wrap:wrap;row-gap:2px;padding:0 8px}.living-presence-mount .presence-character figcaption{bottom:28px}
+@media(max-width:760px){.living-presence-mount .presence-shell{grid-template-columns:minmax(0,1fr) 70px minmax(0,1fr)}.living-presence-mount .presence-reactor .reactor-core{width:3.5rem}.living-presence-mount .presence-caption{font-size:.62rem;gap:7px}.living-presence-mount .presence-character figcaption{bottom:42px}}
+
 /* Phase 1A.9.1 card separation */
 .app-card-list { row-gap: 16px; }
 

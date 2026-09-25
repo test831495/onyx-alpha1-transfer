@@ -1,0 +1,11 @@
+{
+  "name": "@onyx/conversation-continuity-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@onyx/conversation-first-contracts": "workspace:*"
+  },
+  "scripts": { "test": "vitest run", "typecheck": "tsc --noEmit" }
+}

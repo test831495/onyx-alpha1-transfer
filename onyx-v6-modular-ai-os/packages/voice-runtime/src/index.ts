@@ -70,7 +70,7 @@ export const selectSystemVoice=(p:VoicePreferences):SpeechSynthesisVoice|null=>{
   const exact=voices.find(v=>v.name===p.systemVoice);if(exact)return exact;
   const sameLanguage=voices.filter(v=>v.lang.toLowerCase()===p.language.toLowerCase()||v.lang.toLowerCase().startsWith((p.language.split("-")[0] ?? p.language).toLowerCase()));
   const hint=p.persona==="female"?femaleHints:p.persona==="male"?maleHints:null;
-  return (hint?sameLanguage.find(v=>hint.test(v.name)):undefined)??null;
+  return (hint?sameLanguage.find(v=>hint.test(v.name)):undefined)??sameLanguage[0]??voices.find(v=>v.default)??voices[0]??null;
 };
 
 export class VoiceManager {

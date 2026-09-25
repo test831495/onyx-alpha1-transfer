@@ -1,0 +1,331 @@
+.v8-home-active {
+  display: block !important;
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  padding: 0 !important;
+  overflow: hidden;
+  background: #020509;
+}
+
+.v8-home-active .mode-transition-veil {
+  z-index: 90;
+}
+
+.v8-home-active .phase0-scroll {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.v8-operations-center {
+  --v8-cyan: #58dcff;
+  --v8-ice: #dff8ff;
+  --v8-amber: #ffc55c;
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: 100%;
+  min-height: 42rem;
+  overflow: hidden;
+  color: var(--v8-ice);
+  background: #020509;
+}
+
+.v8-world {
+  position: absolute;
+  z-index: -4;
+  inset: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(2, 5, 9, .08) 0%, rgba(2, 7, 13, .38) 54%, #020509 100%),
+    radial-gradient(ellipse at 50% 62%, rgba(42, 155, 194, .2), transparent 42%),
+    linear-gradient(145deg, #07131d 0%, #03080e 42%, #071019 100%);
+  transition: filter 700ms ease, background-color 700ms ease;
+}
+
+.v8-skyline {
+  position: absolute;
+  inset: 12% 0 26%;
+  opacity: .72;
+  background:
+    linear-gradient(90deg, transparent 0 4%, #081924 4% 8%, transparent 8% 11%, #0b202c 11% 16%, transparent 16% 19%, #071722 19% 23%, transparent 23% 27%, #0a1e2a 27% 33%, transparent 33% 68%, #091b27 68% 73%, transparent 73% 76%, #0b202c 76% 82%, transparent 82% 87%, #071722 87% 93%, transparent 93%),
+    repeating-linear-gradient(90deg, transparent 0 34px, rgba(85, 220, 255, .13) 35px 36px);
+  clip-path: polygon(0 58%, 5% 58%, 5% 24%, 9% 24%, 9% 69%, 14% 69%, 14% 42%, 19% 42%, 19% 74%, 24% 74%, 24% 31%, 29% 31%, 29% 69%, 35% 69%, 35% 51%, 42% 51%, 42% 78%, 58% 78%, 58% 49%, 65% 49%, 65% 70%, 71% 70%, 71% 29%, 76% 29%, 76% 73%, 82% 73%, 82% 39%, 88% 39%, 88% 65%, 94% 65%, 94% 22%, 98% 22%, 98% 58%, 100% 58%, 100% 100%, 0 100%);
+}
+
+.v8-horizon {
+  position: absolute;
+  inset: auto 0 24%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(95, 224, 255, .68), transparent);
+  box-shadow: 0 0 32px rgba(66, 203, 255, .36);
+}
+
+.v8-command-deck {
+  position: absolute;
+  inset: 66% -10% -28%;
+  border-top: 1px solid rgba(104, 222, 255, .26);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 11.8%, rgba(79, 191, 225, .12) 12% 12.15%),
+    repeating-linear-gradient(0deg, transparent 0 17%, rgba(79, 191, 225, .1) 17.2% 17.5%);
+  transform: perspective(420px) rotateX(58deg);
+  transform-origin: top;
+}
+
+.v8-presence-status {
+  position: absolute;
+  z-index: 8;
+  top: max(22px, env(safe-area-inset-top));
+  left: 50%;
+  display: grid;
+  gap: 5px;
+  width: min(30rem, 60vw);
+  transform: translateX(-50%);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.v8-presence-status span {
+  color: rgba(199, 237, 247, .58);
+  font: 500 .64rem/1.2 "Avenir Next", "Trebuchet MS", sans-serif;
+}
+
+.v8-presence-status strong {
+  color: #eefcff;
+  font: 500 clamp(.82rem, 1.15vw, 1.05rem)/1.2 "Avenir Next", "Trebuchet MS", sans-serif;
+}
+
+.v8-character-stage {
+  position: absolute;
+  z-index: 2;
+  inset: 4.5rem 0 8.8rem;
+}
+
+.v8-character-stage > .hero-core,
+.v8-character-stage .hero-visual-zone {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+.v8-character-stage > .hero-core {
+  display: block !important;
+}
+
+.v8-character-stage .living-presence-mount {
+  inset: 0;
+}
+
+.v8-character-stage .presence-shell {
+  grid-template-columns: minmax(0, 1fr) clamp(10rem, 22vw, 21rem) minmax(0, 1fr) !important;
+  align-items: stretch;
+  overflow: visible;
+}
+
+.v8-character-stage .presence-characters,
+.v8-character-stage .presence-character {
+  height: 100%;
+  overflow: visible;
+}
+
+.v8-character-stage .presence-character {
+  opacity: .58;
+  filter: saturate(.72) contrast(.92);
+}
+
+.v8-character-stage .presence-character[data-character="NOVA"] img {
+  object-position: center top;
+  transform-origin: 50% 72%;
+}
+
+.v8-character-stage .presence-character[data-character="ONYX"] img {
+  object-position: center top;
+  transform-origin: 50% 76%;
+}
+
+.v8-character-stage .presence-character.character-focus {
+  z-index: 2;
+  opacity: 1;
+  filter: saturate(1.04) contrast(1.08);
+}
+
+.v8-character-stage .presence-reactor {
+  position: relative;
+  z-index: 6;
+  align-self: center;
+  margin-top: 12%;
+}
+
+.v8-character-stage .reactor-core {
+  width: clamp(9rem, 17vw, 17rem);
+  border-width: 1px;
+  background:
+    radial-gradient(circle, rgba(226, 250, 255, .92) 0 2%, rgba(71, 210, 255, .35) 4% 13%, transparent 14% 30%, rgba(71, 210, 255, .13) 31% 32%, transparent 33%),
+    repeating-radial-gradient(circle, transparent 0 14%, rgba(81, 213, 255, .22) 14.5% 15.2%);
+  box-shadow: inset 0 0 3rem rgba(76, 213, 255, .42), 0 0 2.8rem rgba(49, 196, 247, .38), 0 0 7rem rgba(36, 146, 194, .2);
+}
+
+.v8-character-stage .reactor-label {
+  margin-top: 1rem;
+  color: rgba(218, 248, 255, .78);
+  font-size: .72rem;
+  letter-spacing: 0;
+}
+
+.v8-character-stage .presence-caption {
+  bottom: -3.2rem;
+  color: rgba(218, 246, 255, .72);
+  font-size: .68rem;
+}
+
+.v8-character-stage .presence-character figcaption,
+.v8-character-stage .functional-core,
+.v8-character-stage .core-aura,
+.v8-character-stage .state-visual,
+.v8-character-stage .hero-status-row,
+.v8-character-stage .equal-action-ring,
+.v8-character-stage .core-dismiss-layer {
+  display: none !important;
+}
+
+.v8-council-lane {
+  position: absolute;
+  z-index: 8;
+  top: 5.1rem;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transform: translateX(-50%);
+  color: rgba(195, 233, 244, .52);
+  font: 500 .6rem/1 "Avenir Next", "Trebuchet MS", sans-serif;
+  text-transform: uppercase;
+}
+
+.v8-council-signal {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #68dfff;
+  box-shadow: 0 0 9px #68dfff;
+}
+
+.v8-intent-layer {
+  position: absolute;
+  z-index: 12;
+  bottom: max(22px, env(safe-area-inset-bottom));
+  left: 50%;
+  display: grid;
+  grid-template-columns: auto minmax(20rem, 42rem);
+  align-items: center;
+  gap: 18px;
+  width: min(58rem, calc(100% - 40px));
+  transform: translateX(-50%);
+}
+
+.v8-intent-heading {
+  display: grid;
+  gap: 4px;
+  text-align: right;
+}
+
+.v8-intent-heading span {
+  color: #f2fcff;
+  font: 500 .78rem/1.2 "Avenir Next", "Trebuchet MS", sans-serif;
+  text-transform: uppercase;
+}
+
+.v8-intent-heading small {
+  color: rgba(176, 217, 229, .52);
+  font: 400 .58rem/1.2 "Avenir Next", "Trebuchet MS", sans-serif;
+}
+
+.v8-intent-layer .glass-command {
+  width: 100% !important;
+  min-width: 0;
+  border-color: rgba(100, 215, 247, .32);
+  border-radius: 4px;
+  background: rgba(3, 12, 19, .78);
+  box-shadow: 0 14px 42px rgba(0, 0, 0, .42), inset 0 1px rgba(219, 248, 255, .08);
+  backdrop-filter: blur(18px);
+}
+
+.v8-state-thinking .v8-world,
+.v8-state-understanding .v8-world {
+  filter: brightness(1.1) saturate(1.08);
+}
+
+.v8-state-speaking .v8-horizon {
+  box-shadow: 0 0 42px rgba(96, 235, 214, .52);
+}
+
+.v8-state-approval_required .v8-world {
+  filter: sepia(.18) brightness(.92);
+}
+
+.v8-state-privacy_restricted .v8-world {
+  filter: saturate(.18) brightness(.62);
+}
+
+.v8-state-recovering .v8-world {
+  filter: saturate(.55) brightness(.72);
+}
+
+.v8-projection-active .app-card-shell {
+  animation: v8-project-from-reactor 360ms cubic-bezier(.2, .8, .2, 1) both;
+}
+
+@keyframes v8-project-from-reactor {
+  from { opacity: 0; scale: .72; translate: calc(50vw - var(--card-left)) calc(42vh - var(--card-top)); }
+  to { opacity: 1; scale: 1; translate: 0 0; }
+}
+
+@media (min-width: 1600px) and (min-aspect-ratio: 16/10) {
+  .v8-character-stage { inset-inline: max(3vw, env(safe-area-inset-left)); }
+  .v8-character-stage .reactor-label { font-size: .9rem; }
+  .v8-presence-status strong { font-size: 1.15rem; }
+}
+
+@media (max-width: 1024px) {
+  .v8-character-stage { inset: 5rem -7vw 9.5rem; }
+  .v8-character-stage .presence-shell { grid-template-columns: minmax(0, 1fr) clamp(8rem, 19vw, 11rem) minmax(0, 1fr) !important; }
+  .v8-character-stage .reactor-core { width: clamp(7rem, 16vw, 10rem); }
+  .v8-intent-layer { grid-template-columns: 1fr; gap: 8px; width: min(42rem, calc(100% - 30px)); }
+  .v8-intent-heading { text-align: center; }
+}
+
+@media (max-width: 700px) {
+  .v8-operations-center { min-height: 34rem; }
+  .v8-character-stage { inset: 6rem -24vw 9.5rem; }
+  .v8-character-stage .presence-shell { grid-template-columns: minmax(0, 1fr) 6rem minmax(0, 1fr) !important; }
+  .v8-character-stage .presence-character { opacity: .74; }
+  .v8-character-stage .presence-character.character-focus { opacity: 1; }
+  .v8-character-stage .presence-reactor { order: -1; margin-top: 28%; }
+  .v8-character-stage .reactor-core { width: 6.8rem; }
+  .v8-character-stage .reactor-label { font-size: .62rem; }
+  .v8-character-stage .presence-caption { bottom: -2.4rem; padding-inline: 22vw; }
+  .v8-character-stage .presence-caption span:not([data-caption-state]) { display: none; }
+  .v8-council-lane { top: 4.8rem; }
+  .v8-intent-layer { bottom: max(12px, env(safe-area-inset-bottom)); width: calc(100% - 20px); }
+  .v8-intent-heading small { display: none; }
+  .v8-intent-layer .glass-command { padding: 6px 7px; }
+  .v8-intent-layer .glass-command input { font-size: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v8-operations-center *,
+  .v8-projection-active .app-card-shell {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (min-width: 1280px) and (hover: none) {
+  .v8-operations-center { --v8-shared-room: 1; }
+  .v8-intent-heading small { display: none; }
+  .v8-character-stage .presence-caption { font-size: .9rem; }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "@onyx/operations-center-presence-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./AppOrbit": "./AppOrbit.ts",
+    "./CharacterProjection": "./CharacterProjection.ts",
+    "./PresenceState": "./PresenceState.ts",
+    "./ProjectionEngine": "./ProjectionEngine.ts",
+    "./PresenceShell": "./PresenceShell.tsx"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  }
+}

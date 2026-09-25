@@ -32,6 +32,7 @@ import {
 import { NovaDashboard } from "./components/NovaDashboard";
 import { OnyxDashboard } from "./components/OnyxDashboard";
 import { HeroCore } from "./components/HeroCore";
+import { V8OperationsCenter } from "./components/V8OperationsCenter";
 import { GlassCommandBar } from "./components/GlassCommandBar";
 import { AppWindowShell } from "./components/AppWindowShell";
 import { AppCardShell, type AppCardPosition } from "./components/AppCardShell";
@@ -69,6 +70,7 @@ import { VoiceConversationOrchestrator } from "./voiceConversationOrchestrator";
 import { ConversationContextWindow } from "./conversationContextWindow";
 import { FollowUpListeningSession } from "./followUpListeningSession";
 import { createExplicitListeningEntryHandler } from "./explicitListeningEntry";
+import { createConversationRuntimeAdapter, type LiveConversationInput } from "./conversationRuntimeAdapter";
 import {
   formatDateForSpeech,
   formatTimeForSpeech,
@@ -387,6 +389,7 @@ export function App() {
   const followUpSession = useRef(new FollowUpListeningSession());
   const startFollowUp = useRef<(() => boolean) | null>(null);
   const stopFollowUp = useRef<(() => void) | null>(null);
+  const conversationRuntimeAdapter = useRef(createConversationRuntimeAdapter());
 
   useEffect(() => {
     modeRef.current = mode;
@@ -695,7 +698,7 @@ export function App() {
         return true;
       }
 
-      if (envelope.kind === "UNSUPPORTED" && !envelope.clarificationRequired) {
+      if (envelope.kind === "UNSUPPORTED" && envelope.clarificationRequired) {
         const clarification = envelope.clarificationRequired
           ? "I understand you want to navigate, but I need the application name."
           : "I'm not sure what you want me to do with that yet. Could you rephrase it or tell me the topic or application you mean?";
@@ -931,7 +934,7 @@ export function App() {
   );
 
   const dispatch = useCallback(
-    async (raw: string, targetMode: AssistantMode | null = null) => {
+    async (raw: string, targetMode: AssistantMode | null = null, source: LiveConversationInput["source"] = "TEXT") => {
       const clean = raw.trim();
       const normalized = normalizeCommand(clean);
 
@@ -1154,6 +1157,30 @@ export function App() {
           outcome.result.status === "rejected" ||
           outcome.result.status === "failed"
         ) {
+          if (outcome.result.status === "unsupported") {
+            const conversationReceipt = await conversationRuntimeAdapter.current({
+              source,
+              rawText: clean,
+              sessionId: "command-center",
+              turnId: `turn-${++commandSequence.current}`,
+              utteranceGeneration: commandSequence.current,
+              requestedSpeaker: targetMode === "onyx" ? "ONYX" : targetMode === "nova" ? "NOVA" : undefined,
+              suppliedTruthReferences: [],
+              offline: false,
+              localCapabilityAvailable: true,
+            });
+            setState("speaking");
+            setCaption(conversationReceipt.text);
+            if (conversationReceipt.spokenText.trim()) {
+              void voiceManager.current.speak(conversationReceipt.spokenText, voicePreferences).then((voiceResult) => {
+                setVoiceStatus(voiceResult.message ?? `${voiceResult.engine} voice ready.`);
+              }).catch(() => {
+                setVoiceStatus("System voice ready.");
+              });
+            }
+            timers.current.push(window.setTimeout(() => reset(), source === "VOICE" ? 4200 : 5200));
+            return;
+          }
           showError(outcome.result.message);
           return;
         }
@@ -1183,7 +1210,7 @@ export function App() {
     ],
   );
 
-  const voice = useVoiceRouter(dispatch, {
+  const voice = useVoiceRouter((command, voiceMode) => void dispatch(command, voiceMode, "VOICE"), {
     onRecognitionStart: (sessionMode) => {
       if (sessionMode === "FOLLOW_UP_LISTENING") followUpSession.current.markListeningActive();
     },
@@ -1388,12 +1415,28 @@ export function App() {
       />
     </div>
   ) : null;
+  const operationsCenterHome = !activeWorkspace.openAppIds.length && shell.homeState === HOME_MINIMAL;
+  const unifiedIntent = (
+    <GlassCommandBar
+      mode={mode}
+      state={state}
+      onMic={createExplicitListeningEntryHandler("PUSH_TO_TALK", {
+        beginExplicitSession: () => followUpSession.current.beginExplicitSession(),
+        beforeStartListening: () => {
+          setState("listening");
+          setCaption(`${mode.toUpperCase()} · listening`);
+        },
+        startListening: (sessionMode) => { voice.startListening(sessionMode); },
+      })}
+      onCommand={(command) => void dispatch(command, null, "TEXT")}
+    />
+  );
 
   return (
     <main
-      className={`functional-app phase0-footer-guard mode-${mode} quality-${quality} transition-${phase}`}
+      className={`functional-app phase0-footer-guard mode-${mode} quality-${quality} transition-${phase} ${operationsCenterHome ? "v8-home-active" : "v8-projection-active"}`}
     >
-      <header className="functional-header glass-surface">
+      {!operationsCenterHome && <header className="functional-header glass-surface">
         <div className="functional-brand">
           <strong>{identityProfile.name}</strong>
           <span>● Online · {identityProfile.role}</span>
@@ -1435,24 +1478,27 @@ export function App() {
           </label>
           <span>{voice.diagnostic}</span>
         </div>
-      </header>
+      </header>}
 
       <div className="mode-transition-veil" />
 
       <div className="phase0-scroll">
         {(() => {
-          if (!activeWorkspace.openAppIds.length && shell.homeState === HOME_MINIMAL) {
+          if (operationsCenterHome) {
             return (
-              <section className="functional-scene">
-                <HeroCore
+              <V8OperationsCenter
+                state={mapCoreStateToSemanticState(state)}
+                characterStage={<HeroCore
                   mode={mode}
                   state={state}
+                  presenceSpeaker={shell.presenceMode === "ONYX_AND_NOVA" ? "COUNCIL" : undefined}
                   onSwitch={() => activate(mode === "nova" ? "onyx" : "nova")}
                   onAction={dispatchOrbitAction}
                   quality={quality}
                   lowPower={quality === "low"}
-                />
-              </section>
+                />}
+                intentLayer={unifiedIntent}
+              />
             );
           }
 
@@ -1464,6 +1510,7 @@ export function App() {
               <HeroCore
                 mode={mode}
                 state={state}
+                presenceSpeaker={shell.presenceMode === "ONYX_AND_NOVA" ? "COUNCIL" : undefined}
                 onSwitch={() => activate(mode === "nova" ? "onyx" : "nova")}
                 onAction={dispatchOrbitAction}
                 quality={quality}
@@ -1673,7 +1720,7 @@ export function App() {
         })()}
       </div>
 
-      <div className="bottom-stack">
+      {!operationsCenterHome && <div className="bottom-stack">
         {activityVisible && (
           <div className="activity-strip glass-surface">
             <b>{activityStateLabel}</b>
@@ -1719,21 +1766,9 @@ export function App() {
             <button onClick={() => openShellApp("settings")}>Settings</button>
             <button onClick={() => openShellApp("health")}>Health</button>
           </nav>
-          <GlassCommandBar
-            mode={mode}
-            state={state}
-            onMic={createExplicitListeningEntryHandler("PUSH_TO_TALK", {
-              beginExplicitSession: () => followUpSession.current.beginExplicitSession(),
-              beforeStartListening: () => {
-                setState("listening");
-                setCaption(`${mode.toUpperCase()} · listening`);
-              },
-              startListening: (sessionMode) => { voice.startListening(sessionMode); },
-            })}
-            onCommand={(command) => void dispatch(command)}
-          />
+          {unifiedIntent}
         </footer>
-      </div>
+      </div>}
     </main>
   );
 }

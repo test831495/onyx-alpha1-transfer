@@ -29,6 +29,27 @@ importers:
       '@onyx/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@onyx/conversation-character-validation':
+        specifier: workspace:*
+        version: link:../../packages/conversation-character-validation
+      '@onyx/conversation-continuity-runtime':
+        specifier: workspace:*
+        version: link:../../packages/conversation-continuity-runtime
+      '@onyx/conversation-first-contracts':
+        specifier: workspace:*
+        version: link:../../packages/conversation-first-contracts
+      '@onyx/conversation-first-final-runtime':
+        specifier: workspace:*
+        version: link:../../packages/conversation-first-final-runtime
+      '@onyx/conversation-first-response-runtime':
+        specifier: workspace:*
+        version: link:../../packages/conversation-first-response-runtime
+      '@onyx/conversation-model-runtime':
+        specifier: workspace:*
+        version: link:../../packages/conversation-model-runtime
+      '@onyx/conversation-response-envelope':
+        specifier: workspace:*
+        version: link:../../packages/conversation-response-envelope
       '@onyx/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -38,6 +59,9 @@ importers:
       '@onyx/intelligence-runtime':
         specifier: workspace:*
         version: link:../../packages/intelligence-runtime
+      '@onyx/operations-center-presence-runtime':
+        specifier: workspace:*
+        version: link:../../packages/operations-center-presence-runtime
       '@onyx/phase1a6-workflow-runtime':
         specifier: workspace:*
         version: link:../../packages/phase1a6-workflow-runtime
@@ -193,6 +217,24 @@ importers:
         specifier: ^3.2.7
         version: 3.2.7(@types/node@26.2.0)(tsx@4.23.12)
 
+  packages/conversation-continuity-runtime:
+    dependencies:
+      '@onyx/conversation-first-contracts':
+        specifier: workspace:*
+        version: link:../conversation-first-contracts
+
+  packages/conversation-first-contracts: {}
+
+  packages/conversation-first-final-runtime: {}
+
+  packages/conversation-first-response-runtime:
+    dependencies:
+      '@onyx/conversation-first-contracts':
+        specifier: workspace:*
+        version: link:../conversation-first-contracts
+
+  packages/conversation-model-runtime: {}
+
   packages/conversation-response-envelope:
     dependencies:
       '@onyx/conversation-truth-resolver':
@@ -318,6 +360,8 @@ importers:
       '@onyx/contracts':
         specifier: workspace:*
         version: link:../contracts
+
+  packages/operations-center-presence-runtime: {}
 
   packages/phase1a11-household-foundation-contracts:
     devDependencies:

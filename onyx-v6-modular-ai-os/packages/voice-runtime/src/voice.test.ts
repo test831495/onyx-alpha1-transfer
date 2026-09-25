@@ -12,7 +12,7 @@ describe("assistant voice profiles",()=>{
     expect(selectSystemVoice({
       ...defaultVoicePreferencesByAssistant.nova,
       systemVoice: undefined,
-    })).toBeNull();
+    })?.name).toBe("Default Male");
     vi.unstubAllGlobals();
   });
 });
