@@ -33,6 +33,18 @@ describe("assistant voice profiles",()=>{
 });
 
 describe("VoiceManager TTS completion",()=>{
+ it("reuses a cached provider status result within a short TTL and shares in-flight checks",async()=>{
+  const fetchMock=vi.fn(async(url:string)=>new Response(JSON.stringify({ready:true,diagnostic:"ok"}),{status:200}));
+  vi.stubGlobal("fetch",fetchMock);
+  const manager=new VoiceManager();
+  const first=manager.status("azure");
+  const second=manager.status("azure");
+  const [firstResult,secondResult]=await Promise.all([first,second]);
+  expect(firstResult.ready).toBe(true);
+  expect(secondResult.ready).toBe(true);
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  vi.unstubAllGlobals();
+ });
  it("prefers a configured healthy neural adapter before browser speech",async()=>{
   let audio: {onended?:()=>void;onerror?:()=>void;play:()=>Promise<void>}|undefined;
   let synthRequestBody="";

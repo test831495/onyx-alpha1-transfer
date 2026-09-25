@@ -79,6 +79,14 @@ describe("ConversationalPurposeResolver", () => {
     expect(result.sideEffect).toBe("GENERAL_CONVERSATION");
   });
 
+  it("recognizes ordinary creative prompts and general conversation variants", () => {
+    expect(resolver.resolve({ rawText: "can you tell me a story" }).purpose).toBe("CREATIVE_COLLABORATION");
+    expect(resolver.resolve({ rawText: "tell me a story" }).purpose).toBe("CREATIVE_COLLABORATION");
+    expect(resolver.resolve({ rawText: "can you tell me a joke" }).purpose).toBe("CREATIVE_COLLABORATION");
+    expect(resolver.resolve({ rawText: "how is your day going" }).purpose).toBe("GENERAL_CONVERSATION");
+    expect(resolver.resolve({ rawText: "what can you do for me" }).purpose).toBe("GENERAL_CONVERSATION");
+  });
+
   it("preserves deterministic navigation outcomes", () => {
     const result = classifyConversationRequest(request("Open Calendar."));
     expect(result.kind).toBe("NAVIGATION");

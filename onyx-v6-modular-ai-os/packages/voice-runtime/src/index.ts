@@ -2,6 +2,7 @@ export type VoiceEngine="system"|"azure"|"elevenlabs";
 export type VoiceDetail="brief"|"standard"|"detailed";
 export type AssistantVoice="nova"|"onyx";
 export type VoicePersona="female"|"male"|"neutral";
+type VoiceStatusCacheEntry = { expiresAt:number; value:VoiceStatus; promise?:Promise<VoiceStatus> };
 
 export interface VoicePreferences {
   voiceProfileId:string;
@@ -96,13 +97,25 @@ export class VoiceManager {
   private audio?:HTMLAudioElement;
   private audioGeneration=0;
   private audioCompletion?:{generation:number;resolve:()=>void};
+  private readonly statusCache = new Map<VoiceEngine, VoiceStatusCacheEntry>();
+  private readonly statusTtlMs = 2500;
   stop(){this.audioGeneration+=1;if(typeof speechSynthesis!=="undefined")speechSynthesis.cancel();this.audio?.pause();this.audio=undefined;this.audioCompletion?.resolve();this.audioCompletion=undefined;}
   pause(){if(this.audio)this.audio.pause();else speechSynthesis?.pause();}
   resume(){if(this.audio)void this.audio.play();else speechSynthesis?.resume();}
   async status(engine:VoiceEngine):Promise<VoiceStatus>{
     if(engine==="system")return{engine,ready:typeof speechSynthesis!=="undefined",diagnostic:typeof speechSynthesis!=="undefined"?"System voice ready.":"System voice unavailable."};
-    try{const r=await fetch(`/.netlify/functions/voice-status?provider=${engine}`);const j=await r.json();return{engine,ready:Boolean(j.ready),diagnostic:j.diagnostic??"Voice provider unavailable."};}
-    catch{return{engine,ready:false,diagnostic:"Voice backend unavailable."};}
+    const now=Date.now();
+    const cached=this.statusCache.get(engine);
+    if(cached && cached.expiresAt > now){
+      if(cached.promise) return await cached.promise;
+      return cached.value;
+    }
+    const pending=(async()=>{
+      try{const r=await fetch(`/.netlify/functions/voice-status?provider=${engine}`);const j=await r.json();const next={engine,ready:Boolean(j.ready),diagnostic:j.diagnostic??"Voice provider unavailable."};this.statusCache.set(engine,{expiresAt:Date.now()+this.statusTtlMs,value:next});return next;}
+      catch{const fallback={engine,ready:false,diagnostic:"Voice backend unavailable."};this.statusCache.set(engine,{expiresAt:Date.now()+this.statusTtlMs,value:fallback});return fallback;}
+    })();
+    this.statusCache.set(engine,{expiresAt:Date.now()+this.statusTtlMs,value:{engine,ready:false,diagnostic:"Checking provider status..."},promise:pending});
+    return await pending;
   }
   private async speakSystem(text:string,p:VoicePreferences){if(typeof speechSynthesis==="undefined")return false;this.stop();await waitForSystemVoiceInventory();const selectedVoice=selectSystemVoice(p);if(!selectedVoice)return false;return new Promise<boolean>((resolve,reject)=>{const u=new SpeechSynthesisUtterance(text);let done=false;const finish=(ok:boolean,error?:unknown)=>{if(done)return;done=true;if(ok)resolve(true);else reject(error instanceof Error?error:new Error("System voice synthesis failed."));};u.lang=p.language;u.rate=p.rate;u.pitch=p.pitch;u.volume=p.volume;u.voice=selectedVoice;u.onend=()=>finish(true);u.onerror=(event)=>finish(false,event);try{speechSynthesis.speak(u)}catch(error){finish(false,error)}});}
   async speak(text:string,p:VoicePreferences,binding?:VoicePlaybackBinding):Promise<VoiceSpeakResult>{
