@@ -87,6 +87,77 @@ export class FinalRecognitionGuard {
   }
 }
 
+export function resolveSpeechRecognitionConstructor(): (new () => SpeechRecognition) | null {
+  if (typeof globalThis === "undefined") return null;
+  const root = globalThis as typeof globalThis & {
+    SpeechRecognition?: new () => SpeechRecognition;
+    webkitSpeechRecognition?: new () => SpeechRecognition;
+  };
+  return root.SpeechRecognition ?? root.webkitSpeechRecognition ?? null;
+}
+
+export type SpeechRecognitionCapability =
+  | "SUPPORTED"
+  | "UNSUPPORTED"
+  | "BLOCKED_BY_PERMISSION"
+  | "BLOCKED_BY_BROWSER_POLICY"
+  | "START_FAILED"
+  | "ACTIVE";
+
+export function getSpeechRecognitionCapability(): SpeechRecognitionCapability {
+  const constructor = resolveSpeechRecognitionConstructor();
+  if (!constructor) return "UNSUPPORTED";
+  return "SUPPORTED";
+}
+
+export function mapRecognitionErrorMessage(error: string): string {
+  switch (error) {
+    case "not-allowed":
+    case "service-not-allowed":
+      return "Microphone access is blocked. Enable microphone access in browser settings.";
+    case "audio-capture":
+      return "No microphone input is available.";
+    case "no-speech":
+      return "I did not catch that. Tap the microphone and try again.";
+    case "network":
+      return "Voice recognition is temporarily unavailable. You can type your request.";
+    case "aborted":
+      return "";
+    case "language-not-supported":
+      return "Voice recognition is not supported in the current language.";
+    case "bad-grammar":
+      return "I did not catch that. Tap the microphone and try again.";
+    default:
+      return "Voice input is temporarily unavailable. Try again.";
+  }
+}
+
+export function extractFinalTranscript(eventLike: {
+  results?: ArrayLikeLikeResults | null;
+  resultIndex?: number;
+} | null): string {
+  const results = eventLike?.results;
+  if (!results || typeof (results as ArrayLikeLikeResults)?.length !== "number") return "";
+
+  const startIndex = Math.max(0, typeof eventLike.resultIndex === "number" ? eventLike.resultIndex : 0);
+  const total = Number((results as ArrayLikeLikeResults).length ?? 0);
+  const segments: string[] = [];
+
+  for (let index = startIndex; index < total; index += 1) {
+    const result = (results as ArrayLike<any>)[index];
+    if (!result || typeof result[0] === "undefined") continue;
+    const transcript = typeof result[0]?.transcript === "string" ? result[0].transcript : "";
+    if (!transcript.trim()) continue;
+    segments.push(transcript.trim());
+  }
+
+  return segments.join(" ").replace(/\s+/g, " ").trim();
+}
+
+type ArrayLikeLikeResults = ArrayLike<
+  ArrayLike<{ transcript?: string }> & { isFinal?: boolean; length?: number }
+>;
+
 export function parseVoice(text: string): { mode: AssistantMode | null; command: string } {
   const value = normalize(text);
   const match = [...value.matchAll(/(?:^|\s)(?:hey\s+)?(nova|nover|onyx|onix|onics)(?:\s|$)/g)].at(-1);
@@ -102,7 +173,7 @@ export interface VoiceRouterLifecycle {
 }
 
 export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode | null) => void, lifecycle: VoiceRouterLifecycle = {}) {
-  const supported = Boolean(window.SpeechRecognition ?? window.webkitSpeechRecognition);
+  const supported = Boolean(resolveSpeechRecognitionConstructor());
   const [status, setStatus] = useState<CoreState>("idle");
   const [diagnostic, setDiagnostic] = useState(supported ? "MIC READY" : "VOICE UNAVAILABLE · USE TYPED COMMANDS");
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -110,9 +181,29 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
   const arbiterRef = useRef(new VoiceSessionArbiter());
   const timerRef = useRef(new DiagnosticResetTimer());
   const commandRef = useRef(onCommand);
+  const watchdogsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const finalTranscriptRef = useRef<string | null>(null);
+
   useEffect(() => { commandRef.current = onCommand; }, [onCommand]);
 
+  const clearWatchdogs = () => {
+    for (const timeoutId of watchdogsRef.current) {
+      globalThis.clearTimeout(timeoutId);
+    }
+    watchdogsRef.current = [];
+  };
+
+  const scheduleWatchdog = (callback: () => void, delayMs: number) => {
+    const handle = globalThis.setTimeout(() => {
+      watchdogsRef.current = watchdogsRef.current.filter((value) => value !== handle);
+      callback();
+    }, delayMs);
+    watchdogsRef.current.push(handle);
+    return handle;
+  };
+
   const stopListening = (reason: VoiceSessionAbortReason = "USER_CANCEL") => {
+    clearWatchdogs();
     timerRef.current.invalidate();
     const snapshot = arbiterRef.current.snapshot();
     if (!recognitionRef.current && snapshot.terminal && !snapshot.pendingStart) {
@@ -127,97 +218,146 @@ export function useVoiceRouter(onCommand: (command: string, mode: AssistantMode 
       arbiterRef.current.markRecognitionEnded(generation);
     }
     recognitionRef.current = null;
+    finalTranscriptRef.current = null;
     setStatus("idle");
   };
 
   const startListening = (sessionMode: Extract<VoiceSessionMode, "PUSH_TO_TALK" | "ORBITAL_LISTEN" | "FOLLOW_UP_LISTENING"> = "PUSH_TO_TALK"): boolean => {
     timerRef.current.invalidate();
-    const Ctor = window.SpeechRecognition ?? window.webkitSpeechRecognition;
+    clearWatchdogs();
+
+    const Ctor = resolveSpeechRecognitionConstructor();
     if (!Ctor) {
-      setDiagnostic("VOICE UNAVAILABLE · USE TYPED COMMANDS");
-      setStatus("error");
+      setDiagnostic("Voice input is not supported in this browser. Type your request instead.");
+      setStatus("idle");
       return false;
     }
+
     const decision = arbiterRef.current.requestStart(sessionMode, "active");
     if (!decision.shouldStartRecognition) return true;
     if (recognitionRef.current) {
       try { recognitionRef.current.abort(); } catch {}
       recognitionRef.current = null;
     }
-    setDiagnostic("REQUESTING MICROPHONE");
+
     const recognition = new Ctor();
     const generation = decision.generation;
     const recognitionInstanceId = `recognition-${++recognitionSequence.current}`;
+    finalTranscriptRef.current = null;
     recognitionRef.current = recognition;
     recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
     recognition.lang = "en-US";
+
     const finalRecognitionGuard = new FinalRecognitionGuard();
+    const startTimeout = scheduleWatchdog(() => {
+      const snapshot = arbiterRef.current.snapshot();
+      if (snapshot.generation !== generation || !snapshot.pendingStart) return;
+      try { recognition.abort(); } catch {}
+      arbiterRef.current.markRecognitionEnded(generation);
+      recognitionRef.current = null;
+      setDiagnostic("Voice input did not start in time. Tap the microphone and try again.");
+      setStatus("idle");
+    }, 3000);
+
     recognition.onstart = () => {
-      timerRef.current.invalidate();
+      clearTimeout(startTimeout);
       if (arbiterRef.current.markRecognitionStarted(generation, recognitionInstanceId)) {
+        setStatus("listening");
+        setDiagnostic("LISTENING");
         lifecycle.onRecognitionStart?.(sessionMode);
       }
+      scheduleWatchdog(() => {
+        const snapshot = arbiterRef.current.snapshot();
+        if (snapshot.generation !== generation) return;
+        if (!finalTranscriptRef.current) {
+          try { recognition.stop(); } catch {}
+          setDiagnostic("I did not catch that. Tap the microphone and try again.");
+          setStatus("idle");
+        }
+      }, 8000);
     };
+
     recognition.onresult = event => {
-      timerRef.current.invalidate();
-      if (generation !== arbiterRef.current.snapshot().generation) return;
-      const result = event.results[event.resultIndex];
-      const heard = event.results[event.resultIndex]?.[0]?.transcript?.trim() ?? "";
-      if (result?.isFinal && !heard) {
-        setDiagnostic("NO SPEECH DETECTED");
-        return;
+      const snapshot = arbiterRef.current.snapshot();
+      if (generation !== snapshot.generation) return;
+      const resultIndex = typeof event.resultIndex === "number" ? event.resultIndex : 0;
+      const interimCandidate = event.results[resultIndex]?.[0]?.transcript?.trim() ?? "";
+      if (interimCandidate && !event.results[resultIndex]?.isFinal) {
+        setDiagnostic(`LISTENING · ${interimCandidate}`);
       }
-      if (!finalRecognitionGuard.shouldProcess(Boolean(result?.isFinal), Boolean(heard))) {
-        return;
-      }
+
+      const heard = extractFinalTranscript({ results: event.results, resultIndex });
+      if (!heard) return;
+      const finalCandidate = heard.trim();
+      if (!finalCandidate) return;
+      if (finalTranscriptRef.current === finalCandidate) return;
+      const finalDecision = finalRecognitionGuard.shouldProcess(true, true);
+      if (!finalDecision) return;
+      finalTranscriptRef.current = finalCandidate;
       setStatus("thinking");
       setDiagnostic("PROCESSING");
-      const parsed = parseVoice(heard);
-      commandRef.current(parsed.command || heard, parsed.mode);
-      const liveDiagnostic = `${parsed.mode ? `MATCHED ${parsed.mode.toUpperCase()} · ` : ""}HEARD “${heard}”`;
+      const parsed = parseVoice(finalCandidate);
+      commandRef.current(parsed.command || finalCandidate, parsed.mode);
+      const liveDiagnostic = `${parsed.mode ? `MATCHED ${parsed.mode.toUpperCase()} · ` : ""}HEARD “${finalCandidate}”`;
       setDiagnostic(liveDiagnostic);
-      const resetTimerGeneration = timerRef.current.currentGeneration();
-      timerRef.current.scheduleForGeneration(resetTimerGeneration, () => {
+      timerRef.current.schedule(() => {
         const owner = arbiterRef.current.snapshot();
         if (owner.generation !== generation || !owner.terminal || owner.mode !== "IDLE") return;
         setDiagnostic(supported ? "MIC READY" : "VOICE UNAVAILABLE · USE TYPED COMMANDS");
         setStatus("idle");
       }, 1500);
     };
+
     recognition.onerror = event => {
+      clearWatchdogs();
       timerRef.current.invalidate();
       const classification = arbiterRef.current.classifyRecognitionError(generation, event.error);
       if (classification.expected) {
-        if (generation === arbiterRef.current.snapshot().generation) setStatus("idle");
+        if (generation === arbiterRef.current.snapshot().generation) {
+          setStatus("idle");
+          setDiagnostic("MIC READY");
+        }
         return;
       }
-      const message = event.error === "not-allowed" || event.error === "service-not-allowed"
-        ? "MICROPHONE BLOCKED"
-        : event.error === "no-speech" ? "NO SPEECH DETECTED" : `VOICE ERROR · ${classification.userMessage ?? event.error}`;
+
+      const message = mapRecognitionErrorMessage(event.error);
+
+      if (!message) {
+        setStatus("idle");
+        setDiagnostic("MIC READY");
+        return;
+      }
       setDiagnostic(message);
-      setStatus("error");
+      setStatus("idle");
     };
+
     recognition.onend = () => {
+      clearWatchdogs();
       if (generation !== arbiterRef.current.snapshot().generation) return;
       arbiterRef.current.markRecognitionEnded(generation);
       recognitionRef.current = null;
       lifecycle.onRecognitionEnd?.(sessionMode);
-      setStatus(current => current === "error" ? current : "idle");
+      if (!finalTranscriptRef.current) {
+        setDiagnostic("I did not catch that. Tap the microphone and try again.");
+      }
+      setStatus("idle");
     };
+
     try {
-      setStatus("listening");
-      setDiagnostic("LISTENING");
+      setDiagnostic("REQUESTING MICROPHONE");
       recognition.start();
     } catch {
-      setDiagnostic("VOICE COULD NOT START");
-      setStatus("error");
+      setDiagnostic("Voice input is not supported in this browser. Type your request instead.");
+      setStatus("idle");
       return false;
     }
     return true;
   };
 
   useEffect(() => {
+    if (typeof document === "undefined") return undefined;
     const visibility = () => { if (document.hidden) stopListening("SESSION_CLOSE"); };
     document.addEventListener("visibilitychange", visibility);
     return () => { document.removeEventListener("visibilitychange", visibility); stopListening("UNMOUNT"); };
