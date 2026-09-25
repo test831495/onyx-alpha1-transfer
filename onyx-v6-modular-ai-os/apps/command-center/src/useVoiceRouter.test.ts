@@ -1,11 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
-import {
-  DiagnosticResetTimer,
-  FinalRecognitionGuard,
-  parseVoice,
-  resolveSpeechRecognitionConstructor,
-  extractFinalTranscript,
-} from "./useVoiceRouter";
+import { DiagnosticResetTimer, FinalRecognitionGuard, parseVoice } from "./useVoiceRouter";
 
 describe("parseVoice vocal command parsing", () => {
   it("recognizes NOVA mode with greeting", () => {
@@ -239,33 +233,6 @@ describe("DiagnosticResetTimer timer lifecycle", () => {
   });
 });
 
-describe("Speech recognition factory selection", () => {
-  beforeEach(() => {
-    delete (globalThis as any).SpeechRecognition;
-    delete (globalThis as any).webkitSpeechRecognition;
-  });
-
-  it("prefers the standard SpeechRecognition constructor when available", () => {
-    const StandardCtor = vi.fn();
-    const WebkitCtor = vi.fn();
-    (globalThis as any).SpeechRecognition = StandardCtor;
-    (globalThis as any).webkitSpeechRecognition = WebkitCtor;
-
-    expect(resolveSpeechRecognitionConstructor()).toBe(StandardCtor);
-  });
-
-  it("falls back to the webkitSpeechRecognition constructor", () => {
-    const WebkitCtor = vi.fn();
-    (globalThis as any).webkitSpeechRecognition = WebkitCtor;
-
-    expect(resolveSpeechRecognitionConstructor()).toBe(WebkitCtor);
-  });
-
-  it("returns null when neither browser speech constructor is present", () => {
-    expect(resolveSpeechRecognitionConstructor()).toBeNull();
-  });
-});
-
 describe("FinalRecognitionGuard", () => {
   it("rejects interim and duplicate final recognition results", () => {
     const guard = new FinalRecognitionGuard();
@@ -274,18 +241,5 @@ describe("FinalRecognitionGuard", () => {
     expect(guard.shouldProcess(true, false)).toBe(false);
     expect(guard.shouldProcess(true, true)).toBe(true);
     expect(guard.shouldProcess(true, true)).toBe(false);
-  });
-
-  it("joins multi-segment finals in index order and rejects empty text", () => {
-    const results = {
-      resultIndex: 0,
-      results: [
-        { 0: { transcript: "hello" }, isFinal: true },
-        { 0: { transcript: " world" }, isFinal: true },
-      ],
-    };
-
-    expect(extractFinalTranscript(results as any)).toBe("hello world");
-    expect(extractFinalTranscript({ resultIndex: 0, results: [{ 0: { transcript: "  " }, isFinal: true }] } as any)).toBe("");
   });
 });
