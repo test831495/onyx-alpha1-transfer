@@ -49,6 +49,14 @@ describe("B5B planning and composition", () => {
     expect(onyx?.text).toContain("recommendation");
     expect(nova?.text).toContain("progress");
   });
+  it("uses conversational objectives and natural wording for ordinary chat", () => {
+    const result = plan("GENERAL_CONVERSATION", "NOVA");
+    expect(result?.objectives[0]).toContain("respond naturally");
+    expect(result?.responseMode).toBe("CONVERSATION");
+    const candidate = composeCharacterResponse(result!);
+    expect(candidate?.text).toMatch(/help with that|talk about|explore/i);
+    expect(candidate?.text).not.toContain("clearest bounded answer");
+  });
   it("emits a natural limitation for unavailable Calendar truth", () => {
     const limitationTruth = truth("INFORMATION_REQUEST", { rawText: "What meetings do I have tomorrow?", operationalTruthAvailable: false });
     const candidate = composeCharacterResponse(planResponse({ requestId: "r", planId: "p", purpose: "INFORMATION_REQUEST", truth: limitationTruth, speakerDecision: { selectedSpeaker: "NOVA" } })!);

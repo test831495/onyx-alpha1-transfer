@@ -8,5 +8,31 @@ describe("conversation model runtime", () => {
   it("selects an eligible provider-neutral adapter", () => expect(new ConversationModelRegistry([synthetic]).decide(request, true, { offline: false, localCapabilityAvailable: false })?.adapterId).toBe("synthetic"));
   it("fails closed when no adapter is configured", () => expect(new ConversationModelRegistry().decide(request, true, { offline: false, localCapabilityAvailable: false })).toBeNull());
   it("refuses cloud execution when the device is offline and no local capability is available", () => expect(new ConversationModelRegistry([synthetic]).decide(request, true, { offline: true, localCapabilityAvailable: false })).toBeNull());
+  it("accepts a production contract response and preserves the selected speaker and language metadata", async () => {
+    const rawProviderResponse = {
+      requestId: request.requestId,
+      adapterId: "openai-conversation-server",
+      modelReferenceSafe: "configured",
+      text: "A natural response.",
+      language: request.language,
+      finishReason: "STOP",
+      generationReceiptVersion: "B5F-1",
+      generationMode: "MODEL_GENERATED",
+      selectedSpeaker: request.selectedSpeaker,
+      selectionReason: request.selectionReason,
+      providerRequestSucceeded: true,
+    } as const;
+    const expectedFields = ["requestId", "adapterId", "modelReferenceSafe", "text", "language", "finishReason", "generationReceiptVersion"];
+    const actualMissingOrInvalidFields = expectedFields.filter((field) => {
+      const value = (rawProviderResponse as Record<string, unknown>)[field];
+      return value == null || (typeof value === "string" && value === "");
+    });
+
+    expect(actualMissingOrInvalidFields).toEqual([]);
+    expect(rawProviderResponse.text).toBeTruthy();
+    expect(rawProviderResponse.language).toBe(request.language);
+    expect(rawProviderResponse.selectedSpeaker).toBe(request.selectedSpeaker);
+    expect(rawProviderResponse.providerRequestSucceeded).toBe(true);
+  });
   it("exposes OpenAI only through the server boundary", () => expect(new OpenAIConversationAdapter().adapterId).toBe("openai-conversation-server"));
 });

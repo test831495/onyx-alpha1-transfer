@@ -50,6 +50,7 @@ function modeFor(purpose: ConversationPurpose, truthPolicy: string): ResponseMod
 function objectivesFor(input: ResponsePlanningInput): string[] {
   if (input.purpose === "CORRECTION" && input.correctedEntity) return [`Use corrected conversational frame: ${input.correctedEntity}.`];
   if (input.purpose === "FOLLOW_UP" && input.currentTopic) return [`Continue the topic: ${input.currentTopic}.`];
+  if (input.purpose === "GENERAL_CONVERSATION") return ["respond naturally and directly to the user’s conversational message while preserving the selected character’s style and avoiding unsupported factual claims."];
   if (input.purpose === "COUNCIL_REQUEST") return ["Prepare a non-authorizing Council-eligible plan."];
   return ["Answer the communicative purpose without inventing unsupported facts."];
 }

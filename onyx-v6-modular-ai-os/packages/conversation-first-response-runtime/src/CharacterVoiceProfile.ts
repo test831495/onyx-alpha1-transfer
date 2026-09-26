@@ -26,6 +26,17 @@ export const NOVA_VOICE_PROFILE = freeze({
   preferredUseCases: ["everyday conversation", "guidance", "productivity", "explanation", "creative collaboration"],
 } as const);
 
+export const COUNCIL_VOICE_PROFILE = freeze({
+  character: "ONYX", profileVersion: CHARACTER_PROFILE_VERSION,
+  identity: ["council", "multi-perspective", "non-authorizing", "synthesis", "bounded-recommendation"],
+  responseSequence: ["consideration", "balanced-perspective", "bounded-recommendation", "no-authority"],
+  styleRules: ["advisory-only", "non-authorizing", "evidence-aware", "no authority grant", "no execution claim"],
+  preferredUseCases: ["council synthesis", "multi-perspective recommendations", "non-authorizing guidance"],
+} as const);
+
 export function profileFor(speaker: PlanSpeaker): CharacterVoiceProfile | null {
-  return speaker === "ONYX" ? ONYX_VOICE_PROFILE : speaker === "NOVA" ? NOVA_VOICE_PROFILE : null;
+  if (speaker === "ONYX") return ONYX_VOICE_PROFILE;
+  if (speaker === "NOVA") return NOVA_VOICE_PROFILE;
+  if (speaker === "COUNCIL") return COUNCIL_VOICE_PROFILE;
+  return null;
 }

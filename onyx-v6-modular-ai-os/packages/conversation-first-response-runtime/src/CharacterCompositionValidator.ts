@@ -18,7 +18,7 @@ export function validateCharacterResponseCandidate(candidate: unknown): Composit
   if (value.speaker !== "ONYX" && value.speaker !== "NOVA" && value.speaker !== "COUNCIL" && value.speaker !== "NONE") reasons.push("INVALID_SPEAKER");
   if (value.characterProfileVersion !== CHARACTER_PROFILE_VERSION || value.compositionVersion !== COMPOSITION_VERSION) reasons.push("INVALID_VERSION");
   if (typeof value.text !== "string" || typeof value.spokenText !== "string" || value.text.length > MAX_RESPONSE_TEXT || value.spokenText.length > MAX_RESPONSE_TEXT) reasons.push("BOUNDS_EXCEEDED");
-  if (value.speaker === "COUNCIL" || value.speaker === "NONE") reasons.push("PROFILE_MISMATCH");
+  if (value.speaker === "NONE") reasons.push("PROFILE_MISMATCH");
   if (value.speaker && profileFor(value.speaker) === null) reasons.push("PROFILE_MISMATCH");
   if (!["GROUNDED", "SUPPLIED_CONTEXT", "CREATIVE", "LIMITED", "NOT_ASSESSABLE"].includes(value.truthStatus ?? "")) reasons.push("INVALID_TRUTH_STATUS");
   if (!["NONE", "OPTIONAL", "REQUIRED"].includes(value.followUp ?? "")) reasons.push("INVALID_FOLLOW_UP");

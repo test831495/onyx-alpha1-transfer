@@ -93,6 +93,104 @@ describe("live conversation runtime adapter", () => {
     vi.unstubAllGlobals();
   });
 
+  it("uses model-first provider output for ordinary conversational turns without repeating the old bounded template", async () => {
+    const outputs = ["I’m here with you.", "Let’s take it one step at a time.", "That sounds rough.", "I’m listening.", "I’m checking the context and helping you decide.", "I’m glad you had a good day."];
+    const seen: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init: RequestInit) => {
+      const request = JSON.parse(String(init.body));
+      const output = outputs[seen.length] ?? `Reply for ${request.userText}`;
+      seen.push(output);
+      return new Response(JSON.stringify({ requestId: request.requestId, adapterId: "openai-conversation-server", modelReferenceSafe: "configured", text: output, language: request.language ?? "ENGLISH", finishReason: "STOP", generationReceiptVersion: "B5F-1", providerRequestSucceeded: true, generationMode: "MODEL_GENERATED" }), { status: 200 });
+    }));
+    const adapter = createConversationRuntimeAdapter();
+    const turns = [
+      "I am tired.",
+      "Oh my God.",
+      "Seriously?",
+      "It seems you are fully broken.",
+      "What are you doing?",
+      "I had a good day.",
+    ] as const;
+    for (let index = 0; index < turns.length; index += 1) {
+      const turnText = turns[index] ?? "";
+      const result = await adapter(input(turnText, { turnId: `general-${index + 1}`, utteranceGeneration: index + 1 }));
+      expect(result.purpose).toBe("GENERAL_CONVERSATION");
+      expect(result.responseMode).toBe("CONVERSATION");
+      expect(result.providerRequestSucceeded).toBe(true);
+      expect(result.generationMode).toBe("MODEL_GENERATED");
+      expect(result.text).toBe(outputs[index]);
+      expect(result.text).not.toContain("clearest bounded answer");
+      expect(result.text).not.toContain("I hear you");
+    }
+    vi.unstubAllGlobals();
+  });
+
+  it("accepts a valid production-model response and preserves provider-first output for ordinary conversation", async () => {
+    const rawProviderResponse = {
+      requestId: "turn-good-day",
+      adapterId: "openai-conversation-server",
+      modelReferenceSafe: "configured",
+      text: "I’m glad you had a good day.",
+      language: "ENGLISH",
+      finishReason: "STOP",
+      generationReceiptVersion: "B5F-1",
+      generationMode: "MODEL_GENERATED",
+      selectedSpeaker: "NOVA",
+      selectionReason: "POLICY_DEFAULT",
+      providerRequestSucceeded: true,
+    } as const;
+    const expectedRequiredFields = ["requestId", "adapterId", "modelReferenceSafe", "text", "language", "finishReason", "generationReceiptVersion"];
+    const actualMissingOrInvalidFields: string[] = [];
+
+    for (const field of expectedRequiredFields) {
+      const value = (rawProviderResponse as Record<string, unknown>)[field];
+      if (value == null || (typeof value === "string" && value === "")) {
+        actualMissingOrInvalidFields.push(field);
+      }
+    }
+    expect(actualMissingOrInvalidFields).toEqual([]);
+
+    let requestBody = "";
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init: RequestInit) => {
+      requestBody = String(init.body);
+      return new Response(JSON.stringify(rawProviderResponse), { status: 200 });
+    }));
+
+    const result = await createConversationRuntimeAdapter()(input("I had a good day.", { turnId: "turn-good-day", utteranceGeneration: 1 }));
+    const payload = JSON.parse(requestBody);
+
+    expect(payload.userText).toBe("I had a good day.");
+    expect(payload.conversationPurpose).toBe("GENERAL_CONVERSATION");
+    expect(payload.responseMode).toBe("CONVERSATION");
+    expect(rawProviderResponse.text).toBeTruthy();
+    expect(rawProviderResponse.text).not.toBe("I cannot verify");
+    expect(result.purpose).toBe("GENERAL_CONVERSATION");
+    expect(result.responseMode).toBe("CONVERSATION");
+    expect(result.speaker).toBe("NOVA");
+    expect(result.text).toBe(rawProviderResponse.text);
+    expect(result.generationMode).toBe("MODEL_GENERATED");
+    expect(result.providerRequestSucceeded).toBe(true);
+    expect(result.fallbackReason).toBeUndefined();
+    expect(result.text).not.toContain("I cannot verify");
+    expect(result.generationMode).not.toBe("DETERMINISTIC_FALLBACK");
+    vi.unstubAllGlobals();
+  });
+
+  it("falls back only after provider failure and preserves continuity", async () => {
+    const requests: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init: RequestInit) => {
+      requests.push(String(init.body));
+      return new Response(JSON.stringify({ error: { code: "rate_limit" } }), { status: 429 });
+    }));
+    const result = await createConversationRuntimeAdapter()(input("I am tired.", { turnId: "fallback-turn", utteranceGeneration: 1 }));
+    expect(result.generationMode).toBe("DETERMINISTIC_FALLBACK");
+    expect(result.providerRequestSucceeded).toBe(false);
+    expect(result.text.length).toBeGreaterThan(0);
+    expect(result.text).toContain("I cannot verify");
+    expect(requests).toHaveLength(1);
+    vi.unstubAllGlobals();
+  });
+
   it("does not send empty userText and deterministically bounds oversized text", async () => {
     const requests: string[] = [];
     vi.stubGlobal("fetch", vi.fn(async (_url: string, init: RequestInit) => {

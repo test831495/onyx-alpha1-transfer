@@ -96,6 +96,17 @@ function recoverTopicFromSessionContext(session: ConversationSession, rawText: s
   return null;
 }
 
+function normalizeRuntimePurposeForInput(purpose: ConversationPurpose, rawText: string): ConversationPurpose {
+  if (purpose !== "UNKNOWN") return purpose;
+  if (/(?:oh my god|wow|this seems broken|it seems you are fully broken|this is broken|i am frustrated|i am tired|i am upset|i am confused|i am stressed|seriously|thanks|thank you|hello|hi|hey|how are you|how is your day|how are things)/i.test(rawText)) {
+    return "GENERAL_CONVERSATION";
+  }
+  if (/(?:what|why|how|when|where|who|which)\b/.test(rawText)) {
+    return "INFORMATION_REQUEST";
+  }
+  return purpose;
+}
+
 export function selectConversationSpeaker(rawText: string, purpose: ConversationPurpose, requestedSpeaker?: FinalSpeaker, previousSpeaker?: FinalSpeaker): SpeakerSelection {
   if (purpose === "COUNCIL_REQUEST") return { speaker: "COUNCIL", selectionReason: "COUNCIL_ELIGIBILITY", manualOverrideApplied: false, previousSpeakerPreserved: false };
   if (requestedSpeaker === "ONYX" || requestedSpeaker === "NOVA") return { speaker: requestedSpeaker, selectionReason: "MANUAL_OVERRIDE", manualOverrideApplied: true, previousSpeakerPreserved: false };
@@ -178,12 +189,13 @@ export function createConversationRuntimeAdapter(ownerReference = "command-cente
     else if (recoveredTopic) previousTopic = recoveredTopic;
 
     const purposeResolution = purposeResolver.resolve({ rawText: input.rawText, hasActiveTopic: activeTopic !== null && activeTopic !== undefined });
+    const effectivePurpose = normalizeRuntimePurposeForInput(purposeResolution.purpose, input.rawText);
     const continuity = session.accept({
       sessionId: input.sessionId,
       ownerReference,
       turnId: input.turnId,
       utteranceGeneration: input.utteranceGeneration,
-      purpose: purposeResolution.purpose,
+      purpose: effectivePurpose,
       timestamp: Date.now(),
       topicLabel: input.currentTopic ?? activeTopic ?? recoveredTopic ?? sessionFrame.topic?.label ?? undefined,
       speaker: input.requestedSpeaker,
@@ -203,21 +215,25 @@ export function createConversationRuntimeAdapter(ownerReference = "command-cente
       suppliedTruthReferences: input.suppliedTruthReferences,
       operatingMode: input.source === "VOICE" ? "VOICE" : "TEXT",
     });
-    const speakerSelection = selectConversationSpeaker(input.rawText, purposeResolution.purpose, input.requestedSpeaker, previousSpeaker);
+    const speakerSelection = selectConversationSpeaker(input.rawText, effectivePurpose, input.requestedSpeaker, previousSpeaker);
     const envelope = parseConversationalRequest(input.rawText);
-    const operational = /\b(?:calendar|meeting|mail|file|note|task|account|connector|provider|tomorrow)\b/i.test(input.rawText) || purposeResolution.purpose === "ACTION_REQUEST";
+    const operational = /\b(?:calendar|meeting|mail|file|note|task|account|connector|provider|tomorrow)\b/i.test(input.rawText) || effectivePurpose === "ACTION_REQUEST";
     const truthPolicy = envelope.kind === "CALENDAR_PROVIDER_LIMITATION" || input.offline === true && input.localCapabilityAvailable !== true
       ? "NOT_ASSESSABLE"
       : operational ? "OPERATIONAL_TRUTH_REQUIRED" : input.suppliedTruthReferences?.length ? "SUPPLIED_CONTEXT_ONLY" : "NO_EXTERNAL_TRUTH_REQUIRED";
-    const finalResult = finalDispatcher.dispatch({ source: input.source, rawText: input.rawText, sessionId: input.sessionId, turnId: input.turnId, utteranceGeneration: input.utteranceGeneration, requestedSpeaker: speakerSelection.speaker, purpose: purposeResolution.purpose, topic: continuityTopic ?? undefined, truthPolicy, suppliedTruthReferences: input.suppliedTruthReferences, offline: input.offline, localCapabilityAvailable: input.localCapabilityAvailable });
+    const finalResult = finalDispatcher.dispatch({ source: input.source, rawText: input.rawText, sessionId: input.sessionId, turnId: input.turnId, utteranceGeneration: input.utteranceGeneration, requestedSpeaker: speakerSelection.speaker, purpose: effectivePurpose, topic: continuityTopic ?? undefined, truthPolicy, suppliedTruthReferences: input.suppliedTruthReferences, offline: input.offline, localCapabilityAvailable: input.localCapabilityAvailable });
     const speaker = finalResult.speaker;
     if (speaker === "ONYX" || speaker === "NOVA") previousSpeaker = speaker;
-    const truth = resolveTruthRequirement({ purpose: purposeResolution.purpose, rawText: input.rawText, suppliedContext: Boolean(input.suppliedTruthReferences?.length), suppliedTruthReferences: input.suppliedTruthReferences, operationalTruthAvailable: false });
-    const plan = planResponse({ requestId: input.turnId, planId: `plan-${input.turnId}`, purpose: purposeResolution.purpose, truth, currentTopic: activeTopic ?? undefined, speakerDecision: { selectedSpeaker: speaker === "ONYX" || speaker === "NOVA" ? speaker : undefined } });
+    const truth = resolveTruthRequirement({ purpose: effectivePurpose, rawText: input.rawText, suppliedContext: Boolean(input.suppliedTruthReferences?.length), suppliedTruthReferences: input.suppliedTruthReferences, operationalTruthAvailable: false });
+    const plan = planResponse({ requestId: input.turnId, planId: `plan-${input.turnId}`, purpose: effectivePurpose, truth, currentTopic: activeTopic ?? undefined, speakerDecision: { selectedSpeaker: speaker === "ONYX" || speaker === "NOVA" ? speaker : undefined } });
     const candidate = plan ? composeCharacterResponse(plan) : null;
-    let selectedCandidate = candidate;
+    if (!candidate && plan) {
+      return fallbackReceipt(input, "MODEL_CANDIDATE_UNAVAILABLE");
+    }
+    let selectedCandidate: typeof candidate | null = null;
     const workspaceProjection = buildWorkspaceConversationProjection(input.workspaceSnapshot);
     const workspaceRequest = /\bworkspace\b/i.test(input.rawText);
+    const fallbackText = "I cannot verify that current information right now. I can still help you narrow the question or propose one practical next step.";
     let generationMode: LiveConversationDispatchReceipt["generationMode"] = truth.truthPolicy === "NOT_ASSESSABLE" ? "SAFE_LIMITATION" : "DETERMINISTIC_FALLBACK";
     let providerRequestSucceeded = false;
     let fallbackReason: string | undefined;
@@ -225,13 +241,13 @@ export function createConversationRuntimeAdapter(ownerReference = "command-cente
     if (workspaceRequest && !workspaceProjection) {
       fallbackReason = "WORKSPACE_SNAPSHOT_UNAVAILABLE";
       if (candidate) selectedCandidate = freezeCandidate({ ...candidate, text: "I can see that Workspace is open, but its current contents are not available to summarize yet.", spokenText: "I can see that Workspace is open, but its current contents are not available to summarize yet.", captionText: "I can see that Workspace is open, but its current contents are not available to summarize yet." });
-    } else if (plan && candidate && userText && (speaker === "ONYX" || speaker === "NOVA")) {
+    } else if (plan && userText && (speaker === "ONYX" || speaker === "NOVA") && candidate) {
       const requiresGroundedOperationalClaims = purposeResolution.purpose === "ACTION_REQUEST" || purposeResolution.purpose === "NAVIGATION_REQUEST" || purposeResolution.purpose === "OPERATIONAL_QUERY" || (purposeResolution.purpose === "INFORMATION_REQUEST" && plan.requiredTruthReferences.length > 0);
-    const modelRequest: ConversationModelRequest = {
+      const modelRequest: ConversationModelRequest = {
         requestId: input.turnId, sessionId: input.sessionId, turnId: input.turnId, utteranceGeneration: input.utteranceGeneration,
         userText,
         language: detectedLanguage, selectedSpeaker: speaker, selectionReason: speakerSelection.selectionReason, characterProfileVersion: candidate.characterProfileVersion,
-        conversationPurpose: purposeResolution.purpose, responseMode: plan.responseMode, responseObjectives: plan.objectives,
+        conversationPurpose: effectivePurpose, responseMode: plan.responseMode, responseObjectives: plan.objectives,
         recentTurnSummaries: continuitySummaries.length > 0 ? continuitySummaries : context.recentTurnSummaries, currentTopic: continuityTopic ?? context.currentTopic,
         supportedClaims: requiresGroundedOperationalClaims ? plan.supportedClaims : [], prohibitedClaims: requiresGroundedOperationalClaims ? plan.prohibitedClaims : [],
         truthStatus: candidate.truthStatus,
@@ -256,13 +272,19 @@ export function createConversationRuntimeAdapter(ownerReference = "command-cente
           }
         } catch (error) {
           fallbackReason = error instanceof Error ? error.message : "MODEL_PROVIDER_FAILURE";
-          selectedCandidate = candidate;
+          selectedCandidate = freezeCandidate({ ...candidate, text: fallbackText, spokenText: fallbackText, captionText: fallbackText });
         }
+      } else if (candidate) {
+        fallbackReason = "MODEL_PROVIDER_UNAVAILABLE";
+        selectedCandidate = freezeCandidate({ ...candidate, text: fallbackText, spokenText: fallbackText, captionText: fallbackText });
       }
+    }
+    if (!selectedCandidate && candidate) {
+      selectedCandidate = freezeCandidate({ ...candidate, text: fallbackText, spokenText: fallbackText, captionText: fallbackText });
     }
     const envelopeResult = selectedCandidate && (speaker === "ONYX" || speaker === "NOVA") ? buildCharacterResponseEnvelope({ candidateVersion: "B4B-1", suppliedSpeaker: speaker, displayCandidate: input.offline ? finalResult.text : selectedCandidate.text, spokenCandidate: input.offline ? finalResult.spokenText : selectedCandidate.spokenText, contentClass: "GENERAL_EXPLANATION", generatedOrGroundedClass: "GENERATED_GENERAL", truthSourceClass: truth.truthPolicy === "OPERATIONAL_TRUTH_REQUIRED" ? "UNAVAILABLE" : "GENERATED_GENERAL", provenanceClass: "SUPPLIED_SAFE_CONTENT", responseLanguageClass: "ENGLISH", criticalFacts: truth.truthPolicy === "NOT_ASSESSABLE" ? ["LIMITATION"] : [], limitations: truth.limitationCodes, followUpClass: "NONE" }) : { ok: false as const };
     const characterValidation = validateCharacterBibleConformance();
-    return Object.freeze({ dispatchId: `dispatch-${input.turnId}-${input.utteranceGeneration}`, sessionId: input.sessionId, turnId: input.turnId, utteranceGeneration: input.utteranceGeneration, source: input.source, purpose: purposeResolution.purpose, speaker, truthPolicy, responseMode: finalResult.responseMode, text: input.offline ? finalResult.text : selectedCandidate?.text ?? finalResult.text, spokenText: input.offline ? finalResult.spokenText : selectedCandidate?.spokenText ?? finalResult.spokenText, envelopeStatus: envelopeResult.ok ? "VALID" : "INVALID", characterValidationStatus: characterValidation.passed ? "VALID" : "INVALID", continuityStatus: continuity.status, presenceSequence: finalResult.presenceSequence, actionProposalStatus: plan?.actionProposal?.status ?? "NONE", deterministicCommandPreserved: false, registeredIntentFailureAvoided: true, nonAuthorizing: true as const, executionAuthorized: false as const, approvalGranted: false as const, selectedSpeaker: speakerSelection.speaker, selectionReason: speakerSelection.selectionReason, manualOverrideApplied: speakerSelection.manualOverrideApplied, previousSpeakerPreserved: speakerSelection.previousSpeakerPreserved, generationMode, providerRequestSucceeded, ...(fallbackReason ? { fallbackReason } : {}), dispatchVersion: "B5D-ADAPTER-1" as const });
+    return Object.freeze({ dispatchId: `dispatch-${input.turnId}-${input.utteranceGeneration}`, sessionId: input.sessionId, turnId: input.turnId, utteranceGeneration: input.utteranceGeneration, source: input.source, purpose: effectivePurpose, speaker, truthPolicy, responseMode: finalResult.responseMode, text: input.offline ? finalResult.text : selectedCandidate?.text ?? finalResult.text, spokenText: input.offline ? finalResult.spokenText : selectedCandidate?.spokenText ?? finalResult.spokenText, envelopeStatus: envelopeResult.ok ? "VALID" : "INVALID", characterValidationStatus: characterValidation.passed ? "VALID" : "INVALID", continuityStatus: continuity.status, presenceSequence: finalResult.presenceSequence, actionProposalStatus: plan?.actionProposal?.status ?? "NONE", deterministicCommandPreserved: false, registeredIntentFailureAvoided: true, nonAuthorizing: true as const, executionAuthorized: false as const, approvalGranted: false as const, selectedSpeaker: speakerSelection.speaker, selectionReason: speakerSelection.selectionReason, manualOverrideApplied: speakerSelection.manualOverrideApplied, previousSpeakerPreserved: speakerSelection.previousSpeakerPreserved, generationMode, providerRequestSucceeded, ...(fallbackReason ? { fallbackReason } : {}), dispatchVersion: "B5D-ADAPTER-1" as const });
   };
 }
 
