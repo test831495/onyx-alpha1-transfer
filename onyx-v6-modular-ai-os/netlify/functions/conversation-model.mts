@@ -50,7 +50,7 @@ export default async function handler(request: Request): Promise<Response> {
         body: JSON.stringify({
           model,
           instructions,
-          input: [{ role: "user", content: [{ type: "input_text", text: JSON.stringify({ userText: body.userText, selectedSpeaker: body.selectedSpeaker, purpose: body.conversationPurpose, responseMode: body.responseMode, objectives: body.responseObjectives, topic: body.currentTopic, supportedClaims: body.supportedClaims, prohibitedClaims: body.prohibitedClaims, truthStatus: body.truthStatus, language: body.language, trustedCapabilityFacts: body.trustedCapabilityFacts, sourceReferences: body.sourceReferences }) }] }],
+          input: [{ role: "user", content: [{ type: "input_text", text: JSON.stringify({ userText: body.userText, selectedSpeaker: body.selectedSpeaker, purpose: body.conversationPurpose, responseMode: body.responseMode, objectives: body.responseObjectives, topic: body.currentTopic, recentTurnSummaries: body.recentTurnSummaries, supportedClaims: body.supportedClaims, prohibitedClaims: body.prohibitedClaims, truthStatus: body.truthStatus, language: body.language, trustedCapabilityFacts: body.trustedCapabilityFacts, sourceReferences: body.sourceReferences }) }] }],
           max_output_tokens: 300,
           store: false,
         }),

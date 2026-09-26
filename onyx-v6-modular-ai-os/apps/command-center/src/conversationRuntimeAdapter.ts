@@ -148,16 +148,27 @@ export function createConversationRuntimeAdapter(ownerReference = "command-cente
     }
     const activeTopic = input.currentTopic ?? previousTopic;
     if (input.currentTopic) previousTopic = input.currentTopic;
-    const context = contextBuilder.build({ currentTopic: activeTopic ?? undefined, suppliedTruthReferences: input.suppliedTruthReferences, operatingMode: input.source === "VOICE" ? "VOICE" : "TEXT" });
-    const purposeResolution = purposeResolver.resolve({ rawText: input.rawText, hasActiveTopic: context.currentTopic !== null });
+    const purposeResolution = purposeResolver.resolve({ rawText: input.rawText, hasActiveTopic: activeTopic !== null && activeTopic !== undefined });
+    const continuity = session.accept({ sessionId: input.sessionId, ownerReference, turnId: input.turnId, utteranceGeneration: input.utteranceGeneration, purpose: purposeResolution.purpose, timestamp: Date.now(), topicLabel: input.currentTopic ?? activeTopic ?? undefined, speaker: input.requestedSpeaker, summary: input.rawText });
+    const continuityFrame = continuity.frame;
+    const continuityTopic = continuityFrame.topic?.label ?? activeTopic ?? null;
+    const continuitySummaries = continuityFrame.turns
+      .map((turn) => turn.summary)
+      .filter((summary) => typeof summary === "string" && summary.trim().length > 0)
+      .slice(-5);
+    const context = contextBuilder.build({
+      recentTurnSummaries: continuitySummaries,
+      currentTopic: continuityTopic ?? undefined,
+      suppliedTruthReferences: input.suppliedTruthReferences,
+      operatingMode: input.source === "VOICE" ? "VOICE" : "TEXT",
+    });
     const speakerSelection = selectConversationSpeaker(input.rawText, purposeResolution.purpose, input.requestedSpeaker, previousSpeaker);
     const envelope = parseConversationalRequest(input.rawText);
     const operational = /\b(?:calendar|meeting|mail|file|note|task|account|connector|provider|tomorrow)\b/i.test(input.rawText) || purposeResolution.purpose === "ACTION_REQUEST";
     const truthPolicy = envelope.kind === "CALENDAR_PROVIDER_LIMITATION" || input.offline === true && input.localCapabilityAvailable !== true
       ? "NOT_ASSESSABLE"
       : operational ? "OPERATIONAL_TRUTH_REQUIRED" : input.suppliedTruthReferences?.length ? "SUPPLIED_CONTEXT_ONLY" : "NO_EXTERNAL_TRUTH_REQUIRED";
-    const continuity = session.accept({ sessionId: input.sessionId, ownerReference, turnId: input.turnId, utteranceGeneration: input.utteranceGeneration, purpose: purposeResolution.purpose, timestamp: Date.now(), topicLabel: input.currentTopic, speaker: input.requestedSpeaker, summary: input.rawText });
-    const finalResult = finalDispatcher.dispatch({ source: input.source, rawText: input.rawText, sessionId: input.sessionId, turnId: input.turnId, utteranceGeneration: input.utteranceGeneration, requestedSpeaker: speakerSelection.speaker, purpose: purposeResolution.purpose, topic: activeTopic ?? undefined, truthPolicy, suppliedTruthReferences: input.suppliedTruthReferences, offline: input.offline, localCapabilityAvailable: input.localCapabilityAvailable });
+    const finalResult = finalDispatcher.dispatch({ source: input.source, rawText: input.rawText, sessionId: input.sessionId, turnId: input.turnId, utteranceGeneration: input.utteranceGeneration, requestedSpeaker: speakerSelection.speaker, purpose: purposeResolution.purpose, topic: continuityTopic ?? undefined, truthPolicy, suppliedTruthReferences: input.suppliedTruthReferences, offline: input.offline, localCapabilityAvailable: input.localCapabilityAvailable });
     const speaker = finalResult.speaker;
     if (speaker === "ONYX" || speaker === "NOVA") previousSpeaker = speaker;
     const truth = resolveTruthRequirement({ purpose: purposeResolution.purpose, rawText: input.rawText, suppliedContext: Boolean(input.suppliedTruthReferences?.length), suppliedTruthReferences: input.suppliedTruthReferences, operationalTruthAvailable: false });
@@ -182,7 +193,7 @@ export function createConversationRuntimeAdapter(ownerReference = "command-cente
         "ENGLISH",
       ), selectedSpeaker: speaker, selectionReason: speakerSelection.selectionReason, characterProfileVersion: candidate.characterProfileVersion,
         conversationPurpose: purposeResolution.purpose, responseMode: plan.responseMode, responseObjectives: plan.objectives,
-        recentTurnSummaries: context.recentTurnSummaries, currentTopic: context.currentTopic, supportedClaims: plan.supportedClaims,
+        recentTurnSummaries: continuitySummaries.length > 0 ? continuitySummaries : context.recentTurnSummaries, currentTopic: continuityTopic ?? context.currentTopic, supportedClaims: plan.supportedClaims,
         prohibitedClaims: plan.prohibitedClaims, truthStatus: candidate.truthStatus,
         uncertaintyPolicy: plan.uncertaintyPolicy, responseLengthPolicy: "STANDARD", followUpPolicy: plan.followUpPolicy,
         operatingMode: input.source, privacyClass: "STANDARD", trustedCapabilityFacts: workspaceProjection?.providerFacts ?? [], requestVersion: "B5F-1",
