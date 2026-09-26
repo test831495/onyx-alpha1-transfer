@@ -1,4 +1,4 @@
-import{describe,expect,it,vi}from"vitest";import{DEFAULT_CHARACTER_BIBLE,GOLDEN_CONVERSATIONS,VoiceManager,createModelRegistry,createModelRouter,createSyntheticVoiceSession,defaultVoicePreferences,defaultVoicePreferencesByAssistant,normalizeTextForSpeech,selectSystemVoice}from"./index";
+import{describe,expect,it,vi}from"vitest";import{DEFAULT_CHARACTER_BIBLE,DEFAULT_VOICE_ENGINE,GOLDEN_CONVERSATIONS,VoiceManager,createModelRegistry,createModelRouter,createSyntheticVoiceSession,defaultVoicePreferences,defaultVoicePreferencesByAssistant,normalizeTextForSpeech,selectSystemVoice}from"./index";
 describe("speech text normalization",()=>{
  it("removes common Markdown while preserving meaning",()=>{
   expect(normalizeTextForSpeech("How about a quick **tomato chickpea curry with rice**?")).toBe("How about a quick tomato chickpea curry with rice?");
@@ -14,9 +14,9 @@ describe("speech text normalization",()=>{
  it("returns empty text for formatting-only content",()=>{expect(normalizeTextForSpeech("*** --- ``` ```")).toBe("");});
 });
 describe("assistant voice profiles",()=>{
- it("keeps neural profiles with browser fallback available",()=>{expect(defaultVoicePreferences.engine).toBe("azure");expect(defaultVoicePreferences.enabled).toBe(true)});
- it("gives NOVA a female profile",()=>{expect(defaultVoicePreferencesByAssistant.nova.persona).toBe("female");expect(defaultVoicePreferencesByAssistant.nova.azureVoice).toBe("en-IN-NeerjaNeural")});
- it("gives ONYX a male profile",()=>{expect(defaultVoicePreferencesByAssistant.onyx.persona).toBe("male");expect(defaultVoicePreferencesByAssistant.onyx.azureVoice).toBe("en-IN-PrabhatNeural")});
+ it("keeps the default voice path on the system device unless the user explicitly chooses another engine",()=>{expect(DEFAULT_VOICE_ENGINE).toBe("system");expect(defaultVoicePreferences.engine).toBe("system");expect(defaultVoicePreferences.enabled).toBe(true)});
+ it("gives NOVA a female profile",()=>{expect(defaultVoicePreferencesByAssistant.nova.persona).toBe("female");expect(defaultVoicePreferencesByAssistant.nova.engine).toBe("system");expect(defaultVoicePreferencesByAssistant.nova.language).toBe("en-IN")});
+ it("gives ONYX a male profile",()=>{expect(defaultVoicePreferencesByAssistant.onyx.persona).toBe("male");expect(defaultVoicePreferencesByAssistant.onyx.engine).toBe("system");expect(defaultVoicePreferencesByAssistant.onyx.language).toBe("en-IN")});
  it("assigns distinct explicit character voice profiles",()=>{expect(defaultVoicePreferencesByAssistant.nova.voiceProfileId).toBe("NOVA_AZURE_EN_IN_NEERJA");expect(defaultVoicePreferencesByAssistant.onyx.voiceProfileId).toBe("ONYX_AZURE_EN_IN_PRABHAT");expect(defaultVoicePreferencesByAssistant.nova.voiceProfileId).not.toBe(defaultVoicePreferencesByAssistant.onyx.voiceProfileId)});
  it("keeps profiles independent",()=>{expect(defaultVoicePreferencesByAssistant.nova).not.toBe(defaultVoicePreferencesByAssistant.onyx);expect(defaultVoicePreferencesByAssistant.nova.pitch).not.toBe(defaultVoicePreferencesByAssistant.onyx.pitch)});
   it("does not leak a global speech synthesis stub between tests",()=>{

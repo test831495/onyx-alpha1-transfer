@@ -226,16 +226,18 @@ export function createConversationRuntimeAdapter(ownerReference = "command-cente
       fallbackReason = "WORKSPACE_SNAPSHOT_UNAVAILABLE";
       if (candidate) selectedCandidate = freezeCandidate({ ...candidate, text: "I can see that Workspace is open, but its current contents are not available to summarize yet.", spokenText: "I can see that Workspace is open, but its current contents are not available to summarize yet.", captionText: "I can see that Workspace is open, but its current contents are not available to summarize yet." });
     } else if (plan && candidate && userText && (speaker === "ONYX" || speaker === "NOVA")) {
-      const modelRequest: ConversationModelRequest = {
+      const requiresGroundedOperationalClaims = purposeResolution.purpose === "ACTION_REQUEST" || purposeResolution.purpose === "NAVIGATION_REQUEST" || purposeResolution.purpose === "OPERATIONAL_QUERY" || (purposeResolution.purpose === "INFORMATION_REQUEST" && plan.requiredTruthReferences.length > 0);
+    const modelRequest: ConversationModelRequest = {
         requestId: input.turnId, sessionId: input.sessionId, turnId: input.turnId, utteranceGeneration: input.utteranceGeneration,
         userText,
         language: detectedLanguage, selectedSpeaker: speaker, selectionReason: speakerSelection.selectionReason, characterProfileVersion: candidate.characterProfileVersion,
         conversationPurpose: purposeResolution.purpose, responseMode: plan.responseMode, responseObjectives: plan.objectives,
-        recentTurnSummaries: continuitySummaries.length > 0 ? continuitySummaries : context.recentTurnSummaries, currentTopic: continuityTopic ?? context.currentTopic, supportedClaims: plan.supportedClaims,
-        prohibitedClaims: plan.prohibitedClaims, truthStatus: candidate.truthStatus,
+        recentTurnSummaries: continuitySummaries.length > 0 ? continuitySummaries : context.recentTurnSummaries, currentTopic: continuityTopic ?? context.currentTopic,
+        supportedClaims: requiresGroundedOperationalClaims ? plan.supportedClaims : [], prohibitedClaims: requiresGroundedOperationalClaims ? plan.prohibitedClaims : [],
+        truthStatus: candidate.truthStatus,
         uncertaintyPolicy: plan.uncertaintyPolicy, responseLengthPolicy: "STANDARD", followUpPolicy: plan.followUpPolicy,
-        operatingMode: input.source, privacyClass: "STANDARD", trustedCapabilityFacts: workspaceProjection?.providerFacts ?? [], requestVersion: "B5F-1",
-        sourceReferences: [...plan.requiredTruthReferences, ...(workspaceProjection?.sourceReferences ?? [])],
+        operatingMode: input.source, privacyClass: "STANDARD", trustedCapabilityFacts: requiresGroundedOperationalClaims ? workspaceProjection?.providerFacts ?? [] : [], requestVersion: "B5F-1",
+        sourceReferences: requiresGroundedOperationalClaims ? [...plan.requiredTruthReferences, ...(workspaceProjection?.sourceReferences ?? [])] : [],
       };
       const modelAdapter = modelRegistry.decide(modelRequest, true, { offline: input.offline === true, localCapabilityAvailable: input.localCapabilityAvailable === true });
       if (modelAdapter) {

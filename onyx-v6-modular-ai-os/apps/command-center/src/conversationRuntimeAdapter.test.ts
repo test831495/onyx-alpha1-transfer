@@ -49,6 +49,21 @@ describe("live conversation runtime adapter", () => {
     expect(projection).toEqual({ providerFacts: ["Microsoft Workspace: connected."], sourceReferences: ["WORKSPACE_SNAPSHOT"], freshness: "CURRENT" });
   });
 
+  it("omits workspace and operational boilerplate from ordinary conversation payloads", async () => {
+    let requestBody = "";
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init: RequestInit) => {
+      requestBody = String(init.body);
+      return new Response(JSON.stringify({ requestId: "turn-ordinary", adapterId: "openai-conversation-server", modelReferenceSafe: "configured", text: "A response.", language: "ENGLISH", finishReason: "STOP", generationReceiptVersion: "B5F-1" }), { status: 200 });
+    }));
+    await createConversationRuntimeAdapter()(input("I have had a long day."));
+    const payload = JSON.parse(requestBody);
+    expect(payload.supportedClaims).toEqual([]);
+    expect(payload.prohibitedClaims).toEqual([]);
+    expect(payload.trustedCapabilityFacts).toEqual([]);
+    expect(payload.sourceReferences).toEqual([]);
+    vi.unstubAllGlobals();
+  });
+
   it("sends distinct bounded typed utterances to the model", async () => {
     const requests: string[] = [];
     vi.stubGlobal("fetch", vi.fn(async (_url: string, init: RequestInit) => {

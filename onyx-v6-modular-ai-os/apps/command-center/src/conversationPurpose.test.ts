@@ -40,16 +40,36 @@ describe("ConversationalPurposeResolver", () => {
     expect(resolver.resolve({ rawText: "I am opening Calendar" }).purpose).toBe("NAVIGATION_REQUEST");
     expect(resolver.resolve({ rawText: "I just sent the report" }).purpose).toBe("ACTION_REQUEST");
     expect(resolver.resolve({ rawText: "I am asking what happened" }).purpose).toBe("INFORMATION_REQUEST");
-    expect(resolver.resolve({ rawText: "I am tired" }).purpose).toBe("UNKNOWN");
+    expect(resolver.resolve({ rawText: "I am tired" }).purpose).toBe("GENERAL_CONVERSATION");
   });
 
-  it.each(["and then what", "what next", "tell me more", "can you explain that"]) (
+  it.each([
+    "and then what",
+    "what next",
+    "tell me more",
+    "can you explain that",
+    "make it simpler",
+    "what was the second step",
+    "how should I start",
+  ])(
     "requires active context for bounded follow-up: %s",
     (rawText) => {
       expect(resolver.resolve({ rawText }).purpose).toBe("UNKNOWN");
-      expect(resolver.resolve({ rawText, hasActiveTopic: true }).purpose).toBe("FOLLOW_UP");
+      expect(resolver.resolve({ rawText, hasActiveTopic: true }).purpose).not.toBe("UNKNOWN");
+      expect(resolver.resolve({ rawText, hasActiveTopic: true }).clarificationRequired).toBe(false);
     },
   );
+
+  it("treats language-change follow-ups as contextual rather than unknown", () => {
+    expect(resolver.resolve({ rawText: "Explain in Hindi.", hasActiveTopic: true }).purpose).toBe("LANGUAGE_PREFERENCE");
+    expect(resolver.resolve({ rawText: "Can you explain all these things in Hindi?", hasActiveTopic: true }).purpose).toBe("LANGUAGE_PREFERENCE");
+  });
+
+  it("keeps ordinary follow-ups contextual when recent session history exists even without an explicit topic label", () => {
+    expect(resolver.resolve({ rawText: "Explain in Hindi.", recentTurnSummaries: ["potato", "salt and olive oil", "stove top", "30-minute meal"] }).purpose).toBe("LANGUAGE_PREFERENCE");
+    expect(resolver.resolve({ rawText: "What else can I make with potato?", recentTurnSummaries: ["potato", "salt and olive oil", "stove top", "30-minute meal"] }).purpose).toBe("FOLLOW_UP");
+    expect(resolver.resolve({ rawText: "What was the second step?", recentTurnSummaries: ["first chop potatoes", "second add salt and oil", "third cook on stove top"] }).purpose).toBe("FOLLOW_UP");
+  });
 
   it("resolves why as a follow-up only with an active topic", () => {
     expect(resolver.resolve({ rawText: "Why?" }).purpose).toBe("UNKNOWN");
@@ -70,6 +90,16 @@ describe("ConversationalPurposeResolver", () => {
   it("uses UNKNOWN for empty and semantically insufficient input", () => {
     expect(resolver.resolve({ rawText: "   " }).purpose).toBe("UNKNOWN");
     expect(resolver.resolve({ rawText: "Why?" }).clarificationRequired).toBe(true);
+  });
+
+  it("handles unseen natural-language reactions and continue follow-ups without brittle regex dependence", () => {
+    expect(resolver.resolve({ rawText: "oh my god" }).purpose).toBe("GENERAL_CONVERSATION");
+    expect(resolver.resolve({ rawText: "it seems you are fully broken" }).purpose).toBe("GENERAL_CONVERSATION");
+    expect(resolver.resolve({ rawText: "why did you stop continue" }).purpose).toBe("INFORMATION_REQUEST");
+    expect(resolver.resolve({ rawText: "continue from where you stopped" }).purpose).toBe("FOLLOW_UP");
+    expect(resolver.resolve({ rawText: "this seems broken" }).purpose).toBe("GENERAL_CONVERSATION");
+    expect(resolver.resolve({ rawText: "seriously?" }).purpose).toBe("GENERAL_CONVERSATION");
+    expect(resolver.resolve({ rawText: "what else can I make?" }).purpose).toBe("FOLLOW_UP");
   });
 
   it("preserves ordinary dialogue without a registered-intent failure", () => {

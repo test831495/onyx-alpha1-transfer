@@ -25,11 +25,12 @@ export function planResponse(input: ResponsePlanningInput): ResponsePlan | null 
     requiresApproval: true, riskClass: "HIGH" as const, sourcePurpose: "ACTION_REQUEST" as const,
     status: input.actionTarget ? "PROPOSED" as const : "CLARIFICATION_REQUIRED" as const,
   } : undefined;
+  const requiresGroundedOperationalClaims = input.purpose === "ACTION_REQUEST" || input.purpose === "NAVIGATION_REQUEST" || input.purpose === "OPERATIONAL_QUERY" || (input.purpose === "INFORMATION_REQUEST" && input.truth.requiredTruthReferences.length > 0);
   return makeResponsePlan({
     planId: input.planId, requestId: input.requestId, purpose: input.purpose, responseMode, speaker,
     truthPolicy: input.truth.truthPolicy, objectives: Object.freeze(objectivesFor(input)),
-    supportedClaims: Object.freeze(input.truth.requiredTruthReferences.length ? ["Only supplied truth references may support claims."] : ["No operational claim is required."]),
-    prohibitedClaims: Object.freeze(["invented operational state", "execution or approval claims", "authority claims"]),
+    supportedClaims: Object.freeze(requiresGroundedOperationalClaims ? (input.truth.requiredTruthReferences.length ? ["Only supplied truth references may support claims."] : ["No operational claim is required."]) : []),
+    prohibitedClaims: Object.freeze(requiresGroundedOperationalClaims ? ["invented operational state", "execution or approval claims", "authority claims"] : []),
     requiredTruthReferences: input.truth.requiredTruthReferences, uncertaintyPolicy: input.truth.uncertaintyPolicy,
     followUpPolicy, actionProposal, limitationCodes: input.truth.limitationCodes,
   });
