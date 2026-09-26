@@ -88,7 +88,7 @@ describe("parseConversationalRequest", () => {
   });
 
   it.each([
-    "What is the time now?", "What time is it?", "What is the time?", "What time is it now?",
+    "What is the time now?", "What time is it?", "What is the time?", "What time is it now?", "what time it is now",
     "Tell me the current time.", "Tell me the time.", "Can you tell me the time?", "Could you tell me the time?",
     "Do you know what time it is?", "Current time, please.", "Time now.", "Please tell me the current time.",
     "What's the time in Chennai?", "What time is it in Chennai?", "What's the time in India?", "What time is it in India?",

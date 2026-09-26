@@ -77,7 +77,7 @@ const FOLLOW_UP_WEEKDAY_PATTERN = /^(?:and )?what about ([a-z]+)\??$/;
 const COMPOSITE_PATTERN =
   /^(?:please\s+|can you\s+|could you\s+)*open (.+?) and tell me (tomorrows date|what is currently visible)\??$/;
 const CALENDAR_LOCAL_FACT_PATTERN = /^(what is todays date|what week are we in|what are the dates for next week|read my agenda)\??$/;
-const TIME_QUERY_PATTERN = /^(?:(?:what (?:is )?the |what )time is it(?: now)?|what is the time(?: now)?|tell me (?:the |the current )?time|(?:can|could) you tell me the time|do you know what time it is|current time please|time now|please tell me the current time|what is the local time|give me the current time|may i know the time|can i have the current time)(?: in (chennai|india))?$/;
+const TIME_QUERY_PATTERN = /^(?:(?:what (?:is )?the |what )time is it(?: now)?|what is the time(?: now)?|what time it is(?: now)?|tell me (?:the |the current )?time|(?:can|could) you tell me the time|do you know what time it is|current time please|time now|please tell me the current time|what is the local time|give me the current time|may i know the time|can i have the current time)(?: in (chennai|india))?$/;
 const CALENDAR_PROVIDER_LIMITATION_PATTERN = /^(what meetings? do i have tomorrow|can you tell me which meetings? i have tomorrow|do i have anything scheduled tomorrow|what is on my calendar tomorrow|how does tomorrow look|tell me tomorrows agenda|are there any appointments tomorrow|am i free after 3 pm|where is my next meeting|what is the weather at my meeting)$/;
 
 /** Bounded apostrophe variants produced by common desktop and mobile keyboards. */

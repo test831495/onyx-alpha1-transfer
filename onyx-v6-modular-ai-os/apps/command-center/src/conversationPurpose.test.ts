@@ -79,12 +79,18 @@ describe("ConversationalPurposeResolver", () => {
     expect(result.sideEffect).toBe("GENERAL_CONVERSATION");
   });
 
-  it("recognizes ordinary creative prompts and general conversation variants", () => {
+  it("recognizes language preference and ordinary conversational requests without a policy-template fallback", () => {
+    expect(resolver.resolve({ rawText: "can you speak Hindi" }).purpose).toBe("LANGUAGE_PREFERENCE");
+    expect(resolver.resolve({ rawText: "can you speak in Hindi with me" }).purpose).toBe("LANGUAGE_PREFERENCE");
+    expect(resolver.resolve({ rawText: "Hindi mein baat karo" }).purpose).toBe("LANGUAGE_PREFERENCE");
+    expect(resolver.resolve({ rawText: "talk to me in Hinglish" }).purpose).toBe("LANGUAGE_PREFERENCE");
+    expect(resolver.resolve({ rawText: "switch back to English" }).purpose).toBe("LANGUAGE_PREFERENCE");
+    expect(resolver.resolve({ rawText: "tell me a joke" }).purpose).toBe("CREATIVE_COLLABORATION");
     expect(resolver.resolve({ rawText: "can you tell me a story" }).purpose).toBe("CREATIVE_COLLABORATION");
-    expect(resolver.resolve({ rawText: "tell me a story" }).purpose).toBe("CREATIVE_COLLABORATION");
-    expect(resolver.resolve({ rawText: "can you tell me a joke" }).purpose).toBe("CREATIVE_COLLABORATION");
     expect(resolver.resolve({ rawText: "how is your day going" }).purpose).toBe("GENERAL_CONVERSATION");
     expect(resolver.resolve({ rawText: "what can you do for me" }).purpose).toBe("GENERAL_CONVERSATION");
+    expect(resolver.resolve({ rawText: "tell me what is in my Workspace" }).purpose).toBe("OPERATIONAL_QUERY");
+    expect(resolver.resolve({ rawText: "hello there" }).clarificationRequired).toBe(false);
   });
 
   it("preserves deterministic navigation outcomes", () => {

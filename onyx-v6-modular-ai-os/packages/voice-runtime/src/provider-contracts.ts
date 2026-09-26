@@ -58,6 +58,29 @@ export type STTAdapter = ProviderAdapter<"STT">;
 export type TTSAdapter = ProviderAdapter<"TTS">;
 export type WakeWordAdapter = ProviderAdapter<"WAKE_WORD">;
 
+export type WakeCapabilityState = "UNAVAILABLE" | "PERMISSION_REQUIRED" | "ARMING" | "WAKE_ARMED" | "WAKE_CANDIDATE" | "REQUEST_LISTENING" | "PROCESSING" | "SPEAKING" | "REARM_PENDING" | "SUSPENDED" | "ERROR";
+export type WakeArmPolicy = "AUTO_FOREGROUND" | "ONE_TIME_GESTURE" | "MANUAL_ONLY" | "FUTURE_LOCAL_COMPANION";
+export type WakeRecoveryPolicy = "AUTO_REARM" | "REARM_PENDING" | "MANUAL_REARM" | "SUSPEND";
+export type WakePhraseDefinition = Readonly<{ id: string; characters: readonly ("ONYX" | "NOVA")[]; aliases: readonly string[]; canonical: string; }>;
+export type WakeDetectionCandidate = Readonly<{ spokenText: string; normalizedText: string; speaker: "ONYX" | "NOVA" | null; remainingText: string; confidence: number; reason: "EXACT_CANONICAL_MATCH" | "EXACT_CONFIGURED_ALIAS" | "HIGH_CONFIDENCE_PHONETIC_MATCH" | "AMBIGUOUS" | "NO_MATCH"; }>;
+export type WakeDetectionDecision = Readonly<{ accepted: boolean; speaker: "ONYX" | "NOVA" | null; remainingText: string; confidence: number; reason: WakeDetectionCandidate["reason"]; }>;
+export type WakeSession = Readonly<{ sessionId: string; capabilityState: WakeCapabilityState; armPolicy: WakeArmPolicy; rearmPolicy: WakeRecoveryPolicy; generation: number; speaker: "ONYX" | "NOVA" | null; }>;
+export type WakeActivationReceipt = Readonly<{ sessionId: string; generation: number; speaker: "ONYX" | "NOVA" | null; accepted: boolean; reason: string; }>;
+
+export function normalizeWakeTranscript(input: string): { speaker: "ONYX" | "NOVA" | null; remainingText: string } {
+  const clean = input
+    .normalize("NFKC")
+    .replace(/[\u2018\u2019\u201B]/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!clean) return { speaker: null, remainingText: "" };
+  const match = clean.match(/^(?:hey|hi|hello)?\s*(onyx|nova)(?:[\s,.;:!?]|$)(.*)$/i);
+  if (!match) return { speaker: null, remainingText: clean };
+  const speaker = /nova/i.test(match[1] ?? "") ? "NOVA" : "ONYX";
+  const remaining = (match[2] ?? "").replace(/^\s*[,;:!?.-]*\s*/, "").trim();
+  return { speaker, remainingText: remaining };
+}
+
 export interface AdapterReceipt {
   readonly requestId: string;
   readonly adapterId?: string;

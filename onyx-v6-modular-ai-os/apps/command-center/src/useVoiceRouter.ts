@@ -87,13 +87,26 @@ export class FinalRecognitionGuard {
   }
 }
 
+export function normalizeWakeTranscript(input: string): { speaker: AssistantMode | null; remainingText: string } {
+  const canonical = input
+    .normalize("NFKC")
+    .replace(/[\u2018\u2019\u201B]/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!canonical) return { speaker: null, remainingText: "" };
+
+  const match = canonical.match(/^(?:hey|hi|hello)?\s*(nova|nover|onyx|onix|onics)(?:[\s,.;:!?]|$)(.*)$/i);
+  if (!match) return { speaker: null, remainingText: canonical };
+
+  const speaker = /nova|nover/i.test(match[1] ?? "") ? "nova" : "onyx";
+  const remaining = (match[2] ?? "").replace(/^\s*[,;:!?.-]*\s*/, "").trim();
+  return { speaker, remainingText: remaining };
+}
+
 export function parseVoice(text: string): { mode: AssistantMode | null; command: string } {
-  const value = normalize(text);
-  const match = [...value.matchAll(/(?:^|\s)(?:hey\s+)?(nova|nover|onyx|onix|onics)(?:\s|$)/g)].at(-1);
-  if (!match) return { mode: null, command: value };
-  const raw = match[1] ?? "";
-  const mode: AssistantMode = /nova|nover/.test(raw) ? "nova" : "onyx";
-  return { mode, command: value.slice((match.index ?? 0) + match[0].length).trim() };
+  const wake = normalizeWakeTranscript(text);
+  if (!wake.speaker) return { mode: null, command: normalize(text) };
+  return { mode: wake.speaker, command: normalize(wake.remainingText) };
 }
 
 export interface VoiceRouterLifecycle {

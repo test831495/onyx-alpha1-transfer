@@ -6,7 +6,7 @@ export type Language = (typeof LANGUAGES)[number];
 export const VOICE_STATES = Object.freeze(["IDLE", "LISTENING", "UNDERSTANDING", "THINKING", "SPEAKING", "FOLLOW_UP_WINDOW"] as const);
 export type VoiceState = (typeof VOICE_STATES)[number];
 export type FinalSpeaker = "ONYX" | "NOVA" | "COUNCIL" | "NONE";
-export type FinalPurpose = "GENERAL_CONVERSATION" | "INFORMATION_REQUEST" | "REFLECTION" | "ADVICE_REQUEST" | "CREATIVE_COLLABORATION" | "ACTION_REQUEST" | "NAVIGATION_REQUEST" | "CLARIFICATION_RESPONSE" | "FOLLOW_UP" | "CORRECTION" | "INTERRUPTION" | "COUNCIL_REQUEST" | "UNKNOWN";
+export type FinalPurpose = "GENERAL_CONVERSATION" | "INFORMATION_REQUEST" | "REFLECTION" | "ADVICE_REQUEST" | "CREATIVE_COLLABORATION" | "CREATIVE_REQUEST" | "ACTION_REQUEST" | "NAVIGATION_REQUEST" | "CLARIFICATION_RESPONSE" | "FOLLOW_UP" | "CORRECTION" | "INTERRUPTION" | "COUNCIL_REQUEST" | "LANGUAGE_PREFERENCE" | "OPERATIONAL_QUERY" | "DETERMINISTIC_COMMAND" | "OPINION_REQUEST" | "CLARIFICATION" | "UNKNOWN";
 export type FinalResponseMode = "CONVERSATION" | "EXPLANATION" | "RECOMMENDATION" | "CLARIFICATION" | "ACTION_PROPOSAL" | "SAFE_LIMITATION" | "COUNCIL_PENDING";
 
 export type DispatcherInput = Readonly<{ source: InputSource; rawText: string; sessionId: string; turnId: string; utteranceGeneration: number; requestedSpeaker?: FinalSpeaker; purpose: FinalPurpose; topic?: string; truthPolicy: "NO_EXTERNAL_TRUTH_REQUIRED" | "SUPPLIED_CONTEXT_ONLY" | "OPERATIONAL_TRUTH_REQUIRED" | "NOT_ASSESSABLE"; operationalTruthAvailable?: boolean; suppliedTruthReferences?: readonly string[]; offline?: boolean; localCapabilityAvailable?: boolean; actionTarget?: string }>;
