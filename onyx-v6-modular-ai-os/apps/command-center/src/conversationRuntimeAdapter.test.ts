@@ -149,4 +149,46 @@ describe("live conversation runtime adapter", () => {
     expect(JSON.parse(requestBody).language).toBe("HINDI");
     vi.unstubAllGlobals();
   });
+
+  it("maintains the same session topic and Hindi context across a multi-turn cooking conversation", async () => {
+    const requests: Record<string, unknown>[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init: RequestInit) => {
+      requests.push(JSON.parse(String(init.body)));
+      return new Response(JSON.stringify({ requestId: "turn-ok", adapterId: "openai-conversation-server", modelReferenceSafe: "configured", text: "A response.", language: "HINDI", finishReason: "STOP", generationReceiptVersion: "B5F-1" }), { status: 200 });
+    }));
+
+    const adapter = createConversationRuntimeAdapter("owner-1");
+    const turns = [
+      ["I want to cook something tonight.", "turn-1", 1],
+      ["I have potatoes.", "turn-2", 2],
+      ["I have salt and olive oil.", "turn-3", 3],
+      ["I have a stove top and only 30 minutes.", "turn-4", 4],
+      ["Explain in Hindi.", "turn-5", 5],
+      ["How should I start?", "turn-6", 6],
+      ["Can you make it simpler?", "turn-7", 7],
+      ["What was the second step?", "turn-8", 8],
+    ] as const;
+
+    for (const [rawText, turnId, generation] of turns) {
+      await adapter({
+        source: "TEXT",
+        rawText,
+        sessionId: "session-1",
+        turnId,
+        utteranceGeneration: generation,
+        ownerReference: "owner-1",
+      } as Parameters<ReturnType<typeof createConversationRuntimeAdapter>>[0]);
+    }
+
+    expect(requests.length).toBe(8);
+    expect(requests.every((request) => typeof request.currentTopic === "string" && request.currentTopic.length > 0)).toBe(true);
+    expect(requests[5]?.currentTopic).toBe(requests[7]?.currentTopic);
+    expect(requests.some((request) => String(request.recentTurnSummaries ?? "").includes("potatoes"))).toBe(true);
+    expect(requests.some((request) => String(request.recentTurnSummaries ?? "").includes("olive oil"))).toBe(true);
+    expect(requests.some((request) => String(request.recentTurnSummaries ?? "").includes("30 minutes"))).toBe(true);
+    expect(requests[0]?.language).toBe("ENGLISH");
+    expect(requests[4]?.language).toBe("HINDI");
+    expect(requests.slice(5).every((request) => request.language === "HINDI")).toBe(true);
+    vi.unstubAllGlobals();
+  });
 });

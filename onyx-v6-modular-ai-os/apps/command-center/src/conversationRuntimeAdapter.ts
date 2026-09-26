@@ -76,6 +76,26 @@ type SpeakerSelection = Readonly<{
   previousSpeakerPreserved: boolean;
 }>;
 
+function recoverTopicFromSessionContext(session: ConversationSession, rawText: string): string | null {
+  const frame = session.snapshot();
+  if (frame.topic?.label) return frame.topic.label;
+  const summaries = frame.turns
+    .map((turn) => turn.summary)
+    .filter((summary): summary is string => typeof summary === "string" && summary.trim().length > 0)
+    .slice(-5)
+    .join(" ");
+  const combined = `${rawText} ${summaries}`.toLowerCase();
+  const topicKeywords = [
+    ["cook", "cooking", "recipe", "meal", "dinner", "lunch", "breakfast", "potato", "potatoes", "olive oil", "salt", "stove", "oven", "ingredients", "soup", "curry"],
+    ["calendar", "meeting", "mail", "workspace", "task"],
+    ["travel", "flight", "hotel", "trip", "destination"],
+  ];
+  for (const [label, ...keywords] of topicKeywords.map((entries) => [entries[0] ?? "", ...entries])) {
+    if (keywords.some((keyword) => combined.includes(keyword))) return label || null;
+  }
+  return null;
+}
+
 export function selectConversationSpeaker(rawText: string, purpose: ConversationPurpose, requestedSpeaker?: FinalSpeaker, previousSpeaker?: FinalSpeaker): SpeakerSelection {
   if (purpose === "COUNCIL_REQUEST") return { speaker: "COUNCIL", selectionReason: "COUNCIL_ELIGIBILITY", manualOverrideApplied: false, previousSpeakerPreserved: false };
   if (requestedSpeaker === "ONYX" || requestedSpeaker === "NOVA") return { speaker: requestedSpeaker, selectionReason: "MANUAL_OVERRIDE", manualOverrideApplied: true, previousSpeakerPreserved: false };
@@ -105,8 +125,8 @@ function detectConversationLanguage(
   }
 
   if (
-    /\b(?:hindi\s+mein|hindi\s+me)\b/i.test(normalized) ||
-    /\b(?:speak|talk|reply|respond|answer|continue)\b[\s\S]{0,40}\b(?:in\s+)?hindi\b/i.test(
+    /\b(?:hindi\s+mein|hindi\s+me|explain\s+in\s+hindi|speak\s+in\s+hindi|talk\s+in\s+hindi|reply\s+in\s+hindi|answer\s+in\s+hindi|continue\s+in\s+hindi|switch\s+to\s+hindi|switch\s+back\s+to\s+hindi)\b/i.test(normalized) ||
+    /\b(?:speak|talk|reply|respond|answer|continue|explain|tell me|show me|say|chat)\b[\s\S]{0,40}\b(?:in\s+)?hindi\b/i.test(
       normalized,
     )
   ) {
@@ -114,8 +134,8 @@ function detectConversationLanguage(
   }
 
   if (
-    /\b(?:english\s+mein|english\s+me)\b/i.test(normalized) ||
-    /\b(?:speak|talk|reply|respond|answer|continue)\b[\s\S]{0,40}\b(?:in\s+)?english\b/i.test(
+    /\b(?:english\s+mein|english\s+me|explain\s+in\s+english|speak\s+in\s+english|talk\s+in\s+english|reply\s+in\s+english|answer\s+in\s+english|continue\s+in\s+english|switch\s+to\s+english|switch\s+back\s+to\s+english)\b/i.test(normalized) ||
+    /\b(?:speak|talk|reply|respond|answer|continue|explain|tell me|show me|say|chat)\b[\s\S]{0,40}\b(?:in\s+)?english\b/i.test(
       normalized,
     )
   ) {
@@ -129,33 +149,54 @@ export function createConversationRuntimeAdapter(ownerReference = "command-cente
   const purposeResolver = new ConversationalPurposeResolver();
   const contextBuilder = new DialogueContextBuilder();
   const finalDispatcher = new ConversationDispatcher();
-  let sessionId = "";
-  let session = new ConversationSession("uninitialized", ownerReference);
+  const sessions = new Map<string, ConversationSession>();
+  const sessionLanguages = new Map<string, ConversationModelRequest["language"]>();
   const modelRegistry = new ConversationModelRegistry([new OpenAIConversationAdapter()]);
   let previousSpeaker: FinalSpeaker | undefined;
   let previousTopic: string | null = null;
   let activeGeneration = -1;
   let activeAbortController: AbortController | null = null;
 
+  const sessionKey = (input: Pick<LiveConversationInput, "sessionId">) => `${ownerReference}:${input.sessionId}`;
+
   return async (input) => {
     if (input.utteranceGeneration < activeGeneration) return fallbackReceipt(input, "STALE_TURN");
     activeAbortController?.abort();
     activeAbortController = new AbortController();
     activeGeneration = input.utteranceGeneration;
-    if (input.sessionId !== sessionId) {
-      sessionId = input.sessionId;
-      session = new ConversationSession(input.sessionId, ownerReference);
-    }
-    const activeTopic = input.currentTopic ?? previousTopic;
+
+    const key = sessionKey(input);
+    const session = sessions.get(key) ?? new ConversationSession(input.sessionId, ownerReference);
+    sessions.set(key, session);
+
+    const sessionFrame = session.snapshot();
+    const sessionTopic = sessionFrame.topic?.label ?? null;
+    const recoveredTopic = recoverTopicFromSessionContext(session, input.rawText);
+    const activeTopic = input.currentTopic ?? sessionTopic ?? recoveredTopic ?? previousTopic;
     if (input.currentTopic) previousTopic = input.currentTopic;
+    else if (sessionTopic) previousTopic = sessionTopic;
+    else if (recoveredTopic) previousTopic = recoveredTopic;
+
     const purposeResolution = purposeResolver.resolve({ rawText: input.rawText, hasActiveTopic: activeTopic !== null && activeTopic !== undefined });
-    const continuity = session.accept({ sessionId: input.sessionId, ownerReference, turnId: input.turnId, utteranceGeneration: input.utteranceGeneration, purpose: purposeResolution.purpose, timestamp: Date.now(), topicLabel: input.currentTopic ?? activeTopic ?? undefined, speaker: input.requestedSpeaker, summary: input.rawText });
+    const continuity = session.accept({
+      sessionId: input.sessionId,
+      ownerReference,
+      turnId: input.turnId,
+      utteranceGeneration: input.utteranceGeneration,
+      purpose: purposeResolution.purpose,
+      timestamp: Date.now(),
+      topicLabel: input.currentTopic ?? activeTopic ?? recoveredTopic ?? sessionFrame.topic?.label ?? undefined,
+      speaker: input.requestedSpeaker,
+      summary: input.rawText,
+    });
     const continuityFrame = continuity.frame;
-    const continuityTopic = continuityFrame.topic?.label ?? activeTopic ?? null;
+    const continuityTopic = continuityFrame.topic?.label ?? recoveredTopic ?? activeTopic ?? null;
     const continuitySummaries = continuityFrame.turns
       .map((turn) => turn.summary)
       .filter((summary) => typeof summary === "string" && summary.trim().length > 0)
       .slice(-5);
+    const detectedLanguage = detectConversationLanguage(input.rawText, sessionLanguages.get(key) ?? "ENGLISH");
+    sessionLanguages.set(key, detectedLanguage);
     const context = contextBuilder.build({
       recentTurnSummaries: continuitySummaries,
       currentTopic: continuityTopic ?? undefined,
@@ -188,10 +229,7 @@ export function createConversationRuntimeAdapter(ownerReference = "command-cente
       const modelRequest: ConversationModelRequest = {
         requestId: input.turnId, sessionId: input.sessionId, turnId: input.turnId, utteranceGeneration: input.utteranceGeneration,
         userText,
-        language: detectConversationLanguage(
-        input.rawText,
-        "ENGLISH",
-      ), selectedSpeaker: speaker, selectionReason: speakerSelection.selectionReason, characterProfileVersion: candidate.characterProfileVersion,
+        language: detectedLanguage, selectedSpeaker: speaker, selectionReason: speakerSelection.selectionReason, characterProfileVersion: candidate.characterProfileVersion,
         conversationPurpose: purposeResolution.purpose, responseMode: plan.responseMode, responseObjectives: plan.objectives,
         recentTurnSummaries: continuitySummaries.length > 0 ? continuitySummaries : context.recentTurnSummaries, currentTopic: continuityTopic ?? context.currentTopic, supportedClaims: plan.supportedClaims,
         prohibitedClaims: plan.prohibitedClaims, truthStatus: candidate.truthStatus,
