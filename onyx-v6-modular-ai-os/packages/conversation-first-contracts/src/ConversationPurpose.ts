@@ -1,5 +1,12 @@
 function normalizeConversationalText(raw: string): string {
-  return raw.toLowerCase().replace(/[\u0027\u2018\u2019\u201B]/g, "").replace(/\bwhats\b/g, "what is").replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+  return raw
+    .toLowerCase()
+    .replace(/[\u0027\u2018\u2019\u201B]/g, "")
+    .replace(/^(?:uh|um|er|ah|like)\s+/i, "")
+    .replace(/\bwhats\b/g, "what is")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export const CONVERSATIONAL_PURPOSES = Object.freeze([

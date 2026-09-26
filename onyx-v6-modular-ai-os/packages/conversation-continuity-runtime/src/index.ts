@@ -86,6 +86,7 @@ export class ConversationSession {
     let status: ContinuityDecision["status"] = topicChanged ? "TOPIC_CHANGED" : "ACCEPTED";
     let correction: CorrectionRecord | undefined;
     let resume: ResumeRecord | undefined;
+    let interruption: InterruptionRecord | undefined;
     if (input.purpose === "CORRECTION" && input.correctedValue) {
       correction = Object.freeze({ correctionTurnId: input.turnId, supersededTurnId: oldFrame.activeTurnId, correctedValue: input.correctedValue.slice(0, 160), topicVersion: topic?.version ?? 0 });
       status = "CORRECTED";
@@ -97,12 +98,13 @@ export class ConversationSession {
       status = "RESUMED";
     }
     if (input.purpose === "INTERRUPTION") {
+      interruption = Object.freeze({ interruptionTurnId: input.turnId, interruptedTurnId: oldFrame.activeTurnId, interruptedGeneration: oldFrame.activeGeneration, newGeneration: input.utteranceGeneration });
       this.interruptedTurnId = oldFrame.activeTurnId;
       status = "INTERRUPTED";
     }
     if (input.purpose === "FOLLOW_UP" && oldFrame.topic === null) status = "CLARIFICATION_REQUIRED";
     this.followUpWindow = input.openFollowUp ? Object.freeze({ openedAt: input.timestamp, expiresAt: input.timestamp + this.expirationMs, sourceTurnId: input.turnId, cancellable: true }) : this.followUpWindow;
-    return this.decision(status, correction ?? null, undefined, resume);
+    return this.decision(status, correction ?? null, interruption, resume);
   }
 
   ownership(sessionId: string, turnId: string, utteranceGeneration: number, now: number): TurnOwnershipReceipt {
@@ -118,7 +120,7 @@ export class ConversationSession {
   private validate(input: ContinuityInput): ContinuityValidationResult {
     if (!input.sessionId || !input.ownerReference || !input.turnId) return invalidValidation("MISSING_IDENTIFIER");
     if (input.sessionId !== this.frame.sessionId || input.ownerReference !== this.frame.ownerReference) return invalidValidation("SESSION_MISMATCH");
-    if (!Number.isSafeInteger(input.utteranceGeneration) || input.utteranceGeneration < this.frame.activeGeneration) return invalidValidation("GENERATION_REPLAY");
+    if (!Number.isSafeInteger(input.utteranceGeneration) || input.utteranceGeneration <= this.frame.activeGeneration) return invalidValidation("GENERATION_REPLAY");
     if (this.lastTimestamp !== null && input.timestamp < this.lastTimestamp) return invalidValidation("STALE_TURN");
     return Object.freeze({ status: "VALID", reasonCodes: [] });
   }

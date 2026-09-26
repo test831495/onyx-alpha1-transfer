@@ -138,4 +138,15 @@ describe("live conversation runtime adapter", () => {
     expect(voice.truthPolicy).toBe(text.truthPolicy);
     expect(voice.executionAuthorized).toBe(text.executionAuthorized);
   });
+
+  it("propagates detected language to the model request without hard-coding English", async () => {
+    let requestBody = "";
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init: RequestInit) => {
+      requestBody = String(init.body);
+      return new Response(JSON.stringify({ requestId: "hindi", adapterId: "openai-conversation-server", modelReferenceSafe: "configured", text: "A response.", language: "HINDI", finishReason: "STOP", generationReceiptVersion: "B5F-1" }), { status: 200 });
+    }));
+    await createConversationRuntimeAdapter()(input("Hindi mein baat karo.", { turnId: "hindi", utteranceGeneration: 1 }));
+    expect(JSON.parse(requestBody).language).toBe("HINDI");
+    vi.unstubAllGlobals();
+  });
 });

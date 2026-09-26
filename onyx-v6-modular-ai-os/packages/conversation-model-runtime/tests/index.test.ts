@@ -7,5 +7,6 @@ const synthetic: ConversationModelAdapter = { adapterId: "synthetic", adapterVer
 describe("conversation model runtime", () => {
   it("selects an eligible provider-neutral adapter", () => expect(new ConversationModelRegistry([synthetic]).decide(request, true, { offline: false, localCapabilityAvailable: false })?.adapterId).toBe("synthetic"));
   it("fails closed when no adapter is configured", () => expect(new ConversationModelRegistry().decide(request, true, { offline: false, localCapabilityAvailable: false })).toBeNull());
+  it("refuses cloud execution when the device is offline and no local capability is available", () => expect(new ConversationModelRegistry([synthetic]).decide(request, true, { offline: true, localCapabilityAvailable: false })).toBeNull());
   it("exposes OpenAI only through the server boundary", () => expect(new OpenAIConversationAdapter().adapterId).toBe("openai-conversation-server"));
 });

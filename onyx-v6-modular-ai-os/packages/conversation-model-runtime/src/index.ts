@@ -29,6 +29,7 @@ export class ConversationModelRegistry {
   constructor(adapters: readonly ConversationModelAdapter[] = []) { this.adapters = Object.freeze([...adapters]); }
   decide(request: ConversationModelRequest, enabled: boolean, context: { offline: boolean; localCapabilityAvailable: boolean }): ConversationModelAdapter | null {
     if (!enabled) return null;
+    if (context.offline === true && context.localCapabilityAvailable !== true) return null;
     return this.adapters.find((adapter) => adapter.isAvailable(context) && adapter.supports(request)) ?? null;
   }
 }

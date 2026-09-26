@@ -32,9 +32,17 @@ describe("B5C conversation continuity runtime", () => {
     session.accept(input({ openFollowUp: true }));
     const interrupted = session.accept(input({ turnId: "interrupt", utteranceGeneration: 2, purpose: "INTERRUPTION", timestamp: 1001 }));
     expect(interrupted.status).toBe("INTERRUPTED");
+    expect(interrupted.interruption?.interruptedTurnId).toBe("turn-1");
+    expect(interrupted.interruption?.newGeneration).toBe(2);
     const resumed = session.accept(input({ turnId: "resume", utteranceGeneration: 3, isResume: true, purpose: "GENERAL_CONVERSATION", timestamp: 1002 }));
     expect(resumed.status).toBe("RESUMED");
     expect(resumed.resume?.resumedTurnId).toBe("turn-1");
+  });
+
+  it("rejects replayed generation for the same active turn", () => {
+    const session = new ConversationSession("session-1", "owner-1");
+    session.accept(input());
+    expect(session.accept(input({ turnId: "turn-1", utteranceGeneration: 1, timestamp: 1001 })).status).toBe("STALE_REJECTED");
   });
 
   it("rejects stale generations and wrong ownership", () => {

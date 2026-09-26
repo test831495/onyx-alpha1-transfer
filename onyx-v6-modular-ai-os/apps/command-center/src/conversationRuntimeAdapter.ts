@@ -86,6 +86,45 @@ export function selectConversationSpeaker(rawText: string, purpose: Conversation
   return { speaker: "NOVA", selectionReason: "POLICY_DEFAULT", manualOverrideApplied: false, previousSpeakerPreserved: false };
 }
 
+function detectConversationLanguage(
+  rawText: string,
+  currentLanguage: ConversationModelRequest["language"] = "ENGLISH",
+): ConversationModelRequest["language"] {
+  const normalized = rawText.normalize("NFKC").trim();
+
+  if (/[\u0900-\u097F]/u.test(normalized)) {
+    return "HINDI";
+  }
+
+  if (
+    /\b(?:hinglish|hindi\s+(?:and|plus)\s+english|hindi\s+english)\b/i.test(
+      normalized,
+    )
+  ) {
+    return "HINGLISH";
+  }
+
+  if (
+    /\b(?:hindi\s+mein|hindi\s+me)\b/i.test(normalized) ||
+    /\b(?:speak|talk|reply|respond|answer|continue)\b[\s\S]{0,40}\b(?:in\s+)?hindi\b/i.test(
+      normalized,
+    )
+  ) {
+    return "HINDI";
+  }
+
+  if (
+    /\b(?:english\s+mein|english\s+me)\b/i.test(normalized) ||
+    /\b(?:speak|talk|reply|respond|answer|continue)\b[\s\S]{0,40}\b(?:in\s+)?english\b/i.test(
+      normalized,
+    )
+  ) {
+    return "ENGLISH";
+  }
+
+  return currentLanguage;
+}
+
 export function createConversationRuntimeAdapter(ownerReference = "command-center"): (input: LiveConversationInput) => Promise<LiveConversationDispatchReceipt> {
   const purposeResolver = new ConversationalPurposeResolver();
   const contextBuilder = new DialogueContextBuilder();
@@ -138,7 +177,10 @@ export function createConversationRuntimeAdapter(ownerReference = "command-cente
       const modelRequest: ConversationModelRequest = {
         requestId: input.turnId, sessionId: input.sessionId, turnId: input.turnId, utteranceGeneration: input.utteranceGeneration,
         userText,
-        language: "ENGLISH", selectedSpeaker: speaker, selectionReason: speakerSelection.selectionReason, characterProfileVersion: candidate.characterProfileVersion,
+        language: detectConversationLanguage(
+        input.rawText,
+        "ENGLISH",
+      ), selectedSpeaker: speaker, selectionReason: speakerSelection.selectionReason, characterProfileVersion: candidate.characterProfileVersion,
         conversationPurpose: purposeResolution.purpose, responseMode: plan.responseMode, responseObjectives: plan.objectives,
         recentTurnSummaries: context.recentTurnSummaries, currentTopic: context.currentTopic, supportedClaims: plan.supportedClaims,
         prohibitedClaims: plan.prohibitedClaims, truthStatus: candidate.truthStatus,

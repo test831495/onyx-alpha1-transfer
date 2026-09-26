@@ -102,6 +102,7 @@ export function normalizeConversationalText(raw: string): string {
   return raw
     .toLowerCase()
     .replace(APOSTROPHE_PATTERN, "")
+    .replace(/^(?:uh|um|er|ah|like)\s+/i, "")
     .replace(/\bwhats\b/g, "what is")
     .replace(/[^a-z0-9\s]/g, " ")
     .replace(/\s+/g, " ")
